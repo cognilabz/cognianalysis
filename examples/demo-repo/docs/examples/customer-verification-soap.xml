@@ -1,0 +1,20 @@
+<!-- Example SOAP request -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ver="https://acme.example/verification">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <ver:VerifyCustomerRequest>
+      <ver:customerId>c-123</ver:customerId>
+      <ver:birthDate>1990-04-12</ver:birthDate>
+    </ver:VerifyCustomerRequest>
+  </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- Example SOAP response -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ver="https://acme.example/verification">
+  <soapenv:Body>
+    <ver:VerifyCustomerResponse>
+      <ver:approved>true</ver:approved>
+      <ver:reference>soap-kyc-456</ver:reference>
+    </ver:VerifyCustomerResponse>
+  </soapenv:Body>
+</soapenv:Envelope>

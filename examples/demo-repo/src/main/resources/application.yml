@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: customer-onboarding-service
+kyc:
+  providerUrl: https://kyc.example.local
+risk:
+  threshold: 70

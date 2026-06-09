@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="KycVerificationService"
+  targetNamespace="https://acme.example/kyc"
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:tns="https://acme.example/kyc">
+  <message name="VerifyIdentityRequest">
+    <part name="firstName" type="xsd:string" />
+    <part name="lastName" type="xsd:string" />
+    <part name="birthDate" type="xsd:date" />
+  </message>
+  <message name="VerifyIdentityResponse">
+    <part name="approved" type="xsd:boolean" />
+    <part name="reference" type="xsd:string" />
+  </message>
+  <portType name="KycVerificationPort">
+    <operation name="VerifyIdentity">
+      <input message="tns:VerifyIdentityRequest" />
+      <output message="tns:VerifyIdentityResponse" />
+    </operation>
+  </portType>
+  <binding name="KycVerificationBinding" type="tns:KycVerificationPort">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http" />
+    <operation name="VerifyIdentity">
+      <soap:operation soapAction="VerifyIdentity" />
+    </operation>
+  </binding>
+</definitions>

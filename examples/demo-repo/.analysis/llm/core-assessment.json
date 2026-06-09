@@ -1,0 +1,96 @@
+{
+  "assessment": {
+    "executive_summary": "The repository implements a compact customer onboarding service. It accepts onboarding requests, validates customer data, prevents duplicate e-mail addresses, calls an external KYC provider, calculates a risk score, activates low-risk customers or routes risky cases to manual review, persists the customer and publishes an onboarding event.",
+    "system_purpose": "Start and track customer onboarding with KYC-based risk assessment and customer status management.",
+    "assessment_scope": [
+      "Java Spring-style source",
+      "OpenAPI contracts",
+      "SOAP/WSDL contracts",
+      "Markdown examples",
+      "tests",
+      "configuration"
+    ],
+    "key_capabilities": [
+      "Start customer onboarding",
+      "Read onboarding status",
+      "Calculate risk score",
+      "Publish onboarding-started event"
+    ],
+    "key_interfaces": [
+      "POST /customers/onboard",
+      "GET /customers/{customerId}/status",
+      "customer.onboarding.started",
+      "KYC provider REST call",
+      "GetKycStatus SOAP operation"
+    ],
+    "top_risks": [
+      {
+        "title": "Risk threshold is duplicated",
+        "severity": "medium",
+        "description": "The service uses a hard-coded threshold of 70 while configuration also defines risk.threshold.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30,
+            "symbol": "startOnboarding"
+          },
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "title": "Tests are only placeholders",
+        "severity": "medium",
+        "description": "The test class names relevant scenarios but does not contain assertions in this demo repository.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 3
+          }
+        ]
+      }
+    ],
+    "completeness": {
+      "business_logic": "strong",
+      "interfaces": "strong",
+      "flows": "strong",
+      "examples": "strong",
+      "process_readiness": "partial"
+    },
+    "recommended_next_steps": [
+      {
+        "title": "Move risk threshold into configuration",
+        "reason": "This prevents divergence between configuration and implementation.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30
+          },
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "title": "Turn scenario tests into executable assertions",
+        "reason": "The repository already names important test scenarios but the methods are empty.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 4
+          },
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 6
+          }
+        ]
+      }
+    ],
+    "open_questions": [
+      "The repository does not show authentication or authorization requirements for the onboarding endpoints."
+    ]
+  }
+}

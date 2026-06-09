@@ -1,0 +1,42 @@
+<definitions name="KycStatusService"
+             targetNamespace="https://acme.example/kyc"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:tns="https://acme.example/kyc">
+  <types>
+    <xsd:schema targetNamespace="https://acme.example/kyc">
+      <xsd:element name="GetKycStatusRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="kycReference" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetKycStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="approved" type="xsd:boolean"/>
+            <xsd:element name="reference" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+  <message name="GetKycStatusInput"><part name="payload" element="tns:GetKycStatusRequest"/></message>
+  <message name="GetKycStatusOutput"><part name="payload" element="tns:GetKycStatusResponse"/></message>
+  <portType name="KycStatusPortType">
+    <operation name="GetKycStatus">
+      <input message="tns:GetKycStatusInput"/>
+      <output message="tns:GetKycStatusOutput"/>
+    </operation>
+  </portType>
+  <binding name="KycStatusBinding" type="tns:KycStatusPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="GetKycStatus">
+      <soap:operation soapAction="https://acme.example/kyc/GetKycStatus"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+</definitions>

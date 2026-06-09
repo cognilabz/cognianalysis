@@ -1,0 +1,66 @@
+{
+  "mode": "llm_first",
+  "implementation_language": "TypeScript",
+  "tasks": [
+    {
+      "title": "Core Assessment and Decision Summary",
+      "task_file": "llm_tasks/01-core-assessment.md",
+      "expected_output": "llm/core-assessment.json",
+      "status": "pending"
+    },
+    {
+      "title": "Business Capabilities and Business Logic",
+      "task_file": "llm_tasks/02-business-capabilities-logic.md",
+      "expected_output": "llm/business-capabilities-logic.json",
+      "status": "pending"
+    },
+    {
+      "title": "Interface and Contract Extraction",
+      "task_file": "llm_tasks/03-interface-contract-extraction.md",
+      "expected_output": "llm/interfaces-contracts.json",
+      "status": "pending"
+    },
+    {
+      "title": "Request and Response Examples",
+      "task_file": "llm_tasks/04-request-response-examples.md",
+      "expected_output": "llm/request-response-examples.json",
+      "status": "pending"
+    },
+    {
+      "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
+      "task_file": "llm_tasks/05-openapi-soap-graphql.md",
+      "expected_output": "llm/openapi-soap-graphql.json",
+      "status": "pending"
+    },
+    {
+      "title": "Flows, Scenarios and Mermaid Diagrams",
+      "task_file": "llm_tasks/06-flows-mermaid.md",
+      "expected_output": "llm/flows-mermaid.json",
+      "status": "pending"
+    },
+    {
+      "title": "Domain, Data, Integrations and Side Effects",
+      "task_file": "llm_tasks/07-domain-data-integrations.md",
+      "expected_output": "llm/domain-data-integrations.json",
+      "status": "pending"
+    },
+    {
+      "title": "Process, Quality and Readiness Assessment",
+      "task_file": "llm_tasks/08-process-quality-readiness.md",
+      "expected_output": "llm/process-quality-readiness.json",
+      "status": "pending"
+    },
+    {
+      "title": "Architecture, Refactoring and Modernization Roadmap",
+      "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
+      "expected_output": "llm/architecture-refactoring-roadmap.json",
+      "status": "pending"
+    },
+    {
+      "title": "Report Completeness and Gap Review",
+      "task_file": "llm_tasks/10-report-completeness-review.md",
+      "expected_output": "llm/report-completeness-review.json",
+      "status": "pending"
+    }
+  ]
+}

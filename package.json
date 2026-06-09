@@ -1,0 +1,41 @@
+{
+  "name": "codebase-analysis-pack",
+  "version": "0.6.0",
+  "description": "TypeScript implementation of an LLM-first Codex-compatible codebase understanding pack with one-command finalization and evidence-first interactive HTML reports.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "cba": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "resources",
+    "schemas",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "src",
+    "examples",
+    ".agents",
+    "AGENTS.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare-demo": "node dist/cli.js prepare examples/demo-repo",
+    "demo-report": "node dist/cli.js render examples/demo-repo"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "codex",
+    "agent-skills",
+    "codebase-understanding",
+    "reverse-engineering",
+    "llm",
+    "html-report",
+    "mermaid",
+    "evidence"
+  ]
+}

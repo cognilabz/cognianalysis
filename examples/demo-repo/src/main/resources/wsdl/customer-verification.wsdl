@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="CustomerVerificationService"
+  targetNamespace="https://acme.example/verification"
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:tns="https://acme.example/verification"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+  <types>
+    <xsd:schema targetNamespace="https://acme.example/verification">
+      <xsd:element name="VerifyCustomerRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="customerId" type="xsd:string"/>
+            <xsd:element name="birthDate" type="xsd:date"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="VerifyCustomerResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="approved" type="xsd:boolean"/>
+            <xsd:element name="reference" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+  <message name="VerifyCustomerInput">
+    <part name="parameters" element="tns:VerifyCustomerRequest"/>
+  </message>
+  <message name="VerifyCustomerOutput">
+    <part name="parameters" element="tns:VerifyCustomerResponse"/>
+  </message>
+  <portType name="CustomerVerificationPortType">
+    <operation name="VerifyCustomer">
+      <input message="tns:VerifyCustomerInput"/>
+      <output message="tns:VerifyCustomerOutput"/>
+    </operation>
+  </portType>
+  <binding name="CustomerVerificationBinding" type="tns:CustomerVerificationPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="VerifyCustomer">
+      <soap:operation soapAction="https://acme.example/verification/VerifyCustomer"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+  <service name="CustomerVerificationService">
+    <port name="CustomerVerificationPort" binding="tns:CustomerVerificationBinding">
+      <soap:address location="https://verification.example.local/ws"/>
+    </port>
+  </service>
+</definitions>

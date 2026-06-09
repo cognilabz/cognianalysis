@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codebase Analysis Pack LLM Output",
+  "type": "object",
+  "description": "Flexible schema for Codex-generated semantic extraction outputs. Individual task files define stricter expected structures.",
+  "properties": {
+    "assessment": { "type": "object" },
+    "capabilities": { "type": "array" },
+    "business_logic": { "type": "array" },
+    "interfaces": { "type": "array" },
+    "flows": { "type": "array" },
+    "domain_model": { "type": "object" },
+    "data_model": { "type": "object" },
+    "integrations": { "type": "array" },
+    "side_effects": { "type": "array" },
+    "architecture": { "type": "object" },
+    "process": { "type": "object" },
+    "quality": { "type": "object" },
+    "findings": { "type": "array" },
+    "refactoring": { "type": "array" },
+    "modernization": { "type": "array" },
+    "documentation": { "type": "object" }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "symbol": { "type": "string" }
+      }
+    }
+  }
+}

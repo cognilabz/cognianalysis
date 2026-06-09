@@ -1,0 +1,325 @@
+{
+  "flows": [
+    {
+      "id": "flow-customer-onboarding",
+      "title": "Customer onboarding",
+      "capability_id": "start-customer-onboarding",
+      "interface_ids": [
+        "http-post-customers-onboard",
+        "event-customer-onboarding-started"
+      ],
+      "summary": "The request enters through the REST API, is validated, checked for duplicates, verified by KYC, scored, assigned a final status, saved and published as a Kafka event.",
+      "mermaid": {
+        "diagram_type": "sequenceDiagram",
+        "source": "sequenceDiagram\n  participant Client\n  participant API as OnboardingController\n  participant Service as OnboardingService\n  participant KYC as KycClient\n  participant Risk as RiskScoringService\n  participant DB as CustomerRepository\n  participant Kafka as OnboardingEventPublisher\n  Client->>API: POST /customers/onboard\n  API->>Service: startOnboarding(request)\n  Service->>DB: existsByEmail(email)\n  Service->>KYC: verifyIdentity(firstName,lastName,birthDate)\n  Service->>Risk: calculateScore(request, kyc)\n  Service->>Service: decide ACTIVE or MANUAL_REVIEW\n  Service->>DB: save(customer)\n  Service->>Kafka: customer.onboarding.started\n  API-->>Client: 202 OnboardingResponse",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 30
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      },
+      "steps": [
+        {
+          "order": 1,
+          "actor": "Client",
+          "description": "Client sends a POST onboarding request.",
+          "kind": "request",
+          "request_response_ref": "http-post-customers-onboard",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "actor": "API",
+          "description": "Controller validates the request and delegates to the service.",
+          "kind": "validation",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 22
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "order": 3,
+          "actor": "Service",
+          "description": "Service rejects existing e-mail addresses.",
+          "kind": "business_rule",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 24
+            }
+          ]
+        },
+        {
+          "order": 4,
+          "actor": "KYC",
+          "description": "The external KYC provider verifies identity.",
+          "kind": "external_call",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "order": 5,
+          "actor": "Risk",
+          "description": "Risk score is calculated from KYC result and referral code.",
+          "kind": "business_rule",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "order": 6,
+          "actor": "Service",
+          "description": "The customer is activated or marked for manual review.",
+          "kind": "state_change",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "order": 7,
+          "actor": "DB",
+          "description": "The customer is saved.",
+          "kind": "persistence",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "order": 8,
+          "actor": "Kafka",
+          "description": "The onboarding-started event is published.",
+          "kind": "event",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 36
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "business_logic_refs": [
+        "start-customer-onboarding#Onboarding decision",
+        "risk-score-calculation"
+      ],
+      "side_effects": [
+        {
+          "type": "database_write",
+          "description": "Customer is saved",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "type": "event_publish",
+          "description": "customer.onboarding.started is published",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "type": "external_call",
+          "description": "External KYC provider is called",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Low-risk onboarding",
+          "input": {
+            "email": "ada.lovelace@example.com",
+            "referralCode": "FRIEND-42"
+          },
+          "output": {
+            "status": "ACTIVE"
+          },
+          "example_origin": "doc",
+          "evidence": [
+            {
+              "path": "docs/business-flows.md",
+              "line": 5
+            },
+            {
+              "path": "docs/business-flows.md",
+              "line": 17
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        },
+        {
+          "path": "docs/business-flows.md",
+          "line": 30
+        }
+      ],
+      "confidence": "high",
+      "open_questions": []
+    },
+    {
+      "id": "flow-manual-review-decision",
+      "title": "Manual review decision",
+      "capability_id": "start-customer-onboarding",
+      "interface_ids": [
+        "http-post-customers-onboard"
+      ],
+      "summary": "KYC rejection or risk score above 70 routes the customer into MANUAL_REVIEW instead of ACTIVE.",
+      "mermaid": {
+        "diagram_type": "flowchart TD",
+        "source": "flowchart TD\n  A[Calculate risk score] --> B{KYC approved?}\n  B -- no --> D[MANUAL_REVIEW]\n  B -- yes --> C{Risk score > 70?}\n  C -- yes --> D\n  C -- no --> E[ACTIVE]",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 3
+          }
+        ]
+      },
+      "steps": [
+        {
+          "order": 1,
+          "actor": "Service",
+          "description": "Evaluate KYC approval and risk score.",
+          "kind": "business_rule",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "actor": "Customer",
+          "description": "Mark customer for manual review when the rule fails.",
+          "kind": "state_change",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/Customer.java",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "order": 3,
+          "actor": "Customer",
+          "description": "Activate the customer when the rule passes.",
+          "kind": "state_change",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/Customer.java",
+              "line": 33
+            }
+          ]
+        }
+      ],
+      "business_logic_refs": [
+        "start-customer-onboarding#Onboarding decision"
+      ],
+      "side_effects": [
+        {
+          "type": "state_change",
+          "description": "Customer status becomes MANUAL_REVIEW or ACTIVE",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/Customer.java",
+              "line": 26
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/Customer.java",
+              "line": 33
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Manual review example",
+          "input": {
+            "kycApproved": false,
+            "riskScore": 95
+          },
+          "output": {
+            "status": "MANUAL_REVIEW"
+          },
+          "example_origin": "inferred",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+              "line": 9
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 30
+        }
+      ],
+      "confidence": "high",
+      "open_questions": []
+    }
+  ]
+}

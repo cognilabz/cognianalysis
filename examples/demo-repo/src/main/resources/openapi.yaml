@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+  title: Customer Onboarding API
+  version: 1.0.0
+paths:
+  /customers/onboard:
+    post:
+      operationId: startCustomerOnboarding
+      summary: Start customer onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingRequest'
+            examples:
+              normalCustomer:
+                value:
+                  email: max.mustermann@example.com
+                  firstName: Max
+                  lastName: Mustermann
+                  birthDate: '1984-04-21'
+                  referralCode: PARTNER-42
+      responses:
+        '202':
+          description: Onboarding accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingResponse'
+              examples:
+                accepted:
+                  value:
+                    customerId: cus_12345
+                    status: ACTIVE
+                    riskScore: 35
+                    kycReference: KYC-2026-0001
+  /customers/{customerId}/status:
+    get:
+      operationId: getOnboardingStatus
+      summary: Read current onboarding status
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current status
+          content:
+            application/json:
+              examples:
+                manualReview:
+                  value:
+                    customerId: cus_98765
+                    status: MANUAL_REVIEW
+                    reviewReason: KYC rejected or risk score too high
+components:
+  schemas:
+    OnboardingRequest:
+      type: object
+      required: [email, firstName, lastName, birthDate]
+      properties:
+        email: { type: string, format: email }
+        firstName: { type: string }
+        lastName: { type: string }
+        birthDate: { type: string, format: date }
+        referralCode: { type: string, nullable: true }
+    OnboardingResponse:
+      type: object
+      properties:
+        customerId: { type: string }
+        status: { type: string, enum: [PENDING, ACTIVE, MANUAL_REVIEW] }
+        riskScore: { type: integer }
+        kycReference: { type: string }

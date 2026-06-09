@@ -1,0 +1,659 @@
+{
+  "interfaces": [
+    {
+      "id": "http-post-customers-onboard",
+      "type": "http",
+      "protocol": "REST/OpenAPI",
+      "name": "Start customer onboarding",
+      "method": "POST",
+      "path": "/customers/onboard",
+      "description": "Starts the onboarding process and returns an accepted response with status, risk score and KYC reference.",
+      "source_contracts": [
+        {
+          "kind": "source",
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 21,
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            }
+          ]
+        },
+        {
+          "kind": "openapi",
+          "path": "src/main/resources/openapi.yaml",
+          "line": 6,
+          "operation_id": "startCustomerOnboarding",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 6
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 8
+            }
+          ]
+        }
+      ],
+      "openapi": {
+        "present": true,
+        "operation_id": "startCustomerOnboarding",
+        "summary": "Start customer onboarding",
+        "request_schema": "OnboardingRequest",
+        "response_schema": "OnboardingResponse",
+        "method": "POST",
+        "path": "/customers/onboard",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 8
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 15
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 30
+          }
+        ]
+      },
+      "request": {
+        "type": "OnboardingRequest",
+        "fields": [
+          {
+            "name": "email",
+            "meaning": "Customer e-mail; required and must be a valid email address.",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+                "line": 9
+              }
+            ]
+          },
+          {
+            "name": "firstName",
+            "meaning": "Customer first name for KYC verification.",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+                "line": 10
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/KycClient.java",
+                "line": 11
+              }
+            ]
+          },
+          {
+            "name": "lastName",
+            "meaning": "Customer last name for KYC verification.",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+                "line": 11
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/KycClient.java",
+                "line": 11
+              }
+            ]
+          },
+          {
+            "name": "birthDate",
+            "meaning": "Customer birth date for KYC verification.",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+                "line": 12
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/KycClient.java",
+                "line": 11
+              }
+            ]
+          },
+          {
+            "name": "referralCode",
+            "meaning": "Optional referral code; missing or blank values increase the risk score.",
+            "required": false,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+                "line": 13
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+                "line": 12
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "type": "OnboardingResponse",
+        "fields": [
+          {
+            "name": "customerId",
+            "meaning": "Identifier of the saved customer.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+                "line": 3
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 37
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "meaning": "Resulting onboarding status.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+                "line": 3
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+                "line": 3
+              }
+            ]
+          },
+          {
+            "name": "riskScore",
+            "meaning": "Calculated risk score.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+                "line": 3
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+                "line": 7
+              }
+            ]
+          },
+          {
+            "name": "kycReference",
+            "meaning": "Reference returned by the KYC provider.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+                "line": 3
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/KycResult.java",
+                "line": 3
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "OpenAPI accepted onboarding",
+          "example_origin": "openapi",
+          "request": {
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "email": "max.mustermann@example.com",
+              "firstName": "Max",
+              "lastName": "Mustermann",
+              "birthDate": "1984-04-21",
+              "referralCode": "PARTNER-42"
+            }
+          },
+          "response": {
+            "status": 202,
+            "body": {
+              "customerId": "cus_12345",
+              "status": "ACTIVE",
+              "riskScore": 35,
+              "kycReference": "KYC-2026-0001"
+            }
+          },
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 16
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 31
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "required": null,
+        "roles": [],
+        "evidence": []
+      },
+      "errors": [
+        {
+          "condition": "E-mail already exists",
+          "result": "DuplicateCustomerException",
+          "example": {
+            "message": "Customer already exists: max.mustermann@example.com"
+          },
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 24
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+              "line": 3
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 21
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 6
+        }
+      ],
+      "confidence": "high",
+      "open_questions": [
+        "Authentication requirements are not visible."
+      ]
+    },
+    {
+      "id": "http-get-customer-status",
+      "type": "http",
+      "protocol": "REST/OpenAPI",
+      "name": "Read onboarding status",
+      "method": "GET",
+      "path": "/customers/{customerId}/status",
+      "description": "Reads the current onboarding status for a customer.",
+      "source_contracts": [
+        {
+          "kind": "source",
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 27,
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "kind": "openapi",
+          "path": "src/main/resources/openapi.yaml",
+          "line": 38,
+          "operation_id": "getOnboardingStatus",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 38
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "openapi": {
+        "present": true,
+        "operation_id": "getOnboardingStatus",
+        "summary": "Read current onboarding status",
+        "request_schema": "path parameter customerId",
+        "response_schema": "OnboardingStatusResponse",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 38
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 40
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 53
+          }
+        ]
+      },
+      "request": {
+        "type": "path parameter",
+        "fields": [
+          {
+            "name": "customerId",
+            "meaning": "Customer identifier used to load the customer.",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+                "line": 28
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 40
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "type": "OnboardingStatusResponse",
+        "fields": [
+          {
+            "name": "customerId",
+            "meaning": "Customer identifier.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 43
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "meaning": "Current customer status.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 43
+              }
+            ]
+          },
+          {
+            "name": "reviewReason",
+            "meaning": "Manual review explanation when applicable.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/Customer.java",
+                "line": 41
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 43
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Manual review status response",
+          "example_origin": "openapi",
+          "request": {
+            "path": "/customers/cus_98765/status"
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "customerId": "cus_98765",
+              "status": "MANUAL_REVIEW",
+              "reviewReason": "KYC rejected or risk score too high"
+            }
+          },
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 38
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "errors": [
+        {
+          "condition": "Customer ID does not exist",
+          "result": "CustomerNotFoundException",
+          "example": {
+            "message": "Customer not found: cus_missing"
+          },
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 41
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+              "line": 3
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 27
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 38
+        }
+      ],
+      "confidence": "high",
+      "open_questions": []
+    },
+    {
+      "id": "event-customer-onboarding-started",
+      "type": "event",
+      "protocol": "Kafka",
+      "name": "customer.onboarding.started",
+      "path": "customer.onboarding.started",
+      "description": "Event published after the customer has been saved.",
+      "request": {
+        "type": "OnboardingStartedEvent",
+        "fields": [
+          {
+            "name": "customerId",
+            "meaning": "Saved customer identifier",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+                "line": 1
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+                "line": 15
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "meaning": "Saved customer onboarding status",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+                "line": 1
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+                "line": 15
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "type": "none"
+      },
+      "examples": [
+        {
+          "title": "Published event payload",
+          "example_origin": "inferred",
+          "request": {
+            "topic": "customer.onboarding.started",
+            "key": "cus_12345",
+            "body": {
+              "customerId": "cus_12345",
+              "status": "ACTIVE"
+            }
+          },
+          "response": {},
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 14
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "line": 16
+        }
+      ],
+      "confidence": "high",
+      "open_questions": []
+    },
+    {
+      "id": "soap-get-kyc-status",
+      "type": "soap",
+      "protocol": "SOAP/WSDL",
+      "name": "GetKycStatus",
+      "method": null,
+      "path": "GetKycStatus",
+      "description": "SOAP operation for reading KYC approval status by KYC reference.",
+      "source_contracts": [
+        {
+          "kind": "wsdl",
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "line": 29,
+          "operation_id": "GetKycStatus",
+          "evidence": [
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 29
+            },
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 37
+            }
+          ]
+        }
+      ],
+      "soap": {
+        "present": true,
+        "operation": "GetKycStatus",
+        "input_message": "GetKycStatusInput",
+        "output_message": "GetKycStatusOutput",
+        "soap_action": "https://acme.example/kyc/GetKycStatus",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 26
+          },
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 37
+          }
+        ]
+      },
+      "request": {
+        "type": "GetKycStatusRequest",
+        "fields": [
+          {
+            "name": "kycReference",
+            "meaning": "KYC reference to look up",
+            "required": true,
+            "evidence": [
+              {
+                "path": "src/main/resources/wsdl/kyc-status.wsdl",
+                "line": 9
+              },
+              {
+                "path": "src/main/resources/wsdl/kyc-status.wsdl",
+                "line": 12
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "type": "GetKycStatusResponse",
+        "fields": [
+          {
+            "name": "approved",
+            "meaning": "Whether KYC was approved",
+            "evidence": [
+              {
+                "path": "src/main/resources/wsdl/kyc-status.wsdl",
+                "line": 16
+              },
+              {
+                "path": "src/main/resources/wsdl/kyc-status.wsdl",
+                "line": 19
+              }
+            ]
+          },
+          {
+            "name": "reference",
+            "meaning": "KYC reference echoed by the service",
+            "evidence": [
+              {
+                "path": "src/main/resources/wsdl/kyc-status.wsdl",
+                "line": 20
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "KYC status SOAP request",
+          "example_origin": "doc",
+          "request": {
+            "body": "<soapenv:Envelope>...<kyc:GetKycStatusRequest><kyc:kycReference>KYC-2026-0001</kyc:kycReference></kyc:GetKycStatusRequest>...</soapenv:Envelope>"
+          },
+          "response": {
+            "body": "<soapenv:Envelope>...<kyc:GetKycStatusResponse><kyc:approved>true</kyc:approved><kyc:reference>KYC-2026-0001</kyc:reference></kyc:GetKycStatusResponse>...</soapenv:Envelope>"
+          },
+          "evidence": [
+            {
+              "path": "docs/api-examples.md",
+              "line": 26
+            },
+            {
+              "path": "docs/api-examples.md",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "line": 29
+        }
+      ],
+      "confidence": "high",
+      "open_questions": []
+    }
+  ]
+}

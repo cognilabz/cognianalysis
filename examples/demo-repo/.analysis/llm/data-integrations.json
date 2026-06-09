@@ -1,0 +1,251 @@
+{
+  "data_model": {
+    "entities": [
+      {
+        "name": "Customer",
+        "kind": "domain_entity",
+        "description": "Persisted customer record managed through a JPA repository.",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "meaning": "Customer identifier",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/Customer.java",
+                "line": 6
+              }
+            ]
+          },
+          {
+            "name": "email",
+            "type": "String",
+            "meaning": "Customer e-mail",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/Customer.java",
+                "line": 7
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "type": "CustomerStatus",
+            "meaning": "Current onboarding state",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/Customer.java",
+                "line": 10
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "name": "OnboardingStartedEvent",
+        "kind": "message",
+        "description": "Kafka event payload created after a customer is saved.",
+        "fields": [
+          {
+            "name": "customerId",
+            "meaning": "Customer identifier",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+                "line": 15
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "meaning": "Saved customer status",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+                "line": 15
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 15
+          }
+        ]
+      }
+    ],
+    "stores": [
+      {
+        "name": "Customer database",
+        "technology": "JPA repository",
+        "usage": "read_write",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 6
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 35
+          }
+        ]
+      }
+    ],
+    "state_changes": [
+      {
+        "entity": "Customer",
+        "from": "PENDING",
+        "to": "ACTIVE",
+        "trigger": "KYC approved and risk score <= 70",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 32
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 33
+          }
+        ]
+      },
+      {
+        "entity": "Customer",
+        "from": "PENDING",
+        "to": "MANUAL_REVIEW",
+        "trigger": "KYC rejected or risk score > 70",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 26
+          }
+        ]
+      }
+    ]
+  },
+  "integrations": [
+    {
+      "id": "kyc-provider-rest",
+      "name": "KYC provider REST endpoint",
+      "direction": "outbound",
+      "protocol": "HTTP",
+      "purpose": "Verify identity before customer activation.",
+      "messages": [
+        "KycRequest",
+        "KycResult"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 11
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 13
+        }
+      ],
+      "open_questions": [
+        "Timeout, retry and error mapping behavior are not visible in the demo repository."
+      ]
+    },
+    {
+      "id": "customer-onboarding-started-topic",
+      "name": "customer.onboarding.started",
+      "direction": "outbound",
+      "protocol": "Kafka",
+      "purpose": "Notify downstream consumers that onboarding was started and persisted.",
+      "messages": [
+        "OnboardingStartedEvent"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "line": 14
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "line": 16
+        }
+      ],
+      "open_questions": []
+    },
+    {
+      "id": "kyc-status-soap",
+      "name": "KYC status SOAP service",
+      "direction": "outbound",
+      "protocol": "SOAP",
+      "purpose": "Read KYC status by KYC reference from a WSDL-defined operation.",
+      "messages": [
+        "GetKycStatusRequest",
+        "GetKycStatusResponse"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "line": 29
+        },
+        {
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "line": 37
+        }
+      ],
+      "open_questions": []
+    }
+  ],
+  "side_effects": [
+    {
+      "id": "save-customer",
+      "type": "database_write",
+      "description": "The customer is saved after status decision.",
+      "trigger": "startOnboarding",
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "id": "publish-onboarding-started",
+      "type": "event_publish",
+      "description": "Kafka event is published after save.",
+      "trigger": "startOnboarding",
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 36
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "id": "call-kyc-provider",
+      "type": "external_call",
+      "description": "External KYC provider is called with name and birth date.",
+      "trigger": "startOnboarding",
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 11
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 13
+        }
+      ]
+    }
+  ]
+}

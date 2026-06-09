@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="CustomerOnboardingSoapService"
+             targetNamespace="https://acme.example/onboarding/soap"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="https://acme.example/onboarding/soap"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <message name="StartOnboardingRequest">
+    <part name="email" type="xsd:string"/>
+    <part name="firstName" type="xsd:string"/>
+    <part name="lastName" type="xsd:string"/>
+    <part name="birthDate" type="xsd:date"/>
+  </message>
+  <message name="StartOnboardingResponse">
+    <part name="customerId" type="xsd:string"/>
+    <part name="status" type="xsd:string"/>
+  </message>
+  <portType name="CustomerOnboardingPortType">
+    <operation name="StartOnboarding">
+      <input message="tns:StartOnboardingRequest"/>
+      <output message="tns:StartOnboardingResponse"/>
+    </operation>
+  </portType>
+  <binding name="CustomerOnboardingSoapBinding" type="tns:CustomerOnboardingPortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="StartOnboarding">
+      <soap:operation soapAction="https://acme.example/onboarding/StartOnboarding"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+  <service name="CustomerOnboardingSoapService">
+    <port name="CustomerOnboardingSoapPort" binding="tns:CustomerOnboardingSoapBinding">
+      <soap:address location="https://api.example.com/soap/onboarding"/>
+    </port>
+  </service>
+</definitions>

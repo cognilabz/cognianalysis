@@ -1,0 +1,69 @@
+{
+  "goal_coverage": [
+    {
+      "area": "business_understanding",
+      "status": "covered",
+      "summary": "The report identifies onboarding and customer-status capabilities with actors, domain terms and evidence.",
+      "missing_items": [],
+      "evidence": [{"path":"src/main/java/com/acme/onboarding/OnboardingController.java", "line": 13}]
+    },
+    {
+      "area": "business_logic",
+      "status": "covered",
+      "summary": "Validation, duplicate detection, KYC risk scoring and manual-review decisions are documented with examples.",
+      "missing_items": [],
+      "evidence": [{"path":"src/main/java/com/acme/onboarding/OnboardingService.java", "line": 24}, {"path":"src/main/java/com/acme/onboarding/RiskScoringService.java", "line": 8}]
+    },
+    {
+      "area": "interfaces_contracts",
+      "status": "covered",
+      "summary": "REST, OpenAPI, SOAP/WSDL and Kafka interfaces are represented.",
+      "missing_items": [],
+      "evidence": [{"path":"src/main/resources/openapi/customer-onboarding.openapi.yaml", "line": 8}, {"path":"src/main/resources/wsdl/customer-verification.wsdl", "line": 16}]
+    },
+    {
+      "area": "req_res_examples",
+      "status": "covered",
+      "summary": "Request/response examples are included from OpenAPI/docs and inferred from DTOs where needed.",
+      "missing_items": [],
+      "evidence": [{"path":"docs/api-examples.md", "line": 9}]
+    },
+    {
+      "area": "openapi_soap_examples",
+      "status": "covered",
+      "summary": "OpenAPI operations and SOAP envelope examples are included.",
+      "missing_items": [],
+      "evidence": [{"path":"docs/examples/customer-verification-soap.xml", "line": 1}]
+    },
+    {
+      "area": "mermaid_flows",
+      "status": "covered",
+      "summary": "Business and technical flows include Mermaid sequence and flowchart definitions.",
+      "missing_items": [],
+      "evidence": [{"path":"docs/business-flows.md", "line": 3}]
+    },
+    {
+      "area": "domain_data_integration",
+      "status": "covered",
+      "summary": "Domain entities, state changes, persistence side effects and external integrations are documented.",
+      "missing_items": [],
+      "evidence": [{"path":"src/main/java/com/acme/onboarding/Customer.java", "line": 3}]
+    },
+    {
+      "area": "architecture_process_refactoring",
+      "status": "covered",
+      "summary": "Architecture, quality/readiness observations and refactoring options are included.",
+      "missing_items": [],
+      "evidence": [{"path":"pom.xml", "line": 1}]
+    },
+    {
+      "area": "evidence_quality",
+      "status": "covered",
+      "summary": "All demo evidence references validate against file paths and lines.",
+      "missing_items": [],
+      "evidence": [{"path":"README.md", "line": 1}]
+    }
+  ],
+  "recommended_follow_up_tasks": [],
+  "open_questions": []
+}
