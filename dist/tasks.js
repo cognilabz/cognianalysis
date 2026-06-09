@@ -45,10 +45,12 @@ This repository must be analyzed semantically by Codex/LLM. The generated code m
 ## Non-negotiable rules
 
 - Treat \`code-map.json\`, \`source-capsules.json\` and \`important-docs.json\` as discovery aids.
-- Do **not** treat \`signals\` as final entrypoints. Signals are broad hints only.
+- Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
+- Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
 - Use source files, tests, DTO/schema files, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples, CI/CD files, configuration and documentation as evidence.
 - Every relevant assertion must include \`evidence: [{"path":"...", "line": 123, "symbol":"optional"}]\`.
 - Extract requests, responses, contracts, examples, business logic, functions, flows, domain models, data effects, integrations, process readiness, architecture and refactoring options.
+- Produce a structured decision basis: functional view, technical view, decision points, risks, recommendations, target architecture/tech-stack options and tool-positioning notes.
 - If OpenAPI/Swagger, SOAP/WSDL/XSD, Postman, \`.http\`, docs or tests contain request/response examples, extract them.
 - If no explicit example exists, create an inferred example only when \`example_origin\` is \`inferred\`; evidence must point to the source fields and rules used.
 - Every meaningful flow must contain Mermaid source. Prefer \`sequenceDiagram\`; use \`flowchart TD\` or \`stateDiagram-v2\` when better.
@@ -82,7 +84,7 @@ ${JSON.stringify(modules.slice(0, 14), null, 2)}
 ${JSON.stringify(importantDocs.slice(0, 100), null, 2)}
 \`\`\`
 
-## Broad tool signals, not final facts
+## Artifact navigation hints, not final facts
 
 \`\`\`json
 ${JSON.stringify(signals.slice(0, 90), null, 2)}
@@ -90,19 +92,25 @@ ${JSON.stringify(signals.slice(0, 90), null, 2)}
 
 ## Top glossary terms
 
-${glossary.slice(0, 120).join(', ')}
+Domain terms must be extracted by Codex/LLM from source evidence, not from generated word lists.
 
 ## Context capsules
 
-The source excerpts are in \`.analysis/source-capsules.json\`. Use them to decide what to open next, but inspect full source files whenever evidence is needed.
+The full included file inventory is in \`.analysis/data/source-inventory.json\`. The source excerpts are in \`.analysis/source-capsules.json\`. Use capsules to decide what to open next, but inspect full source files whenever evidence is needed. Do not treat capsule coverage as whole-codebase coverage.
 `;
 }
 function taskBody(title, outputFile, profile, modules, signals, capsules, glossary, importantDocs) {
     const hints = {
         repo: profile,
+        source_inventory: {
+            file_count: profile.total_files || 0,
+            source_files: profile.source_files || 0,
+            skipped_files: profile.skipped_files || 0,
+            inventory_file: '.analysis/data/source-inventory.json'
+        },
         top_modules: modules.slice(0, 10),
         important_docs: importantDocs.slice(0, 38),
-        top_signals: signals.slice(0, 60),
+        artifact_navigation_hints: signals.slice(0, 60),
         top_capsules: capsules.slice(0, 18).map(c => ({ path: c.path, roles: c.roles, signals: (c.signals || []).slice(0, 8), symbols: (c.symbols || []).slice(0, 8) })),
         glossary: glossary.slice(0, 90)
     };
@@ -114,10 +122,11 @@ Read these files first:
 
 - \`.analysis/llm_instructions.md\`
 - \`.analysis/data/code-map.json\`
+- \`.analysis/data/source-inventory.json\`
 - \`.analysis/data/important-docs.json\`
 - \`.analysis/source-capsules.json\`
 
-Then open source files, tests, docs, contracts, schemas and configuration as needed. The source capsules and signals are only navigation hints.
+Then open source files, tests, docs, contracts, schemas and configuration as needed. The source capsules and artifact hints are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
 
 Write your result to \`.analysis/llm/${outputFile}\` as valid JSON.
 
@@ -132,6 +141,8 @@ General rules:
 - Use English for generated descriptions. Preserve original identifiers and domain names.
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
+- Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
+- Account for source coverage. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered, and \`analysis_coverage.deferred_files[]\` for inventory files intentionally not relevant to this task. The final completeness task must reconcile the full inventory.
 - Use \`confidence: "high|medium|low"\` and \`open_questions\` when behavior is unclear.
 - Do not modify production source files.
 
@@ -150,7 +161,34 @@ ${JSON.stringify(hints, null, 2)}
 \`\`\`
 
 ${schemaForTitle(title)}
+
+${coverageSchema(title)}
 `;
+}
+function coverageSchema(title) {
+    const emphasis = title.includes('Report Completeness')
+        ? 'For this final task, reconcile the full `.analysis/data/source-inventory.json` inventory across all previous outputs. Uncovered files must be listed as inspected or deferred with a defensible reason, otherwise leave them uncovered and add an analysis-gap finding.'
+        : 'For this task, list the files you inspected for this extraction area and the files from the inventory that you intentionally deferred for this extraction area.';
+    return `## Required Source Coverage Accounting
+
+${emphasis}
+
+Include this top-level object in the JSON:
+
+\`\`\`json
+{
+  "analysis_coverage": {
+    "summary": "How much of the included source inventory this task covered.",
+    "inspected_files": [
+      {"path": "relative/path/File.ext", "reason": "Why this file was inspected for semantic extraction.", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
+    ],
+    "deferred_files": [
+      {"path": "relative/path/File.ext", "reason": "generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
+    ],
+    "open_questions": []
+  }
+}
+\`\`\``;
 }
 function schemaForTitle(title) {
     if (title.includes('Core Assessment'))
@@ -163,6 +201,34 @@ function schemaForTitle(title) {
     "assessment_scope": ["What was analyzed"],
     "key_capabilities": ["Short capability names"],
     "key_interfaces": ["Main inbound/outbound interfaces"],
+    "functional_view": {
+      "summary": "What the system does from a business/user perspective.",
+      "actors": ["actor or system role"],
+      "capabilities": ["capability"],
+      "user_or_system_flows": [{"name":"flow", "description":"...", "evidence": []}],
+      "evidence": []
+    },
+    "technical_view": {
+      "summary": "How the system is built and integrated.",
+      "apis": ["API or interface"],
+      "architecture": ["architecture component or style"],
+      "data_and_integrations": ["data store, message, external system"],
+      "evidence": []
+    },
+    "decision_basis": {
+      "decision_summary": "Decision-grade conclusion for stakeholders.",
+      "recommended_actions": [{"title":"action", "rationale":"...", "priority":"low|medium|high", "evidence": []}],
+      "tradeoffs": [{"topic":"...", "options": [], "recommendation":"...", "evidence": []}],
+      "readiness": {"status":"not_ready|partially_ready|ready", "rationale":"...", "evidence": []},
+      "evidence": []
+    },
+    "tool_positioning": {
+      "summary": "How this analysis output acts as an alternative or complement to existing code analysis/documentation tools.",
+      "automation_level": "manual|assisted|mostly_automated|fully_automated",
+      "strengths_vs_traditional_tools": [],
+      "boundaries": [],
+      "evidence": []
+    },
     "top_risks": [
       {"title":"risk", "severity":"low|medium|high|critical", "description":"...", "evidence": []}
     ],
@@ -424,13 +490,20 @@ function schemaForTitle(title) {
         return `## Expected JSON
 
 {
-  "architecture": {
+    "architecture": {
     "summary": "Architecture summary",
     "style": "monolith|modular_monolith|microservice|library|frontend|infra|unknown",
     "modules": [{"name":"module", "responsibility":"...", "dependencies": [], "evidence": []}],
     "external_systems": [{"name":"system", "direction":"inbound|outbound|both", "protocol":"...", "evidence": []}],
     "data_stores": [{"name":"store", "technology":"...", "evidence": []}],
     "runtime": [{"name":"runtime/deployment/config aspect", "description":"...", "evidence": []}],
+    "target_architecture": {
+      "summary": "Recommended target architecture or reason no target architecture change is justified.",
+      "target_style": "modular_monolith|microservice|service_api|frontend|library|infra|unknown",
+      "tech_stack_options": [{"name":"option", "fit":"...", "tradeoffs": [], "evidence": []}],
+      "migration_steps": [{"order":1, "description":"...", "risk":"low|medium|high", "evidence": []}],
+      "open_questions": []
+    },
     "observations": [{"title":"observation", "description":"...", "evidence": []}],
     "mermaid": "flowchart TD\n  A[Module] --> B[Store]"
   },

@@ -61,11 +61,13 @@ function sectionOverview(bundle) {
     const p = bundle.profile || {};
     const s = bundle.status || {};
     const ev = bundle.evidence_index || [];
+    const sc = bundle.source_coverage || {};
     const invalid = ev.filter((e) => e.valid === false).length;
     return `<div class="metrics">
     ${metric('Status', s.state || 'unknown', s.message || '')}
     ${metric('Languages', Object.keys(p.languages || {}).length, Object.keys(p.languages || {}).slice(0, 5).join(', '))}
     ${metric('Source files', p.source_files || 0)}
+    ${metric('Source coverage', `${sc.coverage_percent ?? 0}%`, `${sc.covered_files || 0}/${sc.total_files || p.total_files || 0} files · ${sc.uncovered_files || 0} uncovered`)}
     ${metric('Contracts/examples', (p.contract_files || []).length + (p.example_files || []).length)}
     ${metric('Evidence', `${ev.length} total`, `${invalid} invalid`)}
     ${metric('Tasks', (bundle.tasks || []).length)}
@@ -73,6 +75,31 @@ function sectionOverview(bundle) {
   <div class="grid two">
     ${card('Repository Profile', `<div class="kv"><span>Name</span><strong>${(0, utils_1.escapeHtml)(p.repo_name)}</strong></div><div class="kv"><span>Type</span><strong>${(0, utils_1.escapeHtml)(p.repo_type)}</strong></div><div class="kv"><span>Frameworks</span><div>${chips(p.frameworks)}</div></div><div class="kv"><span>Build tools</span><div>${chips(p.build_tools)}</div></div><div class="kv"><span>Commit</span><code>${(0, utils_1.escapeHtml)(p.commit || 'n/a')}</code></div>`)}
     ${card('Design Principle', `<p>The CLI prepares context. Codex extracts meaning. The report presents the result. Code-map signals are broad hints only and are not final entrypoints.</p><p class="muted">Implementation language: TypeScript.</p>`)}
+  </div>`;
+}
+function sectionSourceCoverage(bundle) {
+    const sc = bundle.source_coverage || {};
+    const modules = sc.modules || [];
+    const uncovered = sc.uncovered || [];
+    const skipped = sc.skipped || [];
+    const rows = modules.map((m) => `<tr class="search-card" data-search="${(0, utils_1.escapeHtml)(`${m.name} ${m.uncovered_files}`)}"><td><strong>${(0, utils_1.escapeHtml)(m.name)}</strong></td><td>${(0, utils_1.escapeHtml)(m.files || 0)}</td><td>${(0, utils_1.escapeHtml)(m.covered_files || 0)}</td><td>${(0, utils_1.escapeHtml)(m.uncovered_files || 0)}</td><td>${chip((m.uncovered_files || 0) === 0 ? 'complete' : 'partial', (m.uncovered_files || 0) === 0 ? 'ok' : 'warn')}</td></tr>`).join('');
+    return `<div class="metrics">
+    ${metric('Status', sc.status || 'unknown', sc.scope || '')}
+    ${metric('Coverage', `${sc.coverage_percent ?? 0}%`, `${sc.covered_files || 0}/${sc.total_files || 0} files`)}
+    ${metric('Evidence-backed', sc.evidence_backed_files || 0)}
+    ${metric('Explicitly inspected', sc.explicitly_inspected_files || 0)}
+    ${metric('Deferred', sc.deferred_files || 0)}
+    ${metric('Skipped', sc.skipped_files || 0, 'exceeded prepare max file size')}
+  </div>
+  <div class="grid two">
+    ${card('Coverage Rules', pre(sc.rules || []), 'accent')}
+    ${card('Analysis Coverage Declaration', pre(bundle.analysis_coverage || {}))}
+  </div>
+  <h3>Module Coverage</h3>
+  <div class="table-wrap"><table><thead><tr><th>Module</th><th>Files</th><th>Covered</th><th>Uncovered</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="grid two">
+    ${card('Uncovered Files', listItems(uncovered, (f) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(f.path)}</strong><div>${chips(f.roles || [])}</div><p class="muted small">${(0, utils_1.escapeHtml)(f.module || '')} · ${(0, utils_1.escapeHtml)(f.language || '')} · ${(0, utils_1.escapeHtml)(f.lines || 0)} lines</p></div>`, 'No uncovered files.'))}
+    ${card('Skipped Files', listItems(skipped, (f) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(f.path)}</strong><p class="muted small">${(0, utils_1.escapeHtml)(f.reason || '')} · ${(0, utils_1.escapeHtml)(f.bytes || 0)} bytes</p></div>`, 'No skipped files.'))}
   </div>`;
 }
 function sectionTargetCoverage(bundle) {
@@ -90,6 +117,18 @@ function sectionAssessment(bundle) {
     const risks = listItems(a.top_risks || [], (r) => `<li><strong>${(0, utils_1.escapeHtml)(r.title || 'Risk')}</strong> ${chip(r.severity || 'medium')}<br><span class="muted">${(0, utils_1.escapeHtml)(r.description || '')}</span>${evidenceHtml(r.evidence)}</li>`);
     const steps = listItems(a.recommended_next_steps || [], (x) => `<li><strong>${(0, utils_1.escapeHtml)(x.title || 'Step')}</strong><br><span class="muted">${(0, utils_1.escapeHtml)(x.reason || '')}</span>${evidenceHtml(x.evidence)}</li>`);
     return `<div class="grid two">${card('Executive Summary', `<p>${(0, utils_1.escapeHtml)(a.executive_summary || '')}</p><h4>System Purpose</h4><p>${(0, utils_1.escapeHtml)(a.system_purpose || '')}</p>`, 'accent')}${card('Key Scope', `<div class="kv"><span>Capabilities</span><div>${chips(a.key_capabilities)}</div></div><div class="kv"><span>Interfaces</span><div>${chips(a.key_interfaces)}</div></div><div class="kv"><span>Scope</span><div>${chips(a.assessment_scope)}</div></div>`)}</div><div class="metrics">${comp}</div><div class="grid two">${card('Top Risks', `<ul>${risks}</ul>`)}${card('Recommended Next Steps', `<ul>${steps}</ul>`)}</div>`;
+}
+function sectionDecisionBasis(bundle) {
+    const a = bundle.assessment || {};
+    const d = a.decision_basis || {};
+    const t = a.tool_positioning || {};
+    return `<div class="grid two">${card('Decision Summary', `<p>${(0, utils_1.escapeHtml)(d.decision_summary || '')}</p><h4>Readiness</h4>${pre(d.readiness)}${evidenceHtml(d.evidence)}`, 'accent')}${card('Tool Positioning', `<p>${(0, utils_1.escapeHtml)(t.summary || '')}</p><div>${chip(t.automation_level || 'automation n/a')}</div><h4>Strengths</h4>${pre(t.strengths_vs_traditional_tools || [])}<h4>Boundaries</h4>${pre(t.boundaries || [])}${evidenceHtml(t.evidence)}`)}</div><div class="grid two">${card('Recommended Actions', listItems(d.recommended_actions || [], (x) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(x.title || 'Action')}</strong> ${chip(x.priority || 'priority n/a')}<p>${(0, utils_1.escapeHtml)(x.rationale || '')}</p>${evidenceHtml(x.evidence)}</div>`, 'No decision actions extracted.'))}${card('Trade-offs', listItems(d.tradeoffs || [], (x) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(x.topic || 'Trade-off')}</strong><h4>Options</h4>${pre(x.options || [])}<p>${(0, utils_1.escapeHtml)(x.recommendation || '')}</p>${evidenceHtml(x.evidence)}</div>`, 'No trade-offs extracted.'))}</div>`;
+}
+function sectionFunctionalTechnical(bundle) {
+    const a = bundle.assessment || {};
+    const f = a.functional_view || {};
+    const t = a.technical_view || {};
+    return `<div class="grid two">${card('Functional View', `<p>${(0, utils_1.escapeHtml)(f.summary || '')}</p><h4>Actors</h4>${chips(f.actors || [])}<h4>Capabilities</h4>${chips(f.capabilities || [])}<h4>User/System Flows</h4>${listItems(f.user_or_system_flows || [], (x) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(x.name || 'Flow')}</strong><p>${(0, utils_1.escapeHtml)(x.description || '')}</p>${evidenceHtml(x.evidence)}</div>`, 'No functional flows extracted.')}${evidenceHtml(f.evidence)}`, 'accent')}${card('Technical View', `<p>${(0, utils_1.escapeHtml)(t.summary || '')}</p><h4>APIs / Interfaces</h4>${chips(t.apis || [])}<h4>Architecture</h4>${chips(t.architecture || [])}<h4>Data / Integrations</h4>${chips(t.data_and_integrations || [])}${evidenceHtml(t.evidence)}`, 'accent')}</div>`;
 }
 function sectionBusiness(bundle) {
     const caps = bundle.capabilities || [];
@@ -134,7 +173,8 @@ function sectionDomain(bundle) {
 }
 function sectionArchitecture(bundle) {
     const a = bundle.architecture || {};
-    return `<div class="grid two">${card('Architecture Summary', `<p>${(0, utils_1.escapeHtml)(a.summary || '')}</p><div>${chip(a.style || 'unknown')}</div>${a.mermaid ? pre(a.mermaid, 'mermaid') : ''}`)}${card('Modules', listItems(a.modules || [], (m) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(m.name)}</strong><p>${(0, utils_1.escapeHtml)(m.responsibility || '')}</p>${chips(m.dependencies || [])}${evidenceHtml(m.evidence)}</div>`, 'No architecture modules extracted.'))}</div><div class="grid two">${card('External Systems', pre(a.external_systems || []))}${card('Runtime / Data Stores', `${pre(a.runtime || [])}${pre(a.data_stores || [])}`)}</div>${card('Observations', listItems(a.observations || [], (o) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(o.title)}</strong><p>${(0, utils_1.escapeHtml)(o.description || '')}</p>${evidenceHtml(o.evidence)}</div>`, 'No observations extracted.'))}`;
+    const target = a.target_architecture || {};
+    return `<div class="grid two">${card('Architecture Summary', `<p>${(0, utils_1.escapeHtml)(a.summary || '')}</p><div>${chip(a.style || 'unknown')}</div>${a.mermaid ? pre(a.mermaid, 'mermaid') : ''}`)}${card('Target Architecture / Tech Stack', `<p>${(0, utils_1.escapeHtml)(target.summary || '')}</p><div>${chip(target.target_style || 'target n/a')}</div><h4>Tech Stack Options</h4>${pre(target.tech_stack_options || [])}<h4>Migration Steps</h4>${pre(target.migration_steps || [])}<h4>Open Questions</h4>${pre(target.open_questions || [])}`)}</div><div class="grid two">${card('Modules', listItems(a.modules || [], (m) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(m.name)}</strong><p>${(0, utils_1.escapeHtml)(m.responsibility || '')}</p>${chips(m.dependencies || [])}${evidenceHtml(m.evidence)}</div>`, 'No architecture modules extracted.'))}${card('External Systems', pre(a.external_systems || []))}</div><div class="grid two">${card('Runtime / Data Stores', `${pre(a.runtime || [])}${pre(a.data_stores || [])}`)}${card('Observations', listItems(a.observations || [], (o) => `<div class="subitem"><strong>${(0, utils_1.escapeHtml)(o.title)}</strong><p>${(0, utils_1.escapeHtml)(o.description || '')}</p>${evidenceHtml(o.evidence)}</div>`, 'No observations extracted.'))}</div>`;
 }
 function sectionProcess(bundle) {
     const p = bundle.process || {};
@@ -143,7 +183,7 @@ function sectionProcess(bundle) {
         const v = p[k] || {};
         return metric(k.replace(/_/g, ' '), v.status || 'unknown', (v.observations || []).join(' · '));
     }).join('');
-    return `<div class="card accent"><h3>Process Summary</h3><p>${(0, utils_1.escapeHtml)(p.summary || '')}</p></div><div class="metrics">${processCards}</div><div class="grid three">${card('Strengths', pre(q.strengths || []))}${card('Risks', pre(q.risks || []))}${card('Testability', pre(q.testability || []))}</div>`;
+    return `<div class="card accent"><h3>Process Summary</h3><p>${(0, utils_1.escapeHtml)(p.summary || '')}</p></div><div class="metrics">${processCards}</div><div class="grid two">${card('Strengths', pre(q.strengths || []))}${card('Risks', pre(q.risks || []))}</div><div class="grid two">${card('Security / Weaknesses', pre(q.security || []))}${card('Testability', pre(q.testability || []))}</div>`;
 }
 function sectionFindings(bundle) {
     return listItems(bundle.findings || [], (f) => card(f.title || f.id || 'Finding', `<div>${chip(f.category || 'risk')}${chip(f.severity || 'medium')}</div><p>${(0, utils_1.escapeHtml)(f.description || '')}</p><h4>Recommendation</h4><p>${(0, utils_1.escapeHtml)(f.recommendation || '')}</p>${evidenceHtml(f.evidence)}`));
@@ -170,7 +210,10 @@ function buildHtml(bundle, title) {
     const sections = [
         ['overview', 'Overview', sectionOverview(bundle)],
         ['coverage', 'Target Coverage', sectionTargetCoverage(bundle)],
+        ['sourcecoverage', 'Source Coverage', sectionSourceCoverage(bundle)],
         ['assessment', 'Core Assessment', sectionAssessment(bundle)],
+        ['decision', 'Decision Basis', sectionDecisionBasis(bundle)],
+        ['views', 'Functional & Technical Views', sectionFunctionalTechnical(bundle)],
         ['business', 'Business & Logic', sectionBusiness(bundle)],
         ['interfaces', 'Interfaces & Contracts', sectionInterfaces(bundle)],
         ['examples', 'Req/Res & Examples', sectionExamples(bundle)],

@@ -1,5 +1,5 @@
 import { CodeMap, CodeMapFile } from './types';
-import { FS, Path, cleanId, countLines, gitCommit, listFiles, readText, rel, sha1Short, utcNow } from './utils';
+import { FS, Path, cleanId, countLines, gitCommit, listFileInventory, readText, rel, sha1Short, utcNow } from './utils';
 
 const LANGUAGE_BY_EXT: Record<string, string> = {
   '.java': 'Java', '.kt': 'Kotlin', '.kts': 'Kotlin', '.scala': 'Scala',
@@ -45,49 +45,48 @@ function pushSignal(out: any[], root: string, file: string, text: string, type: 
   out.push({ type, label, path: rel(file, root), line: lineOf(text, index), confidence, ...extra });
 }
 
-function scanRegexSignals(out: any[], root: string, file: string, text: string, type: string, re: RegExp, labeler: (m: RegExpExecArray) => string, confidence = 'hint'): void {
-  let m: RegExpExecArray | null;
-  let guard = 0;
-  re.lastIndex = 0;
-  while ((m = re.exec(text)) && guard < 120) {
-    pushSignal(out, root, file, text, type, labeler(m), m.index, confidence);
-    guard++;
-  }
-}
-
 function detectSignals(file: string, root: string, text: string): any[] {
-  const lower = text.toLowerCase();
   const out: any[] = [];
   const r = rel(file, root).toLowerCase();
   const ext = Path.extname(file).toLowerCase();
 
-  if (lower.includes('openapi:') || lower.includes('swagger:') || r.includes('openapi') || r.includes('swagger')) {
-    pushSignal(out, root, file, text, 'api_contract', 'OpenAPI/Swagger candidate', Math.max(0, lower.indexOf('openapi')), 'hint');
+  if ((ext === '.yaml' || ext === '.yml' || ext === '.json') && (r.includes('openapi') || r.includes('swagger'))) {
+    pushSignal(out, root, file, text, 'api_contract_candidate', 'OpenAPI/Swagger artifact candidate', 0, 'navigation');
   }
-  if (lower.includes('<definitions') || lower.includes('<wsdl:definitions') || lower.includes('soap:operation') || ext === '.wsdl' || ext === '.xsd' || r.includes('soap')) {
-    pushSignal(out, root, file, text, 'soap_contract', 'SOAP/WSDL/XSD candidate', Math.max(0, lower.indexOf('soap')), 'hint');
+  if (ext === '.wsdl' || ext === '.xsd') {
+    pushSignal(out, root, file, text, 'soap_contract_candidate', 'SOAP/WSDL/XSD artifact candidate', 0, 'navigation');
   }
-  if (/\b(request|response|payload|example|sample|curl|http\/1\.1)\b/i.test(text)) {
-    pushSignal(out, root, file, text, 'request_response_doc', 'Request/response/example candidate', text.search(/\b(request|response|payload|example|sample|curl|http\/1\.1)\b/i), 'hint');
+  if (ext === '.graphql' || ext === '.gql') {
+    pushSignal(out, root, file, text, 'graphql_contract_candidate', 'GraphQL schema artifact candidate', 0, 'navigation');
   }
-  if (/\b(sequenceDiagram|flowchart\s+(?:TD|LR)|stateDiagram-v2|classDiagram|erDiagram)\b/.test(text)) {
-    pushSignal(out, root, file, text, 'mermaid_diagram', 'Mermaid diagram candidate', text.search(/\b(sequenceDiagram|flowchart\s+(?:TD|LR)|stateDiagram-v2|classDiagram|erDiagram)\b/), 'hint');
+  if (ext === '.http' || r.includes('postman')) {
+    pushSignal(out, root, file, text, 'request_response_example_candidate', 'Request/response example artifact candidate', 0, 'navigation');
+  }
+  if (ext === '.md' || ext === '.rst') {
+    pushSignal(out, root, file, text, 'documentation_candidate', 'Documentation artifact candidate', 0, 'navigation');
   }
 
-  // Broad framework and interface hints. These are deliberately not final facts.
-  scanRegexSignals(out, root, file, text, 'http_route_hint', /@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|RequestMapping)\b(?:\([^\n]*?\))?/g, m => `Spring ${m[1]}`, 'hint');
-  scanRegexSignals(out, root, file, text, 'http_route_hint', /\b(app|router|server)\.(get|post|put|patch|delete|route)\s*\(\s*['"`]([^'"`]+)['"`]/g, m => `${m[2].toUpperCase()} ${m[3]}`, 'hint');
-  scanRegexSignals(out, root, file, text, 'http_route_hint', /\b(?:Get|Post|Put|Delete|Patch)\s*\(\s*['"]([^'"]*)['"]\s*\)/g, m => `Attribute route ${m[1]}`, 'hint');
-  scanRegexSignals(out, root, file, text, 'http_route_hint', /\b(api|router)\.(?:route|add|get|post|put|delete)\s*\(/g, () => 'HTTP route candidate', 'hint');
-  scanRegexSignals(out, root, file, text, 'graphql_contract', /\b(type|input|enum|query|mutation|subscription)\s+([A-Z][A-Za-z0-9_]*)\b/g, m => `GraphQL ${m[1]} ${m[2]}`, 'hint');
-  scanRegexSignals(out, root, file, text, 'event_or_message_hint', /\b(?:topic|queue|exchange|channel|event|message|producer|consumer|publish|subscribe|KafkaListener|RabbitListener)\b[^\n]{0,100}/gi, m => m[0].trim(), 'hint');
-  scanRegexSignals(out, root, file, text, 'job_or_schedule_hint', /\b(?:cron|schedule|Scheduled|batch|job|worker|celery|sidekiq|queue processor)\b[^\n]{0,100}/gi, m => m[0].trim(), 'hint');
-  scanRegexSignals(out, root, file, text, 'database_touchpoint_hint', /\b(?:Repository|Entity|Table|SELECT|INSERT|UPDATE|DELETE|save\(|findBy|query|migration|datasource|jdbc|sequelize|typeorm|mongoose|prisma)\b[^\n]{0,120}/gi, m => m[0].trim(), 'hint');
-  scanRegexSignals(out, root, file, text, 'validation_or_business_rule_hint', /\b(?:validate|required|must|cannot|allowed|denied|score|risk|status|transition|approval|reject|threshold|calculate|eligib|authorize|permission|rule)\b[^\n]{0,140}/gi, m => m[0].trim(), 'hint');
-  scanRegexSignals(out, root, file, text, 'external_call_hint', /\b(?:fetch|axios|RestTemplate|WebClient|HttpClient|requests\.|http\.Client|FeignClient|SoapClient|send|call)\b[^\n]{0,120}/gi, m => m[0].trim(), 'hint');
-  scanRegexSignals(out, root, file, text, 'ui_route_hint', /\b(?:Route|path|page|screen|component|routerLink|navigate|useRouter)\b[^\n]{0,120}/gi, m => m[0].trim(), 'hint');
+  return out.slice(0, 24);
+}
 
-  return out.slice(0, 80);
+function roleTagsFor(relativePath: string, text: string): string[] {
+  const p = relativePath.toLowerCase();
+  const roles = new Set<string>();
+  const ext = Path.extname(relativePath).toLowerCase();
+  const name = Path.basename(p);
+
+  if (p.includes('/test/') || p.includes('/tests/') || p.includes('__tests__') || name.endsWith('test' + ext) || name.endsWith('spec' + ext) || name.endsWith('.test' + ext) || name.endsWith('.spec' + ext)) roles.add('test');
+  if (p.startsWith('docs/') || p.includes('/docs/') || ext === '.md' || ext === '.rst') roles.add('documentation');
+  if (p.includes('openapi') || p.includes('swagger')) roles.add('api_contract');
+  if (p.includes('soap') || ext === '.wsdl' || ext === '.xsd') roles.add('soap_contract');
+  if (p.includes('example') || p.includes('sample') || ext === '.http' || p.includes('postman')) roles.add('example');
+  if (SOURCE_EXTS.has(ext)) roles.add('source');
+  if (['.yaml','.yml','.json','.toml','.properties','.env'].includes(ext) || name.includes('config') || name === 'dockerfile' || name.includes('compose')) roles.add('config');
+  if (p.includes('.github/workflows/') || p.includes('gitlab-ci') || p.includes('jenkinsfile') || p.includes('azure-pipelines') || p.includes('circleci') || p.includes('buildkite')) roles.add('ci_cd');
+  if (ext === '.tf' || p.includes('terraform') || p.includes('helm') || p.includes('k8s') || p.includes('kubernetes')) roles.add('infrastructure');
+  if (['package.json','pom.xml','build.gradle','build.gradle.kts','pyproject.toml','go.mod','cargo.toml'].includes(name) || name.endsWith('.csproj')) roles.add('build');
+
+  return Array.from(roles).sort();
 }
 
 function detectSymbols(file: string, root: string, text: string): any[] {
@@ -119,29 +118,6 @@ function detectImports(text: string): string[] {
   return out.slice(0, 80);
 }
 
-function roleTagsFor(relativePath: string, text: string): string[] {
-  const p = relativePath.toLowerCase();
-  const t = text.slice(0, 80_000).toLowerCase();
-  const roles = new Set<string>();
-  const ext = Path.extname(relativePath).toLowerCase();
-  if (p.includes('/test/') || p.includes('__tests__') || /test|spec/.test(Path.basename(p))) roles.add('test');
-  if (p.startsWith('docs/') || p.includes('/docs/') || ext === '.md' || ext === '.rst') roles.add('documentation');
-  if (p.includes('openapi') || p.includes('swagger') || t.includes('openapi:') || t.includes('swagger:')) roles.add('api_contract');
-  if (p.includes('soap') || p.endsWith('.wsdl') || p.endsWith('.xsd') || t.includes('soap:operation') || t.includes('<wsdl:definitions')) roles.add('soap_contract');
-  if (p.includes('example') || p.includes('sample') || ext === '.http' || p.includes('postman')) roles.add('example');
-  if (/(controller|resource|route|endpoint|handler|resolver|api)/i.test(relativePath) || /@(restcontroller|controller|requestmapping)|app\.(get|post|put|delete)|router\.(get|post|put|delete)|fastapi|flask|express/.test(t)) roles.add('controller');
-  if (/(service|manager|usecase|interactor|workflow|facade|processor)/i.test(relativePath)) roles.add('service');
-  if (/(model|entity|domain|dto|request|response|schema|type|record|enum)/i.test(relativePath)) roles.add('domain');
-  if (/(repository|dao|migration|database|sql|prisma|typeorm|sequelize|mongoose)/i.test(relativePath) || /\b(select|insert|update|delete|repository|entity|table)\b/i.test(text)) roles.add('persistence');
-  if (/(client|connector|adapter|gateway|integration|publisher|consumer|listener|producer)/i.test(relativePath)) roles.add('integration');
-  if (/(component|page|view|screen|template|frontend|ui)/i.test(relativePath) || /react|vue|angular|svelte|jsx|tsx/.test(t)) roles.add('frontend');
-  if (/(application\.ya?ml|\.properties|config|settings|dockerfile|compose|helm|terraform|kustomization)/i.test(relativePath)) roles.add('config');
-  if (/(github\/workflows|gitlab-ci|jenkinsfile|azure-pipelines|circleci|buildkite)/i.test(relativePath)) roles.add('ci_cd');
-  if (/(terraform|helm|k8s|kubernetes|deployment|service\.yaml|chart\.yaml)/i.test(relativePath)) roles.add('infrastructure');
-  if (/(package\.json|pom\.xml|build\.gradle|pyproject\.toml|go\.mod|cargo\.toml|\.csproj)/i.test(relativePath)) roles.add('build');
-  return Array.from(roles).sort();
-}
-
 function moduleKey(relativePath: string): string {
   const parts = relativePath.split('/');
   const prefixes = [
@@ -157,20 +133,10 @@ function moduleKey(relativePath: string): string {
   return parts[0] || '.';
 }
 
-function extractWords(value: string): string[] {
-  const words = String(value || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .split(/[^A-Za-z0-9]+/)
-    .map(w => w.trim())
-    .filter(w => w.length >= 4 && !/^\d+$/.test(w));
-  const stop = new Set(['main','test','java','typescript','javascript','src','with','from','that','this','class','function','string','public','private','return','request','response']);
-  return words.filter(w => !stop.has(w.toLowerCase()));
-}
-
 function scoreFile(relativePath: string, roles: string[], symbols: any[], signals: any[], lines: number): number {
   const weights: Record<string, number> = {
-    api_contract: 75, soap_contract: 75, example: 65, controller: 60, service: 55, domain: 42, integration: 42, persistence: 36,
-    documentation: 34, test: 30, frontend: 26, config: 18, ci_cd: 14, infrastructure: 14, build: 10
+    api_contract: 75, soap_contract: 75, example: 65, source: 42,
+    documentation: 34, test: 30, config: 18, ci_cd: 14, infrastructure: 14, build: 10
   };
   let score = 0;
   for (const role of roles) score += weights[role] || 5;
@@ -178,7 +144,6 @@ function scoreFile(relativePath: string, roles: string[], symbols: any[], signal
   score += Math.min(50, symbols.length * 2);
   const low = relativePath.toLowerCase();
   if (IMPORTANT_NAMES.has(Path.basename(low)) || IMPORTANT_NAMES.has(low)) score += 35;
-  if (/(openapi|swagger|wsdl|soap|xsd|postman|example|sample|flow|business)/.test(low)) score += 45;
   if (lines >= 20 && lines <= 900) score += 10;
   if (lines > 2000) score -= 12;
   return score;
@@ -211,14 +176,6 @@ function detectBuildContext(root: string, files: string[]): { frameworks: string
   if (has('go.mod')) { buildTools.add('Go modules'); packageManagers.add('go modules'); }
   if (has('cargo.toml')) { buildTools.add('Cargo'); packageManagers.add('Cargo'); }
   if (Array.from(names).some(n => n.endsWith('.csproj') || n.endsWith('.sln'))) { buildTools.add('.NET'); packageManagers.add('NuGet'); }
-  const allText = files.slice(0, 80).map(f => readText(f, 50_000).toLowerCase()).join('\n');
-  if (allText.includes('spring-boot') || allText.includes('@springbootapplication')) frameworks.add('Spring Boot');
-  if (allText.includes('fastapi')) frameworks.add('FastAPI');
-  if (allText.includes('flask')) frameworks.add('Flask');
-  if (allText.includes('django')) frameworks.add('Django');
-  if (allText.includes('aspnetcore') || allText.includes('microsoft.aspnetcore')) frameworks.add('ASP.NET Core');
-  if (allText.includes('gin-gonic')) frameworks.add('Gin');
-  if (allText.includes('echo')) frameworks.add('Echo');
   return { frameworks: Array.from(frameworks).sort(), buildTools: Array.from(buildTools).sort(), packageManagers: Array.from(packageManagers).sort() };
 }
 
@@ -228,14 +185,14 @@ function importantDocCandidates(files: CodeMapFile[], limit = 140): any[] {
     const low = item.path.toLowerCase();
     const roles = new Set(item.roles || []);
     const signalTypes = new Set((item.signals || []).map((s: any) => s.type));
-    const isDoc = roles.has('documentation') || roles.has('api_contract') || roles.has('soap_contract') || roles.has('example') || roles.has('test') || SPEC_EXTS.has(item.extension) || /(openapi|swagger|wsdl|soap|postman|examples|sample|docs|readme)/.test(low);
-    const isRelevant = ['api_contract','soap_contract','request_response_doc','example_payload','mermaid_diagram'].some(x => signalTypes.has(x));
+    const isDoc = roles.has('documentation') || roles.has('api_contract') || roles.has('soap_contract') || roles.has('example') || roles.has('test') || SPEC_EXTS.has(item.extension);
+    const isRelevant = ['api_contract_candidate','soap_contract_candidate','graphql_contract_candidate','request_response_example_candidate','documentation_candidate'].some(x => signalTypes.has(x));
     if (!isDoc && !isRelevant) continue;
     let score = item.score || 0;
-    if (/openapi|swagger|asyncapi/.test(low)) score += 130;
-    if (/wsdl|soap|\.xsd$/.test(low)) score += 130;
-    if (/postman|example|sample|\.http$/.test(low)) score += 80;
-    if (/readme|^docs\//.test(low)) score += 45;
+    if (roles.has('api_contract')) score += 130;
+    if (roles.has('soap_contract')) score += 130;
+    if (roles.has('example')) score += 80;
+    if (roles.has('documentation')) score += 45;
     if (isRelevant) score += 35;
     docs.push({ path: item.path, language: item.language, roles: item.roles, signals: item.signals.slice(0, 12), score, lines: item.lines });
   }
@@ -245,11 +202,8 @@ function importantDocCandidates(files: CodeMapFile[], limit = 140): any[] {
 function inferRepoType(files: CodeMapFile[], frameworks: string[]): string {
   const roles: Record<string, number> = {};
   for (const f of files) for (const r of f.roles) roles[r] = (roles[r] || 0) + 1;
-  const names = files.slice(0, 400).map(f => f.path.toLowerCase()).join('\n');
-  if ((roles.controller || 0) > 0 || ['Spring Boot','Express','FastAPI','ASP.NET Core','NestJS','Gin'].some(f => frameworks.includes(f))) return 'service/api';
-  if ((roles.frontend || 0) > 0 || ['React','Vue','Angular','Svelte','Next.js'].some(f => frameworks.includes(f))) return 'frontend';
-  if (/terraform|chart\.yaml|kustomization|deployment\.ya?ml/.test(names)) return 'infrastructure';
-  if ((roles.documentation || 0) > (roles.service || 0) && (roles.documentation || 0) > 5) return 'documentation';
+  if ((roles.infrastructure || 0) > 0 && (roles.source || 0) === 0) return 'infrastructure';
+  if ((roles.documentation || 0) > (roles.source || 0) && (roles.documentation || 0) > 5) return 'documentation';
   if (new Set(files.map(f => f.module)).size > 12 && files.length > 200) return 'monorepo/multi-module';
   return 'library/application';
 }
@@ -259,14 +213,14 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
   const maxFileSize = opts.maxFileSize ?? 1_250_000;
   const capsuleLimit = opts.capsuleLimit ?? 44;
   const capsuleChars = opts.capsuleChars ?? 10_000;
-  const files = listFiles(absRoot, maxFileSize);
+  const inventory = listFileInventory(absRoot, maxFileSize);
+  const files = inventory.included;
 
   const languageLoc: Record<string, number> = {};
   const languageFiles: Record<string, number> = {};
   const fileItems: CodeMapFile[] = [];
   const allSignals: any[] = [];
   const allSymbols: any[] = [];
-  const glossary: Record<string, number> = {};
   let totalLines = 0;
 
   for (const file of files) {
@@ -287,8 +241,6 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
     const imports = detectImports(sample);
     allSignals.push(...signals);
     allSymbols.push(...symbols);
-    for (const w of extractWords(relativePath)) glossary[w.toLowerCase()] = (glossary[w.toLowerCase()] || 0) + 1;
-    for (const sym of symbols) for (const w of extractWords(sym.name || '')) glossary[w.toLowerCase()] = (glossary[w.toLowerCase()] || 0) + 2;
     const item: CodeMapFile = {
       path: relativePath, language, extension: ext, lines, bytes: FS.statSync(file).size, module: moduleKey(relativePath), roles,
       symbol_count: symbols.length, signal_count: signals.length, symbols: symbols.slice(0, 45), signals: signals.slice(0, 36), imports: imports.slice(0, 40), score: 0
@@ -301,8 +253,8 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
   const rankedFiles = fileItems.sort((a, b) => (b.score - a.score) || (b.signal_count - a.signal_count));
   const sourceFiles = fileItems.filter(f => SOURCE_EXTS.has(f.extension));
   const testFiles = fileItems.filter(f => f.roles.includes('test'));
-  const contractFiles = rankedFiles.filter(f => f.roles.includes('api_contract') || f.roles.includes('soap_contract') || ['.wsdl','.xsd','.proto','.graphql','.gql'].includes(f.extension) || f.signals.some((s: any) => s.type === 'api_contract' || s.type === 'soap_contract')).map(f => f.path).slice(0, 100);
-  const exampleFiles = rankedFiles.filter(f => f.roles.includes('example') || f.signals.some((s: any) => ['request_response_doc','mermaid_diagram'].includes(s.type))).map(f => f.path).slice(0, 100);
+  const contractFiles = rankedFiles.filter(f => f.roles.includes('api_contract') || f.roles.includes('soap_contract') || ['.wsdl','.xsd','.proto','.graphql','.gql'].includes(f.extension) || f.signals.some((s: any) => ['api_contract_candidate','soap_contract_candidate','graphql_contract_candidate'].includes(s.type))).map(f => f.path).slice(0, 100);
+  const exampleFiles = rankedFiles.filter(f => f.roles.includes('example') || f.signals.some((s: any) => s.type === 'request_response_example_candidate')).map(f => f.path).slice(0, 100);
   const importantFiles = files.map(f => rel(f, absRoot)).filter(r => IMPORTANT_NAMES.has(Path.basename(r).toLowerCase()) || IMPORTANT_NAMES.has(r.toLowerCase())).slice(0, 100);
   const importantDocs = importantDocCandidates(rankedFiles);
 
@@ -342,7 +294,7 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
     repo_name: Path.basename(absRoot), root: absRoot, analyzed_at: utcNow(), commit: gitCommit(absRoot), repo_type: inferRepoType(fileItems, frameworks),
     languages: sortRecord(languageLoc), language_files: sortRecord(languageFiles), frameworks, build_tools: buildTools, package_managers: packageManagers,
     important_files: importantFiles.sort(), contract_files: contractFiles, example_files: exampleFiles, test_files: testFiles.length, source_files: sourceFiles.length,
-    total_files: fileItems.length, total_lines: totalLines
+    total_files: fileItems.length, total_lines: totalLines, skipped_files: inventory.skipped.length
   };
 
   return {
@@ -351,9 +303,10 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
     files: rankedFiles,
     signals: allSignals.sort((a, b) => String(a.path).localeCompare(String(b.path)) || (a.line || 0) - (b.line || 0)).slice(0, 3000),
     symbols: allSymbols.slice(0, 5000),
-    glossary_terms: Object.entries(glossary).sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 150),
+    glossary_terms: [],
     capsules,
     important_docs: importantDocs,
+    skipped_files: inventory.skipped,
     extraction_policy: {
       mode: 'llm_first',
       signals_are_authoritative: false,

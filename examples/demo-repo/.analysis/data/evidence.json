@@ -18,6 +18,18 @@
     "snippet": "```xml"
   },
   {
+    "path": "docs/business-examples.md",
+    "line": 1,
+    "valid": true,
+    "snippet": "# Business examples"
+  },
+  {
+    "path": "docs/business-flows.md",
+    "line": 1,
+    "valid": true,
+    "snippet": "# Customer Onboarding Flows"
+  },
+  {
     "path": "docs/business-flows.md",
     "line": 5,
     "valid": true,
@@ -42,6 +54,24 @@
     "snippet": "## Business rule example"
   },
   {
+    "path": "docs/examples/customer-verification-soap.xml",
+    "line": 1,
+    "valid": true,
+    "snippet": "<!-- Example SOAP request -->"
+  },
+  {
+    "path": "docs/openapi.yml",
+    "line": 1,
+    "valid": true,
+    "snippet": "openapi: 3.0.3"
+  },
+  {
+    "path": "docs/soap-kyc.wsdl",
+    "line": 1,
+    "valid": true,
+    "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
     "path": "pom.xml",
     "line": 1,
     "valid": true,
@@ -52,6 +82,36 @@
     "line": 5,
     "valid": true,
     "snippet": "<version>1.0.0</version>"
+  },
+  {
+    "path": "pom.xml",
+    "line": 6,
+    "valid": true,
+    "snippet": "<dependencies>"
+  },
+  {
+    "path": "pom.xml",
+    "line": 7,
+    "valid": true,
+    "snippet": "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>"
+  },
+  {
+    "path": "pom.xml",
+    "line": 9,
+    "valid": true,
+    "snippet": "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>"
+  },
+  {
+    "path": "README.md",
+    "line": 1,
+    "valid": true,
+    "snippet": "# Customer Onboarding Demo Repository"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/Customer.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/Customer.java",
@@ -127,9 +187,21 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
     "line": 3,
     "valid": true,
     "snippet": "public class CustomerNotFoundException extends RuntimeException {"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
@@ -145,6 +217,12 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
     "line": 3,
     "valid": true,
     "snippet": "public enum CustomerStatus {"
@@ -157,9 +235,21 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
     "line": 3,
     "valid": true,
     "snippet": "public class DuplicateCustomerException extends RuntimeException {"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/KycClient.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/KycClient.java",
@@ -180,10 +270,28 @@
     "snippet": "return restTemplate.postForObject(\"https://kyc.example.local/verify\", request, KycResult.class);"
   },
   {
+    "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/KycResult.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
     "path": "src/main/java/com/acme/onboarding/KycResult.java",
     "line": 3,
     "valid": true,
     "snippet": "public record KycResult(boolean approved, String reference) {}"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
@@ -217,6 +325,12 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
     "line": 14,
     "valid": true,
     "snippet": "public void publishOnboardingStarted(String customerId, CustomerStatus status) {"
@@ -232,6 +346,12 @@
     "line": 16,
     "valid": true,
     "snippet": "kafkaTemplate.send(\"customer.onboarding.started\", customerId, event);"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
@@ -271,9 +391,27 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
     "line": 3,
     "valid": true,
     "snippet": "public record OnboardingResponse(String customerId, CustomerStatus status, int riskScore, String kycReference) {"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
@@ -298,6 +436,12 @@
     "line": 24,
     "valid": true,
     "snippet": "if (customerRepository.existsByEmail(request.email())) {"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+    "line": 27,
+    "valid": true,
+    "snippet": "KycResult kyc = kycClient.verifyIdentity(request.firstName(), request.lastName(), request.birthDate());"
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
@@ -362,6 +506,18 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
     "line": 1,
     "valid": true,
     "snippet": "package com.acme.onboarding;"
@@ -433,6 +589,12 @@
     "snippet": "threshold: 70"
   },
   {
+    "path": "src/main/resources/onboarding.wsdl",
+    "line": 1,
+    "valid": true,
+    "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
     "path": "src/main/resources/openapi.yaml",
     "line": 1,
     "valid": true,
@@ -493,6 +655,18 @@
     "snippet": "examples:"
   },
   {
+    "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+    "line": 1,
+    "valid": true,
+    "snippet": "openapi: 3.0.3"
+  },
+  {
+    "path": "src/main/resources/wsdl/customer-verification.wsdl",
+    "line": 1,
+    "valid": true,
+    "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
     "path": "src/main/resources/wsdl/kyc-status.wsdl",
     "line": 1,
     "valid": true,
@@ -545,6 +719,12 @@
     "line": 37,
     "valid": true,
     "snippet": "<soap:operation soapAction=\"https://acme.example/kyc/GetKycStatus\"/>"
+  },
+  {
+    "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+    "line": 1,
+    "valid": true,
+    "snippet": "package com.acme.onboarding;"
   },
   {
     "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",

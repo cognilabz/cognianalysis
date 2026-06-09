@@ -29,12 +29,28 @@ exports.TARGET_CAPABILITIES = [
         output_keys: ['signals']
     },
     {
+        id: 'whole-codebase-source-coverage',
+        title: 'Whole-codebase source coverage',
+        description: 'Every included repository file is either evidence-backed, explicitly inspected by Codex/LLM, or explicitly deferred with a reason.',
+        addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cba finalize source coverage gate', 'Source Coverage report section'],
+        expected_outputs: ['source_coverage.complete=true', 'analysis_coverage.inspected_files[]'],
+        output_keys: ['source_coverage.complete', 'analysis_coverage']
+    },
+    {
         id: 'business-capabilities',
         title: 'Business capabilities',
         description: 'Business capabilities, actors, domain terms and use cases.',
         addressed_by: ['02-business-capabilities-logic.md', 'Capabilities report section'],
         expected_outputs: ['capabilities[]'],
         output_keys: ['capabilities']
+    },
+    {
+        id: 'functional-view',
+        title: 'Functional view',
+        description: 'Decision-ready functional view of what the system does, including capabilities, actors, use cases and user/system flows.',
+        addressed_by: ['01-core-assessment.md', '02-business-capabilities-logic.md', '06-flows-mermaid.md', 'Functional report section'],
+        expected_outputs: ['assessment.functional_view'],
+        output_keys: ['assessment.functional_view']
     },
     {
         id: 'business-logic',
@@ -77,6 +93,14 @@ exports.TARGET_CAPABILITIES = [
         output_keys: ['documentation.soap', 'interfaces']
     },
     {
+        id: 'technical-view',
+        title: 'Technical view',
+        description: 'Decision-ready technical view covering APIs, interfaces, contracts, architecture, data stores and integrations.',
+        addressed_by: ['01-core-assessment.md', '03-interface-contract-extraction.md', '07-domain-data-integrations.md', '09-architecture-refactoring-roadmap.md', 'Technical report section'],
+        expected_outputs: ['assessment.technical_view'],
+        output_keys: ['assessment.technical_view']
+    },
+    {
         id: 'mermaid-flows',
         title: 'Flows with Mermaid',
         description: 'Happy paths, failure paths, state changes, side effects and external calls represented with Mermaid source.',
@@ -110,11 +134,19 @@ exports.TARGET_CAPABILITIES = [
     },
     {
         id: 'quality-risks-findings',
-        title: 'Quality and risk findings',
-        description: 'Maintainability, documentation, testability, operability and visible security risks.',
+        title: 'Bugs, vulnerabilities and quality findings',
+        description: 'Visible bugs, weaknesses, security risks, maintainability, documentation, testability and operability findings.',
         addressed_by: ['08-process-quality-readiness.md', '09-architecture-refactoring-roadmap.md', 'Findings report section'],
-        expected_outputs: ['findings[]', 'quality.risks[]'],
+        expected_outputs: ['findings[]', 'quality.risks[]', 'quality.security[]'],
         output_keys: ['findings', 'quality']
+    },
+    {
+        id: 'structured-decision-basis',
+        title: 'Structured decision basis',
+        description: 'Structured analysis document that supports decisions with verdicts, trade-offs, risks, recommendations and evidence.',
+        addressed_by: ['01-core-assessment.md', '10-report-completeness-review.md', 'Decision Basis report section'],
+        expected_outputs: ['assessment.decision_basis'],
+        output_keys: ['assessment.decision_basis']
     },
     {
         id: 'refactoring-modernization',
@@ -123,6 +155,22 @@ exports.TARGET_CAPABILITIES = [
         addressed_by: ['09-architecture-refactoring-roadmap.md', 'Refactoring report section'],
         expected_outputs: ['refactoring[]', 'modernization[]'],
         output_keys: ['refactoring', 'modernization']
+    },
+    {
+        id: 'target-architecture-tech-stack',
+        title: 'Target architecture / new tech stack',
+        description: 'Refactoring and modernization route toward a target architecture or new technology stack where justified by evidence.',
+        addressed_by: ['09-architecture-refactoring-roadmap.md', 'Refactoring report section'],
+        expected_outputs: ['architecture.target_architecture', 'modernization[].target_state'],
+        output_keys: ['architecture.target_architecture', 'modernization']
+    },
+    {
+        id: 'tool-alternative-positioning',
+        title: 'Tool alternative positioning',
+        description: 'Evidence-based positioning as an alternative or complement to existing analysis tools, including automation boundaries.',
+        addressed_by: ['01-core-assessment.md', '10-report-completeness-review.md', 'Decision Basis report section'],
+        expected_outputs: ['assessment.tool_positioning'],
+        output_keys: ['assessment.tool_positioning']
     },
     {
         id: 'evidence-governance',
@@ -197,6 +245,8 @@ function computeTargetCoverage(bundle) {
                 present = Array.isArray(bundle.tasks) && bundle.tasks.length > 0;
             else if (key === 'signals')
                 present = !!(bundle.profile || bundle.signals || bundle.extraction_policy);
+            else if (key === 'source_coverage.complete')
+                present = bundle.source_coverage?.complete === true;
             else
                 present = hasContent(getByPath(bundle, key));
             if (present)

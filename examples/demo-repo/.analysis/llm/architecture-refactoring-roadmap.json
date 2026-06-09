@@ -126,6 +126,100 @@
         ]
       }
     ],
+    "target_architecture": {
+      "summary": "Keep the current modular service shape, but move volatile business decisions and integration configuration into explicit policies/configured clients before considering a broader platform or service split.",
+      "target_style": "modular_monolith",
+      "tech_stack_options": [
+        {
+          "name": "Hardened Spring Boot modular service",
+          "fit": "Best fit for the compact repository because REST, validation and JPA dependencies are already Spring-based.",
+          "tradeoffs": [
+            "Lowest migration effort",
+            "Keeps deployment simple",
+            "Does not independently scale KYC/risk/eventing components"
+          ],
+          "evidence": [
+            {
+              "path": "pom.xml",
+              "line": 7
+            },
+            {
+              "path": "pom.xml",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "Split KYC/risk/eventing services",
+          "fit": "Potential future option only if independent scaling or ownership boundaries emerge; current evidence does not justify the added operational complexity.",
+          "tradeoffs": [
+            "Clearer deployable boundaries",
+            "Higher CI/CD and observability burden",
+            "Requires stronger contract and event governance"
+          ],
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 27
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "migration_steps": [
+        {
+          "order": 1,
+          "description": "Inject the configured risk threshold and add boundary tests for scores 70 and 71.",
+          "risk": "low",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "description": "Inject and configure the KYC HTTP client with timeout/retry policy.",
+          "risk": "low",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 9
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "order": 3,
+          "description": "Add CI contract validation for OpenAPI/WSDL examples before larger technology migration work.",
+          "risk": "medium",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 1
+            },
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 1
+            }
+          ]
+        }
+      ],
+      "open_questions": [
+        "Whether KYC, risk scoring or event publishing need separate runtime ownership is not proven by this compact repository."
+      ]
+    },
     "observations": [
       {
         "title": "Business decision sits in application service",

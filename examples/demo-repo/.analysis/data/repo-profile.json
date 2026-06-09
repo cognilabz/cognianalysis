@@ -1,19 +1,16 @@
 {
   "repo_name": "demo-repo",
-  "root": "/mnt/data/cba_v06_work/examples/demo-repo",
-  "analyzed_at": "2026-06-09T07:15:02Z",
-  "commit": null,
-  "repo_type": "service/api",
+  "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
+  "analyzed_at": "2026-06-09T11:07:11Z",
+  "commit": "dc18fff5d4fea61aea020bd2329af031fbbf7a5f",
+  "repo_type": "library/application",
   "languages": {
     "Java": 261
   },
   "language_files": {
     "Java": 18
   },
-  "frameworks": [
-    "Echo",
-    "Spring Boot"
-  ],
+  "frameworks": [],
   "build_tools": [
     "Maven"
   ],
@@ -28,42 +25,23 @@
     "src/main/resources/openapi.yaml"
   ],
   "contract_files": [
+    "docs/examples/customer-verification-soap.xml",
     "docs/openapi.yml",
     "src/main/resources/openapi.yaml",
+    "docs/soap-kyc.wsdl",
     "src/main/resources/wsdl/customer-verification.wsdl",
     "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-    "src/main/resources/onboarding.wsdl",
     "src/main/resources/wsdl/kyc-status.wsdl",
-    "docs/examples/customer-verification-soap.xml",
-    "docs/soap-kyc.wsdl"
+    "src/main/resources/onboarding.wsdl"
   ],
   "example_files": [
-    "docs/openapi.yml",
-    "src/main/resources/openapi.yaml",
-    "src/main/resources/wsdl/customer-verification.wsdl",
-    "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-    "src/main/resources/onboarding.wsdl",
-    "src/main/resources/wsdl/kyc-status.wsdl",
-    "docs/api-examples.md",
     "docs/examples/customer-verification-soap.xml",
-    ".analysis-seed/llm/documentation-examples.json",
-    "docs/soap-kyc.wsdl",
-    ".analysis-seed/llm/business-domain-logic.json",
-    "docs/business-examples.md",
-    ".analysis-seed/llm/data-integrations.json",
-    "docs/business-flows.md",
-    ".analysis-seed/llm/flows.json",
-    "src/main/resources/application.yml",
-    ".analysis-seed/llm/architecture-refactoring-roadmap.json",
-    "src/main/java/com/acme/onboarding/OnboardingController.java",
-    ".analysis-seed/llm/goal-coverage-review.json",
-    "src/main/java/com/acme/onboarding/OnboardingService.java",
-    "src/main/java/com/acme/onboarding/RiskScoringService.java",
-    ".analysis-seed/llm/interfaces.json",
-    "src/main/java/com/acme/onboarding/KycClient.java"
+    "docs/api-examples.md",
+    "docs/business-examples.md"
   ],
   "test_files": 1,
   "source_files": 18,
-  "total_files": 41,
-  "total_lines": 3471
+  "total_files": 32,
+  "total_lines": 854,
+  "skipped_files": 0
 }

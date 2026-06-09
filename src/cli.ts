@@ -19,7 +19,7 @@ function usage(): void {
 Usage:
   cba prepare [repo] [--analysis .analysis] [--capsules 44]
   cba analyze [repo] [--analysis .analysis] [--no-html]
-  cba finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid]
+  cba finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
   cba finish [repo]   # alias for finalize
   cba report [repo]   # alias for finalize
   cba aggregate [repo] [--analysis .analysis]
@@ -113,10 +113,12 @@ function cmdCoverage(args: string[]): number {
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const bundle = aggregate(repo, analysis);
   const rows = bundle.target_coverage || [];
+  const sc = bundle.source_coverage || {};
   console.log('Target coverage:');
   for (const row of rows) console.log(`${row.design_status.padEnd(7)} ${String(row.output_status).padEnd(8)} ${row.title}`);
   const missing = rows.filter((r: any) => ['missing','pending'].includes(r.output_status));
   console.log(`\n${rows.length - missing.length}/${rows.length} capabilities have current output; design coverage is complete by construction.`);
+  console.log(`Source coverage: ${sc.covered_files || 0}/${sc.total_files || 0} files · ${sc.uncovered_files || 0} uncovered · ${sc.coverage_percent ?? 0}%`);
   return 0;
 }
 
@@ -130,17 +132,22 @@ function cmdFinalize(args: string[]): number {
   const rows = bundle.target_coverage || [];
   const missing = rows.filter((r: any) => ['missing', 'pending'].includes(r.output_status));
   const invalid = (bundle.evidence_index || []).filter((e: any) => e.valid === false);
+  const sourceCoverage = bundle.source_coverage || {};
+  const uncovered = sourceCoverage.uncovered || [];
   const report = hasFlag(args, '--no-html') ? '' : renderReport(analysis, out ? Path.resolve(out) : undefined, title);
 
   console.log(`Finalized analysis workspace: ${analysis}`);
   console.log(`Status: ${bundle.status?.state}`);
   console.log(`Target coverage: ${rows.length - missing.length}/${rows.length} present`);
   if (missing.length) console.log(`Pending outputs: ${missing.map((r: any) => r.title).slice(0, 8).join(', ')}${missing.length > 8 ? ' …' : ''}`);
+  console.log(`Source coverage: ${sourceCoverage.covered_files || 0}/${sourceCoverage.total_files || 0} files · ${sourceCoverage.uncovered_files || 0} uncovered · ${sourceCoverage.coverage_percent ?? 0}%`);
   console.log(`Evidence: ${(bundle.evidence_index || []).length} total · ${invalid.length} invalid`);
   if (report) console.log(`Report: ${report}`);
 
   for (const e of invalid.slice(0, 30)) console.log(`INVALID ${e.path}:${e.line} ${e.reason || ''}`);
+  for (const f of uncovered.slice(0, 30)) console.log(`UNCOVERED ${f.path}`);
   if (invalid.length && !hasFlag(args, '--allow-invalid')) return 1;
+  if (bundle.status?.state === 'llm_extracted' && sourceCoverage.complete !== true && !hasFlag(args, '--allow-partial')) return 1;
   return 0;
 }
 

@@ -23,10 +23,11 @@ and Codex should still execute the full workflow below without asking the user t
 2. Read `.analysis/llm_instructions.md`.
 3. Execute every task file in `.analysis/llm_tasks/`.
 4. For each task, inspect source files, tests, docs, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples and configuration directly.
-5. Write valid JSON into `.analysis/llm/` using the expected file names from the tasks.
-6. Run `cba finalize .`.
-7. Check the finalization output for target coverage and evidence validation.
-8. If evidence validation fails, fix invalid evidence references in `.analysis/llm/*.json` and rerun `cba finalize .`.
+5. Use `.analysis/data/source-inventory.json` as the full included scope. Source capsules are only navigation aids; every included file must be evidence-backed, listed in `analysis_coverage.inspected_files`, or explicitly listed in `analysis_coverage.deferred_files` with a reason.
+6. Write valid JSON into `.analysis/llm/` using the expected file names from the tasks.
+7. Run `cba finalize .`.
+8. Check the finalization output for target coverage, source coverage and evidence validation.
+9. If evidence validation or source coverage fails, fix invalid evidence or incomplete `analysis_coverage` references in `.analysis/llm/*.json` and rerun `cba finalize .`.
 
 ## Required target coverage
 
@@ -35,18 +36,24 @@ The assessment must address all target capabilities, not only documentation gene
 - Existing-harness execution, not a custom coding agent
 - LLM-first semantic extraction
 - Non-authoritative code-map signals
+- Whole-codebase source coverage
 - Business capability extraction
+- Functional view of what the system does
 - Business logic extraction
 - Interface and contract extraction
 - Request/response examples
 - OpenAPI/Swagger extraction
 - SOAP/WSDL/XSD extraction
+- Technical view of APIs, interfaces and architecture
 - Mermaid flow extraction
 - Domain/data/integration view
 - Architecture assessment
 - Process/readiness assessment
-- Quality and risk findings
+- Bugs, visible vulnerabilities and quality findings
+- Structured decision basis
 - Refactoring and modernization roadmap
+- Target architecture / new tech-stack options
+- Tool alternative positioning
 - Evidence-first validation
 - Interactive HTML reporting
 - Portfolio-ready output shape

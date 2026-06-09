@@ -27,6 +27,7 @@ export interface RepoProfile {
   source_files: number;
   total_files: number;
   total_lines: number;
+  skipped_files?: number;
 }
 
 export interface CodeMapFile {
@@ -54,6 +55,7 @@ export interface CodeMap {
   glossary_terms: string[];
   capsules: Json[];
   important_docs: Json[];
+  skipped_files?: Json[];
   extraction_policy: Json;
 }
 

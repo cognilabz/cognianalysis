@@ -18,6 +18,7 @@ exports.escapeHtml = escapeHtml;
 exports.safeJsonForHtml = safeJsonForHtml;
 exports.asList = asList;
 exports.mergeDict = mergeDict;
+exports.listFileInventory = listFileInventory;
 exports.listFiles = listFiles;
 exports.gitCommit = gitCommit;
 exports.copyRecursive = copyRecursive;
@@ -147,11 +148,12 @@ function mergeDict(target, incoming) {
     }
     return target;
 }
-function listFiles(root, maxFileSize) {
+function listFileInventory(root, maxFileSize) {
     const out = [];
+    const skipped = [];
     const ignored = new Set([
         '.git', '.hg', '.svn', 'node_modules', 'vendor', '.venv', 'venv', '__pycache__', '.mypy_cache', '.pytest_cache',
-        'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', 'coverage', '.next', '.turbo', '.cache'
+        'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', '.analysis-seed', 'coverage', '.next', '.turbo', '.cache'
     ]);
     function walk(dir) {
         let entries = [];
@@ -173,13 +175,18 @@ function listFiles(root, maxFileSize) {
                     const st = fs.statSync(full);
                     if (st.size <= maxFileSize)
                         out.push(full);
+                    else
+                        skipped.push({ path: rel(full, root), bytes: st.size, reason: 'exceeds_max_file_size' });
                 }
                 catch { }
             }
         }
     }
     walk(root);
-    return out.sort();
+    return { included: out.sort(), skipped: skipped.sort((a, b) => String(a.path).localeCompare(String(b.path))) };
+}
+function listFiles(root, maxFileSize) {
+    return listFileInventory(root, maxFileSize).included;
 }
 function gitCommit(root) {
     try {

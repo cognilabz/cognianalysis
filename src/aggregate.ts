@@ -7,6 +7,11 @@ export function prepareAnalysis(repo: string, analysisDir: string, codeMap: Code
   ensureDir(dataDir);
   writeJson(Path.join(dataDir, 'repo-profile.json'), codeMap.profile);
   writeJson(Path.join(dataDir, 'code-map.json'), codeMap);
+  writeJson(Path.join(dataDir, 'source-inventory.json'), {
+    included_files: (codeMap.files || []).map((f: any) => ({ path: f.path, module: f.module, language: f.language, roles: f.roles, lines: f.lines, bytes: f.bytes })),
+    skipped_files: codeMap.skipped_files || [],
+    scope_note: 'Every included file is in scope for semantic analysis. Source capsules are only navigation aids; files must be covered by evidence, explicit inspection, or an explicit deferral reason.'
+  });
   writeJson(Path.join(analysisDir, 'source-capsules.json'), codeMap.capsules || []);
   writeJson(Path.join(dataDir, 'interface-signals.json'), codeMap.signals || []);
   writeJson(Path.join(dataDir, 'important-docs.json'), codeMap.important_docs || []);
@@ -35,6 +40,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   const refactoring = asList(llm.refactoring);
   const modernization = asList(llm.modernization);
   const documentation = llm.documentation || fallbackDocumentation(codeMap);
+  const analysisCoverage = validateNested(repo, llm.analysis_coverage || fallbackAnalysisCoverage(codeMap));
 
   const hasSemanticOutput = hasAssessmentContent(llm) || capabilities.length || interfaces.length || flows.length || hasDocContent(documentation) || businessLogic.length || integrations.length || refactoring.length;
   const status = hasSemanticOutput
@@ -68,13 +74,15 @@ export function aggregate(repo: string, analysisDir: string): any {
     refactoring: validateItems(repo, refactoring),
     modernization: validateItems(repo, modernization),
     documentation: validateNested(repo, documentation),
+    analysis_coverage: analysisCoverage,
     tasks: loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [] }).tasks || []
   };
 
   let evidence: any[] = [];
   for (const key of ['capabilities','interfaces','flows','business_logic','integrations','side_effects','findings','refactoring','modernization']) evidence = evidence.concat(collectEvidence(bundle[key] || []));
-  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
+  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
   bundle.evidence_index = dedupeEvidence(evidence);
+  bundle.source_coverage = computeSourceCoverage(codeMap, bundle.evidence_index, bundle.analysis_coverage);
   bundle.target_coverage = computeTargetCoverage(bundle);
 
   ensureDir(dataDir);
@@ -112,6 +120,10 @@ function loadLlmOutputs(llmDir: string): any {
         if (!result[key]) result[key] = {};
         mergeDict(result[key], data[key]);
       }
+    }
+    if (data.analysis_coverage && typeof data.analysis_coverage === 'object' && !Array.isArray(data.analysis_coverage)) {
+      if (!result.analysis_coverage) result.analysis_coverage = {};
+      mergeDict(result.analysis_coverage, data.analysis_coverage);
     }
     const docKeys = ['openapi','soap','request_response_examples','mermaid_flows','business_logic_examples','function_examples','contract_examples','use_case_examples'];
     if (docKeys.some(k => k in data)) {
@@ -200,6 +212,70 @@ function dedupeEvidence(items: any[]): any[] {
   return out.sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')) || Number(a.line || 1) - Number(b.line || 1));
 }
 
+function pathSetFromCoverageItems(items: any): Set<string> {
+  const out = new Set<string>();
+  for (const item of asList(items)) {
+    const p = typeof item === 'string' ? item : item?.path;
+    if (p) out.add(String(p));
+  }
+  return out;
+}
+
+function computeSourceCoverage(codeMap: any, evidenceIndex: any[], analysisCoverage: any): any {
+  const files = asList(codeMap.files);
+  const evidencePaths = new Set((evidenceIndex || []).filter((e: any) => e?.valid !== false && e?.path).map((e: any) => String(e.path)));
+  const inspectedPaths = pathSetFromCoverageItems(analysisCoverage?.inspected_files);
+  const deferredPaths = pathSetFromCoverageItems(analysisCoverage?.deferred_files);
+  const coveredPaths = new Set<string>([...evidencePaths, ...inspectedPaths, ...deferredPaths]);
+
+  const rows = files.map((f: any) => {
+    let status = 'uncovered';
+    if (evidencePaths.has(f.path)) status = 'evidence_backed';
+    else if (inspectedPaths.has(f.path)) status = 'marked_inspected';
+    else if (deferredPaths.has(f.path)) status = 'deferred';
+    return {
+      path: f.path,
+      module: f.module,
+      roles: f.roles || [],
+      language: f.language,
+      lines: f.lines,
+      status
+    };
+  });
+  const uncovered = rows.filter((r: any) => r.status === 'uncovered');
+  const moduleMap: Record<string, any> = {};
+  for (const row of rows) {
+    const m = moduleMap[row.module] || { name: row.module, files: 0, covered_files: 0, uncovered_files: 0 };
+    m.files += 1;
+    if (row.status === 'uncovered') m.uncovered_files += 1;
+    else m.covered_files += 1;
+    moduleMap[row.module] = m;
+  }
+  const total = rows.length;
+  const covered = total - uncovered.length;
+  return {
+    status: uncovered.length === 0 ? 'complete' : 'partial',
+    complete: uncovered.length === 0,
+    scope: 'all included files from .analysis/data/source-inventory.json',
+    total_files: total,
+    covered_files: covered,
+    uncovered_files: uncovered.length,
+    evidence_backed_files: rows.filter((r: any) => r.status === 'evidence_backed').length,
+    explicitly_inspected_files: inspectedPaths.size,
+    deferred_files: deferredPaths.size,
+    skipped_files: asList(codeMap.skipped_files).length,
+    coverage_percent: total ? Math.round((covered / total) * 1000) / 10 : 100,
+    modules: Object.values(moduleMap).sort((a: any, b: any) => b.uncovered_files - a.uncovered_files || String(a.name).localeCompare(String(b.name))),
+    uncovered: uncovered.slice(0, 500),
+    skipped: asList(codeMap.skipped_files).slice(0, 200),
+    rules: [
+      'A file is covered when it has validated evidence, appears in analysis_coverage.inspected_files, or appears in analysis_coverage.deferred_files with a reason.',
+      'Source capsules and code-map rankings do not count as semantic coverage by themselves.',
+      'Skipped files are reported separately because they exceeded the configured max file size before semantic extraction.'
+    ]
+  };
+}
+
 function hasAssessmentContent(llm: any): boolean {
   return !!(llm.assessment && Object.keys(llm.assessment).length) || !!(llm.domain_model && Object.keys(llm.domain_model).length) || !!(llm.process && Object.keys(llm.process).length);
 }
@@ -215,6 +291,10 @@ function fallbackAssessment(codeMap: any): any {
     system_purpose: 'Pending LLM extraction.',
     assessment_scope: ['Repository profile', 'Code map', 'documentation and contract candidates'],
     key_capabilities: [], key_interfaces: [], top_risks: [],
+    functional_view: {},
+    technical_view: {},
+    decision_basis: {},
+    tool_positioning: {},
     completeness: { business_logic: 'pending', interfaces: 'pending', flows: 'pending', examples: 'pending', process_readiness: 'pending' },
     recommended_next_steps: [{ title: 'Run the main Codex skill', reason: 'Execute .analysis/llm_tasks and write JSON to .analysis/llm/.', evidence: [] }],
     open_questions: ['Business behavior has not yet been extracted by Codex.']
@@ -226,7 +306,7 @@ function fallbackArchitecture(codeMap: any): any {
 }
 
 function fallbackDomainModel(codeMap: any): any {
-  return { glossary: (codeMap.glossary_terms || []).slice(0, 40).map((term: string) => ({ term, meaning: 'Candidate domain term. Meaning pending LLM extraction.', evidence: [] })), entities: [], state_models: [] };
+  return { glossary: [], entities: [], state_models: [] };
 }
 
 function fallbackDataModel(codeMap: any): any {
@@ -243,4 +323,13 @@ function fallbackQuality(codeMap: any): any {
 
 function fallbackDocumentation(codeMap: any): any {
   return { summary: 'Pending documentation/example extraction.', openapi: [], soap: [], request_response_examples: [], mermaid_flows: [], business_logic_examples: [], function_examples: [], report_completeness_notes: [] };
+}
+
+function fallbackAnalysisCoverage(codeMap: any): any {
+  return {
+    summary: 'Pending whole-codebase coverage accounting.',
+    inspected_files: [],
+    deferred_files: [],
+    open_questions: ['Codex has not yet recorded which files from the source inventory were semantically inspected or explicitly deferred.']
+  };
 }

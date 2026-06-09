@@ -25,7 +25,7 @@ async function callTool(name, args) {
         const rows = bundle.target_coverage || [];
         const missing = rows.filter((r) => ['missing', 'pending'].includes(r.output_status));
         const report = (0, report_1.renderReport)(analysis, args?.out, args?.title);
-        return { report, status: bundle.status?.state, target_coverage_present: rows.length - missing.length, target_coverage_total: rows.length, evidence_total: (bundle.evidence_index || []).length, invalid: invalid.length, invalid_examples: invalid.slice(0, 20) };
+        return { report, status: bundle.status?.state, target_coverage_present: rows.length - missing.length, target_coverage_total: rows.length, source_coverage: bundle.source_coverage, evidence_total: (bundle.evidence_index || []).length, invalid: invalid.length, invalid_examples: invalid.slice(0, 20) };
     }
     if (name === 'render')
         return { report: (0, report_1.renderReport)(analysis, args?.out, args?.title) };

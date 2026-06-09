@@ -23,6 +23,202 @@
       "KYC provider REST call",
       "GetKycStatus SOAP operation"
     ],
+    "functional_view": {
+      "summary": "The system starts customer onboarding, checks for duplicate e-mail addresses, performs KYC, calculates risk, assigns ACTIVE or MANUAL_REVIEW status, persists the customer and exposes status lookup.",
+      "actors": [
+        "API client",
+        "Customer operations",
+        "KYC provider"
+      ],
+      "capabilities": [
+        "Start customer onboarding",
+        "Read onboarding status",
+        "Calculate risk score",
+        "Publish onboarding-started event"
+      ],
+      "user_or_system_flows": [
+        {
+          "name": "Start onboarding",
+          "description": "A client posts an onboarding request; the service rejects duplicates, calls KYC, scores risk, stores the customer and publishes an event.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "Read onboarding status",
+          "description": "A client reads the persisted customer status and review reason by customer id.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 27
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        }
+      ]
+    },
+    "technical_view": {
+      "summary": "The implementation is a Spring-style service with REST controllers, an application service, repository persistence, an outbound KYC HTTP call, Kafka event publishing, OpenAPI contracts and SOAP/WSDL examples.",
+      "apis": [
+        "POST /customers/onboard",
+        "GET /customers/{customerId}/status",
+        "KYC provider HTTP POST",
+        "customer.onboarding.started Kafka topic"
+      ],
+      "architecture": [
+        "Spring REST controller",
+        "Application service",
+        "Repository persistence",
+        "Outbound HTTP integration",
+        "Kafka event publisher"
+      ],
+      "data_and_integrations": [
+        "Customer repository",
+        "KYC provider",
+        "Kafka topic customer.onboarding.started"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 12
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 14
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 13
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "line": 16
+        }
+      ]
+    },
+    "decision_basis": {
+      "decision_summary": "The repository is suitable as a compact decision-grade demonstration of codebase understanding, but not production-ready without configuration, testing, CI and observability hardening.",
+      "recommended_actions": [
+        {
+          "title": "Externalize the risk threshold",
+          "rationale": "The code hard-codes riskScore > 70 while application.yml also contains risk.threshold.",
+          "priority": "high",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "title": "Implement executable scenario tests",
+          "rationale": "The test class names important scenarios but the methods are placeholders.",
+          "priority": "high",
+          "evidence": [
+            {
+              "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+              "line": 4
+            },
+            {
+              "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+              "line": 6
+            }
+          ]
+        }
+      ],
+      "tradeoffs": [
+        {
+          "topic": "Keep modular service vs split services",
+          "options": [
+            "Keep the compact modular service and extract policies/configuration first",
+            "Split KYC/risk/eventing into separate deployables"
+          ],
+          "recommendation": "Keep the modular service for this codebase size; extract decision policy and integration configuration before considering service splits.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 14
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "status": "partially_ready",
+        "rationale": "Business flow and contracts are understandable, but tests, CI, observability and configuration usage are incomplete.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 3
+          },
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        }
+      ]
+    },
+    "tool_positioning": {
+      "summary": "For this repository, the pack produces a structured source-evidence report that combines functional reverse engineering, interface extraction, process/readiness findings and refactoring recommendations; this positions it as an LLM-first complement or alternative to traditional code inventory and documentation tools.",
+      "automation_level": "mostly_automated",
+      "strengths_vs_traditional_tools": [
+        "Connects business behavior, contracts, flows and refactoring recommendations in one evidence-backed report",
+        "Uses Codex/LLM semantic extraction instead of treating code-map navigation hints as final facts",
+        "Produces portfolio-ready HTML and JSON artifacts"
+      ],
+      "boundaries": [
+        "The CLI prepares context and validates evidence, but Codex/LLM performs semantic extraction",
+        "Visible security risks can be extracted from source evidence, but specialized SAST remains complementary",
+        "Claims are limited to files present in the repository"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 1
+        },
+        {
+          "path": "docs/business-flows.md",
+          "line": 1
+        }
+      ]
+    },
     "top_risks": [
       {
         "title": "Risk threshold is duplicated",

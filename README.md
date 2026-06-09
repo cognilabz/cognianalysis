@@ -45,18 +45,24 @@ The goal is not only documentation generation. The pack is designed to produce a
 | Existing harness execution | Codex skill + CLI, no custom coding agent |
 | LLM-first semantic extraction | Codex performs meaning extraction; CLI prepares context and validates output |
 | Non-authoritative code map | Signals are broad navigation hints, never final entrypoint facts |
+| Whole-codebase source coverage | `source-inventory.json`, `analysis_coverage`, Source Coverage report section and `cba finalize` gate |
 | Business capabilities | `02-business-capabilities-logic.md`, Business report section |
+| Functional view | `01-core-assessment.md`, functional view report section |
 | Business logic | Validations, decisions, calculations, authorization, state transitions and examples |
 | Interfaces and contracts | `03-interface-contract-extraction.md`, Interfaces report section |
 | Request/response examples | `04-request-response-examples.md`, Examples report section |
 | OpenAPI / Swagger | `05-openapi-soap-graphql.md`, Contracts and Examples sections |
 | SOAP / WSDL / XSD | `05-openapi-soap-graphql.md`, SOAP envelope examples and contract metadata |
+| Technical view | APIs, interfaces, architecture, data stores and integrations |
 | Mermaid flows | `06-flows-mermaid.md`, Flows report section |
 | Domain/data/integrations | `07-domain-data-integrations.md`, Domain/Data/Integrations section |
 | Architecture assessment | `09-architecture-refactoring-roadmap.md`, Architecture section |
 | Process/readiness assessment | `08-process-quality-readiness.md`, Process section |
-| Quality/risk findings | Process and architecture tasks, Findings section |
+| Bugs, vulnerabilities and quality findings | Process and architecture tasks, Findings section |
+| Structured decision basis | Decision Basis report section with recommendations, trade-offs and readiness |
 | Refactoring/modernization roadmap | Architecture/refactoring task, Refactoring section |
+| Target architecture / new tech stack | Architecture/refactoring task, target architecture and modernization target state |
+| Tool alternative positioning | Decision Basis report section with automation strengths and boundaries |
 | Evidence-first governance | `cba finalize`, Evidence report section |
 | Interactive static HTML report | `cba finalize`, embedded data, search/navigation |
 | Portfolio mode | `cba portfolio --repos repos.txt --out portfolio-analysis` |
@@ -135,10 +141,12 @@ cba finalize .
 ```text
 aggregate .analysis/llm/*.json
 validate file:line evidence
+validate whole-codebase source coverage
 compute target-picture coverage
 render .analysis/report/index.html
 write .analysis/data/bundle.json
 write .analysis/data/evidence.json
+write .analysis/data/source-inventory.json
 write .analysis/data/target-coverage.json
 ```
 
@@ -176,6 +184,7 @@ The tasks explicitly require Codex to extract, wherever present or defensibly in
 - tests, CI/CD, release, observability and process-readiness findings
 - refactoring and modernization options
 - target-picture completeness gaps
+- whole-codebase source coverage through `analysis_coverage.inspected_files[]` and `analysis_coverage.deferred_files[]`
 - file:line evidence for every relevant claim
 
 If an example is inferred rather than copied from source documentation, tests or contracts, it must use:
@@ -191,6 +200,7 @@ and include evidence for the fields, rules and behavior used to construct it.
 ```text
 .analysis/
   data/repo-profile.json          repository profile
+  data/source-inventory.json      full included file inventory and skipped large files
   data/code-map.json              broad code map, symbols, hints and candidates
   data/interface-signals.json     broad interface/business/process hints, not final facts
   data/important-docs.json        documentation, contract and example candidates

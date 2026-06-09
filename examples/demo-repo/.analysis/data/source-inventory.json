@@ -1,0 +1,336 @@
+{
+  "included_files": [
+    {
+      "path": "docs/examples/customer-verification-soap.xml",
+      "module": "docs",
+      "language": "XML",
+      "roles": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
+      "lines": 21,
+      "bytes": 753
+    },
+    {
+      "path": "docs/openapi.yml",
+      "module": "docs",
+      "language": "YAML",
+      "roles": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
+      "lines": 78,
+      "bytes": 2346
+    },
+    {
+      "path": "src/main/resources/openapi.yaml",
+      "module": "src/main",
+      "language": "YAML",
+      "roles": [
+        "api_contract",
+        "config"
+      ],
+      "lines": 77,
+      "bytes": 2311
+    },
+    {
+      "path": "docs/soap-kyc.wsdl",
+      "module": "docs",
+      "language": "WSDL",
+      "roles": [
+        "documentation",
+        "soap_contract"
+      ],
+      "lines": 29,
+      "bytes": 1115
+    },
+    {
+      "path": "docs/api-examples.md",
+      "module": "docs",
+      "language": "Markdown",
+      "roles": [
+        "documentation",
+        "example"
+      ],
+      "lines": 53,
+      "bytes": 1029
+    },
+    {
+      "path": "docs/business-examples.md",
+      "module": "docs",
+      "language": "Markdown",
+      "roles": [
+        "documentation",
+        "example"
+      ],
+      "lines": 22,
+      "bytes": 428
+    },
+    {
+      "path": "src/main/resources/wsdl/customer-verification.wsdl",
+      "module": "src/main",
+      "language": "WSDL",
+      "roles": [
+        "soap_contract"
+      ],
+      "lines": 54,
+      "bytes": 2161
+    },
+    {
+      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "module": "src/main",
+      "language": "YAML",
+      "roles": [
+        "api_contract",
+        "config"
+      ],
+      "lines": 103,
+      "bytes": 2793
+    },
+    {
+      "path": "src/main/resources/wsdl/kyc-status.wsdl",
+      "module": "src/main",
+      "language": "WSDL",
+      "roles": [
+        "soap_contract"
+      ],
+      "lines": 43,
+      "bytes": 1767
+    },
+    {
+      "path": "src/main/resources/onboarding.wsdl",
+      "module": "src/main",
+      "language": "WSDL",
+      "roles": [
+        "soap_contract"
+      ],
+      "lines": 38,
+      "bytes": 1674
+    },
+    {
+      "path": "README.md",
+      "module": "README.md",
+      "language": "Markdown",
+      "roles": [
+        "documentation"
+      ],
+      "lines": 4,
+      "bytes": 366
+    },
+    {
+      "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+      "module": "src/test/java/com",
+      "language": "Java",
+      "roles": [
+        "source",
+        "test"
+      ],
+      "lines": 8,
+      "bytes": 201
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/Customer.java",
+      "module": "com/acme/onboarding/Customer.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 43,
+      "bytes": 1357
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+      "module": "com/acme/onboarding/OnboardingController.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 32,
+      "bytes": 1260
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+      "module": "com/acme/onboarding/OnboardingService.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 46,
+      "bytes": 2120
+    },
+    {
+      "path": "docs/business-flows.md",
+      "module": "docs",
+      "language": "Markdown",
+      "roles": [
+        "documentation"
+      ],
+      "lines": 51,
+      "bytes": 1175
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "module": "src/main",
+      "language": "YAML",
+      "roles": [
+        "config"
+      ],
+      "lines": 8,
+      "bytes": 129
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+      "module": "com/acme/onboarding/OnboardingResponse.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 8,
+      "bytes": 340
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+      "module": "com/acme/onboarding/CustomerRepository.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 10,
+      "bytes": 293
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+      "module": "com/acme/onboarding/CustomerStatus.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 8,
+      "bytes": 104
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycClient.java",
+      "module": "com/acme/onboarding/KycClient.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 16,
+      "bytes": 547
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+      "module": "com/acme/onboarding/KycRequest.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 6,
+      "bytes": 143
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycResult.java",
+      "module": "com/acme/onboarding/KycResult.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 4,
+      "bytes": 93
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+      "module": "com/acme/onboarding/OnboardingEventPublisher.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 19,
+      "bytes": 679
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+      "module": "com/acme/onboarding/OnboardingRequest.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 15,
+      "bytes": 393
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+      "module": "com/acme/onboarding/OnboardingResult.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 4,
+      "bytes": 142
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+      "module": "com/acme/onboarding/OnboardingStartedEvent.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 4,
+      "bytes": 104
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+      "module": "com/acme/onboarding/OnboardingStatusResponse.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 4,
+      "bytes": 135
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+      "module": "com/acme/onboarding/RiskScoringService.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 18,
+      "bytes": 432
+    },
+    {
+      "path": "pom.xml",
+      "module": "pom.xml",
+      "language": "XML",
+      "roles": [
+        "build"
+      ],
+      "lines": 12,
+      "bytes": 580
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+      "module": "com/acme/onboarding/CustomerNotFoundException.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 8,
+      "bytes": 214
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+      "module": "com/acme/onboarding/DuplicateCustomerException.java",
+      "language": "Java",
+      "roles": [
+        "source"
+      ],
+      "lines": 8,
+      "bytes": 211
+    }
+  ],
+  "skipped_files": [],
+  "scope_note": "Every included file is in scope for semantic analysis. Source capsules are only navigation aids; files must be covered by evidence, explicit inspection, or an explicit deferral reason."
+}

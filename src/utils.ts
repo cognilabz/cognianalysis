@@ -120,11 +120,12 @@ export function mergeDict(target: any, incoming: any): any {
   return target;
 }
 
-export function listFiles(root: string, maxFileSize: number): string[] {
+export function listFileInventory(root: string, maxFileSize: number): { included: string[], skipped: any[] } {
   const out: string[] = [];
+  const skipped: any[] = [];
   const ignored = new Set([
     '.git', '.hg', '.svn', 'node_modules', 'vendor', '.venv', 'venv', '__pycache__', '.mypy_cache', '.pytest_cache',
-    'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', 'coverage', '.next', '.turbo', '.cache'
+    'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', '.analysis-seed', 'coverage', '.next', '.turbo', '.cache'
   ]);
   function walk(dir: string): void {
     let entries: any[] = [];
@@ -138,12 +139,17 @@ export function listFiles(root: string, maxFileSize: number): string[] {
         try {
           const st = fs.statSync(full);
           if (st.size <= maxFileSize) out.push(full);
+          else skipped.push({ path: rel(full, root), bytes: st.size, reason: 'exceeds_max_file_size' });
         } catch {}
       }
     }
   }
   walk(root);
-  return out.sort();
+  return { included: out.sort(), skipped: skipped.sort((a, b) => String(a.path).localeCompare(String(b.path))) };
+}
+
+export function listFiles(root: string, maxFileSize: number): string[] {
+  return listFileInventory(root, maxFileSize).included;
 }
 
 export function gitCommit(root: string): string | null {
