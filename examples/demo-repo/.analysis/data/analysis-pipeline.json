@@ -2,8 +2,10 @@
   "pipeline_kind": "llm_driven_overview_detail_final_report",
   "semantic_authority": "llm",
   "deterministic_authority": "artifact_contracts_only",
-  "summary": "The CLI prepares context, materializes tasks from the LLM plan, validates artifact contracts/evidence and renders HTML. The LLM authors semantic extraction, detail-review priorities and the final decision document.",
+  "summary": "The CLI prepares context, materializes Tier 1 file-card tasks and detail tasks, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, semantic extraction, detail-review priorities and the final decision document.",
   "invariants": [
+    "The LLM authors a repository-specific analysis strategy before source tiering, building blocks, detail planning and the final report.",
+    "Every included file receives an LLM-authored Tier 1 file card before whole-repository synthesis.",
     "Whole-repository extraction building blocks are authored before detail-agent planning.",
     "The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.",
     "Focused detail-review tasks are mechanically materialized from the LLM-authored plan.",
@@ -28,9 +30,37 @@
       ]
     },
     {
+      "id": "llm_analysis_strategy",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "deterministic_context_preparation"
+      ],
+      "purpose": "Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before the fixed workbench tasks are used.",
+      "task_file": "llm_tasks/00-analysis-strategy.md",
+      "expected_output": "llm/analysis-strategy.json"
+    },
+    {
+      "id": "llm_source_file_tier_analysis",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "llm_analysis_strategy"
+      ],
+      "purpose": "Author Tier 1 file cards for every included source-inventory file before repository synthesis, so technical drilldown is not limited to E2E files.",
+      "tasks": ".analysis/source_tier_tasks/*.md",
+      "outputs": [
+        ".analysis/source_tiers/*.json"
+      ]
+    },
+    {
       "id": "llm_whole_repository_building_blocks",
       "controller": "llm",
       "semantic_authority": true,
+      "depends_on": [
+        "llm_analysis_strategy",
+        "llm_source_file_tier_analysis"
+      ],
       "purpose": "Author whole-repository extraction building blocks before final report synthesis.",
       "tasks": [
         {

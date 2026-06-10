@@ -1,7 +1,7 @@
 {
   "contract_kind": "source_inventory_accounting",
   "semantic_verdict_authority": "llm",
-  "accounting_status_meaning": "Whether each included source file is accounted for by validated evidence, LLM analysis_coverage.inspected_files, or LLM analysis_coverage.deferred_files with a reason. This is not a deterministic judgment that every file is deeply understood or well documented.",
+  "accounting_status_meaning": "Whether each included source file has validated evidence or appears in LLM analysis_coverage.inspected_files. Deferred files are visible but are not completed analysis and do not count as accounted.",
   "deterministic_contract_scope": "included inventory path reconciliation and structured analysis_coverage path/reason validation only",
   "status": "complete",
   "complete": true,
@@ -14,6 +14,7 @@
   "evidence_backed_files": 32,
   "explicitly_inspected_files": 32,
   "deferred_files": 0,
+  "deferred_not_analyzed_files": 0,
   "invalid_coverage_items": 0,
   "invalid_coverage_item_examples": [],
   "ignored_out_of_scope_coverage_items": 0,
@@ -62,7 +63,8 @@
   "uncovered": [],
   "skipped": [],
   "rules": [
-    "A file is accounted for when it has validated evidence, appears in analysis_coverage.inspected_files, or appears in analysis_coverage.deferred_files with a reason.",
+    "A file is accounted for when it has validated evidence or appears in analysis_coverage.inspected_files with a reason.",
+    "A file listed only in analysis_coverage.deferred_files is not completed analysis; it remains incomplete for whole-codebase readiness.",
     "analysis_coverage entries must be objects with exact included inventory paths and non-empty reasons; strings, globs and patterns are invalid, while exact paths outside the included source inventory are ignored for accounting.",
     "Source inventory accounting does not decide semantic completeness, documentation quality or management readiness.",
     "Source capsules and code-map rankings do not count as semantic understanding by themselves.",

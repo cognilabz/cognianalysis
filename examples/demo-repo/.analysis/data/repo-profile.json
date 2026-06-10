@@ -1,9 +1,9 @@
 {
   "repo_name": "demo-repo",
   "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-  "analyzed_at": "2026-06-09T20:48:59Z",
-  "commit": "2d36455096f3c607f2fef54e0ebf548c358e450f",
-  "repo_type": "library/application",
+  "analyzed_at": "2026-06-10T12:02:08Z",
+  "commit": "8c3460b410a0007d97dd974add18969b0f558391",
+  "repo_type": "source-inventory",
   "languages": {
     "Java": 261
   },
@@ -11,35 +11,12 @@
     "Java": 18
   },
   "frameworks": [],
-  "build_tools": [
-    "Maven"
-  ],
-  "package_managers": [
-    "Maven"
-  ],
-  "important_files": [
-    "README.md",
-    "docs/openapi.yml",
-    "pom.xml",
-    "src/main/resources/application.yml",
-    "src/main/resources/openapi.yaml"
-  ],
-  "contract_files": [
-    "docs/examples/customer-verification-soap.xml",
-    "docs/openapi.yml",
-    "src/main/resources/openapi.yaml",
-    "docs/soap-kyc.wsdl",
-    "src/main/resources/wsdl/customer-verification.wsdl",
-    "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-    "src/main/resources/wsdl/kyc-status.wsdl",
-    "src/main/resources/onboarding.wsdl"
-  ],
-  "example_files": [
-    "docs/examples/customer-verification-soap.xml",
-    "docs/api-examples.md",
-    "docs/business-examples.md"
-  ],
-  "test_files": 1,
+  "build_tools": [],
+  "package_managers": [],
+  "important_files": [],
+  "contract_files": [],
+  "example_files": [],
+  "test_files": 0,
   "source_files": 18,
   "total_files": 32,
   "total_lines": 854,

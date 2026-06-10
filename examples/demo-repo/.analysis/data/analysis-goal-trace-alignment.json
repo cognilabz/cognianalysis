@@ -111,6 +111,14 @@
       "intent": "Build a repository-wide overview and relationship map before deep slices."
     },
     {
+      "ref": "required_report_behaviors.tiered_whole_codebase_analysis",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "tiered_whole_codebase_analysis",
+      "label": "Tiered whole-codebase analysis",
+      "intent": "Analyze every included file at least at Tier 1 before selecting Tier 2-4 technical drilldown, behavior, risk and refactoring depth."
+    },
+    {
       "ref": "required_report_behaviors.e2e_relationships",
       "group": "required_report_behaviors",
       "type": "report_behavior",
@@ -257,6 +265,14 @@
       "intent": "Build a repository-wide overview and relationship map before deep slices."
     },
     {
+      "ref": "required_report_behaviors.tiered_whole_codebase_analysis",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "tiered_whole_codebase_analysis",
+      "label": "Tiered whole-codebase analysis",
+      "intent": "Analyze every included file at least at Tier 1 before selecting Tier 2-4 technical drilldown, behavior, risk and refactoring depth."
+    },
+    {
       "ref": "required_report_behaviors.e2e_relationships",
       "group": "required_report_behaviors",
       "type": "report_behavior",
@@ -306,11 +322,13 @@
       "status": "covered",
       "goal_contract_refs": [
         "required_levels.reverse_engineering_documentation",
-        "required_report_behaviors.whole_repo_first"
+        "required_report_behaviors.whole_repo_first",
+        "required_report_behaviors.tiered_whole_codebase_analysis"
       ],
       "valid_goal_contract_refs": [
         "required_levels.reverse_engineering_documentation",
-        "required_report_behaviors.whole_repo_first"
+        "required_report_behaviors.whole_repo_first",
+        "required_report_behaviors.tiered_whole_codebase_analysis"
       ],
       "unknown_goal_contract_refs": []
     },

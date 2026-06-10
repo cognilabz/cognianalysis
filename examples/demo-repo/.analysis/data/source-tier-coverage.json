@@ -1,0 +1,71 @@
+{
+  "contract_kind": "tiered_whole_codebase_file_analysis",
+  "semantic_verdict_authority": "llm",
+  "deterministic_contract_scope": "exact source-inventory path reconciliation, required Tier 1 card fields, valid evidence presence, planned task execution and duplicate detection only",
+  "tier_model": {
+    "model_kind": "tiered_whole_codebase_analysis",
+    "version": "source-tier-v1",
+    "semantic_authority": "llm",
+    "deterministic_authority": "task_materialization_and_path_contract_only",
+    "purpose": "Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 LLM-authored file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.",
+    "tiers": [
+      {
+        "id": "tier0_inventory",
+        "depth": 0,
+        "owner": "cli",
+        "meaning": "Deterministic inventory only: path, size, language/format and navigation partition. This is never semantic understanding."
+      },
+      {
+        "id": "tier1_file_card",
+        "depth": 1,
+        "owner": "llm",
+        "required_for_every_included_file": true,
+        "meaning": "A short LLM-authored per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence."
+      },
+      {
+        "id": "tier2_module_or_source_family",
+        "depth": 2,
+        "owner": "llm",
+        "meaning": "Module/source-family synthesis built from Tier 1 cards and direct source inspection: responsibilities, internal relationships, technical drilldown and uncertainty."
+      },
+      {
+        "id": "tier3_behavior_contract_flow",
+        "depth": 3,
+        "owner": "llm",
+        "meaning": "Deep behavior review for important flows, interfaces, contracts, state changes, examples, failure paths and side effects."
+      },
+      {
+        "id": "tier4_decision_transformation",
+        "depth": 4,
+        "owner": "llm",
+        "meaning": "Decision-level findings, risks, process improvements, refactoring and target-architecture options."
+      }
+    ],
+    "completion_rule": "Final readiness requires Tier 1 file-card coverage for every included source-inventory file. Deferred files are not completed analysis; they remain gaps until a Tier 1 card exists.",
+    "llm_rules": [
+      "Do not summarize files from path names alone.",
+      "Open each listed file or use an already-opened exact source excerpt before authoring its Tier 1 card.",
+      "Use unknown/none when business relevance cannot be proven.",
+      "Keep evidence exact with file:line references.",
+      "Use Tier 1 to prevent blind spots; use Tier 2-4 to explain interactions and decision implications."
+    ]
+  },
+  "status": "complete",
+  "complete": true,
+  "tier1_required_for_every_file": true,
+  "total_files": 32,
+  "tier1_file_cards": 32,
+  "missing_tier1_files": 0,
+  "invalid_file_cards": 0,
+  "duplicate_file_cards": 0,
+  "blocked_tasks": 0,
+  "planned_task_count": 1,
+  "executed_task_count": 1,
+  "missing_task_outputs": [],
+  "coverage_percent": 100,
+  "missing_file_examples": [],
+  "invalid_file_card_examples": [],
+  "duplicate_file_card_examples": [],
+  "blocked_task_examples": [],
+  "summary": "Every included source-inventory file has a valid LLM-authored Tier 1 file card."
+}

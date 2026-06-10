@@ -2,16 +2,19 @@ export function analysisPipelineArtifact(tasks: any[] = []): any {
   const byOutput = new Map(tasks.map((task: any) => [String(task.expected_output || ''), task]));
   const wholeRepoTasks = tasks.filter((task: any) => {
     const output = String(task.expected_output || '');
-    return output.startsWith('llm/') && output !== 'llm/detail-agent-plan.json' && output !== 'llm/analysis-document.json';
+    return output.startsWith('llm/') && output !== 'llm/analysis-strategy.json' && output !== 'llm/detail-agent-plan.json' && output !== 'llm/analysis-document.json';
   });
+  const strategyTask = byOutput.get('llm/analysis-strategy.json') || null;
   const detailPlanTask = byOutput.get('llm/detail-agent-plan.json') || null;
   const finalReportTask = byOutput.get('llm/analysis-document.json') || null;
   return {
     pipeline_kind: 'llm_driven_overview_detail_final_report',
     semantic_authority: 'llm',
     deterministic_authority: 'artifact_contracts_only',
-    summary: 'The CLI prepares context, materializes tasks from the LLM plan, validates artifact contracts/evidence and renders HTML. The LLM authors semantic extraction, detail-review priorities and the final decision document.',
+    summary: 'The CLI prepares context, materializes Tier 1 file-card tasks and detail tasks, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, semantic extraction, detail-review priorities and the final decision document.',
     invariants: [
+      'The LLM authors a repository-specific analysis strategy before source tiering, building blocks, detail planning and the final report.',
+      'Every included file receives an LLM-authored Tier 1 file card before whole-repository synthesis.',
       'Whole-repository extraction building blocks are authored before detail-agent planning.',
       'The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.',
       'Focused detail-review tasks are mechanically materialized from the LLM-authored plan.',
@@ -36,9 +39,28 @@ export function analysisPipelineArtifact(tasks: any[] = []): any {
         ]
       },
       {
+        id: 'llm_analysis_strategy',
+        controller: 'llm',
+        semantic_authority: true,
+        depends_on: ['deterministic_context_preparation'],
+        purpose: 'Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before the fixed workbench tasks are used.',
+        task_file: strategyTask?.task_file || 'llm_tasks/00-analysis-strategy.md',
+        expected_output: 'llm/analysis-strategy.json'
+      },
+      {
+        id: 'llm_source_file_tier_analysis',
+        controller: 'llm',
+        semantic_authority: true,
+        depends_on: ['llm_analysis_strategy'],
+        purpose: 'Author Tier 1 file cards for every included source-inventory file before repository synthesis, so technical drilldown is not limited to E2E files.',
+        tasks: '.analysis/source_tier_tasks/*.md',
+        outputs: ['.analysis/source_tiers/*.json']
+      },
+      {
         id: 'llm_whole_repository_building_blocks',
         controller: 'llm',
         semantic_authority: true,
+        depends_on: ['llm_analysis_strategy', 'llm_source_file_tier_analysis'],
         purpose: 'Author whole-repository extraction building blocks before final report synthesis.',
         tasks: wholeRepoTasks.map((task: any) => ({
           title: task.title,
@@ -98,6 +120,8 @@ export function computeAnalysisPipelineContract(bundle: any): any {
   const stageIds = new Set(stages.map((stage: any) => String(stage.id || '')));
   const requiredStageIds = [
     'deterministic_context_preparation',
+    'llm_analysis_strategy',
+    'llm_source_file_tier_analysis',
     'llm_whole_repository_building_blocks',
     'llm_detail_agent_plan',
     'deterministic_detail_task_materialization',
@@ -113,9 +137,18 @@ export function computeAnalysisPipelineContract(bundle: any): any {
     .filter((stage: any) => String(stage.id || '').startsWith('deterministic_') && stage.semantic_authority !== false)
     .map((stage: any) => stage.id);
   const finalStage = stages.find((stage: any) => stage.id === 'llm_final_analysis_document') || {};
+  const sourceTierStage = stages.find((stage: any) => stage.id === 'llm_source_file_tier_analysis') || {};
+  const wholeRepoStage = stages.find((stage: any) => stage.id === 'llm_whole_repository_building_blocks') || {};
   const finalDepends = new Set((finalStage.depends_on || []).map(String));
+  const sourceTierDepends = new Set((sourceTierStage.depends_on || []).map(String));
+  const wholeRepoDepends = new Set((wholeRepoStage.depends_on || []).map(String));
+  const sourceTierDependsOnStrategy = sourceTierDepends.has('llm_analysis_strategy');
+  const wholeRepoDependsOnStrategy = wholeRepoDepends.has('llm_analysis_strategy');
+  const wholeRepoDependsOnSourceTiers = wholeRepoDepends.has('llm_source_file_tier_analysis');
+  const strategyReady = bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact === true && bundle.llm_analysis_strategy?.strategy_present === true;
   const finalDependsOnBuildingBlocks = finalDepends.has('llm_whole_repository_building_blocks');
   const finalDependsOnDetailReviews = finalDepends.has('llm_detail_reviews');
+  const sourceTierComplete = bundle.source_tier_coverage?.complete === true;
   const preFinalComplete = bundle.analysis_document_prerequisite_coverage?.complete === true;
   const detailReviewsComplete = bundle.source_family_detail_review_coverage?.complete === true;
   const finalAfterDetails = bundle.report_mode?.final_after_detail_reviews === true;
@@ -124,6 +157,11 @@ export function computeAnalysisPipelineContract(bundle: any): any {
     ...missingStages.map(id => `stage:${id}`),
     ...wrongAuthority.map(id => `llm_authority:${id}`),
     ...wrongDeterministicAuthority.map(id => `deterministic_authority:${id}`),
+    ...(!strategyReady ? ['llm_analysis_strategy_complete'] : []),
+    ...(!sourceTierDependsOnStrategy ? ['source_tier_depends_on_analysis_strategy'] : []),
+    ...(!wholeRepoDependsOnStrategy ? ['whole_repo_depends_on_analysis_strategy'] : []),
+    ...(!wholeRepoDependsOnSourceTiers ? ['whole_repo_depends_on_source_file_tiers'] : []),
+    ...(!sourceTierComplete ? ['source_file_tier_analysis_complete'] : []),
     ...(!finalDependsOnBuildingBlocks ? ['final_depends_on_whole_repo_building_blocks'] : []),
     ...(!finalDependsOnDetailReviews ? ['final_depends_on_detail_reviews'] : []),
     ...(!preFinalComplete ? ['pre_final_building_blocks_complete'] : []),
@@ -139,6 +177,8 @@ export function computeAnalysisPipelineContract(bundle: any): any {
     missing,
     stage_count: stages.length,
     required_stage_count: requiredStageIds.length,
+    analysis_strategy_complete: strategyReady,
+    source_file_tier_analysis_complete: sourceTierComplete,
     pre_final_building_blocks_complete: preFinalComplete,
     planned_detail_reviews_complete: detailReviewsComplete,
     final_after_detail_reviews: finalAfterDetails,

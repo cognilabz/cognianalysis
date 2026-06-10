@@ -12,276 +12,66 @@ const LANGUAGE_BY_EXT = {
     '.tf': 'Terraform', '.toml': 'TOML', '.gradle': 'Gradle', '.properties': 'Properties', '.http': 'HTTP Examples'
 };
 const SOURCE_EXTS = new Set(['.java', '.kt', '.kts', '.scala', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.cs', '.rb', '.php', '.rs', '.swift', '.c', '.h', '.cpp', '.hpp', '.sql']);
-const SPEC_EXTS = new Set(['.md', '.rst', '.yaml', '.yml', '.json', '.xml', '.wsdl', '.xsd', '.graphql', '.gql', '.http', '.proto']);
-const IMPORTANT_NAMES = new Set([
-    'readme.md', 'readme.rst', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'package.json', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json',
-    'pyproject.toml', 'requirements.txt', 'go.mod', 'cargo.toml', 'dockerfile', 'docker-compose.yml', 'compose.yml', 'helmfile.yaml', 'chart.yaml',
-    'openapi.yaml', 'openapi.yml', 'swagger.yaml', 'swagger.yml', 'swagger.json', 'asyncapi.yaml', 'asyncapi.yml', 'postman.json', 'application.yml', 'application.yaml',
-    'agENTS.md'.toLowerCase(), 'claude.md'
-]);
-const MODULE_BOUNDARY_MANIFESTS = new Set([
-    'pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'package.json', 'pyproject.toml', 'requirements.txt', 'go.mod', 'cargo.toml'
-]);
-const SYMBOL_PATTERNS = [
-    { type: 'class', re: /\b(?:class|interface|enum|record)\s+([A-Z][A-Za-z0-9_]*)/g },
-    { type: 'function', re: /\b(?:function|def|func)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g },
-    { type: 'method', re: /\b(?:public|private|protected|static|async|export|final|suspend|override|internal|virtual|sealed|partial|readonly|const|let|var)\s+[A-Za-z0-9_<>,\[\]?:|&\s]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g },
-    { type: 'arrow_function', re: /\b(?:const|let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>/g },
-    { type: 'schema', re: /\b(?:type|interface|input|enum)\s+([A-Z][A-Za-z0-9_]*)\b/g },
-    { type: 'xml_element', re: /<(?:xs:|xsd:)?(?:element|complexType|message|operation)\b[^>]*(?:name|id)=["']([^"']+)["']/g }
-];
-const IMPORT_PATTERNS = [
-    /\bimport\s+(?:static\s+)?([a-zA-Z0-9_.*]+(?:\.[a-zA-Z0-9_.*]+)+)\s*;/g,
-    /\bfrom\s+['"]([^'"]+)['"]\s+import\b/g,
-    /\bimport\s+(?:.*?\s+from\s+)?['"]([^'"]+)['"]/g,
-    /\brequire\(['"]([^'"]+)['"]\)/g,
-    /\busing\s+([A-Za-z0-9_.]+)\s*;/g,
-    /\bpackage\s+([A-Za-z0-9_.]+)\s*;/g
-];
-function lineOf(text, index) {
-    return text.slice(0, index).split(/\r?\n/).length;
-}
-function pushSignal(out, root, file, text, type, label, index, confidence = 'hint', extra = {}) {
-    out.push({ type, label, path: (0, utils_1.rel)(file, root), line: lineOf(text, index), confidence, ...extra });
-}
-function detectSignals(file, root, text) {
-    const out = [];
-    const r = (0, utils_1.rel)(file, root).toLowerCase();
-    const ext = utils_1.Path.extname(file).toLowerCase();
-    if ((ext === '.yaml' || ext === '.yml' || ext === '.json') && (r.includes('openapi') || r.includes('swagger'))) {
-        pushSignal(out, root, file, text, 'api_contract_candidate', 'OpenAPI/Swagger artifact candidate', 0, 'navigation');
-    }
-    if (ext === '.wsdl' || ext === '.xsd') {
-        pushSignal(out, root, file, text, 'soap_contract_candidate', 'SOAP/WSDL/XSD artifact candidate', 0, 'navigation');
-    }
-    if (ext === '.graphql' || ext === '.gql') {
-        pushSignal(out, root, file, text, 'graphql_contract_candidate', 'GraphQL schema artifact candidate', 0, 'navigation');
-    }
-    if (ext === '.http' || r.includes('postman')) {
-        pushSignal(out, root, file, text, 'request_response_example_candidate', 'Request/response example artifact candidate', 0, 'navigation');
-    }
-    if (ext === '.md' || ext === '.rst') {
-        pushSignal(out, root, file, text, 'documentation_candidate', 'Documentation artifact candidate', 0, 'navigation');
-    }
-    return out.slice(0, 24);
-}
-function navigationTagsFor(relativePath, text) {
-    const p = relativePath.toLowerCase();
-    const roles = new Set();
-    const ext = utils_1.Path.extname(relativePath).toLowerCase();
-    const name = utils_1.Path.basename(p);
-    if (p.includes('/test/') || p.includes('/tests/') || p.includes('__tests__') || name.endsWith('test' + ext) || name.endsWith('spec' + ext) || name.endsWith('.test' + ext) || name.endsWith('.spec' + ext))
-        roles.add('test');
-    if (p.startsWith('docs/') || p.includes('/docs/') || ext === '.md' || ext === '.rst')
-        roles.add('documentation');
-    if (p.includes('openapi') || p.includes('swagger'))
-        roles.add('api_contract');
-    if (p.includes('soap') || ext === '.wsdl' || ext === '.xsd')
-        roles.add('soap_contract');
-    if (p.includes('example') || p.includes('sample') || ext === '.http' || p.includes('postman'))
-        roles.add('example');
-    if (SOURCE_EXTS.has(ext))
-        roles.add('source');
-    if (['.yaml', '.yml', '.json', '.toml', '.properties', '.env'].includes(ext) || name.includes('config') || name === 'dockerfile' || name.includes('compose'))
-        roles.add('config');
-    if (p.includes('.github/workflows/') || p.includes('gitlab-ci') || p.includes('jenkinsfile') || p.includes('azure-pipelines') || p.includes('circleci') || p.includes('buildkite'))
-        roles.add('ci_cd');
-    if (ext === '.tf' || p.includes('terraform') || p.includes('helm') || p.includes('k8s') || p.includes('kubernetes'))
-        roles.add('infrastructure');
-    if (['package.json', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'pyproject.toml', 'go.mod', 'cargo.toml'].includes(name) || name.endsWith('.csproj'))
-        roles.add('build');
-    return Array.from(roles).sort();
-}
-function detectSymbols(file, root, text) {
-    const out = [];
-    for (const p of SYMBOL_PATTERNS) {
-        let m;
-        let guard = 0;
-        p.re.lastIndex = 0;
-        while ((m = p.re.exec(text)) && guard < 90) {
-            out.push({ type: p.type, name: m[1], path: (0, utils_1.rel)(file, root), line: lineOf(text, m.index) });
-            guard++;
-        }
-    }
-    return out.slice(0, 180);
-}
-function detectImports(text) {
-    const out = [];
-    for (const re of IMPORT_PATTERNS) {
-        let m;
-        let guard = 0;
-        re.lastIndex = 0;
-        while ((m = re.exec(text)) && guard < 90) {
-            const v = String(m[1] || '').trim();
-            if (v && !out.includes(v))
-                out.push(v);
-            guard++;
-        }
-    }
-    return out.slice(0, 80);
-}
-function isProjectBoundaryManifest(relativePath) {
-    const name = utils_1.Path.basename(relativePath).toLowerCase();
-    return MODULE_BOUNDARY_MANIFESTS.has(name) || name.endsWith('.csproj') || name.endsWith('.fsproj') || name.endsWith('.vbproj') || name.endsWith('.sln');
-}
-function boundaryDir(relativePath) {
-    const dir = utils_1.Path.dirname(relativePath).replace(/\\/g, '/');
-    return dir === '.' ? '' : dir;
-}
-function buildModuleBoundaries(root, files) {
-    const sources = {};
-    for (const file of files) {
-        const relativePath = (0, utils_1.rel)(file, root);
-        if (!isProjectBoundaryManifest(relativePath))
-            continue;
-        const dir = boundaryDir(relativePath);
-        sources[dir] || (sources[dir] = []);
-        sources[dir].push(relativePath);
-    }
-    const boundaries = Object.keys(sources)
-        .filter(Boolean)
-        .sort((a, b) => b.split('/').length - a.split('/').length || b.length - a.length || a.localeCompare(b));
-    return { boundaries, sources };
-}
-function pathWithinBoundary(relativePath, boundary) {
-    return relativePath === boundary || relativePath.startsWith(boundary + '/');
-}
-function moduleKey(relativePath, boundaries) {
+const TEXT_EXTS = new Set(['.md', '.rst', '.txt', '.adoc']);
+const STRUCTURED_EXTS = new Set(['.yaml', '.yml', '.json', '.xml', '.wsdl', '.xsd', '.graphql', '.gql', '.http', '.proto', '.toml', '.properties', '.tf', '.gradle']);
+function moduleKey(relativePath) {
     const parts = relativePath.split('/').filter(Boolean);
     if (!parts.length)
         return '.';
     if (parts.length === 1)
         return parts[0];
-    for (const boundary of boundaries) {
-        if (pathWithinBoundary(relativePath, boundary))
-            return boundary;
-    }
     const dirs = parts.slice(0, -1);
     if (!dirs.length)
         return parts[0];
     return dirs.slice(0, Math.min(2, dirs.length)).join('/');
 }
-function scoreNavigationFile(relativePath, navigationTags, symbols, signals, lines) {
-    const weights = {
-        api_contract: 75, soap_contract: 75, example: 65, source: 42,
-        documentation: 34, test: 30, config: 18, ci_cd: 14, infrastructure: 14, build: 10
-    };
+function fileFormatTags(relativePath) {
+    const ext = utils_1.Path.extname(relativePath).toLowerCase();
+    const tags = new Set();
+    if (SOURCE_EXTS.has(ext))
+        tags.add('source_file');
+    if (TEXT_EXTS.has(ext))
+        tags.add('text_document');
+    if (STRUCTURED_EXTS.has(ext))
+        tags.add('structured_file');
+    return Array.from(tags).sort();
+}
+function scoreInventoryFile(tags, lines) {
     let score = 0;
-    for (const role of navigationTags)
-        score += weights[role] || 5;
-    score += Math.min(90, signals.length * 9);
-    score += Math.min(50, symbols.length * 2);
-    const low = relativePath.toLowerCase();
-    if (IMPORTANT_NAMES.has(utils_1.Path.basename(low)) || IMPORTANT_NAMES.has(low))
-        score += 35;
+    if (tags.includes('source_file'))
+        score += 20;
+    if (tags.includes('structured_file'))
+        score += 18;
+    if (tags.includes('text_document'))
+        score += 16;
     if (lines >= 20 && lines <= 900)
-        score += 10;
+        score += 8;
     if (lines > 2000)
-        score -= 12;
+        score -= 8;
     return score;
 }
-function detectBuildContext(root, files) {
-    const names = new Set(files.map(f => (0, utils_1.rel)(f, root).toLowerCase()));
-    const frameworks = new Set();
-    const buildTools = new Set();
-    const packageManagers = new Set();
-    const has = (n) => names.has(n.toLowerCase()) || Array.from(names).some(x => x.endsWith('/' + n.toLowerCase()));
-    if (has('package.json')) {
-        buildTools.add('npm scripts');
-        packageManagers.add('npm/yarn/pnpm');
-        for (const file of files.filter(f => utils_1.Path.basename(f).toLowerCase() === 'package.json').slice(0, 8)) {
-            const pkg = (0, utils_1.readText)(file, 200000).toLowerCase();
-            if (pkg.includes('react'))
-                frameworks.add('React');
-            if (pkg.includes('next'))
-                frameworks.add('Next.js');
-            if (pkg.includes('express'))
-                frameworks.add('Express');
-            if (pkg.includes('fastify'))
-                frameworks.add('Fastify');
-            if (pkg.includes('@nestjs'))
-                frameworks.add('NestJS');
-            if (pkg.includes('angular'))
-                frameworks.add('Angular');
-            if (pkg.includes('vue'))
-                frameworks.add('Vue');
-            if (pkg.includes('svelte'))
-                frameworks.add('Svelte');
-        }
-    }
-    if (has('pom.xml')) {
-        buildTools.add('Maven');
-        packageManagers.add('Maven');
-    }
-    if (Array.from(names).some(n => n.endsWith('build.gradle') || n.endsWith('build.gradle.kts'))) {
-        buildTools.add('Gradle');
-        packageManagers.add('Gradle');
-    }
-    if (has('pyproject.toml') || has('requirements.txt')) {
-        buildTools.add('Python packaging');
-        packageManagers.add('pip/poetry');
-    }
-    if (has('go.mod')) {
-        buildTools.add('Go modules');
-        packageManagers.add('go modules');
-    }
-    if (has('cargo.toml')) {
-        buildTools.add('Cargo');
-        packageManagers.add('Cargo');
-    }
-    if (Array.from(names).some(n => n.endsWith('.csproj') || n.endsWith('.sln'))) {
-        buildTools.add('.NET');
-        packageManagers.add('NuGet');
-    }
-    return { frameworks: Array.from(frameworks).sort(), buildTools: Array.from(buildTools).sort(), packageManagers: Array.from(packageManagers).sort() };
+function inventoryBuildContext() {
+    return { frameworks: [], buildTools: [], packageManagers: [] };
 }
 function artifactNavigationCandidates(files, limit = 140) {
-    const docs = [];
-    for (const item of files) {
-        const low = item.path.toLowerCase();
-        const roles = new Set(item.navigation_tags || item.roles || []);
-        const signalTypes = new Set((item.signals || []).map((s) => s.type));
-        const isDoc = roles.has('documentation') || roles.has('api_contract') || roles.has('soap_contract') || roles.has('example') || roles.has('test') || SPEC_EXTS.has(item.extension);
-        const isRelevant = ['api_contract_candidate', 'soap_contract_candidate', 'graphql_contract_candidate', 'request_response_example_candidate', 'documentation_candidate'].some(x => signalTypes.has(x));
-        if (!isDoc && !isRelevant)
-            continue;
-        let score = item.navigation_score || item.score || 0;
-        if (roles.has('api_contract'))
-            score += 130;
-        if (roles.has('soap_contract'))
-            score += 130;
-        if (roles.has('example'))
-            score += 80;
-        if (roles.has('documentation'))
-            score += 45;
-        if (isRelevant)
-            score += 35;
-        docs.push({
-            path: item.path,
-            language: item.language,
-            navigation_tags: item.navigation_tags || item.roles,
-            roles: item.roles,
-            signals: item.signals.slice(0, 12),
-            navigation_score: score,
-            score,
-            score_meaning: 'Non-authoritative navigation ranking for LLM attention only.',
-            lines: item.lines
-        });
-    }
-    return docs.sort((a, b) => b.navigation_score - a.navigation_score).slice(0, limit);
+    return files
+        .filter(item => (item.navigation_tags || []).length > 0 || item.lines <= 220)
+        .map(item => ({
+        path: item.path,
+        language: item.language,
+        navigation_tags: item.navigation_tags || item.roles,
+        roles: item.roles,
+        signals: [],
+        navigation_score: item.navigation_score,
+        score: item.score,
+        score_meaning: 'Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.',
+        lines: item.lines
+    }))
+        .sort((a, b) => (b.navigation_score || 0) - (a.navigation_score || 0) || a.path.localeCompare(b.path))
+        .slice(0, limit);
 }
-function inferRepoType(files, frameworks) {
-    const roles = {};
-    for (const f of files)
-        for (const r of (f.navigation_tags || f.roles))
-            roles[r] = (roles[r] || 0) + 1;
-    if ((roles.infrastructure || 0) > 0 && (roles.source || 0) === 0)
-        return 'infrastructure';
-    if ((roles.documentation || 0) > (roles.source || 0) && (roles.documentation || 0) > 5)
-        return 'documentation';
-    if (new Set(files.map(f => f.module)).size > 12 && files.length > 200)
-        return 'monorepo/multi-module';
-    return 'library/application';
+function inventoryRepoType() {
+    return 'source-inventory';
 }
 function buildRepoMap(root, opts = {}) {
     const absRoot = utils_1.Path.resolve(root);
@@ -290,12 +80,9 @@ function buildRepoMap(root, opts = {}) {
     const capsuleChars = opts.capsuleChars ?? 10000;
     const inventory = (0, utils_1.listFileInventory)(absRoot, maxFileSize);
     const files = inventory.included;
-    const moduleBoundaries = buildModuleBoundaries(absRoot, files);
     const languageLoc = {};
     const languageFiles = {};
     const fileItems = [];
-    const allSignals = [];
-    const allSymbols = [];
     let totalLines = 0;
     for (const file of files) {
         const relativePath = (0, utils_1.rel)(file, absRoot);
@@ -307,45 +94,33 @@ function buildRepoMap(root, opts = {}) {
             languageLoc[language] = (languageLoc[language] || 0) + lines;
             languageFiles[language] = (languageFiles[language] || 0) + 1;
         }
-        const text = (0, utils_1.readText)(file, 1200000);
-        const sample = text.slice(0, 240000);
-        const navigationTags = navigationTagsFor(relativePath, sample);
-        const symbols = detectSymbols(file, absRoot, sample);
-        const signals = detectSignals(file, absRoot, sample);
-        const imports = detectImports(sample);
-        allSignals.push(...signals);
-        allSymbols.push(...symbols);
-        const navigationScore = scoreNavigationFile(relativePath, navigationTags, symbols, signals, lines);
+        const navigationTags = fileFormatTags(relativePath);
+        const navigationScore = scoreInventoryFile(navigationTags, lines);
         const item = {
             path: relativePath,
             language,
             extension: ext,
             lines,
             bytes: utils_1.FS.statSync(file).size,
-            module: moduleKey(relativePath, moduleBoundaries.boundaries),
+            module: moduleKey(relativePath),
             navigation_tags: navigationTags,
             roles: navigationTags,
-            symbol_count: symbols.length,
-            signal_count: signals.length,
-            symbols: symbols.slice(0, 45),
-            signals: signals.slice(0, 36),
-            imports: imports.slice(0, 40),
+            symbol_count: 0,
+            signal_count: 0,
+            symbols: [],
+            signals: [],
+            imports: [],
             navigation_score: navigationScore,
             score: navigationScore
         };
         fileItems.push(item);
     }
-    const { frameworks, buildTools, packageManagers } = detectBuildContext(absRoot, files);
-    const rankedFiles = fileItems.sort((a, b) => ((b.navigation_score || b.score) - (a.navigation_score || a.score)) || (b.signal_count - a.signal_count));
+    const { frameworks, buildTools, packageManagers } = inventoryBuildContext();
+    const rankedFiles = fileItems.sort((a, b) => ((b.navigation_score || b.score) - (a.navigation_score || a.score)) || a.path.localeCompare(b.path));
     const sourceFiles = fileItems.filter(f => SOURCE_EXTS.has(f.extension));
-    const testFiles = fileItems.filter(f => (f.navigation_tags || f.roles).includes('test'));
-    const contractFiles = rankedFiles.filter(f => (f.navigation_tags || f.roles).includes('api_contract') || (f.navigation_tags || f.roles).includes('soap_contract') || ['.wsdl', '.xsd', '.proto', '.graphql', '.gql'].includes(f.extension) || f.signals.some((s) => ['api_contract_candidate', 'soap_contract_candidate', 'graphql_contract_candidate'].includes(s.type))).map(f => f.path).slice(0, 100);
-    const exampleFiles = rankedFiles.filter(f => (f.navigation_tags || f.roles).includes('example') || f.signals.some((s) => s.type === 'request_response_example_candidate')).map(f => f.path).slice(0, 100);
-    const importantFiles = files.map(f => (0, utils_1.rel)(f, absRoot)).filter(r => IMPORTANT_NAMES.has(utils_1.Path.basename(r).toLowerCase()) || IMPORTANT_NAMES.has(r.toLowerCase())).slice(0, 100);
     const artifactCandidates = artifactNavigationCandidates(rankedFiles);
     const moduleMap = {};
     for (const item of fileItems) {
-        const boundarySources = moduleBoundaries.sources[item.module] || [];
         const mod = moduleMap[item.module] || {
             id: (0, utils_1.cleanId)(item.module),
             name: item.module,
@@ -356,8 +131,8 @@ function buildRepoMap(root, opts = {}) {
             languages: {},
             signals: {},
             top_files: [],
-            boundary_source: boundarySources.length ? 'project_manifest' : 'path_partition',
-            boundary_evidence: boundarySources
+            boundary_source: 'path_partition',
+            boundary_evidence: []
         };
         mod.files += 1;
         mod.lines += item.lines;
@@ -366,16 +141,14 @@ function buildRepoMap(root, opts = {}) {
         mod.languages[item.language] = (mod.languages[item.language] || 0) + item.lines;
         for (const r of (item.navigation_tags || item.roles))
             mod.roles[r] = (mod.roles[r] || 0) + 1;
-        for (const s of item.signals)
-            mod.signals[s.type] = (mod.signals[s.type] || 0) + 1;
-        mod.top_files.push({ path: item.path, navigation_score: item.navigation_score, score: item.score, navigation_tags: item.navigation_tags || item.roles, roles: item.roles, signals: item.signal_count, symbols: item.symbol_count });
+        mod.top_files.push({ path: item.path, navigation_score: item.navigation_score, score: item.score, navigation_tags: item.navigation_tags || item.roles, roles: item.roles, signals: 0, symbols: 0 });
         moduleMap[item.module] = mod;
     }
     const modules = Object.values(moduleMap).map((m) => ({
         ...m,
         navigation_tags: m.roles,
-        navigation_signals: m.signals,
-        top_files: m.top_files.sort((a, b) => (b.navigation_score || b.score) - (a.navigation_score || a.score)).slice(0, 10)
+        navigation_signals: {},
+        top_files: m.top_files.sort((a, b) => (b.navigation_score || b.score) - (a.navigation_score || a.score) || a.path.localeCompare(b.path)).slice(0, 10)
     })).sort((a, b) => (b.source_files - a.source_files) || (b.lines - a.lines));
     const capsules = rankedFiles.slice(0, capsuleLimit).map(item => {
         const file = utils_1.Path.join(absRoot, item.path);
@@ -390,24 +163,24 @@ function buildRepoMap(root, opts = {}) {
             score: item.score,
             language: item.language,
             lines: item.lines,
-            symbols: item.symbols.slice(0, 14),
-            signals: item.signals.slice(0, 14),
+            symbols: [],
+            signals: [],
             content_excerpt: excerpt,
             truncated: excerpt.length >= capsuleChars
         };
     });
     const profile = {
-        repo_name: utils_1.Path.basename(absRoot), root: absRoot, analyzed_at: (0, utils_1.utcNow)(), commit: (0, utils_1.gitCommit)(absRoot), repo_type: inferRepoType(fileItems, frameworks),
+        repo_name: utils_1.Path.basename(absRoot), root: absRoot, analyzed_at: (0, utils_1.utcNow)(), commit: (0, utils_1.gitCommit)(absRoot), repo_type: inventoryRepoType(),
         languages: sortRecord(languageLoc), language_files: sortRecord(languageFiles), frameworks, build_tools: buildTools, package_managers: packageManagers,
-        important_files: importantFiles.sort(), contract_files: contractFiles, example_files: exampleFiles, test_files: testFiles.length, source_files: sourceFiles.length,
+        important_files: [], contract_files: [], example_files: [], test_files: 0, source_files: sourceFiles.length,
         total_files: fileItems.length, total_lines: totalLines, skipped_files: inventory.skipped.length
     };
     return {
         profile,
         modules,
         files: rankedFiles,
-        signals: allSignals.sort((a, b) => String(a.path).localeCompare(String(b.path)) || (a.line || 0) - (b.line || 0)).slice(0, 3000),
-        symbols: allSymbols.slice(0, 5000),
+        signals: [],
+        symbols: [],
         glossary_terms: [],
         capsules,
         artifact_navigation_candidates: artifactCandidates,
@@ -415,18 +188,24 @@ function buildRepoMap(root, opts = {}) {
         skipped_files: inventory.skipped,
         navigation_policy: {
             semantic_authority: false,
-            score_meaning: 'Non-authoritative navigation ranking for LLM attention only.',
-            tag_meaning: 'Syntax and path-derived navigation tags only; not business facts, final interfaces, flows, entrypoints or quality findings.',
-            artifact_candidate_meaning: 'Candidate files for LLM inspection, not proof that a contract/example/behavior exists.'
+            score_meaning: 'Inventory-only ranking for LLM attention. It uses file format and file size only, not path conventions, manifest filenames or semantic parsing.',
+            tag_meaning: 'File-format and inventory tags only; not imports, symbols, frameworks, contracts, examples, entrypoints, tests, quality findings or business facts.',
+            artifact_candidate_meaning: 'Candidate files for LLM inspection, selected from inventory metadata only. The LLM must parse and decide whether any file is a contract, example, interface, flow or business artifact.'
         },
         extraction_policy: {
-            mode: 'llm_first',
+            mode: 'llm_first_inventory_only',
             signals_are_authoritative: false,
             navigation_scores_are_authoritative: false,
             navigation_tags_are_authoritative: false,
             artifact_candidates_are_authoritative: false,
+            deterministic_parsing_disabled: true,
+            deterministic_import_parsing: false,
+            deterministic_symbol_parsing: false,
+            deterministic_framework_detection: false,
+            deterministic_build_tool_detection: false,
+            deterministic_contract_detection: false,
             implementation_language: 'TypeScript',
-            description: 'The CLI creates a broad code map, documentation candidates and context capsules. Codex/LLM performs semantic extraction of business logic, contracts, examples, requests, responses and flows.'
+            description: 'The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. Codex/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence.'
         }
     };
 }

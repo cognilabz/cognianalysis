@@ -7,8 +7,10 @@ import { analysisPipelineArtifact } from './analysisPipeline';
 import { analysisSkillCatalogArtifact } from './analysisSkills';
 import { analysisGoalContractArtifact } from './analysisGoal';
 import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
+import { writeSourceTierTasks } from './sourceTiers';
 
 type LlmTaskId =
+  | 'analysis_strategy'
   | 'core_assessment'
   | 'business_capabilities_logic'
   | 'interface_contract_extraction'
@@ -31,6 +33,7 @@ interface LlmTaskDefinition {
 }
 
 const TASKS: LlmTaskDefinition[] = [
+  { id: 'analysis_strategy', filename: '00-analysis-strategy.md', output: 'analysis-strategy.json', title: 'LLM Repository Analysis Strategy' },
   { id: 'core_assessment', filename: '01-core-assessment.md', output: 'core-assessment.json', title: 'Core Assessment and Decision Summary' },
   { id: 'business_capabilities_logic', filename: '02-business-capabilities-logic.md', output: 'business-capabilities-logic.json', title: 'Business Capabilities and Business Logic' },
   { id: 'interface_contract_extraction', filename: '03-interface-contract-extraction.md', output: 'interfaces-contracts.json', title: 'Interface and Contract Extraction' },
@@ -63,8 +66,13 @@ export function writeLlmTasks(analysisDir: string, codeMap: CodeMap): any[] {
   const skillCatalog = analysisSkillCatalogArtifact();
   const goalContract = analysisGoalContractArtifact();
   const toolPositioningReferences = toolPositioningReferencesArtifact();
+  const tierManifest = writeSourceTierTasks(analysisDir, codeMap);
+  const expectedTaskFiles = new Set(TASKS.map(task => task.filename));
+  for (const file of FS.readdirSync(tasksDir).filter((name: string) => name.endsWith('.md'))) {
+    if (!expectedTaskFiles.has(file)) FS.unlinkSync(Path.join(tasksDir, file));
+  }
 
-  writeText(Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences));
+  writeText(Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest));
   writeJson(Path.join(dataDir, 'source-family-inventory.json'), sourceFamilyInventory(codeMap));
   writeJson(Path.join(dataDir, 'analysis-goal-contract.json'), goalContract);
   writeJson(Path.join(dataDir, 'tool-positioning-references.json'), toolPositioningReferences);
@@ -73,7 +81,7 @@ export function writeLlmTasks(analysisDir: string, codeMap: CodeMap): any[] {
 
   const taskDefs: any[] = [];
   for (const task of TASKS) {
-    const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences);
+    const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest);
     writeText(Path.join(tasksDir, task.filename), body);
     taskDefs.push({ id: task.id, title: task.title, task_file: `llm_tasks/${task.filename}`, expected_output: `llm/${task.output}`, status: 'pending' });
   }
@@ -81,7 +89,7 @@ export function writeLlmTasks(analysisDir: string, codeMap: CodeMap): any[] {
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), skillCatalog);
   writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), pipeline);
   writeJson(Path.join(dataDir, 'analysis-pipeline.json'), pipeline);
-  writeJson(Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first', implementation_language: 'TypeScript', pipeline, tasks: taskDefs });
+  writeJson(Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first', implementation_language: 'TypeScript', pipeline, source_tier_tasks: tierManifest.tasks, tasks: taskDefs });
   return taskDefs;
 }
 
@@ -125,7 +133,7 @@ export function writeDetailTasksFromLlmPlan(analysisDir: string, plan: any): any
 function detailTaskBody(task: any, output: string): string {
   return `# Source-Family Detail Review · ${task.source_family}
 
-You are a focused source-family detail agent for Codebase Analysis Pack.
+You are a focused source-family detail agent for Cognianalysis.
 
 ## Inputs
 
@@ -133,6 +141,8 @@ Read first:
 
 - \`.analysis/llm_instructions.md\`
 - \`.analysis/data/source-inventory.json\`
+- \`.analysis/data/source-tier-model.json\`
+- \`.analysis/source_tiers/*.json\`
 - \`.analysis/data/analysis-goal-contract.json\`
 - \`.analysis/data/code-map.json\`
 - \`.analysis/data/source-family-inventory.json\`
@@ -143,6 +153,7 @@ Read first:
 - the seed files listed below
 
 This task is a semantic review, not a code-map summary. Open source files, tests, docs, contracts, schemas and configuration directly. Do not use filename, regex or word-match hints as proof of behavior.
+Use Tier 1 file cards as broad context only. They help prevent blind spots, but deep review claims still need direct file:line evidence from source.
 
 ## Source family
 
@@ -168,7 +179,7 @@ Expected JSON:
 {
   "source_family_detail_review": {
     "source_family": "${String(task.source_family || '').replace(/"/g, '\\"')}",
-    "review_status": "complete|partial|blocked",
+    "review_status": "complete, partial or blocked",
     "summary": "Human-readable purpose and role of this source family.",
     "business_view": {
       "purpose": "...",
@@ -182,40 +193,40 @@ Expected JSON:
     "technical_view": {
       "architecture_role": "...",
       "entry_points": [
-        {"name":"...", "protocol":"REST|SOAP|event|job|cli|ui|db|internal|unknown", "path":"optional", "description":"...", "evidence":[]}
+        {"name":"...", "protocol":"Repository-specific protocol/interface style, or unknown.", "path":"optional", "description":"...", "evidence":[]}
       ],
       "exits_or_integrations": [
         {"name":"...", "protocol":"...", "description":"...", "evidence":[]}
       ],
       "data_and_state": [
-        {"name":"...", "kind":"entity|table|store|message|state|unknown", "description":"...", "evidence":[]}
+        {"name":"...", "kind":"Repository-specific data/state kind, or unknown.", "description":"...", "evidence":[]}
       ]
     },
     "flows": [
       {
         "title":"...",
         "summary":"...",
-        "mermaid":{"diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
+        "mermaid":{"diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
         "steps":[{"order":1, "actor":"...", "description":"...", "evidence":[]}],
         "evidence":[]
       }
     ],
     "quality_and_process": {
       "findings": [
-        {"title":"...", "category":"bug|security|quality|process|testability|maintainability|documentation|operability", "severity":"low|medium|high|critical", "description":"...", "recommendation":"...", "evidence":[]}
+        {"title":"...", "category":"Repository-specific finding category.", "severity":"Repository-specific severity or priority.", "description":"...", "recommendation":"...", "evidence":[]}
       ],
-      "test_readiness": "none|partial|good|strong|unknown",
+      "test_readiness": "Repository-specific readiness statement.",
       "process_improvements": [
         {"title":"...", "description":"...", "evidence":[]}
       ]
     },
     "refactoring_and_target_architecture": {
       "recommendations": [
-        {"title":"...", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "target_state":"...", "evidence":[]}
+        {"title":"...", "benefit":"...", "risk":"Repository-specific risk statement.", "effort":"Repository-specific effort estimate.", "target_state":"...", "evidence":[]}
       ]
     },
     "open_questions": [
-      {"question":"...", "why_it_matters":"...", "owner":"business|architecture|engineering|operations|unknown", "evidence":[]}
+      {"question":"...", "why_it_matters":"...", "owner":"Repository-specific owner or unknown.", "evidence":[]}
     ],
     "evidence": []
   },
@@ -225,7 +236,7 @@ Expected JSON:
       {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "deferred_files": [
-      {"path":"relative/path/File.ext", "reason":"generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+      {"path":"relative/path/File.ext", "reason":"Repository-specific task-local reason; deferral never counts as completed Tier 1 analysis.", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "open_questions": []
   }
@@ -281,7 +292,7 @@ function sourceFamilyInventory(codeMap: CodeMap): any {
     artifact_kind: 'navigation_partition_inventory',
     mode: 'deterministic_inventory_only',
     semantic_authority: false,
-    deterministic_scope: 'filesystem/module partitioning, path/syntax-derived navigation tags, seed-file ranking and project-boundary manifests only',
+    deterministic_scope: 'filesystem path partitioning, file-format inventory tags and file-size ranking only; no project-manifest detection, no import parsing, no symbol parsing, no framework detection, no contract detection and no example detection',
     artifact_name_note: 'The legacy filename source-family-inventory.json is kept for workflow compatibility. Its contents are mechanical navigation partitions, not semantic source families.',
     forbidden_use: [
       'Do not treat partition names as semantic source-family names.',
@@ -290,22 +301,24 @@ function sourceFamilyInventory(codeMap: CodeMap): any {
       'Do not report seed files as proof of routes, interfaces, flows, quality or architecture.'
     ],
     llm_required_action: 'The LLM must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.',
-    summary: 'This is a mechanical inventory partition for navigation. Tags, ranks and boundaries are not semantic proof. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.',
+    summary: 'This is a mechanical inventory partition for navigation. Tags, ranks and path partitions are not semantic proof and do not parse imports, symbols, frameworks, contracts or examples. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.',
     total_inventory_partitions: partitions.length,
     inventory_partitions: partitions
   };
 }
 
-function overview(profile: any, modules: any[], signals: any[], glossary: string[], capsules: any[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any): string {
-  return `# Codebase Analysis Pack · LLM-first Instructions
+function overview(profile: any, modules: any[], signals: any[], glossary: string[], capsules: any[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any, tierManifest: any): string {
+  return `# Cognianalysis · LLM-first Instructions
 
 This repository must be analyzed semantically by Codex/LLM. The generated code map is a navigation aid, not the source of final truth.
 
 ## Non-negotiable rules
 
-- Treat \`code-map.json\`, \`source-capsules.json\`, \`navigation-artifact-candidates.json\` and the legacy \`important-docs.json\` as discovery aids.
-- Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
-- Treat \`source-family-inventory.json\` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; the LLM must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
+- Treat \`code-map.json\`, \`source-capsules.json\`, \`navigation-artifact-candidates.json\` and the legacy \`important-docs.json\` as inventory/discovery aids.
+	- Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
+	- The deterministic map is intentionally inventory-only: it does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships. The LLM must open source files and parse/understand those semantics itself.
+	- Start with \`.analysis/llm_tasks/00-analysis-strategy.md\`. The LLM-authored \`.analysis/llm/analysis-strategy.json\` is the repository-specific analysis plan; the remaining task files are capability workbenches and renderer contracts, not a fixed semantic information architecture.
+	- Treat \`source-family-inventory.json\` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; the LLM must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
 - Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
 - Use source files, tests, DTO/schema files, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples, CI/CD files, configuration and documentation as evidence.
 - Every relevant assertion must include \`evidence: [{"path":"...", "line": 123, "symbol":"optional"}]\`.
@@ -321,12 +334,14 @@ This repository must be analyzed semantically by Codex/LLM. The generated code m
 - Keep production code read-only unless explicitly asked otherwise.
 - Use English for generated JSON text and report-facing content, while preserving original domain terms and identifiers.
 - Always produce whole-repository documentation before any module or source-family deep dive.
+- Execute every \`.analysis/source_tier_tasks/*.md\` task before the final analysis document. These tasks create Tier 1 LLM-authored file cards for every included file. A file that is only listed in \`analysis_coverage.deferred_files\` is not analyzed and must not count as done.
+- Use the tier model explicitly: Tier 0 is CLI inventory only, Tier 1 is mandatory per-file LLM understanding, Tier 2 is module/source-family synthesis, Tier 3 is behavior/contract/flow deep dive, and Tier 4 is decision/refactoring/process analysis.
 - For monorepos or multi-module repositories, summarize the complete source-family landscape: purpose, responsibility, entry points, exits/integrations, tests/examples, confidence and open questions for each relevant family.
-- Create the LLM detail-agent plan only after the whole-repository extraction tasks have produced a repository-wide picture.
+	- Create the LLM detail-agent plan only after the LLM-authored analysis strategy and whole-repository extraction tasks have produced a repository-wide picture.
 - Author final summaries, E2E understanding, management statements and the visible report only after all planned detail-agent reviews exist and have been synthesized. Earlier tasks may extract building blocks, but must not pretend to be the final report.
 - Do not make one module the narrative center unless the source inventory proves the repository is actually single-module. A focused deep review must be labelled as a deep slice and must not replace the whole-repository view.
 - If E2E flow extraction is deep only for part of the repository, state that boundary explicitly and keep the remaining source families visible as surface-reviewed or follow-up drilldown areas.
-- The final report should be authored by the LLM as a repo-specific analysis document. The renderer provides a stable component library and validation; it must not dictate a fixed one-size-fits-all information architecture.
+	- The final report should be authored by the LLM as a repo-specific analysis document. The renderer provides a stable component library and validation; it must not dictate a fixed one-size-fits-all information architecture.
 - Tool positioning must be concrete and LLM-authored. Use the official reference facts below as market context, not as repo evidence and not as a deterministic verdict. Then state what this analysis replaces, complements or cannot safely decide for this repository, with source evidence and handoff boundaries.
 
 ## Tool-positioning reference categories
@@ -349,6 +364,21 @@ This preserves the original product objective for the LLM. It is context, not a 
 
 \`\`\`json
 ${JSON.stringify(goalContract, null, 2)}
+\`\`\`
+
+## Tiered whole-codebase analysis model
+
+This model prevents blind spots. Source inventory alone is Tier 0 and has no semantic authority. Every included file needs a Tier 1 LLM-authored file card in \`.analysis/source_tiers/*.json\`; selected areas are then promoted to Tier 2-4 for technical drilldown, flows, risks and decisions.
+
+\`\`\`json
+${JSON.stringify({
+  model: tierManifest?.model,
+  task_count: tierManifest?.task_count,
+  total_files: tierManifest?.total_files,
+  source_tier_task_manifest: '.analysis/source-tier-task-manifest.json',
+  source_tier_tasks: '.analysis/source_tier_tasks/*.md',
+  source_tier_outputs: '.analysis/source_tiers/*.json'
+}, null, 2)}
 \`\`\`
 
 ## LLM analysis skill catalog
@@ -377,7 +407,9 @@ ${JSON.stringify(modules.slice(0, 14), null, 2)}
 ${JSON.stringify(importantDocs.slice(0, 100), null, 2)}
 \`\`\`
 
-## Artifact navigation hints, not final facts
+## Deterministic signal list
+
+This should be empty for inventory-only preparation. If it is non-empty, treat entries as non-authoritative debug data and re-derive meaning from source.
 
 \`\`\`json
 ${JSON.stringify(signals.slice(0, 90), null, 2)}
@@ -401,7 +433,7 @@ The full included file inventory is in \`.analysis/data/source-inventory.json\`.
 `;
 }
 
-function taskBody(task: LlmTaskDefinition, profile: any, modules: any[], signals: any[], capsules: any[], glossary: string[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any): string {
+function taskBody(task: LlmTaskDefinition, profile: any, modules: any[], signals: any[], capsules: any[], glossary: string[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any, tierManifest: any): string {
   const hints = {
     repo: profile,
     source_inventory: {
@@ -416,14 +448,22 @@ function taskBody(task: LlmTaskDefinition, profile: any, modules: any[], signals
     report_component_library: componentLibrary,
     analysis_skill_catalog: skillCatalog,
     analysis_goal_contract: goalContract,
+    source_tier_model: tierManifest?.model,
+    source_tier_task_manifest: {
+      task_count: tierManifest?.task_count,
+      total_files: tierManifest?.total_files,
+      manifest_file: '.analysis/source-tier-task-manifest.json',
+      task_dir: '.analysis/source_tier_tasks',
+      output_dir: '.analysis/source_tiers'
+    },
     tool_positioning_reference: toolPositioningReferences,
-    artifact_navigation_hints: signals.slice(0, 60),
-    top_capsules: capsules.slice(0, 18).map(c => ({ path: c.path, navigation_tags: c.navigation_tags || c.roles, roles: c.roles, signals: (c.signals || []).slice(0, 8), symbols: (c.symbols || []).slice(0, 8) })),
+    deterministic_signal_list: signals.slice(0, 60),
+    top_capsules: capsules.slice(0, 18).map(c => ({ path: c.path, navigation_tags: c.navigation_tags || c.roles, roles: c.roles })),
     glossary: glossary.slice(0, 90)
   };
   return `# ${task.title}
 
-You are running inside Codex as the semantic extraction step for Codebase Analysis Pack.
+You are running inside Codex as the semantic extraction step for Cognianalysis.
 
 Task id: \`${task.id}\`
 
@@ -432,13 +472,18 @@ Read these files first:
 - \`.analysis/llm_instructions.md\`
 - \`.analysis/data/code-map.json\`
 - \`.analysis/data/source-inventory.json\`
+- \`.analysis/data/source-tier-model.json\`
+- \`.analysis/source-tier-task-manifest.json\`
+- all completed \`.analysis/source_tiers/*.json\` outputs
 - \`.analysis/data/analysis-goal-contract.json\`
 - \`.analysis/data/tool-positioning-references.json\`
 - \`.analysis/data/navigation-artifact-candidates.json\` (or legacy \`.analysis/data/important-docs.json\`)
 - \`.analysis/data/source-family-inventory.json\`
 - \`.analysis/source-capsules.json\`
 
-Then open source files, tests, docs, contracts, schemas and configuration as needed. The source capsules and artifact hints are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	If this is not task \`analysis_strategy\`, read \`.analysis/llm/analysis-strategy.json\` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
+	Tier 1 file cards are the broad base for whole-codebase understanding. If \`.analysis/source_tiers/*.json\` is incomplete, do not claim whole-codebase completion; execute the missing \`.analysis/source_tier_tasks/*.md\` tasks first or mark final readiness partial.
 For large repositories, use \`.analysis/data/source-family-inventory.json\` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in \`.analysis/llm/detail-agent-plan.json\`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
 Write your result to \`.analysis/llm/${task.output}\` as valid JSON.
@@ -455,7 +500,7 @@ General rules:
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
 - Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
-- Account for the source inventory. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered, and \`analysis_coverage.deferred_files[]\` for inventory files intentionally not relevant to this task. The final completeness task must reconcile the full inventory. This is source-inventory accounting, not a deterministic semantic-quality verdict.
+- Account for the source inventory without using deferral as a success path. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered. Use \`analysis_coverage.deferred_files[]\` only for task-local scope boundaries or blocked follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in \`.analysis/source_tiers/*.json\` is the required broad base.
 - Start from the full repository scope. Summarize the whole source-family landscape before focusing on a specific module, framework, interface type or flow family.
 - For multi-module repositories, include source-family statements across the repository; a deep slice is acceptable only when clearly labelled and paired with whole-repo coverage context.
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
@@ -467,7 +512,7 @@ General rules:
 - The final analysis-document task must read all extraction outputs and all executed \`.analysis/detail_reviews/*.json\` files, then synthesize the complete picture.
 - Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an \`open_questions\` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
-- Use \`confidence: "high|medium|low"\` and \`open_questions\` when behavior is unclear.
+- Use a clear \`confidence\` statement and \`open_questions\` when behavior is unclear.
 - Do not modify production source files.
 
 Rules for examples:
@@ -492,11 +537,13 @@ ${coverageSchema(task)}
 
 function coverageSchema(task: LlmTaskDefinition): string {
   const emphasis = task.coverage_mode === 'final_inventory_reconciliation'
-    ? 'For this final task, reconcile the full `.analysis/data/source-inventory.json` inventory across all previous outputs. Uncovered files must be listed as inspected or deferred with a defensible reason, otherwise leave them uncovered and add an analysis-gap finding. Also review the report narrative for single-module bias: if the repository is multi-module, the final output must contain a whole-repository view and source-family coverage notes before any deep slice.'
-    : 'For this task, list the files you inspected for this extraction area and the files from the inventory that you intentionally deferred for this extraction area.';
+    ? 'For this final pre-report completeness task, reconcile the full `.analysis/data/source-inventory.json` inventory with `.analysis/source_tiers/*.json`. A file is not complete merely because it is deferred. If Tier 1 file cards are missing, add an analysis-gap finding, keep readiness partial, and identify the missing source_tier_tasks that must run. Also review the report narrative for single-module bias: if the repository is multi-module, the final output must contain a whole-repository view and source-family coverage notes before any deep slice.'
+    : 'For this task, list the files you inspected for this extraction area. Use deferred files only for this task-local extraction scope; deferral does not satisfy whole-codebase completion.';
   return `## Required Source Inventory Accounting
 
 ${emphasis}
+
+Whole-codebase completion is checked through \`.analysis/source_tiers/*.json\` Tier 1 file-card coverage. Do not use \`deferred_files\` as a substitute for file analysis.
 
 Include this top-level object in the JSON:
 
@@ -508,7 +555,7 @@ Include this top-level object in the JSON:
       {"path": "relative/path/File.ext", "reason": "Why this file was inspected for semantic extraction.", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
     ],
     "deferred_files": [
-      {"path": "relative/path/File.ext", "reason": "generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
+      {"path": "relative/path/File.ext", "reason": "Repository-specific task-local reason; deferral never counts as completed Tier 1 analysis.", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
     ],
     "open_questions": []
   }
@@ -517,9 +564,59 @@ Include this top-level object in the JSON:
 }
 
 function schemaForTask(taskId: LlmTaskId): string {
+  if (taskId === 'analysis_strategy') return `## Expected JSON
+
+This is the first semantic planning task. Do not analyze only the top capsules and do not lock the report into the generated task order. Use the source inventory, navigation partitions, component library, skill catalog and original goal contract to author a repository-specific analysis strategy that later tasks must follow.
+
+The strategy should answer: how should this repository be understood, which source slices look meaningful, which skills are likely needed, how will every file receive Tier 1 coverage, what deeper reviews may be necessary, and what kind of final report structure would be useful for humans.
+
+The deterministic CLI will only check that this LLM-authored strategy exists and is structured. It will not judge whether the chosen strategy is semantically correct; that remains the LLM's responsibility and must be revisited in report_quality_review.
+
+{
+  "analysis_strategy": {
+    "planning_stage": "pre_source_tier_pre_overview",
+    "planning_source": "llm/analysis-strategy.json",
+    "summary": "Repository-specific analysis approach in human language.",
+    "whole_repo_first_plan": "How the full source inventory will be understood before deep dives.",
+    "tier_plan": {
+      "tier1": "How every included file will receive a shallow file card.",
+      "tier2": "How module/source-family synthesis will be formed from Tier 1 plus source evidence.",
+      "tier3": "Which behavior, interface, flow or contract areas likely need deep review.",
+      "tier4": "Which decision, risk, process or refactoring questions the final report must answer."
+    },
+    "candidate_source_slices": [
+      {"name":"Repository-specific slice name", "slice_kind":"Repository-specific slice kind in free text.", "why_it_matters":"...", "initial_evidence":[]}
+    ],
+    "skill_application_plan": [
+      {"skill_id":"skill id from analysis_skill_catalog or custom", "purpose":"Why this skill matters here.", "scope":"Repository-specific scope.", "evidence":[]}
+    ],
+    "report_intent": {
+      "audience": ["management", "architecture", "engineering"],
+      "likely_sections": ["Repository-specific section idea, not a fixed menu"],
+      "management_questions": ["Decision question the report should answer"],
+      "technical_drilldown_questions": ["Deep technical question the report should answer"]
+    },
+    "known_risks_to_understanding": [
+      {"risk":"...", "mitigation":"...", "evidence":[]}
+    ],
+    "open_questions": [
+      {"question":"...", "why_it_matters":"...", "owner":"Repository-specific owner or unknown.", "evidence":[]}
+    ],
+    "evidence": []
+  },
+  "analysis_coverage": {
+    "summary": "Which inventory, task/context artifacts and source files were inspected to create the strategy.",
+    "inspected_files": [
+      {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}`;
+
   if (taskId === 'detail_agent_plan') return `## Expected JSON
 
-This task happens after the whole-repository extraction tasks and before the final report. Read all existing \`.analysis/llm/*.json\` outputs except \`analysis-document.json\` as building blocks, plus the source inventory and source-family inventory. Then author a repository-specific plan for focused detail agents.
+This task happens after the LLM-authored analysis strategy, whole-repository extraction tasks and before the final report. Read \`.analysis/llm/analysis-strategy.json\`, all existing \`.analysis/llm/*.json\` outputs except \`analysis-document.json\` as building blocks, plus the source inventory and source-family inventory. Then author a repository-specific plan for focused detail agents.
 
 This is not the final report. Do not write management conclusions or final E2E synthesis here. The purpose is to decide which source families, interface areas or process routes need deeper LLM review before the final analysis document is authored.
 
@@ -543,19 +640,19 @@ Required planning intent:
       {
         "id": "detail-source-family-id",
         "source_family": "Repository-specific family or slice name",
-        "recommended_agent": "business-extraction|interface-contract-analysis|flow-mermaid-analysis|codebase-assessment|custom",
-        "priority": "high|medium|low",
+        "recommended_agent": "Skill id or custom agent name chosen by the LLM.",
+        "priority": "Repository-specific priority rationale or label.",
         "priority_score": 0.0,
         "focus": ["What this detail review must understand"],
         "reason": "Why the final report should wait for this detail review.",
-        "evidence_level_target": "deep|representative|contract_level|risk_focused",
+        "evidence_level_target": "Repository-specific evidence depth target.",
         "expected_outputs": ["business view", "technical view", "flows", "findings", "open questions"],
         "seed_files": ["relative/path/File.ext"],
         "evidence": []
       }
     ],
     "not_planned": [
-      {"source_family":"...", "reason":"surface evidence is sufficient|generated only|duplicate|out of scope", "evidence":[]}
+      {"source_family":"...", "reason":"Repository-specific reason why no focused detail task is planned.", "evidence":[]}
     ],
     "evidence": []
   },
@@ -565,7 +662,7 @@ Required planning intent:
       {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "deferred_files": [
-      {"path":"relative/path/File.ext", "reason":"generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+      {"path":"relative/path/File.ext", "reason":"Repository-specific task-local reason; deferral never counts as completed Tier 1 analysis.", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "open_questions": []
   }
@@ -573,13 +670,15 @@ Required planning intent:
 
   if (taskId === 'analysis_document') return `## Expected JSON
 
-This is the final synthesis task. Author it only after the whole-repository extraction outputs, \`.analysis/llm/detail-agent-plan.json\`, and all planned \`.analysis/detail_reviews/*.json\` outputs are present. Read all previous \`.analysis/llm/*.json\` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
+This is the final synthesis task. Author it only after \`.analysis/llm/analysis-strategy.json\`, the whole-repository extraction outputs, \`.analysis/llm/detail-agent-plan.json\`, and all planned \`.analysis/detail_reviews/*.json\` outputs are present. Read all previous \`.analysis/llm/*.json\` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
 
 The HTML renderer will provide the component library and styling. You decide the section order, emphasis and depth. When an \`analysis_document\` is present, \`analysis_document.sections[]\` is the complete visible report navigation and start order; generated code-map, coverage, quality-review, requirements-trace and raw-data views remain audit artifacts unless you intentionally author repository-specific sections/blocks for them.
 
 Required report intent:
 
 - Start with system understanding: whole-repository overview, important relationships, system entry/exit, E2E context, business need, business use and what the system appears to be for.
+- Use the LLM-authored analysis strategy as the starting plan, then update or contradict it explicitly if later Tier 1/detail evidence proves a better report structure.
+- Explain the tier model in the technical drilldown or evidence-governance area when it matters: Tier 1 file cards cover every included file, then Tier 2-4 deep dives cover important modules, flows, contracts, risks and refactoring decisions.
 - Put the management/business narrative inside visible \`analysis_document.sections[].blocks[]\`, not only in top-level helper fields such as \`executive_decision_basis\`. Top-level fields can support automation, but the human report is the authored sections.
 - Then cover the four required levels:
   - reverse_engineering_documentation: functionality, user/system flows, business capabilities
@@ -615,19 +714,19 @@ Any block may include a \`labels\` object when the default component wording is 
     "synthesis_stage": "final_after_detail_reviews",
     "source_basis": "Short statement of which source inventory and extracted artifacts were used.",
     "requirements_trace": [
-      {"requirement":"Reverse Engineering & Documentation", "goal_contract_refs":["required_levels.reverse_engineering_documentation", "required_report_behaviors.whole_repo_first"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Code Analysis", "goal_contract_refs":["required_levels.code_analysis"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Process Analysis", "goal_contract_refs":["required_levels.process_analysis"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Refactoring / Target Architecture", "goal_contract_refs":["required_levels.refactoring_target_architecture"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Functional View", "goal_contract_refs":["required_views.functional_view", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Technical View", "goal_contract_refs":["required_views.technical_view"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
-      {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]}
+      {"requirement":"Reverse Engineering & Documentation", "goal_contract_refs":["required_levels.reverse_engineering_documentation", "required_report_behaviors.whole_repo_first", "required_report_behaviors.tiered_whole_codebase_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Code Analysis", "goal_contract_refs":["required_levels.code_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Process Analysis", "goal_contract_refs":["required_levels.process_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Refactoring / Target Architecture", "goal_contract_refs":["required_levels.refactoring_target_architecture"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Functional View", "goal_contract_refs":["required_views.functional_view", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Technical View", "goal_contract_refs":["required_views.technical_view"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]}
     ],
     "executive_decision_basis": {
       "summary": "Decision-grade summary.",
       "recommendation": "What stakeholders should do next.",
-      "confidence": "high|medium|low",
+      "confidence": "Repository-specific confidence statement.",
       "evidence": [],
       "open_questions": []
     },
@@ -639,16 +738,16 @@ Any block may include a \`labels\` object when the default component wording is 
     },
     "report_quality_review": {
       "reviewer": "llm",
-      "verdict": "decision_ready|partial|not_ready",
+      "verdict": "decision_ready, partial or not_ready",
       "summary": "LLM-authored judgment of whether this is a management-ready decision document with technical drilldown.",
       "criteria": [
-        {"name":"Repository-specific criterion", "verdict":"pass|partial|fail", "reason":"...", "evidence":[]}
+        {"name":"Repository-specific criterion", "verdict":"Repository-specific verdict.", "reason":"...", "evidence":[]}
       ],
       "findings": [
-        {"title":"Quality review finding", "status":"pass|partial|fail", "description":"...", "evidence":[]}
+        {"title":"Quality review finding", "status":"Repository-specific review status.", "description":"...", "evidence":[]}
       ],
       "partial_requirement_rationale": [
-        {"requirement":"Requirement name copied from requirements_trace when its status is partial/open", "status":"partial|open", "accepted_limit":"What remains incomplete.", "decision_ready_rationale":"Why the report can still be decision-ready, or use verdict partial/not_ready instead.", "follow_up":["..."], "evidence":[], "open_questions":[]}
+        {"requirement":"Requirement name copied from requirements_trace when its status is partial/open", "status":"partial or open", "accepted_limit":"What remains incomplete.", "decision_ready_rationale":"Why the report can still be decision-ready, or use verdict partial/not_ready instead.", "follow_up":["..."], "evidence":[], "open_questions":[]}
       ],
       "checks": {
         "repo_specific_information_architecture": true,
@@ -669,7 +768,7 @@ Any block may include a \`labels\` object when the default component wording is 
       {
         "id": "stable-section-id",
         "title": "Section title chosen for this repository",
-        "level": "management|functional|technical|deep_technical|appendix",
+        "level": "Repository-specific section level, audience or depth.",
         "intent": "Why this section exists for this repository.",
         "blocks": [
           {
@@ -682,7 +781,7 @@ Any block may include a \`labels\` object when the default component wording is 
             "type": "statement_list",
             "title": "Optional block title",
             "items": [
-              {"title":"Statement", "description":"...", "severity":"low|medium|high|critical|info", "confidence":"high|medium|low", "evidence":[]}
+              {"title":"Statement", "description":"...", "severity":"Repository-specific severity or priority.", "confidence":"Repository-specific confidence statement.", "evidence":[]}
             ]
           },
           {
@@ -696,7 +795,7 @@ Any block may include a \`labels\` object when the default component wording is 
             "type": "source_family_map",
             "title": "Optional block title",
             "families": [
-              {"name":"source family", "role":"responsibility", "business_use":"...", "technical_shape":"...", "evidence_level":"deep|surface|inventory_only", "confidence":"high|medium|low", "evidence":[]}
+              {"name":"source family", "role":"responsibility", "business_use":"...", "technical_shape":"...", "evidence_level":"Repository-specific evidence depth statement.", "confidence":"Repository-specific confidence statement.", "evidence":[]}
             ]
           },
           {
@@ -711,7 +810,7 @@ Any block may include a \`labels\` object when the default component wording is 
             "type": "flow",
             "title": "Optional block title",
             "summary": "...",
-            "mermaid": {"diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
+            "mermaid": {"diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
             "steps": [{"order":1, "actor":"...", "description":"...", "evidence":[]}],
             "evidence": []
           },
@@ -719,7 +818,7 @@ Any block may include a \`labels\` object when the default component wording is 
             "type": "four_level_assessment",
             "title": "Optional block title",
             "levels": [
-              {"level":"reverse_engineering_documentation|code_analysis|process_analysis|refactoring_target_architecture", "status":"strong|good|partial|open", "summary":"...", "evidence":[], "next_steps":[]}
+              {"level":"Repository-specific analysis level.", "status":"Repository-specific status.", "summary":"...", "evidence":[], "next_steps":[]}
             ]
           },
           {
@@ -727,14 +826,14 @@ Any block may include a \`labels\` object when the default component wording is 
             "title": "Optional block title",
             "labels": {"decision":"Decision", "options":"Options", "recommendation":"Recommendation", "risk":"Risk / Evidence"},
             "rows": [
-              {"decision":"...", "options":["..."], "recommendation":"...", "risk":"...", "confidence":"high|medium|low", "evidence":[]}
+              {"decision":"...", "options":["..."], "recommendation":"...", "risk":"...", "confidence":"Repository-specific confidence statement.", "evidence":[]}
             ]
           },
           {
             "type": "roadmap",
             "title": "Optional block title",
             "items": [
-              {"title":"...", "phase":"now|next|later", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "evidence":[]}
+              {"title":"...", "phase":"Repository-specific phase.", "benefit":"...", "risk":"Repository-specific risk statement.", "effort":"Repository-specific effort estimate.", "evidence":[]}
             ]
           },
           {
@@ -743,21 +842,21 @@ Any block may include a \`labels\` object when the default component wording is 
             "labels": {"source_family":"Source Family", "priority":"Priority", "focus":"Focus", "expected_outputs":"Expected Outputs", "task_output":"Task / Output", "seed_files":"Seed Files"},
             "summary": "How detail agents should continue after the overview.",
             "tasks": [
-              {"source_family":"...", "recommended_agent":"...", "priority":"high|medium|low", "focus":["..."], "expected_outputs":["..."], "seed_files":["path"], "evidence":[]}
+              {"source_family":"...", "recommended_agent":"...", "priority":"Repository-specific priority rationale or label.", "focus":["..."], "expected_outputs":["..."], "seed_files":["path"], "evidence":[]}
             ]
           },
           {
             "type": "technical_drilldown",
             "title": "Optional block title",
             "references": [
-              {"label":"...", "target":"#technical|#coverage|#appendix", "description":"..."}
+              {"label":"...", "target":"Repository-specific section anchor.", "description":"..."}
             ]
           },
           {
             "type": "open_questions",
             "title": "Optional block title",
             "items": [
-              {"question":"...", "why_it_matters":"...", "owner":"business|architecture|engineering|operations|unknown", "evidence":[]}
+              {"question":"...", "why_it_matters":"...", "owner":"Repository-specific owner or unknown.", "evidence":[]}
             ]
           }
         ],
@@ -782,8 +881,8 @@ Any block may include a \`labels\` object when the default component wording is 
           "business_use": "Business or operational use visible from evidence",
           "entry_points": ["interface/path/job/topic/command if known"],
           "exits_or_integrations": ["external system/protocol/store/topic if known"],
-          "evidence_level": "deep|surface|inventory_only",
-          "confidence": "high|medium|low",
+          "evidence_level": "Repository-specific evidence depth statement.",
+          "confidence": "Repository-specific confidence statement.",
           "evidence": [],
           "open_questions": []
         }
@@ -813,16 +912,16 @@ Any block may include a \`labels\` object when the default component wording is 
     },
     "decision_basis": {
       "decision_summary": "Decision-grade conclusion for stakeholders.",
-      "recommended_actions": [{"title":"action", "rationale":"...", "priority":"low|medium|high", "evidence": []}],
+      "recommended_actions": [{"title":"action", "rationale":"...", "priority":"Repository-specific priority rationale or label.", "evidence": []}],
       "tradeoffs": [{"topic":"...", "options": [], "recommendation":"...", "evidence": []}],
-      "readiness": {"status":"not_ready|partially_ready|ready", "rationale":"...", "evidence": []},
+      "readiness": {"status":"Repository-specific readiness status.", "rationale":"...", "evidence": []},
       "evidence": []
     },
     "tool_positioning": {
       "summary": "How this analysis output acts as an alternative or complement to existing code analysis/documentation tools.",
-      "automation_level": "manual|assisted|mostly_automated|fully_automated",
+      "automation_level": "Repository-specific automation assessment.",
       "comparison_dimensions": [
-        {"category":"consulting_or_genai_delivery_suite|structural_architecture_mapping|static_quality_security_gate|automated_transformation_engine", "positioning":"replace|complement|handoff|required_followup", "summary":"...", "evidence":[]}
+        {"category":"Tool or service category being compared.", "positioning":"Repository-specific replace/complement/handoff assessment.", "summary":"...", "evidence":[]}
       ],
       "strengths_vs_traditional_tools": [],
       "complements": [],
@@ -831,17 +930,17 @@ Any block may include a \`labels\` object when the default component wording is 
       "evidence": []
     },
     "top_risks": [
-      {"title":"risk", "severity":"low|medium|high|critical", "description":"...", "evidence": []}
+      {"title":"risk", "severity":"Repository-specific severity or priority.", "description":"...", "evidence": []}
     ],
     "completeness": {
-      "whole_repository_view": "none|partial|good|strong",
-      "source_family_coverage": "none|partial|good|strong",
-      "business_logic": "none|partial|good|strong",
-      "interfaces": "none|partial|good|strong",
-      "flows": "none|partial|good|strong",
-      "examples": "none|partial|good|strong",
-      "process_readiness": "none|partial|good|strong",
-      "refactoring_roadmap": "none|partial|good|strong"
+      "whole_repository_view": "Repository-specific completeness assessment.",
+      "source_family_coverage": "Repository-specific completeness assessment.",
+      "business_logic": "Repository-specific completeness assessment.",
+      "interfaces": "Repository-specific completeness assessment.",
+      "flows": "Repository-specific completeness assessment.",
+      "examples": "Repository-specific completeness assessment.",
+      "process_readiness": "Repository-specific completeness assessment.",
+      "refactoring_roadmap": "Repository-specific completeness assessment."
     },
     "recommended_next_steps": [
       {"title":"step", "reason":"...", "evidence": []}
@@ -873,16 +972,16 @@ Any block may include a \`labels\` object when the default component wording is 
       "domain_terms": ["term"],
       "interfaces": ["interface-id-if-known"],
       "business_rules": [
-        {"description": "rule", "rule_type":"validation|decision|calculation|authorization|state_transition|error_rule", "evidence": []}
+        {"description": "rule", "rule_type":"Repository-specific business rule type.", "evidence": []}
       ],
       "business_logic": [
         {
           "name": "Decision/rule/calculation name",
           "description": "How the business decision works.",
-          "logic_type": "validation|calculation|decision|state_transition|authorization|error_rule",
+          "logic_type": "Repository-specific business logic type.",
           "inputs": ["input field/domain value"],
           "outputs": ["status/result/error"],
-          "example": {"input": {}, "output": {}, "explanation": "...", "example_origin": "source|test|doc|inferred"},
+          "example": {"input": {}, "output": {}, "explanation": "...", "example_origin": "source, test, doc or inferred"},
           "evidence": []
         }
       ],
@@ -893,12 +992,12 @@ Any block may include a \`labels\` object when the default component wording is 
           "input": {},
           "output": {},
           "explanation": "What this example demonstrates.",
-          "example_origin": "source|test|doc|inferred",
+          "example_origin": "source, test, doc or inferred",
           "evidence": []
         }
       ],
       "evidence": [],
-      "confidence": "high|medium|low",
+      "confidence": "Repository-specific confidence statement.",
       "open_questions": []
     }
   ],
@@ -913,21 +1012,21 @@ Any block may include a \`labels\` object when the default component wording is 
   "interfaces": [
     {
       "id": "stable-interface-id",
-      "type": "http|graphql|event|job|cli|ui|database|external|soap",
-      "protocol": "REST|OpenAPI|SOAP|GraphQL|Kafka|AMQP|CLI|internal|null",
+      "type": "Repository-specific interface type.",
+      "protocol": "Repository-specific protocol or null when not applicable.",
       "name": "Short name",
-      "method": "GET|POST|... or null",
+      "method": "Operation method, command, event name or null.",
       "path": "/path, topic, queue, command or SOAP operation",
       "description": "What this interface does.",
       "source_contracts": [
-        {"kind": "openapi|swagger|soap|wsdl|xsd|postman|doc|test", "path":"...", "line":1, "operation_id":"optional", "evidence": []}
+        {"kind": "Repository-specific contract/source kind.", "path":"...", "line":1, "operation_id":"optional", "evidence": []}
       ],
       "request": {"type": "DTO/schema name", "fields": [{"name":"field", "meaning":"business meaning", "required": true, "evidence": []}]},
       "response": {"type": "DTO/schema name", "fields": [{"name":"field", "meaning":"business meaning", "evidence": []}]},
       "examples": [
         {
           "title": "Example request/response",
-          "example_origin": "openapi|soap|doc|test|postman|inferred",
+          "example_origin": "openapi, soap, doc, test, postman or inferred",
           "request": {"headers": {}, "body": {}},
           "response": {"status": 200, "headers": {}, "body": {}},
           "evidence": []
@@ -936,7 +1035,7 @@ Any block may include a \`labels\` object when the default component wording is 
       "auth": {"required": true, "roles": [], "evidence": []},
       "errors": [{"condition":"...", "result":"...", "example": {}, "evidence": []}],
       "evidence": [],
-      "confidence": "high|medium|low",
+      "confidence": "Repository-specific confidence statement.",
       "open_questions": []
     }
   ]
@@ -950,8 +1049,8 @@ Any block may include a \`labels\` object when the default component wording is 
       {
         "title": "Example title",
         "interface_id": "optional",
-        "source": "openapi|soap|doc|test|postman|http_file|inferred",
-        "example_origin": "openapi|soap|doc|test|postman|http_file|inferred",
+        "source": "Repository-specific source kind or inferred",
+        "example_origin": "openapi, soap, doc, test, postman, http_file or inferred",
         "request": {"method":"POST", "path":"/example", "headers":{}, "body":{}},
         "response": {"status":200, "headers":{}, "body":{}},
         "errors": [{"status":400, "body":{}, "condition":"..."}],
@@ -965,7 +1064,7 @@ Any block may include a \`labels\` object when the default component wording is 
         "input": {},
         "output": {},
         "explanation": "...",
-        "example_origin": "test|doc|inferred",
+        "example_origin": "test, doc or inferred",
         "evidence": []
       }
     ]
@@ -987,7 +1086,7 @@ Any block may include a \`labels\` object when the default component wording is 
         "response_schema": "schema/component",
         "request_example": {},
         "response_example": {},
-        "example_origin": "openapi|swagger|inferred",
+        "example_origin": "openapi, swagger or inferred",
         "evidence": []
       }
     ],
@@ -1001,12 +1100,12 @@ Any block may include a \`labels\` object when the default component wording is 
         "faults": [],
         "request_envelope": "<soapenv:Envelope>...</soapenv:Envelope>",
         "response_envelope": "<soapenv:Envelope>...</soapenv:Envelope>",
-        "example_origin": "wsdl|doc|test|inferred",
+        "example_origin": "wsdl, doc, test or inferred",
         "evidence": []
       }
     ],
     "contract_examples": [
-      {"title":"Contract example", "kind":"graphql|event|asyncapi|proto|other", "payload": {}, "example_origin":"doc|test|inferred", "evidence": []}
+      {"title":"Contract example", "kind":"Repository-specific contract kind.", "payload": {}, "example_origin":"doc, test or inferred", "evidence": []}
     ]
   }
 }`;
@@ -1022,24 +1121,24 @@ Any block may include a \`labels\` object when the default component wording is 
       "interface_ids": ["interface-id"],
       "summary": "Short business/technical summary.",
       "mermaid": {
-        "diagram_type": "sequenceDiagram|flowchart TD|stateDiagram-v2",
+        "diagram_type": "Mermaid diagram type chosen to fit the flow.",
         "source": "sequenceDiagram\n  participant Client\n  Client->>API: ...",
         "evidence": []
       },
       "steps": [
-        {"order": 1, "actor": "client/system/db/external", "description":"step", "kind":"request|validation|business_rule|persistence|external_call|event|response|error|state_change", "request_response_ref":"optional interface/example id", "evidence": []}
+        {"order": 1, "actor": "Repository-specific actor/system.", "description":"step", "kind":"Repository-specific step kind.", "request_response_ref":"optional interface/example id", "evidence": []}
       ],
       "business_logic_refs": ["capability-id#logic-name"],
-      "side_effects": [{"type":"database_write|event_publish|external_call|state_change", "description":"...", "evidence": []}],
-      "examples": [{"title":"Flow example", "input": {}, "output": {}, "example_origin":"doc|test|inferred", "evidence": []}],
+      "side_effects": [{"type":"Repository-specific side effect type.", "description":"...", "evidence": []}],
+      "examples": [{"title":"Flow example", "input": {}, "output": {}, "example_origin":"doc, test or inferred", "evidence": []}],
       "evidence": [],
-      "confidence": "high|medium|low",
+      "confidence": "Repository-specific confidence statement.",
       "open_questions": []
     }
   ],
   "documentation": {
     "mermaid_flows": [
-      {"title":"Flow title", "flow_id":"optional", "diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\n  A->>B: ...", "evidence": []}
+      {"title":"Flow title", "flow_id":"optional", "diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram\n  A->>B: ...", "evidence": []}
     ]
   }
 }`;
@@ -1049,20 +1148,20 @@ Any block may include a \`labels\` object when the default component wording is 
 {
   "data_model": {
     "entities": [
-      {"name":"Entity/table/document", "kind":"domain_entity|table|collection|dto|message", "description":"...", "fields":[{"name":"field", "type":"optional", "meaning":"...", "evidence": []}], "evidence": []}
+      {"name":"Entity/table/document", "kind":"Repository-specific data/domain kind.", "description":"...", "fields":[{"name":"field", "type":"optional", "meaning":"...", "evidence": []}], "evidence": []}
     ],
     "stores": [
-      {"name":"store", "technology":"SQL|Mongo|Redis|file|unknown", "usage":"read|write|read_write", "evidence": []}
+      {"name":"store", "technology":"Repository-specific technology or unknown.", "usage":"Repository-specific usage.", "evidence": []}
     ],
     "state_changes": [
       {"entity":"Entity", "from":"optional", "to":"optional", "trigger":"...", "evidence": []}
     ]
   },
   "integrations": [
-    {"id":"integration-id", "name":"External system/topic/queue/API", "direction":"inbound|outbound|both", "protocol":"HTTP|SOAP|Kafka|AMQP|DB|file|unknown", "purpose":"...", "messages": [], "evidence": [], "open_questions": []}
+    {"id":"integration-id", "name":"External system/topic/queue/API", "direction":"Repository-specific direction.", "protocol":"Repository-specific protocol or unknown.", "purpose":"...", "messages": [], "evidence": [], "open_questions": []}
   ],
   "side_effects": [
-    {"id":"side-effect-id", "type":"database_read|database_write|event_publish|external_call|file_write|state_change|notification", "description":"...", "trigger":"...", "evidence": []}
+    {"id":"side-effect-id", "type":"Repository-specific side effect type.", "description":"...", "trigger":"...", "evidence": []}
   ]
 }`;
 
@@ -1071,22 +1170,22 @@ Any block may include a \`labels\` object when the default component wording is 
 {
   "process": {
     "summary": "Assessment of development, delivery and operational readiness visible in the repository.",
-    "tests": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
-    "ci_cd": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
-    "release": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
-    "observability": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
-    "configuration": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
-    "local_setup": {"status":"none|partial|good|unknown", "evidence": [], "observations": []},
+    "tests": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+    "ci_cd": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+    "release": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+    "observability": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+    "configuration": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+    "local_setup": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
     "open_questions": []
   },
   "quality": {
     "summary": "Maintainability and quality assessment visible from code/docs/tests.",
     "strengths": [{"title":"...", "description":"...", "evidence": []}],
-    "risks": [{"title":"...", "severity":"low|medium|high|critical", "description":"...", "recommendation":"...", "evidence": []}],
+    "risks": [{"title":"...", "severity":"Repository-specific severity or priority.", "description":"...", "recommendation":"...", "evidence": []}],
     "testability": [{"title":"...", "description":"...", "evidence": []}]
   },
   "findings": [
-    {"id":"finding-id", "category":"risk|quality|security|process|maintainability|documentation|testability|operability", "severity":"low|medium|high|critical", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
+    {"id":"finding-id", "category":"Repository-specific finding category.", "severity":"Repository-specific severity or priority.", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
   ]
 }`;
 
@@ -1095,29 +1194,29 @@ Any block may include a \`labels\` object when the default component wording is 
 {
     "architecture": {
     "summary": "Architecture summary",
-    "style": "monolith|modular_monolith|microservice|library|frontend|infra|unknown",
+    "style": "Repository-specific architecture style or unknown.",
     "modules": [{"name":"module", "responsibility":"...", "dependencies": [], "evidence": []}],
-    "external_systems": [{"name":"system", "direction":"inbound|outbound|both", "protocol":"...", "evidence": []}],
+    "external_systems": [{"name":"system", "direction":"Repository-specific direction.", "protocol":"...", "evidence": []}],
     "data_stores": [{"name":"store", "technology":"...", "evidence": []}],
     "runtime": [{"name":"runtime/deployment/config aspect", "description":"...", "evidence": []}],
     "target_architecture": {
       "summary": "Recommended target architecture or reason no target architecture change is justified.",
-      "target_style": "modular_monolith|microservice|service_api|frontend|library|infra|unknown",
+      "target_style": "Repository-specific target style or unknown.",
       "tech_stack_options": [{"name":"option", "fit":"...", "tradeoffs": [], "evidence": []}],
-      "migration_steps": [{"order":1, "description":"...", "risk":"low|medium|high", "evidence": []}],
+      "migration_steps": [{"order":1, "description":"...", "risk":"Repository-specific risk statement.", "evidence": []}],
       "open_questions": []
     },
     "observations": [{"title":"observation", "description":"...", "evidence": []}],
     "mermaid": "flowchart TD\n  A[Module] --> B[Store]"
   },
   "findings": [
-    {"id":"finding-id", "category":"risk|quality|security|process|maintainability|documentation|architecture", "severity":"low|medium|high|critical", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
+    {"id":"finding-id", "category":"Repository-specific finding category.", "severity":"Repository-specific severity or priority.", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
   ],
   "refactoring": [
-    {"id":"refactoring-id", "title":"...", "description":"...", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "candidate_files": [], "prerequisites": [], "evidence": []}
+    {"id":"refactoring-id", "title":"...", "description":"...", "benefit":"...", "risk":"Repository-specific risk statement.", "effort":"Repository-specific effort estimate.", "candidate_files": [], "prerequisites": [], "evidence": []}
   ],
   "modernization": [
-    {"id":"modernization-id", "title":"...", "description":"...", "target_state":"...", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "evidence": []}
+    {"id":"modernization-id", "title":"...", "description":"...", "target_state":"...", "benefit":"...", "risk":"Repository-specific risk statement.", "effort":"Repository-specific effort estimate.", "evidence": []}
   ]
 }`;
 
@@ -1126,25 +1225,25 @@ Any block may include a \`labels\` object when the default component wording is 
 {
   "assessment": {
     "completeness": {
-      "whole_repository_view": "none|partial|good|strong",
-      "source_family_coverage": "none|partial|good|strong",
-      "business_logic": "none|partial|good|strong",
-      "interfaces": "none|partial|good|strong",
-      "flows": "none|partial|good|strong",
-      "examples": "none|partial|good|strong",
-      "process_readiness": "none|partial|good|strong",
-      "refactoring_roadmap": "none|partial|good|strong"
+      "whole_repository_view": "Repository-specific completeness assessment.",
+      "source_family_coverage": "Repository-specific completeness assessment.",
+      "business_logic": "Repository-specific completeness assessment.",
+      "interfaces": "Repository-specific completeness assessment.",
+      "flows": "Repository-specific completeness assessment.",
+      "examples": "Repository-specific completeness assessment.",
+      "process_readiness": "Repository-specific completeness assessment.",
+      "refactoring_roadmap": "Repository-specific completeness assessment."
     },
     "open_questions": []
   },
   "documentation": {
     "summary": "What examples/contracts were found or inferred and what remains missing.",
     "report_completeness_notes": [
-      {"area":"whole_repository|source_families|interfaces|flows|business_logic|process|data|examples|refactoring", "status":"missing|partial|good", "note":"...", "evidence": []}
+      {"area":"Repository-specific gap or coverage area.", "status":"Repository-specific status.", "note":"...", "evidence": []}
     ]
   },
   "findings": [
-    {"id":"gap-id", "category":"documentation|process|analysis_gap", "severity":"low|medium|high", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
+    {"id":"gap-id", "category":"Repository-specific gap category.", "severity":"Repository-specific severity or priority.", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
   ]
 }`;
 }

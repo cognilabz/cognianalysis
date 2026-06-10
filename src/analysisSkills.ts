@@ -9,12 +9,28 @@ export interface AnalysisSkillDefinition {
 
 export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
   {
+    id: 'analysis_strategy_planning',
+    label: 'Analysis Strategy Planning',
+    purpose: 'Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.',
+    stage_ids: ['llm_analysis_strategy'],
+    expected_outputs: ['llm/analysis-strategy.json', 'analysis_strategy.whole_repo_first_plan', 'analysis_strategy.report_intent'],
+    guidance: 'Use inventory only as context. The LLM decides how this repository should be understood, which skills matter and where deeper review may be needed.'
+  },
+  {
     id: 'whole_repository_understanding',
     label: 'Whole-Repository Understanding',
     purpose: 'Build the repository-wide story, system purpose, source-family landscape and scope boundaries before deep review.',
     stage_ids: ['llm_whole_repository_building_blocks'],
     expected_outputs: ['assessment.repository_wide_view', 'analysis_coverage'],
     guidance: 'Start broad. A deep slice can support the story, but it must not become the whole-system narrative.'
+  },
+  {
+    id: 'tiered_source_file_analysis',
+    label: 'Tiered Source File Analysis',
+    purpose: 'Create mandatory Tier 1 LLM-authored file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.',
+    stage_ids: ['llm_source_file_tier_analysis', 'llm_whole_repository_building_blocks', 'llm_detail_reviews', 'llm_final_analysis_document'],
+    expected_outputs: ['source_tiers/*.json', 'source_tier_coverage', 'analysis_document technical drilldown sections'],
+    guidance: 'Do not let deferred files stand in for understanding. Tier 1 is shallow but real per-file analysis; deeper tiers explain relationships, flows, contracts and decisions.'
   },
   {
     id: 'business_extraction',
@@ -30,7 +46,7 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     purpose: 'Understand APIs, SOAP/WSDL/XSD, OpenAPI/Swagger, GraphQL, events, jobs, CLI commands, UI routes and external calls.',
     stage_ids: ['llm_whole_repository_building_blocks', 'llm_detail_reviews'],
     expected_outputs: ['interfaces[]', 'contracts[]', 'openapi', 'soap', 'graphql', 'events'],
-    guidance: 'Navigation candidates can point to likely contracts, but the LLM must read evidence and state uncertainty.'
+    guidance: 'Inventory seed files are only starting points. The LLM must find and parse contracts from source evidence and state uncertainty.'
   },
   {
     id: 'request_response_examples',

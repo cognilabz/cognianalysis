@@ -1,12 +1,11 @@
 import { TargetCapability } from './types';
-import { asList } from './utils';
 
 export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'existing-harness-execution',
     title: 'Existing harness execution',
-    description: 'The pack is launched from Codex or another harness through skills/CLI, not by a custom coding agent.',
-    addressed_by: ['resources/AGENTS.md', '.agents/skills/codebase-assessment/SKILL.md', 'CLI commands', 'optional cba mcp'],
+    description: 'Cognianalysis is launched from Codex or another harness through skills/CLI, not by a custom coding agent.',
+    addressed_by: ['resources/AGENTS.md', '.agents/skills/cognianalysis/SKILL.md', 'CLI commands', 'optional cognianalysis mcp'],
     expected_outputs: ['.analysis/llm_tasks/*.md', '.analysis/llm/*.json'],
     output_keys: ['tasks']
   },
@@ -19,20 +18,36 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     output_keys: ['assessment', 'capabilities', 'interfaces', 'flows']
   },
   {
+    id: 'llm-authored-analysis-strategy',
+    title: 'LLM-authored analysis strategy',
+    description: 'The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before fixed workbench tasks and final synthesis.',
+    addressed_by: ['00-analysis-strategy.md', 'llm/analysis-strategy.json', 'analysis_pipeline llm_analysis_strategy stage'],
+    expected_outputs: ['llm_analysis_strategy.uses_pre_analysis_strategy_artifact=true', 'llm_analysis_strategy.strategy_present=true'],
+    output_keys: ['llm_analysis_strategy.uses_pre_analysis_strategy_artifact', 'llm_analysis_strategy.strategy_present']
+  },
+  {
     id: 'non-authoritative-code-map',
-    title: 'Non-authoritative code map signals',
-    description: 'Broad signals help navigation but are never final entrypoint facts.',
+    title: 'Non-authoritative inventory map',
+    description: 'Inventory metadata helps navigation but never parses or decides imports, symbols, frameworks, contracts, examples, entrypoints or relationships.',
     addressed_by: ['code-map.json extraction_policy', 'Main skill non-goals', 'Generated task warnings'],
-    expected_outputs: ['code_map.extraction_policy.signals_are_authoritative=false'],
-    output_keys: ['signals']
+    expected_outputs: ['extraction_policy.deterministic_parsing_disabled=true'],
+    output_keys: ['extraction_policy.deterministic_parsing_disabled']
   },
   {
     id: 'whole-codebase-source-inventory-accounting',
     title: 'Whole-codebase source inventory accounting',
-    description: 'Every included repository file is accounted for by evidence, explicitly inspected by Codex/LLM, or explicitly deferred with a reason. This is an inventory contract, not a deterministic semantic-quality verdict.',
-    addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cba finalize source inventory accounting contract', 'embedded report audit data'],
+    description: 'Every included repository file is accounted for by evidence or explicit Codex/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.',
+    addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cognianalysis finalize source inventory accounting contract', 'embedded report audit data'],
     expected_outputs: ['source_inventory_accounting.complete=true', 'analysis_coverage.inspected_files[]'],
     output_keys: ['source_inventory_accounting.complete', 'analysis_coverage']
+  },
+  {
+    id: 'tiered-whole-codebase-analysis',
+    title: 'Tiered whole-codebase analysis',
+    description: 'Every included file receives at least a Tier 1 LLM-authored file card before repository synthesis; selected areas receive deeper Tier 2-4 technical, behavioral, quality and refactoring analysis.',
+    addressed_by: ['source-tier-task-manifest.json', 'source_tier_tasks/*.md', 'source_tiers/*.json', 'source_tier_coverage', 'analysis_document technical drilldown sections'],
+    expected_outputs: ['source_tier_coverage.complete=true', 'source_file_tier_reviews[]'],
+    output_keys: ['source_tier_coverage.complete', 'source_file_tier_reviews']
   },
   {
     id: 'whole-repository-documentation',
@@ -278,79 +293,30 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'harness-portability',
     title: 'Harness portability',
     description: 'Skills plus CLI are portable; optional stdio bridge exposes deterministic commands.',
-    addressed_by: ['AGENTS.md', 'skills', 'cba mcp'],
+    addressed_by: ['AGENTS.md', 'skills', 'cognianalysis mcp'],
     expected_outputs: ['skills', 'CLI tools'],
     output_keys: ['tasks']
   }
 ];
 
-function getByPath(root: any, key: string): any {
-  const parts = key.split('.');
-  let cur = root;
-  for (const part of parts) {
-    if (cur === undefined || cur === null) return undefined;
-    if (Array.isArray(cur)) {
-      cur = cur.flatMap(x => x && typeof x === 'object' ? asList(x[part]) : []);
-    } else {
-      cur = cur[part];
-    }
-  }
-  return cur;
-}
-
-function hasContent(value: any): boolean {
-  if (value === undefined || value === null) return false;
-  if (Array.isArray(value)) return value.length > 0 && value.some(hasContent);
-  if (typeof value === 'object') return Object.keys(value).length > 0 && Object.values(value).some(hasContent);
-  if (typeof value === 'string') return value.trim().length > 0;
-  if (typeof value === 'boolean') return value;
-  return true;
-}
-
-function hasSemanticSource(bundle: any, key: string): boolean {
-  const presence = bundle.llm_output_presence || {};
-  const detailReviews = asList(bundle.source_family_detail_reviews);
-  if (key === 'tasks' || key === 'signals') return true;
-  if (key.startsWith('tooling.') || key.startsWith('report_artifacts.')) return true;
-  if (key === 'source_inventory_accounting.complete' || key === 'source_coverage.complete') return !!(presence.analysis_coverage || detailReviews.length);
-  if (key === 'analysis_coverage') return !!(presence.analysis_coverage || detailReviews.length);
-  if (key === 'evidence_index') return asList(bundle.evidence_index).length > 0;
-  if (key === 'source_family_detail_reviews') return detailReviews.length > 0;
-  if (key === 'detail_task_manifest.tasks') return !!(presence.detail_agent_plan || presence['detail_agent_plan.tasks']);
-  if (key.startsWith('llm_detail_agent_plan') || key.startsWith('source_family_detail_review_coverage')) return !!(presence.detail_agent_plan || presence['detail_agent_plan.tasks']);
-  if (key.startsWith('analysis_goal_trace_alignment')) return !!presence['analysis_document.requirements_trace'];
-  if (key.startsWith('analysis_document') || key.startsWith('report_mode')) return !!presence.analysis_document;
-  if (key.startsWith('documentation.')) return !!presence[key];
-  return !!presence[key];
-}
-
 export function computeTargetCoverage(bundle: any): any[] {
   return TARGET_CAPABILITIES.map(cap => {
-    let hits = 0;
-    const details: any[] = [];
-    for (const key of cap.output_keys) {
-      let present = false;
-      if (key === 'tasks') present = Array.isArray(bundle.tasks) && bundle.tasks.length > 0;
-      else if (key === 'signals') present = !!(bundle.profile || bundle.signals || bundle.extraction_policy);
-      else if (key === 'source_inventory_accounting.complete') present = (bundle.source_inventory_accounting || bundle.source_coverage)?.complete === true;
-      else if (key === 'source_coverage.complete') present = bundle.source_coverage?.complete === true;
-      else present = hasContent(getByPath(bundle, key));
-      if (present && !hasSemanticSource(bundle, key)) present = false;
-      if (present) hits++;
-      details.push({ key, present });
-    }
-    const ratio = cap.output_keys.length ? hits / cap.output_keys.length : 1;
-    const output_status = ratio >= 0.999 ? 'present' : ratio > 0 ? 'partial' : (bundle.status?.state === 'awaiting_llm_extraction' ? 'pending' : 'missing');
     return {
       ...cap,
-      coverage_kind: 'artifact_contract',
+      coverage_kind: 'goal_contract_context',
+      artifact_contract_kind: 'llm_trace_target_context',
       semantic_verdict_authority: 'llm',
-      output_status_meaning: 'Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.',
-      design_status: 'tracked',
-      design_status_meaning: 'The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.',
-      output_status,
-      output_ratio: ratio,
-      output_details: details
+      deterministic_contract_scope: 'target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment',
+      output_status: 'not_scored',
+      output_status_meaning: 'Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.',
+      design_status: 'context',
+      design_status_meaning: 'The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.',
+      output_ratio: null,
+      output_details: cap.output_keys.map(key => ({
+        key,
+        deterministic_presence_scored: false,
+        role: 'expected LLM artifact or renderer output hint for the authoring task'
+      }))
     };
   });
 }

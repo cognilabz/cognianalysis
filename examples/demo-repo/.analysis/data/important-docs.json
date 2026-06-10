@@ -1,335 +1,482 @@
 [
   {
+    "path": "src/main/java/com/acme/onboarding/Customer.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 28,
+    "score": 28,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 43
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 28,
+    "score": 28,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 32
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 28,
+    "score": 28,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 46
+  },
+  {
     "path": "docs/examples/customer-verification-soap.xml",
     "language": "XML",
     "navigation_tags": [
-      "documentation",
-      "example",
-      "soap_contract"
+      "structured_file"
     ],
     "roles": [
-      "documentation",
-      "example",
-      "soap_contract"
+      "structured_file"
     ],
     "signals": [],
-    "navigation_score": 439,
-    "score": 439,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 21
   },
   {
     "path": "docs/openapi.yml",
     "language": "YAML",
     "navigation_tags": [
-      "api_contract",
-      "config",
-      "documentation"
+      "structured_file"
     ],
     "roles": [
-      "api_contract",
-      "config",
-      "documentation"
+      "structured_file"
     ],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "docs/openapi.yml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 391,
-    "score": 391,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 78
   },
   {
     "path": "docs/soap-kyc.wsdl",
     "language": "WSDL",
     "navigation_tags": [
-      "documentation",
-      "soap_contract"
+      "structured_file"
     ],
     "roles": [
-      "documentation",
-      "soap_contract"
+      "structured_file"
     ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 346,
-    "score": 346,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 29
+  },
+  {
+    "path": "src/main/resources/onboarding.wsdl",
+    "language": "WSDL",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 38
   },
   {
     "path": "src/main/resources/openapi.yaml",
     "language": "YAML",
     "navigation_tags": [
-      "api_contract",
-      "config"
+      "structured_file"
     ],
     "roles": [
-      "api_contract",
-      "config"
+      "structured_file"
     ],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "src/main/resources/openapi.yaml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 312,
-    "score": 312,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 77
+  },
+  {
+    "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+    "language": "YAML",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 103
   },
   {
     "path": "src/main/resources/wsdl/customer-verification.wsdl",
     "language": "WSDL",
     "navigation_tags": [
-      "soap_contract"
+      "structured_file"
     ],
     "roles": [
-      "soap_contract"
+      "structured_file"
     ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 279,
-    "score": 279,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 54
+  },
+  {
+    "path": "src/main/resources/wsdl/kyc-status.wsdl",
+    "language": "WSDL",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "signals": [],
+    "navigation_score": 26,
+    "score": 26,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 43
   },
   {
     "path": "docs/api-examples.md",
     "language": "Markdown",
     "navigation_tags": [
-      "documentation",
-      "example"
+      "text_document"
     ],
     "roles": [
-      "documentation",
-      "example"
+      "text_document"
     ],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/api-examples.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 278,
-    "score": 278,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 24,
+    "score": 24,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 53
   },
   {
     "path": "docs/business-examples.md",
     "language": "Markdown",
     "navigation_tags": [
-      "documentation",
-      "example"
+      "text_document"
     ],
     "roles": [
-      "documentation",
-      "example"
+      "text_document"
     ],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/business-examples.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 278,
-    "score": 278,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 24,
+    "score": 24,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 22
-  },
-  {
-    "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-    "language": "YAML",
-    "navigation_tags": [
-      "api_contract",
-      "config"
-    ],
-    "roles": [
-      "api_contract",
-      "config"
-    ],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 277,
-    "score": 277,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-    "lines": 103
-  },
-  {
-    "path": "src/main/resources/wsdl/kyc-status.wsdl",
-    "language": "WSDL",
-    "navigation_tags": [
-      "soap_contract"
-    ],
-    "roles": [
-      "soap_contract"
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 277,
-    "score": 277,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-    "lines": 43
-  },
-  {
-    "path": "src/main/resources/onboarding.wsdl",
-    "language": "WSDL",
-    "navigation_tags": [
-      "soap_contract"
-    ],
-    "roles": [
-      "soap_contract"
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 267,
-    "score": 267,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-    "lines": 38
-  },
-  {
-    "path": "README.md",
-    "language": "Markdown",
-    "navigation_tags": [
-      "documentation"
-    ],
-    "roles": [
-      "documentation"
-    ],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "README.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 158,
-    "score": 158,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-    "lines": 4
   },
   {
     "path": "docs/business-flows.md",
     "language": "Markdown",
     "navigation_tags": [
-      "documentation"
+      "text_document"
     ],
     "roles": [
-      "documentation"
+      "text_document"
     ],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/business-flows.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "navigation_score": 133,
-    "score": 133,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "signals": [],
+    "navigation_score": 24,
+    "score": 24,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 51
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 8
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 10
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 8
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 8
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/KycClient.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 16
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 6
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/KycResult.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 4
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 19
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 15
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 8
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 4
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 4
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 4
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+    "language": "Java",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "signals": [],
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 18
   },
   {
     "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
     "language": "Java",
     "navigation_tags": [
-      "source",
-      "test"
+      "source_file"
     ],
     "roles": [
-      "source",
-      "test"
+      "source_file"
     ],
     "signals": [],
-    "navigation_score": 74,
-    "score": 74,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-    "lines": 8
-  },
-  {
-    "path": "src/main/resources/application.yml",
-    "language": "YAML",
-    "navigation_tags": [
-      "config"
-    ],
-    "roles": [
-      "config"
-    ],
-    "signals": [],
-    "navigation_score": 53,
-    "score": 53,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "navigation_score": 20,
+    "score": 20,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 8
   },
   {
     "path": "pom.xml",
     "language": "XML",
     "navigation_tags": [
-      "build"
+      "structured_file"
     ],
     "roles": [
-      "build"
+      "structured_file"
     ],
     "signals": [],
-    "navigation_score": 45,
-    "score": 45,
-    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "navigation_score": 18,
+    "score": 18,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
     "lines": 12
+  },
+  {
+    "path": "src/main/resources/application.yml",
+    "language": "YAML",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "signals": [],
+    "navigation_score": 18,
+    "score": 18,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 8
+  },
+  {
+    "path": "README.md",
+    "language": "Markdown",
+    "navigation_tags": [
+      "text_document"
+    ],
+    "roles": [
+      "text_document"
+    ],
+    "signals": [],
+    "navigation_score": 16,
+    "score": 16,
+    "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+    "lines": 4
   }
 ]

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Codebase Analysis Pack LLM Output",
+  "title": "Cognianalysis LLM Output",
   "type": "object",
   "description": "Flexible schema for Codex-generated semantic extraction outputs. Individual task files define stricter expected structures.",
   "properties": {

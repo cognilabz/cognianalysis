@@ -1,9 +1,9 @@
 ---
-name: codebase-assessment
+name: cognianalysis
 description: Main LLM-first repository assessment workflow for extracting business capabilities, business logic, contracts, request/response examples, Mermaid flows, domain/data/integration views, architecture, process readiness, refactoring options and evidence-based interactive HTML reports.
 ---
 
-# Codebase Assessment Skill
+# Cognianalysis Skill
 
 ## Goal
 
@@ -12,27 +12,34 @@ Produce a semantic, evidence-based, decision-grade codebase assessment. The Type
 This is the main skill. A user should be able to say only:
 
 ```text
-Use the codebase-assessment skill.
+Use the cognianalysis skill.
 ```
 
 and Codex should still execute the full workflow below without asking the user to run post-processing commands manually.
 
 ## Workflow
 
-1. If `.analysis/llm_tasks/` does not exist, run `cba prepare .`.
+1. If `.analysis/llm_tasks/` does not exist, run `cognianalysis prepare .`.
 2. Read `.analysis/llm_instructions.md`.
 3. Read `.analysis/data/analysis-skill-catalog.json` and treat it as the reusable LLM capability map. The catalog is not deterministic routing; use it to decide which analysis skills matter for this repository.
-4. Execute the building-block task files in `.analysis/llm_tasks/` through `10-report-completeness-review.md`.
-5. For each task, inspect source files, tests, docs, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples and configuration directly.
-6. Use `.analysis/data/source-inventory.json` as the full included scope. Source capsules are only navigation aids; every included file must be evidence-backed, listed in `analysis_coverage.inspected_files`, or explicitly listed in `analysis_coverage.deferred_files` with a reason.
-7. Produce the whole-repository view before any deep slice. For monorepos, document the complete source-family landscape and clearly label any module with deeper route/process extraction as a deep-review area, not as the whole system.
-8. Use `.analysis/data/source-family-inventory.json` only as navigation context. Do not treat deterministic inventory partitions as semantic source families or detail-review priorities.
-9. Execute `11-detail-agent-plan.md` and write `.analysis/llm/detail-agent-plan.json`. This plan is LLM-authored after the whole-repository overview and before the final report.
+4. Execute `.analysis/llm_tasks/00-analysis-strategy.md` first and write `.analysis/llm/analysis-strategy.json`.
+   - This is the LLM-authored repository-specific strategy: how to understand this repository, which slices and skills matter, how Tier 1 coverage will be used, what deeper reviews may be needed and what kind of final report should help humans.
+   - The remaining generated task files are capability workbenches and output contracts. They are not the semantic information architecture for every repository.
+5. Execute every `.analysis/source_tier_tasks/*.md` task and write the requested `.analysis/source_tiers/*.json` outputs before repository synthesis.
+   - This is the Tier 1 whole-codebase base layer: every included file must get a short LLM-authored file card with purpose, technical role, business relevance or none/unknown, relationships, confidence and evidence.
+   - Do not use `.analysis_coverage.deferred_files` as a substitute for Tier 1 file analysis. Deferred files are not done.
+   - Tier 0 is deterministic inventory only and has no semantic authority; Tier 1 is mandatory shallow file understanding; Tier 2 is module/source-family synthesis; Tier 3 is behavior/contract/flow deep dive; Tier 4 is decision, risk, process and refactoring analysis.
+6. Execute the building-block task files in `.analysis/llm_tasks/` through `10-report-completeness-review.md`, guided by `.analysis/llm/analysis-strategy.json`.
+7. For each task, inspect source files, tests, docs, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples and configuration directly.
+8. Use `.analysis/data/source-inventory.json` as the full included scope. Source capsules are only navigation aids; every included file must be Tier-1 analyzed, evidence-backed, or explicitly left as an open/blocked gap by the LLM. Deferral alone is not whole-codebase completion.
+9. Produce the whole-repository view before any deep slice. For monorepos, document the complete source-family landscape and clearly label any module with deeper route/process extraction as a deep-review area, not as the whole system.
+10. Use `.analysis/data/source-family-inventory.json` only as navigation context. Do not treat deterministic inventory partitions as semantic source families or detail-review priorities.
+11. Execute `11-detail-agent-plan.md` and write `.analysis/llm/detail-agent-plan.json`. This plan is LLM-authored after the analysis strategy and whole-repository overview and before the final report.
    - If no detail reviews are needed, the LLM plan must set `no_detail_reviews_needed: true` and explain the skip decision with evidence or open questions.
-10. Run `cba finalize . --allow-partial` to mechanically materialize `.analysis/detail_tasks/*.md` from the LLM-authored plan.
-11. Execute every task in `.analysis/detail_tasks/` and write the requested `.analysis/detail_reviews/*.json` outputs.
+12. Run `cognianalysis finalize . --allow-partial` to mechanically materialize `.analysis/detail_tasks/*.md` from the LLM-authored plan.
+13. Execute every task in `.analysis/detail_tasks/` and write the requested `.analysis/detail_reviews/*.json` outputs.
    - Do not add `.analysis/detail_reviews/*.json` outputs that were not planned by `llm/detail-agent-plan.json`; unexpected reviews are treated as a pipeline-contract gap.
-12. Only after all pre-final `.analysis/llm/*.json` building-block outputs exist and the planned detail reviews exist, author the final report as an LLM-written `analysis_document` via `12-analysis-document.md`: choose the repository-specific section order and emphasis, incorporate executed detail reviews, list incorporated source families in `analysis_document.detail_review_synthesis.integrated_detail_reviews`, and use the supported component/block types so the renderer keeps styling and evidence behavior consistent.
+14. Only after `.analysis/llm/analysis-strategy.json`, all Tier 1 `.analysis/source_tiers/*.json`, all pre-final `.analysis/llm/*.json` building-block outputs and the planned detail reviews exist, author the final report as an LLM-written `analysis_document` via `12-analysis-document.md`: choose the repository-specific section order and emphasis, incorporate executed detail reviews, list incorporated source families in `analysis_document.detail_review_synthesis.integrated_detail_reviews`, and use the supported component/block types so the renderer keeps styling and evidence behavior consistent.
    - Treat `analysis_document.sections` as the complete visible report navigation and start order. The CLI may still embed coverage/raw analysis data for validation, but the human-facing menu and narrative should be LLM-authored through the component library.
    - If the report needs technical drilldown, evidence governance or raw-data interpretation, author those as repository-specific sections instead of relying on fixed appendices.
 - Do not leave empty final-report sections or component blocks for deterministic renderer prose to explain. If a point is unknown or incomplete, author an `open_questions` block, limitation or partial verdict in the LLM report.
@@ -42,21 +49,23 @@ and Codex should still execute the full workflow below without asking the user t
 - The CLI must not decide semantic quality by keyword, menu, component presence or target checklist counts. It validates artifact contracts, explicit `goal_contract_refs` reference shape and evidence references; the LLM controls semantic completeness, documentation quality and decision readiness through `requirements_trace` and `report_quality_review`.
 - If the LLM-authored `report_quality_review.verdict` is `partial` or `not_ready`, final readiness must remain blocked by that LLM verdict until the report is improved or the verdict is changed by a later LLM review.
 - The final bundle/report must expose `semantic_authority` so humans can see that semantic readiness comes from the LLM and deterministic artifacts are only navigation, evidence and renderer-contract support.
-13. Write valid JSON into `.analysis/llm/` using the expected file names from the tasks.
-14. Run `cba finalize .`.
-15. Run `cba audit-report .` to verify the visible report is LLM-authored, final synthesis happened after the required LLM building-block artifacts and detail reviews, the LLM-authored report-quality review is decision-ready, the LLM-authored requirements trace explicitly references the original goal contract, evidence is valid, LLM-planned detail reviews are executed/synthesized and old fixed report navigation did not reappear.
-16. Check the finalization and audit output for artifact/reference contracts, source inventory accounting, final prerequisite artifacts, source-family/detail-agent execution, LLM-authored report-quality review, LLM-authored report contract and evidence validation.
-17. If evidence validation, source inventory accounting, artifact contract checks, or the LLM-authored `requirements_trace`/`report_quality_review` show gaps, fix invalid evidence, incomplete `analysis_coverage` references or missing whole-repo/source-family/report statements in `.analysis/llm/*.json` and rerun `cba finalize .` and `cba audit-report .`.
+15. Write valid JSON into `.analysis/llm/` using the expected file names from the tasks.
+16. Run `cognianalysis finalize .`.
+17. Run `cognianalysis audit-report .` to verify the visible report is LLM-authored, the LLM analysis strategy exists, Tier 1 file-card coverage is complete, final synthesis happened after the required LLM building-block artifacts and detail reviews, the LLM-authored report-quality review is decision-ready, the LLM-authored requirements trace explicitly references the original goal contract, evidence is valid, LLM-planned detail reviews are executed/synthesized and old fixed report navigation did not reappear.
+18. Check the finalization and audit output for the LLM analysis strategy, Tier 1 file-card coverage, artifact/reference contracts, source inventory accounting, final prerequisite artifacts, source-family/detail-agent execution, LLM-authored report-quality review, LLM-authored report contract and evidence validation.
+19. If evidence validation, LLM analysis strategy, Tier 1 file-card coverage, source inventory accounting, artifact contract checks, or the LLM-authored `requirements_trace`/`report_quality_review` show gaps, fix invalid evidence, missing `.analysis/source_tiers/*.json` file cards, incomplete `analysis_coverage` references or missing whole-repo/source-family/report statements and rerun `cognianalysis finalize .` and `cognianalysis audit-report .`.
 
-## Required target artifact contracts
+## Required target capability trace context
 
 The assessment must address all target capabilities, not only documentation generation:
 
 - Existing-harness execution, not a custom coding agent
 - LLM-first semantic extraction
-- Non-authoritative code-map signals
+- LLM-authored repository analysis strategy before fixed capability workbenches
+- Non-authoritative inventory-only code map
 - Whole-codebase source inventory accounting
-- Semantic target artifact contracts must come from LLM/detail-review/final-document artifacts, not deterministic placeholders or inventory fallback text
+- Tiered whole-codebase analysis: every included file receives at least Tier 1 LLM-authored understanding before deeper Tier 2-4 analysis is selected
+- Target capability rows are LLM trace context only; semantic satisfaction must come from LLM/detail-review/final-document artifacts, not deterministic placeholders, output-key presence scoring or inventory fallback text
 - Whole-repository narrative and source-family coverage before deep slices
 - Final summaries, E2E understanding, relationships and visible reports only after all pre-final LLM building-block outputs exist
 - LLM-authored source-family detail-agent plan and executable detail task files after overview synthesis and before final report synthesis
@@ -146,6 +155,6 @@ Prefer evidence from source files, tests, DTOs, schemas, contract files, configu
 ## Non-goals
 
 - Do not modify production code.
-- Do not present code-map signals as final entrypoints.
+- Do not present code-map inventory metadata as final entrypoints, interfaces, flows, relationships or framework facts.
 - Do not produce prose-only analysis when JSON output is requested by a task.
 - Do not hide uncertainty; use `confidence` and `open_questions`.

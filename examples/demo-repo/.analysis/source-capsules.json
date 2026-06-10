@@ -1,20 +1,73 @@
 [
   {
+    "id": "capsule-84718e9be2",
+    "path": "src/main/java/com/acme/onboarding/Customer.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 28,
+    "score": 28,
+    "language": "Java",
+    "lines": 43,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.Instant;\n\npublic class Customer {\n    private String id;\n    private String email;\n    private String firstName;\n    private String lastName;\n    private CustomerStatus status;\n    private String reviewReason;\n    private int riskScore;\n    private String kycReference;\n    private Instant createdAt;\n\n    public static Customer pending(String email, String firstName, String lastName, Instant createdAt) {\n        Customer customer = new Customer();\n        customer.email = email;\n        customer.firstName = firstName;\n        customer.lastName = lastName;\n        customer.status = CustomerStatus.PENDING;\n        customer.createdAt = createdAt;\n        return customer;\n    }\n\n    public void markManualReview(int riskScore, String kycReference) {\n        this.status = CustomerStatus.MANUAL_REVIEW;\n        this.reviewReason = \"KYC rejected or risk score above threshold\";\n        this.riskScore = riskScore;\n        this.kycReference = kycReference;\n    }\n\n    public void activate(int riskScore, String kycReference) {\n        this.status = CustomerStatus.ACTIVE;\n        this.riskScore = riskScore;\n        this.kycReference = kycReference;\n    }\n\n    public String id() { return id; }\n    public CustomerStatus status() { return status; }\n    public String reviewReason() { return reviewReason; }\n}\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-41c63fee29",
+    "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 28,
+    "score": 28,
+    "language": "Java",
+    "lines": 32,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\nimport jakarta.validation.Valid;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\n@RequestMapping(\"/customers\")\npublic class OnboardingController {\n    private final OnboardingService onboardingService;\n\n    public OnboardingController(OnboardingService onboardingService) {\n        this.onboardingService = onboardingService;\n    }\n\n    @PostMapping(\"/onboard\")\n    public ResponseEntity<OnboardingResponse> onboard(@Valid @RequestBody OnboardingRequest request) {\n        OnboardingResult result = onboardingService.startOnboarding(request);\n        return ResponseEntity.accepted().body(OnboardingResponse.from(result));\n    }\n\n    @GetMapping(\"/{customerId}/status\")\n    public ResponseEntity<OnboardingStatusResponse> status(@PathVariable String customerId) {\n        return ResponseEntity.ok(onboardingService.getStatus(customerId));\n    }\n}\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-c6b6af442a",
+    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 28,
+    "score": 28,
+    "language": "Java",
+    "lines": 46,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.Instant;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\n\n@Service\npublic class OnboardingService {\n    private final CustomerRepository customerRepository;\n    private final KycClient kycClient;\n    private final RiskScoringService riskScoringService;\n    private final OnboardingEventPublisher eventPublisher;\n\n    public OnboardingService(CustomerRepository customerRepository, KycClient kycClient,\n                             RiskScoringService riskScoringService, OnboardingEventPublisher eventPublisher) {\n        this.customerRepository = customerRepository;\n        this.kycClient = kycClient;\n        this.riskScoringService = riskScoringService;\n        this.eventPublisher = eventPublisher;\n    }\n\n    @Transactional\n    public OnboardingResult startOnboarding(OnboardingRequest request) {\n        if (customerRepository.existsByEmail(request.email())) {\n            throw new DuplicateCustomerException(request.email());\n        }\n        KycResult kyc = kycClient.verifyIdentity(request.firstName(), request.lastName(), request.birthDate());\n        int riskScore = riskScoringService.calculateScore(request, kyc);\n        Customer customer = Customer.pending(request.email(), request.firstName(), request.lastName(), Instant.now());\n        if (!kyc.approved() || riskScore > 70) {\n            customer.markManualReview(riskScore, kyc.reference());\n        } else {\n            customer.activate(riskScore, kyc.reference());\n        }\n        Customer saved = customerRepository.save(customer);\n        eventPublisher.publishOnboardingStarted(saved.id(), saved.status());\n        return new OnboardingResult(saved.id(), saved.status(), riskScore, kyc.reference());\n    }\n\n    public OnboardingStatusResponse getStatus(String customerId) {\n        Customer customer = customerRepository.findById(customerId)\n            .orElseThrow(() -> new CustomerNotFoundException(customerId));\n        return new OnboardingStatusResponse(customer.id(), customer.status(), customer.reviewReason());\n    }\n}\n",
+    "truncated": false
+  },
+  {
     "id": "capsule-2c9b285fdc",
     "path": "docs/examples/customer-verification-soap.xml",
     "module": "docs/examples",
     "navigation_tags": [
-      "documentation",
-      "example",
-      "soap_contract"
+      "structured_file"
     ],
     "roles": [
-      "documentation",
-      "example",
-      "soap_contract"
+      "structured_file"
     ],
-    "navigation_score": 184,
-    "score": 184,
+    "navigation_score": 26,
+    "score": 26,
     "language": "XML",
     "lines": 21,
     "symbols": [],
@@ -27,59 +80,18 @@
     "path": "docs/openapi.yml",
     "module": "docs",
     "navigation_tags": [
-      "api_contract",
-      "config",
-      "documentation"
+      "structured_file"
     ],
     "roles": [
-      "api_contract",
-      "config",
-      "documentation"
+      "structured_file"
     ],
-    "navigation_score": 181,
-    "score": 181,
+    "navigation_score": 26,
+    "score": 26,
     "language": "YAML",
     "lines": 78,
     "symbols": [],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "docs/openapi.yml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
+    "signals": [],
     "content_excerpt": "openapi: 3.0.3\ninfo:\n  title: Customer Onboarding API\n  version: 1.0.0\npaths:\n  /customers/onboard:\n    post:\n      operationId: startCustomerOnboarding\n      summary: Startet das Onboarding eines neuen Kunden\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/OnboardingRequest'\n            examples:\n              lowRiskCustomer:\n                summary: Low-risk customer with referral code\n                value:\n                  email: ada@example.com\n                  firstName: Ada\n                  lastName: Lovelace\n                  birthDate: '1990-01-20'\n                  referralCode: FRIEND\n      responses:\n        '202':\n          description: Onboarding accepted\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingResponse'\n              examples:\n                accepted:\n                  value:\n                    customerId: c-1001\n                    status: ACTIVE\n                    riskScore: 12\n                    kycReference: kyc-789\n  /customers/{customerId}/status:\n    get:\n      operationId: getOnboardingStatus\n      summary: Liefert den aktuellen Onboardingstatus\n      parameters:\n        - name: customerId\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Current status\n          content:\n            application/json:\n              examples:\n                manualReview:\n                  value:\n                    customerId: c-1002\n                    status: MANUAL_REVIEW\n                    reviewReason: KYC_REJECTED\ncomponents:\n  schemas:\n    OnboardingRequest:\n      type: object\n      required: [email, firstName, lastName, birthDate]\n      properties:\n        email: { type: string, format: email }\n        firstName: { type: string }\n        lastName: { type: string }\n        birthDate: { type: string, format: date }\n        referralCode: { type: string, nullable: true }\n    OnboardingResponse:\n      type: object\n      properties:\n        customerId: { type: string }\n        status: { type: string, enum: [PENDING, ACTIVE, MANUAL_REVIEW] }\n        riskScore: { type: integer }\n        kycReference: { type: string }\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-ea0d1d7c98",
-    "path": "src/main/resources/openapi.yaml",
-    "module": "src/main",
-    "navigation_tags": [
-      "api_contract",
-      "config"
-    ],
-    "roles": [
-      "api_contract",
-      "config"
-    ],
-    "navigation_score": 147,
-    "score": 147,
-    "language": "YAML",
-    "lines": 77,
-    "symbols": [],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "src/main/resources/openapi.yaml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "openapi: 3.0.3\ninfo:\n  title: Customer Onboarding API\n  version: 1.0.0\npaths:\n  /customers/onboard:\n    post:\n      operationId: startCustomerOnboarding\n      summary: Start customer onboarding\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/OnboardingRequest'\n            examples:\n              normalCustomer:\n                value:\n                  email: max.mustermann@example.com\n                  firstName: Max\n                  lastName: Mustermann\n                  birthDate: '1984-04-21'\n                  referralCode: PARTNER-42\n      responses:\n        '202':\n          description: Onboarding accepted\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingResponse'\n              examples:\n                accepted:\n                  value:\n                    customerId: cus_12345\n                    status: ACTIVE\n                    riskScore: 35\n                    kycReference: KYC-2026-0001\n  /customers/{customerId}/status:\n    get:\n      operationId: getOnboardingStatus\n      summary: Read current onboarding status\n      parameters:\n        - name: customerId\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Current status\n          content:\n            application/json:\n              examples:\n                manualReview:\n                  value:\n                    customerId: cus_98765\n                    status: MANUAL_REVIEW\n                    reviewReason: KYC rejected or risk score too high\ncomponents:\n  schemas:\n    OnboardingRequest:\n      type: object\n      required: [email, firstName, lastName, birthDate]\n      properties:\n        email: { type: string, format: email }\n        firstName: { type: string }\n        lastName: { type: string }\n        birthDate: { type: string, format: date }\n        referralCode: { type: string, nullable: true }\n    OnboardingResponse:\n      type: object\n      properties:\n        customerId: { type: string }\n        status: { type: string, enum: [PENDING, ACTIVE, MANUAL_REVIEW] }\n        riskScore: { type: integer }\n        kycReference: { type: string }\n",
     "truncated": false
   },
   {
@@ -87,53 +99,113 @@
     "path": "docs/soap-kyc.wsdl",
     "module": "docs",
     "navigation_tags": [
-      "documentation",
-      "soap_contract"
+      "structured_file"
     ],
     "roles": [
-      "documentation",
-      "soap_contract"
+      "structured_file"
     ],
-    "navigation_score": 136,
-    "score": 136,
+    "navigation_score": 26,
+    "score": 26,
     "language": "WSDL",
     "lines": 29,
-    "symbols": [
-      {
-        "type": "xml_element",
-        "name": "VerifyIdentityRequest",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 7
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyIdentityResponse",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 12
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyIdentity",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 17
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyIdentity",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 24
-      }
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "docs/soap-kyc.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
+    "symbols": [],
+    "signals": [],
     "content_excerpt": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions name=\"KycVerificationService\"\n  targetNamespace=\"https://acme.example/kyc\"\n  xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n  xmlns:tns=\"https://acme.example/kyc\">\n  <message name=\"VerifyIdentityRequest\">\n    <part name=\"firstName\" type=\"xsd:string\" />\n    <part name=\"lastName\" type=\"xsd:string\" />\n    <part name=\"birthDate\" type=\"xsd:date\" />\n  </message>\n  <message name=\"VerifyIdentityResponse\">\n    <part name=\"approved\" type=\"xsd:boolean\" />\n    <part name=\"reference\" type=\"xsd:string\" />\n  </message>\n  <portType name=\"KycVerificationPort\">\n    <operation name=\"VerifyIdentity\">\n      <input message=\"tns:VerifyIdentityRequest\" />\n      <output message=\"tns:VerifyIdentityResponse\" />\n    </operation>\n  </portType>\n  <binding name=\"KycVerificationBinding\" type=\"tns:KycVerificationPort\">\n    <soap:binding style=\"rpc\" transport=\"http://schemas.xmlsoap.org/soap/http\" />\n    <operation name=\"VerifyIdentity\">\n      <soap:operation soapAction=\"VerifyIdentity\" />\n    </operation>\n  </binding>\n</definitions>\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-ca299b8a4a",
+    "path": "src/main/resources/onboarding.wsdl",
+    "module": "src/main",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "navigation_score": 26,
+    "score": 26,
+    "language": "WSDL",
+    "lines": 38,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions name=\"CustomerOnboardingSoapService\"\n             targetNamespace=\"https://acme.example/onboarding/soap\"\n             xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n             xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n             xmlns:tns=\"https://acme.example/onboarding/soap\"\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <message name=\"StartOnboardingRequest\">\n    <part name=\"email\" type=\"xsd:string\"/>\n    <part name=\"firstName\" type=\"xsd:string\"/>\n    <part name=\"lastName\" type=\"xsd:string\"/>\n    <part name=\"birthDate\" type=\"xsd:date\"/>\n  </message>\n  <message name=\"StartOnboardingResponse\">\n    <part name=\"customerId\" type=\"xsd:string\"/>\n    <part name=\"status\" type=\"xsd:string\"/>\n  </message>\n  <portType name=\"CustomerOnboardingPortType\">\n    <operation name=\"StartOnboarding\">\n      <input message=\"tns:StartOnboardingRequest\"/>\n      <output message=\"tns:StartOnboardingResponse\"/>\n    </operation>\n  </portType>\n  <binding name=\"CustomerOnboardingSoapBinding\" type=\"tns:CustomerOnboardingPortType\">\n    <soap:binding style=\"rpc\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"StartOnboarding\">\n      <soap:operation soapAction=\"https://acme.example/onboarding/StartOnboarding\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n  <service name=\"CustomerOnboardingSoapService\">\n    <port name=\"CustomerOnboardingSoapPort\" binding=\"tns:CustomerOnboardingSoapBinding\">\n      <soap:address location=\"https://api.example.com/soap/onboarding\"/>\n    </port>\n  </service>\n</definitions>\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-ea0d1d7c98",
+    "path": "src/main/resources/openapi.yaml",
+    "module": "src/main",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "navigation_score": 26,
+    "score": 26,
+    "language": "YAML",
+    "lines": 77,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "openapi: 3.0.3\ninfo:\n  title: Customer Onboarding API\n  version: 1.0.0\npaths:\n  /customers/onboard:\n    post:\n      operationId: startCustomerOnboarding\n      summary: Start customer onboarding\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/OnboardingRequest'\n            examples:\n              normalCustomer:\n                value:\n                  email: max.mustermann@example.com\n                  firstName: Max\n                  lastName: Mustermann\n                  birthDate: '1984-04-21'\n                  referralCode: PARTNER-42\n      responses:\n        '202':\n          description: Onboarding accepted\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingResponse'\n              examples:\n                accepted:\n                  value:\n                    customerId: cus_12345\n                    status: ACTIVE\n                    riskScore: 35\n                    kycReference: KYC-2026-0001\n  /customers/{customerId}/status:\n    get:\n      operationId: getOnboardingStatus\n      summary: Read current onboarding status\n      parameters:\n        - name: customerId\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Current status\n          content:\n            application/json:\n              examples:\n                manualReview:\n                  value:\n                    customerId: cus_98765\n                    status: MANUAL_REVIEW\n                    reviewReason: KYC rejected or risk score too high\ncomponents:\n  schemas:\n    OnboardingRequest:\n      type: object\n      required: [email, firstName, lastName, birthDate]\n      properties:\n        email: { type: string, format: email }\n        firstName: { type: string }\n        lastName: { type: string }\n        birthDate: { type: string, format: date }\n        referralCode: { type: string, nullable: true }\n    OnboardingResponse:\n      type: object\n      properties:\n        customerId: { type: string }\n        status: { type: string, enum: [PENDING, ACTIVE, MANUAL_REVIEW] }\n        riskScore: { type: integer }\n        kycReference: { type: string }\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-0a2d68b0f2",
+    "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+    "module": "src/main",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "navigation_score": 26,
+    "score": 26,
+    "language": "YAML",
+    "lines": 103,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "openapi: 3.0.3\ninfo:\n  title: Customer Onboarding API\n  version: 1.0.0\npaths:\n  /customers/onboard:\n    post:\n      operationId: startCustomerOnboarding\n      summary: Start onboarding for a new customer\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/OnboardingRequest'\n            examples:\n              validCustomer:\n                summary: Customer with referral code\n                value:\n                  email: jane.doe@example.com\n                  firstName: Jane\n                  lastName: Doe\n                  birthDate: '1990-04-12'\n                  referralCode: PARTNER-42\n      responses:\n        '202':\n          description: Onboarding accepted\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingResponse'\n              examples:\n                accepted:\n                  value:\n                    customerId: c-123\n                    status: ACTIVE\n                    riskScore: 20\n                    kycReference: kyc-789\n        '409':\n          description: Customer already exists\n  /customers/{customerId}/status:\n    get:\n      operationId: getCustomerOnboardingStatus\n      summary: Return onboarding status for a customer\n      parameters:\n        - name: customerId\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Current customer status\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingStatusResponse'\n              examples:\n                manualReview:\n                  value:\n                    customerId: c-123\n                    status: MANUAL_REVIEW\n                    reviewReason: KYC rejected or risk score above threshold\ncomponents:\n  schemas:\n    OnboardingRequest:\n      type: object\n      required: [email, firstName, lastName, birthDate]\n      properties:\n        email:\n          type: string\n          format: email\n        firstName:\n          type: string\n        lastName:\n          type: string\n        birthDate:\n          type: string\n          format: date\n        referralCode:\n          type: string\n    OnboardingResponse:\n      type: object\n      properties:\n        customerId:\n          type: string\n        status:\n          type: string\n          enum: [PENDING, ACTIVE, MANUAL_REVIEW]\n        riskScore:\n          type: integer\n        kycReference:\n          type: string\n    OnboardingStatusResponse:\n      type: object\n      properties:\n        customerId:\n          type: string\n        status:\n          type: string\n        reviewReason:\n          type: string\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-e5ac8136f2",
+    "path": "src/main/resources/wsdl/customer-verification.wsdl",
+    "module": "src/main",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "navigation_score": 26,
+    "score": 26,
+    "language": "WSDL",
+    "lines": 54,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions name=\"CustomerVerificationService\"\n  targetNamespace=\"https://acme.example/verification\"\n  xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n  xmlns:tns=\"https://acme.example/verification\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\">\n  <types>\n    <xsd:schema targetNamespace=\"https://acme.example/verification\">\n      <xsd:element name=\"VerifyCustomerRequest\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"customerId\" type=\"xsd:string\"/>\n            <xsd:element name=\"birthDate\" type=\"xsd:date\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n      <xsd:element name=\"VerifyCustomerResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"approved\" type=\"xsd:boolean\"/>\n            <xsd:element name=\"reference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n    </xsd:schema>\n  </types>\n  <message name=\"VerifyCustomerInput\">\n    <part name=\"parameters\" element=\"tns:VerifyCustomerRequest\"/>\n  </message>\n  <message name=\"VerifyCustomerOutput\">\n    <part name=\"parameters\" element=\"tns:VerifyCustomerResponse\"/>\n  </message>\n  <portType name=\"CustomerVerificationPortType\">\n    <operation name=\"VerifyCustomer\">\n      <input message=\"tns:VerifyCustomerInput\"/>\n      <output message=\"tns:VerifyCustomerOutput\"/>\n    </operation>\n  </portType>\n  <binding name=\"CustomerVerificationBinding\" type=\"tns:CustomerVerificationPortType\">\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"VerifyCustomer\">\n      <soap:operation soapAction=\"https://acme.example/verification/VerifyCustomer\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n  <service name=\"CustomerVerificationService\">\n    <port name=\"CustomerVerificationPort\" binding=\"tns:CustomerVerificationBinding\">\n      <soap:address location=\"https://verification.example.local/ws\"/>\n    </port>\n  </service>\n</definitions>\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-a8098adc30",
+    "path": "src/main/resources/wsdl/kyc-status.wsdl",
+    "module": "src/main",
+    "navigation_tags": [
+      "structured_file"
+    ],
+    "roles": [
+      "structured_file"
+    ],
+    "navigation_score": 26,
+    "score": 26,
+    "language": "WSDL",
+    "lines": 43,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "<definitions name=\"KycStatusService\"\n             targetNamespace=\"https://acme.example/kyc\"\n             xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n             xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n             xmlns:tns=\"https://acme.example/kyc\">\n  <types>\n    <xsd:schema targetNamespace=\"https://acme.example/kyc\">\n      <xsd:element name=\"GetKycStatusRequest\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"kycReference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n      <xsd:element name=\"GetKycStatusResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"approved\" type=\"xsd:boolean\"/>\n            <xsd:element name=\"reference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n    </xsd:schema>\n  </types>\n  <message name=\"GetKycStatusInput\"><part name=\"payload\" element=\"tns:GetKycStatusRequest\"/></message>\n  <message name=\"GetKycStatusOutput\"><part name=\"payload\" element=\"tns:GetKycStatusResponse\"/></message>\n  <portType name=\"KycStatusPortType\">\n    <operation name=\"GetKycStatus\">\n      <input message=\"tns:GetKycStatusInput\"/>\n      <output message=\"tns:GetKycStatusOutput\"/>\n    </operation>\n  </portType>\n  <binding name=\"KycStatusBinding\" type=\"tns:KycStatusPortType\">\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"GetKycStatus\">\n      <soap:operation soapAction=\"https://acme.example/kyc/GetKycStatus\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n</definitions>\n",
     "truncated": false
   },
   {
@@ -141,27 +213,17 @@
     "path": "docs/api-examples.md",
     "module": "docs",
     "navigation_tags": [
-      "documentation",
-      "example"
+      "text_document"
     ],
     "roles": [
-      "documentation",
-      "example"
+      "text_document"
     ],
-    "navigation_score": 118,
-    "score": 118,
+    "navigation_score": 24,
+    "score": 24,
     "language": "Markdown",
     "lines": 53,
     "symbols": [],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/api-examples.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
+    "signals": [],
     "content_excerpt": "# API Examples\n\n## Start onboarding request\n\n```json\n{\n  \"email\": \"max.mustermann@example.com\",\n  \"firstName\": \"Max\",\n  \"lastName\": \"Mustermann\",\n  \"birthDate\": \"1984-04-21\",\n  \"referralCode\": \"PARTNER-42\"\n}\n```\n\n## Start onboarding response\n\n```json\n{\n  \"customerId\": \"cus_12345\",\n  \"status\": \"ACTIVE\",\n  \"riskScore\": 35,\n  \"kycReference\": \"KYC-2026-0001\"\n}\n```\n\n## SOAP KYC status request\n\n```xml\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:kyc=\"https://acme.example/kyc\">\n  <soapenv:Body>\n    <kyc:GetKycStatusRequest>\n      <kyc:kycReference>KYC-2026-0001</kyc:kycReference>\n    </kyc:GetKycStatusRequest>\n  </soapenv:Body>\n</soapenv:Envelope>\n```\n\n## Mermaid overview\n\n```mermaid\nsequenceDiagram\n  participant Client\n  participant API\n  participant Service\n  participant KYC\n  participant DB\n  Client->>API: POST /customers/onboard\n  API->>Service: startOnboarding(request)\n  Service->>KYC: verifyIdentity(...)\n  Service->>DB: save(customer)\n  API-->>Client: 202 OnboardingResponse\n```\n",
     "truncated": false
   },
@@ -170,472 +232,18 @@
     "path": "docs/business-examples.md",
     "module": "docs",
     "navigation_tags": [
-      "documentation",
-      "example"
+      "text_document"
     ],
     "roles": [
-      "documentation",
-      "example"
+      "text_document"
     ],
-    "navigation_score": 118,
-    "score": 118,
+    "navigation_score": 24,
+    "score": 24,
     "language": "Markdown",
     "lines": 22,
     "symbols": [],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/business-examples.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
+    "signals": [],
     "content_excerpt": "# Business examples\n\n## Low risk onboarding\n\nRequest:\n\n```json\n{\n  \"email\": \"ada@example.com\",\n  \"firstName\": \"Ada\",\n  \"lastName\": \"Lovelace\",\n  \"birthDate\": \"1990-01-20\",\n  \"referralCode\": \"FRIEND\"\n}\n```\n\nExpected result: customer is activated when KYC is approved and risk score is at most 70.\n\n## Manual review onboarding\n\nExpected result: customer is marked for manual review when KYC is rejected or risk score is above 70.\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-e5ac8136f2",
-    "path": "src/main/resources/wsdl/customer-verification.wsdl",
-    "module": "src/main",
-    "navigation_tags": [
-      "soap_contract"
-    ],
-    "roles": [
-      "soap_contract"
-    ],
-    "navigation_score": 114,
-    "score": 114,
-    "language": "WSDL",
-    "lines": 54,
-    "symbols": [
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomerRequest",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 10
-      },
-      {
-        "type": "xml_element",
-        "name": "customerId",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 13
-      },
-      {
-        "type": "xml_element",
-        "name": "birthDate",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 14
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomerResponse",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 18
-      },
-      {
-        "type": "xml_element",
-        "name": "approved",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 21
-      },
-      {
-        "type": "xml_element",
-        "name": "reference",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 22
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomerInput",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 28
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomerOutput",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 31
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomer",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 35
-      },
-      {
-        "type": "xml_element",
-        "name": "VerifyCustomer",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 42
-      }
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/wsdl/customer-verification.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions name=\"CustomerVerificationService\"\n  targetNamespace=\"https://acme.example/verification\"\n  xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n  xmlns:tns=\"https://acme.example/verification\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\">\n  <types>\n    <xsd:schema targetNamespace=\"https://acme.example/verification\">\n      <xsd:element name=\"VerifyCustomerRequest\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"customerId\" type=\"xsd:string\"/>\n            <xsd:element name=\"birthDate\" type=\"xsd:date\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n      <xsd:element name=\"VerifyCustomerResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"approved\" type=\"xsd:boolean\"/>\n            <xsd:element name=\"reference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n    </xsd:schema>\n  </types>\n  <message name=\"VerifyCustomerInput\">\n    <part name=\"parameters\" element=\"tns:VerifyCustomerRequest\"/>\n  </message>\n  <message name=\"VerifyCustomerOutput\">\n    <part name=\"parameters\" element=\"tns:VerifyCustomerResponse\"/>\n  </message>\n  <portType name=\"CustomerVerificationPortType\">\n    <operation name=\"VerifyCustomer\">\n      <input message=\"tns:VerifyCustomerInput\"/>\n      <output message=\"tns:VerifyCustomerOutput\"/>\n    </operation>\n  </portType>\n  <binding name=\"CustomerVerificationBinding\" type=\"tns:CustomerVerificationPortType\">\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"VerifyCustomer\">\n      <soap:operation soapAction=\"https://acme.example/verification/VerifyCustomer\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n  <service name=\"CustomerVerificationService\">\n    <port name=\"CustomerVerificationPort\" binding=\"tns:CustomerVerificationBinding\">\n      <soap:address location=\"https://verification.example.local/ws\"/>\n    </port>\n  </service>\n</definitions>\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-0a2d68b0f2",
-    "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-    "module": "src/main",
-    "navigation_tags": [
-      "api_contract",
-      "config"
-    ],
-    "roles": [
-      "api_contract",
-      "config"
-    ],
-    "navigation_score": 112,
-    "score": 112,
-    "language": "YAML",
-    "lines": 103,
-    "symbols": [],
-    "signals": [
-      {
-        "type": "api_contract_candidate",
-        "label": "OpenAPI/Swagger artifact candidate",
-        "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "openapi: 3.0.3\ninfo:\n  title: Customer Onboarding API\n  version: 1.0.0\npaths:\n  /customers/onboard:\n    post:\n      operationId: startCustomerOnboarding\n      summary: Start onboarding for a new customer\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/OnboardingRequest'\n            examples:\n              validCustomer:\n                summary: Customer with referral code\n                value:\n                  email: jane.doe@example.com\n                  firstName: Jane\n                  lastName: Doe\n                  birthDate: '1990-04-12'\n                  referralCode: PARTNER-42\n      responses:\n        '202':\n          description: Onboarding accepted\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingResponse'\n              examples:\n                accepted:\n                  value:\n                    customerId: c-123\n                    status: ACTIVE\n                    riskScore: 20\n                    kycReference: kyc-789\n        '409':\n          description: Customer already exists\n  /customers/{customerId}/status:\n    get:\n      operationId: getCustomerOnboardingStatus\n      summary: Return onboarding status for a customer\n      parameters:\n        - name: customerId\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Current customer status\n          content:\n            application/json:\n              schema:\n                $ref: '#/components/schemas/OnboardingStatusResponse'\n              examples:\n                manualReview:\n                  value:\n                    customerId: c-123\n                    status: MANUAL_REVIEW\n                    reviewReason: KYC rejected or risk score above threshold\ncomponents:\n  schemas:\n    OnboardingRequest:\n      type: object\n      required: [email, firstName, lastName, birthDate]\n      properties:\n        email:\n          type: string\n          format: email\n        firstName:\n          type: string\n        lastName:\n          type: string\n        birthDate:\n          type: string\n          format: date\n        referralCode:\n          type: string\n    OnboardingResponse:\n      type: object\n      properties:\n        customerId:\n          type: string\n        status:\n          type: string\n          enum: [PENDING, ACTIVE, MANUAL_REVIEW]\n        riskScore:\n          type: integer\n        kycReference:\n          type: string\n    OnboardingStatusResponse:\n      type: object\n      properties:\n        customerId:\n          type: string\n        status:\n          type: string\n        reviewReason:\n          type: string\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-a8098adc30",
-    "path": "src/main/resources/wsdl/kyc-status.wsdl",
-    "module": "src/main",
-    "navigation_tags": [
-      "soap_contract"
-    ],
-    "roles": [
-      "soap_contract"
-    ],
-    "navigation_score": 112,
-    "score": 112,
-    "language": "WSDL",
-    "lines": 43,
-    "symbols": [
-      {
-        "type": "xml_element",
-        "name": "GetKycStatusRequest",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 9
-      },
-      {
-        "type": "xml_element",
-        "name": "kycReference",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 12
-      },
-      {
-        "type": "xml_element",
-        "name": "GetKycStatusResponse",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 16
-      },
-      {
-        "type": "xml_element",
-        "name": "approved",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 19
-      },
-      {
-        "type": "xml_element",
-        "name": "reference",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 20
-      },
-      {
-        "type": "xml_element",
-        "name": "GetKycStatusInput",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 26
-      },
-      {
-        "type": "xml_element",
-        "name": "GetKycStatusOutput",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 27
-      },
-      {
-        "type": "xml_element",
-        "name": "GetKycStatus",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 29
-      },
-      {
-        "type": "xml_element",
-        "name": "GetKycStatus",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 36
-      }
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/wsdl/kyc-status.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "<definitions name=\"KycStatusService\"\n             targetNamespace=\"https://acme.example/kyc\"\n             xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n             xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n             xmlns:tns=\"https://acme.example/kyc\">\n  <types>\n    <xsd:schema targetNamespace=\"https://acme.example/kyc\">\n      <xsd:element name=\"GetKycStatusRequest\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"kycReference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n      <xsd:element name=\"GetKycStatusResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"approved\" type=\"xsd:boolean\"/>\n            <xsd:element name=\"reference\" type=\"xsd:string\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n    </xsd:schema>\n  </types>\n  <message name=\"GetKycStatusInput\"><part name=\"payload\" element=\"tns:GetKycStatusRequest\"/></message>\n  <message name=\"GetKycStatusOutput\"><part name=\"payload\" element=\"tns:GetKycStatusResponse\"/></message>\n  <portType name=\"KycStatusPortType\">\n    <operation name=\"GetKycStatus\">\n      <input message=\"tns:GetKycStatusInput\"/>\n      <output message=\"tns:GetKycStatusOutput\"/>\n    </operation>\n  </portType>\n  <binding name=\"KycStatusBinding\" type=\"tns:KycStatusPortType\">\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"GetKycStatus\">\n      <soap:operation soapAction=\"https://acme.example/kyc/GetKycStatus\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n</definitions>\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-ca299b8a4a",
-    "path": "src/main/resources/onboarding.wsdl",
-    "module": "src/main",
-    "navigation_tags": [
-      "soap_contract"
-    ],
-    "roles": [
-      "soap_contract"
-    ],
-    "navigation_score": 102,
-    "score": 102,
-    "language": "WSDL",
-    "lines": 38,
-    "symbols": [
-      {
-        "type": "xml_element",
-        "name": "StartOnboardingRequest",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 8
-      },
-      {
-        "type": "xml_element",
-        "name": "StartOnboardingResponse",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 14
-      },
-      {
-        "type": "xml_element",
-        "name": "StartOnboarding",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 19
-      },
-      {
-        "type": "xml_element",
-        "name": "StartOnboarding",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 26
-      }
-    ],
-    "signals": [
-      {
-        "type": "soap_contract_candidate",
-        "label": "SOAP/WSDL/XSD artifact candidate",
-        "path": "src/main/resources/onboarding.wsdl",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions name=\"CustomerOnboardingSoapService\"\n             targetNamespace=\"https://acme.example/onboarding/soap\"\n             xmlns=\"http://schemas.xmlsoap.org/wsdl/\"\n             xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n             xmlns:tns=\"https://acme.example/onboarding/soap\"\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <message name=\"StartOnboardingRequest\">\n    <part name=\"email\" type=\"xsd:string\"/>\n    <part name=\"firstName\" type=\"xsd:string\"/>\n    <part name=\"lastName\" type=\"xsd:string\"/>\n    <part name=\"birthDate\" type=\"xsd:date\"/>\n  </message>\n  <message name=\"StartOnboardingResponse\">\n    <part name=\"customerId\" type=\"xsd:string\"/>\n    <part name=\"status\" type=\"xsd:string\"/>\n  </message>\n  <portType name=\"CustomerOnboardingPortType\">\n    <operation name=\"StartOnboarding\">\n      <input message=\"tns:StartOnboardingRequest\"/>\n      <output message=\"tns:StartOnboardingResponse\"/>\n    </operation>\n  </portType>\n  <binding name=\"CustomerOnboardingSoapBinding\" type=\"tns:CustomerOnboardingPortType\">\n    <soap:binding style=\"rpc\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <operation name=\"StartOnboarding\">\n      <soap:operation soapAction=\"https://acme.example/onboarding/StartOnboarding\"/>\n      <input><soap:body use=\"literal\"/></input>\n      <output><soap:body use=\"literal\"/></output>\n    </operation>\n  </binding>\n  <service name=\"CustomerOnboardingSoapService\">\n    <port name=\"CustomerOnboardingSoapPort\" binding=\"tns:CustomerOnboardingSoapBinding\">\n      <soap:address location=\"https://api.example.com/soap/onboarding\"/>\n    </port>\n  </service>\n</definitions>\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-8ec9a00bfd",
-    "path": "README.md",
-    "module": "README.md",
-    "navigation_tags": [
-      "documentation"
-    ],
-    "roles": [
-      "documentation"
-    ],
-    "navigation_score": 78,
-    "score": 78,
-    "language": "Markdown",
-    "lines": 4,
-    "symbols": [],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "README.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
-    "content_excerpt": "# Customer Onboarding Demo Repository\n\nThis demo repository contains a small Spring-style customer onboarding service. It is intentionally compact but includes REST endpoints, OpenAPI contracts, SOAP/WSDL examples, business rules, state transitions, events, persistence hints and test examples so the Codebase Understanding Pack can demonstrate its report sections.\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-22e8a39a39",
-    "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-    "module": "src/test",
-    "navigation_tags": [
-      "source",
-      "test"
-    ],
-    "roles": [
-      "source",
-      "test"
-    ],
-    "navigation_score": 74,
-    "score": 74,
-    "language": "Java",
-    "lines": 8,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingServiceTest",
-        "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-        "line": 3
-      }
-    ],
-    "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\nclass OnboardingServiceTest {\n    void duplicateEmailIsRejected() {}\n    void highRiskCustomerRequiresManualReview() {}\n    void approvedLowRiskCustomerIsActivated() {}\n}\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-84718e9be2",
-    "path": "src/main/java/com/acme/onboarding/Customer.java",
-    "module": "src/main",
-    "navigation_tags": [
-      "source"
-    ],
-    "roles": [
-      "source"
-    ],
-    "navigation_score": 66,
-    "score": 66,
-    "language": "Java",
-    "lines": 43,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "Customer",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 5
-      },
-      {
-        "type": "method",
-        "name": "pending",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 16
-      },
-      {
-        "type": "method",
-        "name": "markManualReview",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 26
-      },
-      {
-        "type": "method",
-        "name": "activate",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 33
-      },
-      {
-        "type": "method",
-        "name": "id",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 39
-      },
-      {
-        "type": "method",
-        "name": "status",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 40
-      },
-      {
-        "type": "method",
-        "name": "reviewReason",
-        "path": "src/main/java/com/acme/onboarding/Customer.java",
-        "line": 41
-      }
-    ],
-    "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.Instant;\n\npublic class Customer {\n    private String id;\n    private String email;\n    private String firstName;\n    private String lastName;\n    private CustomerStatus status;\n    private String reviewReason;\n    private int riskScore;\n    private String kycReference;\n    private Instant createdAt;\n\n    public static Customer pending(String email, String firstName, String lastName, Instant createdAt) {\n        Customer customer = new Customer();\n        customer.email = email;\n        customer.firstName = firstName;\n        customer.lastName = lastName;\n        customer.status = CustomerStatus.PENDING;\n        customer.createdAt = createdAt;\n        return customer;\n    }\n\n    public void markManualReview(int riskScore, String kycReference) {\n        this.status = CustomerStatus.MANUAL_REVIEW;\n        this.reviewReason = \"KYC rejected or risk score above threshold\";\n        this.riskScore = riskScore;\n        this.kycReference = kycReference;\n    }\n\n    public void activate(int riskScore, String kycReference) {\n        this.status = CustomerStatus.ACTIVE;\n        this.riskScore = riskScore;\n        this.kycReference = kycReference;\n    }\n\n    public String id() { return id; }\n    public CustomerStatus status() { return status; }\n    public String reviewReason() { return reviewReason; }\n}\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-41c63fee29",
-    "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-    "module": "src/main",
-    "navigation_tags": [
-      "source"
-    ],
-    "roles": [
-      "source"
-    ],
-    "navigation_score": 58,
-    "score": 58,
-    "language": "Java",
-    "lines": 32,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingController",
-        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-        "line": 14
-      },
-      {
-        "type": "method",
-        "name": "onboard",
-        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-        "line": 22
-      },
-      {
-        "type": "method",
-        "name": "status",
-        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-        "line": 28
-      }
-    ],
-    "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\nimport jakarta.validation.Valid;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\n@RequestMapping(\"/customers\")\npublic class OnboardingController {\n    private final OnboardingService onboardingService;\n\n    public OnboardingController(OnboardingService onboardingService) {\n        this.onboardingService = onboardingService;\n    }\n\n    @PostMapping(\"/onboard\")\n    public ResponseEntity<OnboardingResponse> onboard(@Valid @RequestBody OnboardingRequest request) {\n        OnboardingResult result = onboardingService.startOnboarding(request);\n        return ResponseEntity.accepted().body(OnboardingResponse.from(result));\n    }\n\n    @GetMapping(\"/{customerId}/status\")\n    public ResponseEntity<OnboardingStatusResponse> status(@PathVariable String customerId) {\n        return ResponseEntity.ok(onboardingService.getStatus(customerId));\n    }\n}\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-c6b6af442a",
-    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-    "module": "src/main",
-    "navigation_tags": [
-      "source"
-    ],
-    "roles": [
-      "source"
-    ],
-    "navigation_score": 58,
-    "score": 58,
-    "language": "Java",
-    "lines": 46,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingService",
-        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-        "line": 8
-      },
-      {
-        "type": "method",
-        "name": "startOnboarding",
-        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-        "line": 23
-      },
-      {
-        "type": "method",
-        "name": "getStatus",
-        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-        "line": 40
-      }
-    ],
-    "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.Instant;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\n\n@Service\npublic class OnboardingService {\n    private final CustomerRepository customerRepository;\n    private final KycClient kycClient;\n    private final RiskScoringService riskScoringService;\n    private final OnboardingEventPublisher eventPublisher;\n\n    public OnboardingService(CustomerRepository customerRepository, KycClient kycClient,\n                             RiskScoringService riskScoringService, OnboardingEventPublisher eventPublisher) {\n        this.customerRepository = customerRepository;\n        this.kycClient = kycClient;\n        this.riskScoringService = riskScoringService;\n        this.eventPublisher = eventPublisher;\n    }\n\n    @Transactional\n    public OnboardingResult startOnboarding(OnboardingRequest request) {\n        if (customerRepository.existsByEmail(request.email())) {\n            throw new DuplicateCustomerException(request.email());\n        }\n        KycResult kyc = kycClient.verifyIdentity(request.firstName(), request.lastName(), request.birthDate());\n        int riskScore = riskScoringService.calculateScore(request, kyc);\n        Customer customer = Customer.pending(request.email(), request.firstName(), request.lastName(), Instant.now());\n        if (!kyc.approved() || riskScore > 70) {\n            customer.markManualReview(riskScore, kyc.reference());\n        } else {\n            customer.activate(riskScore, kyc.reference());\n        }\n        Customer saved = customerRepository.save(customer);\n        eventPublisher.publishOnboardingStarted(saved.id(), saved.status());\n        return new OnboardingResult(saved.id(), saved.status(), riskScore, kyc.reference());\n    }\n\n    public OnboardingStatusResponse getStatus(String customerId) {\n        Customer customer = customerRepository.findById(customerId)\n            .orElseThrow(() -> new CustomerNotFoundException(customerId));\n        return new OnboardingStatusResponse(customer.id(), customer.status(), customer.reviewReason());\n    }\n}\n",
     "truncated": false
   },
   {
@@ -643,83 +251,37 @@
     "path": "docs/business-flows.md",
     "module": "docs",
     "navigation_tags": [
-      "documentation"
+      "text_document"
     ],
     "roles": [
-      "documentation"
+      "text_document"
     ],
-    "navigation_score": 53,
-    "score": 53,
+    "navigation_score": 24,
+    "score": 24,
     "language": "Markdown",
     "lines": 51,
     "symbols": [],
-    "signals": [
-      {
-        "type": "documentation_candidate",
-        "label": "Documentation artifact candidate",
-        "path": "docs/business-flows.md",
-        "line": 1,
-        "confidence": "navigation"
-      }
-    ],
+    "signals": [],
     "content_excerpt": "# Customer Onboarding Flows\n\n## REST onboarding example\n\nExample request:\n\n```json\n{\n  \"email\": \"ada.lovelace@example.com\",\n  \"firstName\": \"Ada\",\n  \"lastName\": \"Lovelace\",\n  \"birthDate\": \"1815-12-10\",\n  \"referralCode\": \"FRIEND-42\"\n}\n```\n\nExample response:\n\n```json\n{\n  \"customerId\": \"cst_123\",\n  \"status\": \"ACTIVE\",\n  \"riskScore\": 20,\n  \"kycReference\": \"kyc_789\"\n}\n```\n\n## Mermaid sequence\n\n```mermaid\nsequenceDiagram\n  participant Client\n  participant API as OnboardingController\n  participant Service as OnboardingService\n  participant KYC as KycClient\n  participant Repo as CustomerRepository\n  participant Kafka as OnboardingEventPublisher\n  Client->>API: POST /customers/onboard\n  API->>Service: startOnboarding(request)\n  Service->>KYC: verifyIdentity(firstName,lastName,birthDate)\n  Service->>Service: calculate risk score\n  Service->>Repo: save(customer)\n  Service->>Kafka: publish customer.onboarding.started\n  Service-->>API: OnboardingResult\n  API-->>Client: 202 OnboardingResponse\n```\n\n## Business rule example\n\nIf the KYC provider rejects the identity or the risk score is above 70, the customer is marked for manual review. Otherwise the customer is activated.\n",
     "truncated": false
   },
   {
-    "id": "capsule-a6d8b8556f",
-    "path": "src/main/resources/application.yml",
+    "id": "capsule-40457a8fe7",
+    "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
     "module": "src/main",
     "navigation_tags": [
-      "config"
+      "source_file"
     ],
     "roles": [
-      "config"
+      "source_file"
     ],
-    "navigation_score": 53,
-    "score": 53,
-    "language": "YAML",
+    "navigation_score": 20,
+    "score": 20,
+    "language": "Java",
     "lines": 8,
     "symbols": [],
     "signals": [],
-    "content_excerpt": "spring:\n  application:\n    name: customer-onboarding-service\nkyc:\n  providerUrl: https://kyc.example.local\nrisk:\n  threshold: 70\n",
-    "truncated": false
-  },
-  {
-    "id": "capsule-97b4f08161",
-    "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-    "module": "src/main",
-    "navigation_tags": [
-      "source"
-    ],
-    "roles": [
-      "source"
-    ],
-    "navigation_score": 48,
-    "score": 48,
-    "language": "Java",
-    "lines": 8,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingResponse",
-        "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "OnboardingResponse",
-        "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "from",
-        "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-        "line": 4
-      }
-    ],
-    "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\npublic record OnboardingResponse(String customerId, CustomerStatus status, int riskScore, String kycReference) {\n    public static OnboardingResponse from(OnboardingResult result) {\n        return new OnboardingResponse(result.customerId(), result.status(), result.riskScore(), result.kycReference());\n    }\n}\n",
+    "content_excerpt": "package com.acme.onboarding;\n\npublic class CustomerNotFoundException extends RuntimeException {\n    public CustomerNotFoundException(String customerId) {\n        super(\"Customer not found: \" + customerId);\n    }\n}\n",
     "truncated": false
   },
   {
@@ -727,29 +289,16 @@
     "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 10,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "CustomerRepository",
-        "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-        "line": 6
-      },
-      {
-        "type": "schema",
-        "name": "CustomerRepository",
-        "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-        "line": 6
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport java.util.Optional;\nimport org.springframework.data.jpa.repository.JpaRepository;\n\npublic interface CustomerRepository extends JpaRepository<Customer, String> {\n    boolean existsByEmail(String email);\n    Optional<Customer> findById(String customerId);\n}\n",
     "truncated": false
@@ -759,31 +308,37 @@
     "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 8,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "CustomerStatus",
-        "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-        "line": 3
-      },
-      {
-        "type": "schema",
-        "name": "CustomerStatus",
-        "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\npublic enum CustomerStatus {\n    PENDING,\n    ACTIVE,\n    MANUAL_REVIEW\n}\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-d150ec4382",
+    "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 20,
+    "score": 20,
+    "language": "Java",
+    "lines": 8,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\npublic class DuplicateCustomerException extends RuntimeException {\n    public DuplicateCustomerException(String email) {\n        super(\"Customer already exists: \" + email);\n    }\n}\n",
     "truncated": false
   },
   {
@@ -791,29 +346,16 @@
     "path": "src/main/java/com/acme/onboarding/KycClient.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 16,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "KycClient",
-        "path": "src/main/java/com/acme/onboarding/KycClient.java",
-        "line": 8
-      },
-      {
-        "type": "method",
-        "name": "verifyIdentity",
-        "path": "src/main/java/com/acme/onboarding/KycClient.java",
-        "line": 11
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.LocalDate;\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.client.RestTemplate;\n\n@Component\npublic class KycClient {\n    private final RestTemplate restTemplate = new RestTemplate();\n\n    public KycResult verifyIdentity(String firstName, String lastName, LocalDate birthDate) {\n        KycRequest request = new KycRequest(firstName, lastName, birthDate);\n        return restTemplate.postForObject(\"https://kyc.example.local/verify\", request, KycResult.class);\n    }\n}\n",
     "truncated": false
@@ -823,29 +365,16 @@
     "path": "src/main/java/com/acme/onboarding/KycRequest.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 6,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "KycRequest",
-        "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-        "line": 5
-      },
-      {
-        "type": "method",
-        "name": "KycRequest",
-        "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-        "line": 5
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport java.time.LocalDate;\n\npublic record KycRequest(String firstName, String lastName, LocalDate birthDate) {}\n",
     "truncated": false
@@ -855,29 +384,16 @@
     "path": "src/main/java/com/acme/onboarding/KycResult.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 4,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "KycResult",
-        "path": "src/main/java/com/acme/onboarding/KycResult.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "KycResult",
-        "path": "src/main/java/com/acme/onboarding/KycResult.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\npublic record KycResult(boolean approved, String reference) {}\n",
     "truncated": false
@@ -887,29 +403,16 @@
     "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 19,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingEventPublisher",
-        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-        "line": 7
-      },
-      {
-        "type": "method",
-        "name": "publishOnboardingStarted",
-        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-        "line": 14
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport org.springframework.kafka.core.KafkaTemplate;\nimport org.springframework.stereotype.Component;\n\n@Component\npublic class OnboardingEventPublisher {\n    private final KafkaTemplate<String, OnboardingStartedEvent> kafkaTemplate;\n\n    public OnboardingEventPublisher(KafkaTemplate<String, OnboardingStartedEvent> kafkaTemplate) {\n        this.kafkaTemplate = kafkaTemplate;\n    }\n\n    public void publishOnboardingStarted(String customerId, CustomerStatus status) {\n        OnboardingStartedEvent event = new OnboardingStartedEvent(customerId, status.name());\n        kafkaTemplate.send(\"customer.onboarding.started\", customerId, event);\n    }\n}\n",
     "truncated": false
@@ -919,31 +422,37 @@
     "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 15,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingRequest",
-        "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-        "line": 8
-      },
-      {
-        "type": "method",
-        "name": "OnboardingRequest",
-        "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-        "line": 8
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport jakarta.validation.constraints.Email;\nimport jakarta.validation.constraints.NotBlank;\nimport jakarta.validation.constraints.NotNull;\nimport java.time.LocalDate;\n\npublic record OnboardingRequest(\n    @Email @NotBlank String email,\n    @NotBlank String firstName,\n    @NotBlank String lastName,\n    @NotNull LocalDate birthDate,\n    String referralCode\n) {}\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-97b4f08161",
+    "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 20,
+    "score": 20,
+    "language": "Java",
+    "lines": 8,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\npublic record OnboardingResponse(String customerId, CustomerStatus status, int riskScore, String kycReference) {\n    public static OnboardingResponse from(OnboardingResult result) {\n        return new OnboardingResponse(result.customerId(), result.status(), result.riskScore(), result.kycReference());\n    }\n}\n",
     "truncated": false
   },
   {
@@ -951,29 +460,16 @@
     "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 4,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingResult",
-        "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "OnboardingResult",
-        "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\npublic record OnboardingResult(String customerId, CustomerStatus status, int riskScore, String kycReference) {}\n",
     "truncated": false
@@ -983,29 +479,16 @@
     "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 4,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingStartedEvent",
-        "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "OnboardingStartedEvent",
-        "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\npublic record OnboardingStartedEvent(String customerId, String status) {}\n",
     "truncated": false
@@ -1015,29 +498,16 @@
     "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 4,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "OnboardingStatusResponse",
-        "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-        "line": 3
-      },
-      {
-        "type": "method",
-        "name": "OnboardingStatusResponse",
-        "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\npublic record OnboardingStatusResponse(String customerId, CustomerStatus status, String reviewReason) {}\n",
     "truncated": false
@@ -1047,31 +517,37 @@
     "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "source_file"
     ],
     "roles": [
-      "source"
+      "source_file"
     ],
-    "navigation_score": 46,
-    "score": 46,
+    "navigation_score": 20,
+    "score": 20,
     "language": "Java",
     "lines": 18,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "RiskScoringService",
-        "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-        "line": 6
-      },
-      {
-        "type": "method",
-        "name": "calculateScore",
-        "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-        "line": 7
-      }
-    ],
+    "symbols": [],
     "signals": [],
     "content_excerpt": "package com.acme.onboarding;\n\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class RiskScoringService {\n    public int calculateScore(OnboardingRequest request, KycResult kyc) {\n        int score = 20;\n        if (!kyc.approved()) {\n            score += 60;\n        }\n        if (request.referralCode() == null || request.referralCode().isBlank()) {\n            score += 15;\n        }\n        return score;\n    }\n}\n",
+    "truncated": false
+  },
+  {
+    "id": "capsule-22e8a39a39",
+    "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+    "module": "src/test",
+    "navigation_tags": [
+      "source_file"
+    ],
+    "roles": [
+      "source_file"
+    ],
+    "navigation_score": 20,
+    "score": 20,
+    "language": "Java",
+    "lines": 8,
+    "symbols": [],
+    "signals": [],
+    "content_excerpt": "package com.acme.onboarding;\n\nclass OnboardingServiceTest {\n    void duplicateEmailIsRejected() {}\n    void highRiskCustomerRequiresManualReview() {}\n    void approvedLowRiskCustomerIsActivated() {}\n}\n",
     "truncated": false
   },
   {
@@ -1079,13 +555,13 @@
     "path": "pom.xml",
     "module": "pom.xml",
     "navigation_tags": [
-      "build"
+      "structured_file"
     ],
     "roles": [
-      "build"
+      "structured_file"
     ],
-    "navigation_score": 45,
-    "score": 45,
+    "navigation_score": 18,
+    "score": 18,
     "language": "XML",
     "lines": 12,
     "symbols": [],
@@ -1094,55 +570,41 @@
     "truncated": false
   },
   {
-    "id": "capsule-40457a8fe7",
-    "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+    "id": "capsule-a6d8b8556f",
+    "path": "src/main/resources/application.yml",
     "module": "src/main",
     "navigation_tags": [
-      "source"
+      "structured_file"
     ],
     "roles": [
-      "source"
+      "structured_file"
     ],
-    "navigation_score": 44,
-    "score": 44,
-    "language": "Java",
+    "navigation_score": 18,
+    "score": 18,
+    "language": "YAML",
     "lines": 8,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "CustomerNotFoundException",
-        "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
-        "line": 3
-      }
-    ],
+    "symbols": [],
     "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\npublic class CustomerNotFoundException extends RuntimeException {\n    public CustomerNotFoundException(String customerId) {\n        super(\"Customer not found: \" + customerId);\n    }\n}\n",
+    "content_excerpt": "spring:\n  application:\n    name: customer-onboarding-service\nkyc:\n  providerUrl: https://kyc.example.local\nrisk:\n  threshold: 70\n",
     "truncated": false
   },
   {
-    "id": "capsule-d150ec4382",
-    "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-    "module": "src/main",
+    "id": "capsule-8ec9a00bfd",
+    "path": "README.md",
+    "module": "README.md",
     "navigation_tags": [
-      "source"
+      "text_document"
     ],
     "roles": [
-      "source"
+      "text_document"
     ],
-    "navigation_score": 44,
-    "score": 44,
-    "language": "Java",
-    "lines": 8,
-    "symbols": [
-      {
-        "type": "class",
-        "name": "DuplicateCustomerException",
-        "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-        "line": 3
-      }
-    ],
+    "navigation_score": 16,
+    "score": 16,
+    "language": "Markdown",
+    "lines": 4,
+    "symbols": [],
     "signals": [],
-    "content_excerpt": "package com.acme.onboarding;\n\npublic class DuplicateCustomerException extends RuntimeException {\n    public DuplicateCustomerException(String email) {\n        super(\"Customer already exists: \" + email);\n    }\n}\n",
+    "content_excerpt": "# Customer Onboarding Demo Repository\n\nThis demo repository contains a small Spring-style customer onboarding service. It is intentionally compact but includes REST endpoints, OpenAPI contracts, SOAP/WSDL examples, business rules, state transitions, events, persistence hints and test examples so the Cognianalysis can demonstrate its report sections.\n",
     "truncated": false
   }
 ]

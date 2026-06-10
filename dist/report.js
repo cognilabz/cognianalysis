@@ -8,7 +8,7 @@ function renderReport(analysisDir, outputDir, title) {
     const bundle = (0, aggregate_1.loadBundle)(analysisDir);
     const out = outputDir || utils_1.Path.join(analysisDir, 'report');
     (0, utils_1.ensureDir)(out);
-    const reportTitle = title || bundle.analysis_document?.title || `Codebase Understanding · ${bundle.profile?.repo_name || 'Repository'}`;
+    const reportTitle = title || bundle.analysis_document?.title || `Cognianalysis · ${bundle.profile?.repo_name || 'Repository'}`;
     const index = utils_1.Path.join(out, 'index.html');
     (0, utils_1.writeText)(index, buildHtml(bundle, reportTitle));
     const dataPath = utils_1.Path.join(out, 'analysis-data.json');
@@ -95,7 +95,8 @@ function statementHasDisplayContent(x) {
         x?.gap,
         x?.reason,
         x?.severity,
-        x?.confidence
+        x?.confidence,
+        x?.owner
     ].some(textLike) || hasEvidence(x?.evidence);
 }
 function statementList(items) {
@@ -103,7 +104,7 @@ function statementList(items) {
     return listItems(displayItems, (x) => {
         const title = firstText(x.title, x.name, x.criterion, x.verdict, x.id) || 'Statement';
         const text = firstText(x.description, x.summary, x.rationale, x.recommendation, x.gap, x.reason);
-        return `<div class="statement"><strong>${(0, utils_1.escapeHtml)(title)}</strong>${x.confidence ? ` ${chip(x.confidence)}` : ''}${x.severity ? ` ${chip(x.severity)}` : ''}${text ? `<p>${(0, utils_1.escapeHtml)(text)}</p>` : ''}${evidenceHtml(x.evidence)}</div>`;
+        return `<div class="statement"><strong>${(0, utils_1.escapeHtml)(title)}</strong>${x.confidence ? ` ${confidenceChip(x.confidence)}` : ''}${x.severity ? ` ${riskChip(x.severity)}` : ''}${x.owner ? ` ${chip(x.owner)}` : ''}${text ? `<p>${(0, utils_1.escapeHtml)(text)}</p>` : ''}${evidenceHtml(x.evidence)}</div>`;
     });
 }
 function mermaidBlock(source, evidence) {
@@ -131,9 +132,16 @@ function initials(value) {
     return picked || 'CB';
 }
 function statusChip(value) {
-    const v = String(value || 'info').toLowerCase();
-    const cls = ['strong', 'good', 'covered', 'ready', 'high'].includes(v) ? 'ok' : ['open', 'missing', 'critical', 'high-risk'].includes(v) ? 'bad' : ['partial', 'medium', 'medium-risk'].includes(v) ? 'warn' : '';
-    return chip(value || 'info', cls);
+    return chip(value || 'info');
+}
+function riskChip(value) {
+    return chip(value || 'risk');
+}
+function confidenceChip(value) {
+    return chip(value || 'confidence');
+}
+function priorityChip(value) {
+    return chip(value || 'priority');
 }
 function labelFor(block, key, fallback) {
     return firstText(block?.labels?.[key], block?.[`${key}_label`], fallback) || fallback;
@@ -147,9 +155,9 @@ function renderDocMetricGrid(block) {
 }
 function renderSourceFamilyMap(block) {
     const families = listItems(block.families || [], (f) => `<article class="family-card search-card" data-search="${(0, utils_1.escapeHtml)(`${f.name || ''} ${f.role || ''} ${f.business_use || ''} ${f.technical_shape || ''}`)}">
-    <div class="family-head"><h3>${(0, utils_1.escapeHtml)(f.name || labelFor(block, 'family', 'Source family'))}</h3>${statusChip(f.evidence_level || f.confidence || labelFor(block, 'family_status', 'source family'))}</div>
+    <div class="family-head"><h3>${(0, utils_1.escapeHtml)(f.name || labelFor(block, 'family', 'Source family'))}</h3>${f.confidence ? confidenceChip(f.confidence) : chip(f.evidence_level || labelFor(block, 'family_status', 'source family'))}</div>
     ${paragraphs([f.role, f.business_use, f.technical_shape].filter(Boolean))}
-    <div>${f.confidence ? chip(f.confidence) : ''}</div>
+    <div>${f.confidence && f.evidence_level ? chip(f.evidence_level) : ''}</div>
     ${evidenceHtml(f.evidence)}
   </article>`);
     return `${families ? `<div class="family-grid">${families}</div>` : ''}${evidenceHtml(block.evidence)}`;
@@ -182,10 +190,10 @@ function renderFourLevelAssessment(block) {
 }
 function renderDecisionMatrix(block) {
     const rows = (block.rows || []).map((r) => `<tr class="search-card" data-search="${(0, utils_1.escapeHtml)(`${r.decision || ''} ${r.recommendation || ''} ${r.risk || ''}`)}">
-    <td><strong>${(0, utils_1.escapeHtml)(r.decision || labelFor(block, 'decision', 'Decision'))}</strong><div>${r.confidence ? chip(r.confidence) : ''}</div></td>
+    <td><strong>${(0, utils_1.escapeHtml)(r.decision || labelFor(block, 'decision', 'Decision'))}</strong><div>${r.confidence ? confidenceChip(r.confidence) : ''}</div></td>
     <td>${chips(r.options || [])}</td>
     <td>${(0, utils_1.escapeHtml)(r.recommendation || '')}</td>
-    <td>${(0, utils_1.escapeHtml)(r.risk || '')}${evidenceHtml(r.evidence)}</td>
+    <td>${r.risk ? riskChip(r.risk) : ''}${evidenceHtml(r.evidence)}</td>
   </tr>`).join('');
     return `${rows ? `<div class="table-wrap"><table>${tableHeader([
         labelFor(block, 'decision', 'Decision'),
@@ -196,7 +204,7 @@ function renderDecisionMatrix(block) {
 }
 function renderRoadmap(block) {
     const items = listItems(block.items || [], (r) => `<article class="roadmap-item search-card" data-search="${(0, utils_1.escapeHtml)(`${r.title || ''} ${r.phase || ''} ${r.benefit || ''}`)}">
-    <div class="family-head"><h3>${(0, utils_1.escapeHtml)(r.title || labelFor(block, 'item', 'Roadmap item'))}</h3><div>${r.phase ? chip(r.phase) : ''}${r.effort ? chip(r.effort) : ''}${r.risk ? statusChip(r.risk) : ''}</div></div>
+    <div class="family-head"><h3>${(0, utils_1.escapeHtml)(r.title || labelFor(block, 'item', 'Roadmap item'))}</h3><div>${r.phase ? chip(r.phase) : ''}${r.effort ? chip(r.effort) : ''}${r.risk ? riskChip(r.risk) : ''}</div></div>
     ${paragraphs([r.benefit, r.description].filter(Boolean))}
     ${evidenceHtml(r.evidence)}
   </article>`);
@@ -204,14 +212,17 @@ function renderRoadmap(block) {
 }
 function renderAgentPlan(block) {
     const tasks = block.tasks || block.detail_agent_tasks || [];
-    const rows = tasks.slice(0, 80).map((t) => `<tr class="search-card" data-search="${(0, utils_1.escapeHtml)(`${t.source_family || ''} ${t.recommended_agent || ''} ${(t.focus || []).join(' ')}`)}">
-    <td><strong>${(0, utils_1.escapeHtml)(t.source_family || labelFor(block, 'source_family', 'source family'))}</strong><div class="small muted">${(0, utils_1.escapeHtml)(t.recommended_agent || '')}</div></td>
-    <td>${statusChip(t.review_status || t.priority || t.evidence_level_target || labelFor(block, 'planned_status', 'planned'))}</td>
-    <td>${chips(t.focus || [])}</td>
-    <td>${chips(t.expected_outputs || [])}</td>
-    <td>${t.task_file ? `<code>${(0, utils_1.escapeHtml)(t.task_file)}</code>` : `<span class="muted small">${(0, utils_1.escapeHtml)(labelFor(block, 'planned_status', 'planned'))}</span>`}${t.expected_output ? `<div class="small muted">${(0, utils_1.escapeHtml)(t.expected_output)}</div>` : ''}</td>
-    <td>${chips((t.seed_files || []).map((f) => typeof f === 'string' ? f : f.path).filter(Boolean).slice(0, 4))}</td>
-  </tr>`).join('');
+    const rows = tasks.slice(0, 80).map((t) => {
+        const stateChip = t.review_status ? statusChip(t.review_status) : t.priority ? priorityChip(t.priority) : t.evidence_level_target ? chip(t.evidence_level_target) : chip(labelFor(block, 'planned_status', 'planned'));
+        return `<tr class="search-card" data-search="${(0, utils_1.escapeHtml)(`${t.source_family || ''} ${t.recommended_agent || ''} ${(t.focus || []).join(' ')}`)}">
+      <td><strong>${(0, utils_1.escapeHtml)(t.source_family || labelFor(block, 'source_family', 'source family'))}</strong><div class="small muted">${(0, utils_1.escapeHtml)(t.recommended_agent || '')}</div></td>
+      <td>${stateChip}</td>
+      <td>${chips(t.focus || [])}</td>
+      <td>${chips(t.expected_outputs || [])}</td>
+      <td>${t.task_file ? `<code>${(0, utils_1.escapeHtml)(t.task_file)}</code>` : `<span class="muted small">${(0, utils_1.escapeHtml)(labelFor(block, 'planned_status', 'planned'))}</span>`}${t.expected_output ? `<div class="small muted">${(0, utils_1.escapeHtml)(t.expected_output)}</div>` : ''}</td>
+      <td>${chips((t.seed_files || []).map((f) => typeof f === 'string' ? f : f.path).filter(Boolean).slice(0, 4))}</td>
+    </tr>`;
+    }).join('');
     return `${paragraphs(firstText(block.summary, block.description))}${rows ? `<div class="table-wrap"><table>${tableHeader([
         labelFor(block, 'source_family', 'Source Family'),
         labelFor(block, 'priority', 'Priority'),
@@ -226,7 +237,7 @@ function renderTechnicalDrilldown(block) {
     return `${refs ? `<div class="grid three">${refs}</div>` : ''}${evidenceHtml(block.evidence)}`;
 }
 function renderOpenQuestions(block) {
-    return statementList((block.items || []).map((q) => ({ title: q.question || q.title || labelFor(block, 'question', 'Open question'), description: q.why_it_matters || q.description, confidence: q.owner, evidence: q.evidence }))) + evidenceHtml(block.evidence);
+    return statementList((block.items || []).map((q) => ({ title: q.question || q.title || labelFor(block, 'question', 'Open question'), description: q.why_it_matters || q.description, owner: q.owner, evidence: q.evidence }))) + evidenceHtml(block.evidence);
 }
 function renderDocBlock(block) {
     const title = block.title ? `<h3>${(0, utils_1.escapeHtml)(block.title)}</h3>` : '';
@@ -302,7 +313,7 @@ function pendingAnalysisDocumentSections(bundle) {
     <p class="eyebrow">LLM-authored analysis document required</p>
     <h2>Report pending · ${(0, utils_1.escapeHtml)(bundle.profile?.repo_name || 'Repository')}</h2>
     <p>This is not a completed analysis report. The CLI has prepared deterministic context and audit data, but the human-facing report is intentionally withheld until an LLM-authored <code>analysis_document.sections</code> output exists.</p>
-    <p>The next step is to execute every task in <code>.analysis/llm_tasks/</code>, write valid JSON outputs into <code>.analysis/llm/</code>, and run <code>cba finalize .</code> again.</p>
+    <p>The next step is to execute every task in <code>.analysis/llm_tasks/</code>, write valid JSON outputs into <code>.analysis/llm/</code>, and run <code>cognianalysis finalize .</code> again.</p>
     <div class="metrics compact">
       ${metric('Report mode', bundle.report_mode?.state || 'awaiting_llm_authored_report')}
       ${metric('Generated tasks', tasks.length)}
@@ -320,7 +331,7 @@ function buildHtml(bundle, title) {
     const authoredSections = analysisDocumentSections(bundle);
     const doc = bundle.analysis_document || {};
     const hasAuthoredReport = authoredSections.length > 0;
-    const shellTitle = hasAuthoredReport ? firstText(doc.title, title, bundle.profile?.repo_name) : 'Codebase Analysis Pack';
+    const shellTitle = hasAuthoredReport ? firstText(doc.title, title, bundle.profile?.repo_name) : 'Cognianalysis';
     const shellSubtitle = hasAuthoredReport
         ? firstText(doc.subtitle, Array.isArray(doc.audience) ? doc.audience.join(' · ') : '', bundle.profile?.repo_type)
         : 'LLM-authored report pending';
@@ -400,7 +411,7 @@ const JS = `
       try{
         const text=src.textContent || '';
         if(window.mermaid.parse) await window.mermaid.parse(text);
-        const result=await window.mermaid.render('cba-mermaid-'+i, text);
+        const result=await window.mermaid.render('cognianalysis-mermaid-'+i, text);
         out.innerHTML=result.svg;
       }catch(err){
         out.textContent='Diagram source could not be rendered safely; source is shown below.';

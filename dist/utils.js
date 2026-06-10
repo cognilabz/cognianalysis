@@ -152,7 +152,7 @@ function listFileInventory(root, maxFileSize) {
     const out = [];
     const skipped = [];
     const ignored = new Set([
-        '.git', '.hg', '.svn', 'node_modules', 'vendor', '.venv', 'venv', '__pycache__', '.mypy_cache', '.pytest_cache',
+        '.git', '.hg', '.svn', 'node_modules', 'vendor', '.venv', '.venvs', 'venv', 'venvs', '__pycache__', '.mypy_cache', '.pytest_cache', '.tox', '.nox', '.ruff_cache',
         'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', '.analysis-seed', 'coverage', '.next', '.turbo', '.cache'
     ]);
     const ignoredFiles = new Set(['.DS_Store', 'Thumbs.db']);

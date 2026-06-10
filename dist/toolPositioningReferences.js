@@ -48,7 +48,7 @@ function toolPositioningReferencesArtifact() {
                     'software and platform delivery acceleration',
                     'scaled delivery governance'
                 ],
-                handoff_boundary: 'Use Codebase Analysis Pack to create source-derived decision documents; use consulting/gen-AI delivery suites for scaled delivery programs, transformation governance and execution capacity.',
+                handoff_boundary: 'Use Cognianalysis to create source-derived decision documents; use consulting/gen-AI delivery suites for scaled delivery programs, transformation governance and execution capacity.',
                 report_question: 'Where does this source-derived analysis provide a decision document that can complement or replace consulting-style discovery work, and where does it still need owner or specialist follow-up?'
             },
             {
@@ -75,7 +75,7 @@ function toolPositioningReferencesArtifact() {
                     'impact analysis for brownfield changes',
                     'agent context for architecture reasoning'
                 ],
-                handoff_boundary: 'Use Codebase Analysis Pack for LLM-authored narrative, business/technical decision framing and evidence-backed drilldown; use structural graph tooling when exhaustive dependency graphs, transaction maps or data lineage need deterministic graph proof.',
+                handoff_boundary: 'Use Cognianalysis for LLM-authored narrative, business/technical decision framing and evidence-backed drilldown; use structural graph tooling when exhaustive dependency graphs, transaction maps or data lineage need deterministic graph proof.',
                 report_question: 'Which relationships are proven from source evidence, which are representative, and where would deterministic graph tooling add confidence?'
             },
             {
@@ -102,7 +102,7 @@ function toolPositioningReferencesArtifact() {
                     'code smells and maintainability thresholds',
                     'CI/CD quality gates'
                 ],
-                handoff_boundary: 'Use Codebase Analysis Pack to explain visible source risks in business and architecture context; use static analysis gates for repeatable issue detection, thresholds and CI enforcement.',
+                handoff_boundary: 'Use Cognianalysis to explain visible source risks in business and architecture context; use static analysis gates for repeatable issue detection, thresholds and CI enforcement.',
                 report_question: 'Which quality and security risks are visible in the source review, and which findings require a dedicated static-analysis/security scan before decisions?'
             },
             {
@@ -129,7 +129,7 @@ function toolPositioningReferencesArtifact() {
                     'safe mechanical code transformations',
                     'large-scale modernization execution'
                 ],
-                handoff_boundary: 'Use Codebase Analysis Pack to decide and prioritize modernization options; use automated transformation engines when recommendations can be encoded as repeatable recipes or migration tasks.',
+                handoff_boundary: 'Use Cognianalysis to decide and prioritize modernization options; use automated transformation engines when recommendations can be encoded as repeatable recipes or migration tasks.',
                 report_question: 'Which modernization steps are analysis recommendations only, and which could become repeatable automated recipes or migration tasks?'
             }
         ]

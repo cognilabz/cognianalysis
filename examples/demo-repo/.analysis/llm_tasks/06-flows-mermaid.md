@@ -1,6 +1,6 @@
 # Flows, Scenarios and Mermaid Diagrams
 
-You are running inside Codex as the semantic extraction step for Codebase Analysis Pack.
+You are running inside Codex as the semantic extraction step for Cognianalysis.
 
 Task id: `flows_mermaid`
 
@@ -9,13 +9,18 @@ Read these files first:
 - `.analysis/llm_instructions.md`
 - `.analysis/data/code-map.json`
 - `.analysis/data/source-inventory.json`
+- `.analysis/data/source-tier-model.json`
+- `.analysis/source-tier-task-manifest.json`
+- all completed `.analysis/source_tiers/*.json` outputs
 - `.analysis/data/analysis-goal-contract.json`
 - `.analysis/data/tool-positioning-references.json`
 - `.analysis/data/navigation-artifact-candidates.json` (or legacy `.analysis/data/important-docs.json`)
 - `.analysis/data/source-family-inventory.json`
 - `.analysis/source-capsules.json`
 
-Then open source files, tests, docs, contracts, schemas and configuration as needed. The source capsules and artifact hints are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
+	Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
 For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
 Write your result to `.analysis/llm/flows-mermaid.json` as valid JSON.
@@ -32,7 +37,7 @@ General rules:
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
 - Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
-- Account for the source inventory. Every output must include `analysis_coverage.inspected_files[]` for files you opened or semantically considered, and `analysis_coverage.deferred_files[]` for inventory files intentionally not relevant to this task. The final completeness task must reconcile the full inventory. This is source-inventory accounting, not a deterministic semantic-quality verdict.
+- Account for the source inventory without using deferral as a success path. Every output must include `analysis_coverage.inspected_files[]` for files you opened or semantically considered. Use `analysis_coverage.deferred_files[]` only for task-local scope boundaries or blocked follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in `.analysis/source_tiers/*.json` is the required broad base.
 - Start from the full repository scope. Summarize the whole source-family landscape before focusing on a specific module, framework, interface type or flow family.
 - For multi-module repositories, include source-family statements across the repository; a deep slice is acceptable only when clearly labelled and paired with whole-repo coverage context.
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
@@ -44,7 +49,7 @@ General rules:
 - The final analysis-document task must read all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
 - Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an `open_questions` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
-- Use `confidence: "high|medium|low"` and `open_questions` when behavior is unclear.
+- Use a clear `confidence` statement and `open_questions` when behavior is unclear.
 - Do not modify production source files.
 
 Rules for examples:
@@ -62,9 +67,9 @@ Rules for examples:
   "repo": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-09T20:48:59Z",
-    "commit": "2d36455096f3c607f2fef54e0ebf548c358e450f",
-    "repo_type": "library/application",
+    "analyzed_at": "2026-06-10T12:02:08Z",
+    "commit": "8c3460b410a0007d97dd974add18969b0f558391",
+    "repo_type": "source-inventory",
     "languages": {
       "Java": 261
     },
@@ -72,35 +77,12 @@ Rules for examples:
       "Java": 18
     },
     "frameworks": [],
-    "build_tools": [
-      "Maven"
-    ],
-    "package_managers": [
-      "Maven"
-    ],
-    "important_files": [
-      "README.md",
-      "docs/openapi.yml",
-      "pom.xml",
-      "src/main/resources/application.yml",
-      "src/main/resources/openapi.yaml"
-    ],
-    "contract_files": [
-      "docs/examples/customer-verification-soap.xml",
-      "docs/openapi.yml",
-      "src/main/resources/openapi.yaml",
-      "docs/soap-kyc.wsdl",
-      "src/main/resources/wsdl/customer-verification.wsdl",
-      "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-      "src/main/resources/wsdl/kyc-status.wsdl",
-      "src/main/resources/onboarding.wsdl"
-    ],
-    "example_files": [
-      "docs/examples/customer-verification-soap.xml",
-      "docs/api-examples.md",
-      "docs/business-examples.md"
-    ],
-    "test_files": 1,
+    "build_tools": [],
+    "package_managers": [],
+    "important_files": [],
+    "contract_files": [],
+    "example_files": [],
+    "test_files": 0,
     "source_files": 18,
     "total_files": 32,
     "total_lines": 854,
@@ -120,168 +102,154 @@ Rules for examples:
       "source_files": 17,
       "lines": 576,
       "roles": {
-        "api_contract": 2,
-        "config": 3,
-        "soap_contract": 3,
-        "source": 17
+        "source_file": 17,
+        "structured_file": 6
       },
       "languages": {
-        "YAML": 188,
+        "Java": 253,
         "WSDL": 135,
-        "Java": 253
+        "YAML": 188
       },
-      "signals": {
-        "api_contract_candidate": 2,
-        "soap_contract_candidate": 3
-      },
+      "signals": {},
       "top_files": [
         {
-          "path": "src/main/resources/openapi.yaml",
-          "navigation_score": 147,
-          "score": 147,
+          "path": "src/main/java/com/acme/onboarding/Customer.java",
+          "navigation_score": 28,
+          "score": 28,
           "navigation_tags": [
-            "api_contract",
-            "config"
+            "source_file"
           ],
           "roles": [
-            "api_contract",
-            "config"
+            "source_file"
           ],
-          "signals": 1,
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "navigation_score": 28,
+          "score": 28,
+          "navigation_tags": [
+            "source_file"
+          ],
+          "roles": [
+            "source_file"
+          ],
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "navigation_score": 28,
+          "score": 28,
+          "navigation_tags": [
+            "source_file"
+          ],
+          "roles": [
+            "source_file"
+          ],
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/onboarding.wsdl",
+          "navigation_score": 26,
+          "score": 26,
+          "navigation_tags": [
+            "structured_file"
+          ],
+          "roles": [
+            "structured_file"
+          ],
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "navigation_score": 26,
+          "score": 26,
+          "navigation_tags": [
+            "structured_file"
+          ],
+          "roles": [
+            "structured_file"
+          ],
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+          "navigation_score": 26,
+          "score": 26,
+          "navigation_tags": [
+            "structured_file"
+          ],
+          "roles": [
+            "structured_file"
+          ],
+          "signals": 0,
           "symbols": 0
         },
         {
           "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "navigation_score": 114,
-          "score": 114,
+          "navigation_score": 26,
+          "score": 26,
           "navigation_tags": [
-            "soap_contract"
+            "structured_file"
           ],
           "roles": [
-            "soap_contract"
+            "structured_file"
           ],
-          "signals": 1,
-          "symbols": 10
-        },
-        {
-          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-          "navigation_score": 112,
-          "score": 112,
-          "navigation_tags": [
-            "api_contract",
-            "config"
-          ],
-          "roles": [
-            "api_contract",
-            "config"
-          ],
-          "signals": 1,
+          "signals": 0,
           "symbols": 0
         },
         {
           "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "navigation_score": 112,
-          "score": 112,
+          "navigation_score": 26,
+          "score": 26,
           "navigation_tags": [
-            "soap_contract"
+            "structured_file"
           ],
           "roles": [
-            "soap_contract"
-          ],
-          "signals": 1,
-          "symbols": 9
-        },
-        {
-          "path": "src/main/resources/onboarding.wsdl",
-          "navigation_score": 102,
-          "score": 102,
-          "navigation_tags": [
-            "soap_contract"
-          ],
-          "roles": [
-            "soap_contract"
-          ],
-          "signals": 1,
-          "symbols": 4
-        },
-        {
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "navigation_score": 66,
-          "score": 66,
-          "navigation_tags": [
-            "source"
-          ],
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 7
-        },
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "navigation_score": 58,
-          "score": 58,
-          "navigation_tags": [
-            "source"
-          ],
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 3
-        },
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-          "navigation_score": 58,
-          "score": 58,
-          "navigation_tags": [
-            "source"
-          ],
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 3
-        },
-        {
-          "path": "src/main/resources/application.yml",
-          "navigation_score": 53,
-          "score": 53,
-          "navigation_tags": [
-            "config"
-          ],
-          "roles": [
-            "config"
+            "structured_file"
           ],
           "signals": 0,
           "symbols": 0
         },
         {
-          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-          "navigation_score": 48,
-          "score": 48,
+          "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+          "navigation_score": 20,
+          "score": 20,
           "navigation_tags": [
-            "source"
+            "source_file"
           ],
           "roles": [
-            "source"
+            "source_file"
           ],
           "signals": 0,
-          "symbols": 3
+          "symbols": 0
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+          "navigation_score": 20,
+          "score": 20,
+          "navigation_tags": [
+            "source_file"
+          ],
+          "roles": [
+            "source_file"
+          ],
+          "signals": 0,
+          "symbols": 0
         }
       ],
       "boundary_source": "path_partition",
       "boundary_evidence": [],
       "navigation_tags": {
-        "api_contract": 2,
-        "config": 3,
-        "soap_contract": 3,
-        "source": 17
+        "source_file": 17,
+        "structured_file": 6
       },
-      "navigation_signals": {
-        "api_contract_candidate": 2,
-        "soap_contract_candidate": 3
-      }
+      "navigation_signals": {}
     },
     {
       "id": "src-test",
@@ -290,8 +258,7 @@ Rules for examples:
       "source_files": 1,
       "lines": 8,
       "roles": {
-        "source": 1,
-        "test": 1
+        "source_file": 1
       },
       "languages": {
         "Java": 8
@@ -300,25 +267,22 @@ Rules for examples:
       "top_files": [
         {
           "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-          "navigation_score": 74,
-          "score": 74,
+          "navigation_score": 20,
+          "score": 20,
           "navigation_tags": [
-            "source",
-            "test"
+            "source_file"
           ],
           "roles": [
-            "source",
-            "test"
+            "source_file"
           ],
           "signals": 0,
-          "symbols": 1
+          "symbols": 0
         }
       ],
       "boundary_source": "path_partition",
       "boundary_evidence": [],
       "navigation_tags": {
-        "source": 1,
-        "test": 1
+        "source_file": 1
       },
       "navigation_signals": {}
     },
@@ -329,143 +293,77 @@ Rules for examples:
       "source_files": 0,
       "lines": 233,
       "roles": {
-        "api_contract": 1,
-        "config": 1,
-        "documentation": 5,
-        "soap_contract": 1,
-        "example": 2
+        "structured_file": 2,
+        "text_document": 3
       },
       "languages": {
         "YAML": 78,
         "WSDL": 29,
         "Markdown": 126
       },
-      "signals": {
-        "api_contract_candidate": 1,
-        "soap_contract_candidate": 1,
-        "documentation_candidate": 3
-      },
+      "signals": {},
       "top_files": [
         {
           "path": "docs/openapi.yml",
-          "navigation_score": 181,
-          "score": 181,
+          "navigation_score": 26,
+          "score": 26,
           "navigation_tags": [
-            "api_contract",
-            "config",
-            "documentation"
+            "structured_file"
           ],
           "roles": [
-            "api_contract",
-            "config",
-            "documentation"
+            "structured_file"
           ],
-          "signals": 1,
+          "signals": 0,
           "symbols": 0
         },
         {
           "path": "docs/soap-kyc.wsdl",
-          "navigation_score": 136,
-          "score": 136,
+          "navigation_score": 26,
+          "score": 26,
           "navigation_tags": [
-            "documentation",
-            "soap_contract"
+            "structured_file"
           ],
           "roles": [
-            "documentation",
-            "soap_contract"
+            "structured_file"
           ],
-          "signals": 1,
-          "symbols": 4
+          "signals": 0,
+          "symbols": 0
         },
         {
           "path": "docs/api-examples.md",
-          "navigation_score": 118,
-          "score": 118,
+          "navigation_score": 24,
+          "score": 24,
           "navigation_tags": [
-            "documentation",
-            "example"
+            "text_document"
           ],
           "roles": [
-            "documentation",
-            "example"
+            "text_document"
           ],
-          "signals": 1,
+          "signals": 0,
           "symbols": 0
         },
         {
           "path": "docs/business-examples.md",
-          "navigation_score": 118,
-          "score": 118,
+          "navigation_score": 24,
+          "score": 24,
           "navigation_tags": [
-            "documentation",
-            "example"
+            "text_document"
           ],
           "roles": [
-            "documentation",
-            "example"
+            "text_document"
           ],
-          "signals": 1,
+          "signals": 0,
           "symbols": 0
         },
         {
           "path": "docs/business-flows.md",
-          "navigation_score": 53,
-          "score": 53,
+          "navigation_score": 24,
+          "score": 24,
           "navigation_tags": [
-            "documentation"
+            "text_document"
           ],
           "roles": [
-            "documentation"
-          ],
-          "signals": 1,
-          "symbols": 0
-        }
-      ],
-      "boundary_source": "path_partition",
-      "boundary_evidence": [],
-      "navigation_tags": {
-        "api_contract": 1,
-        "config": 1,
-        "documentation": 5,
-        "soap_contract": 1,
-        "example": 2
-      },
-      "navigation_signals": {
-        "api_contract_candidate": 1,
-        "soap_contract_candidate": 1,
-        "documentation_candidate": 3
-      }
-    },
-    {
-      "id": "docs-examples",
-      "name": "docs/examples",
-      "files": 1,
-      "source_files": 0,
-      "lines": 21,
-      "roles": {
-        "documentation": 1,
-        "example": 1,
-        "soap_contract": 1
-      },
-      "languages": {
-        "XML": 21
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "docs/examples/customer-verification-soap.xml",
-          "navigation_score": 184,
-          "score": 184,
-          "navigation_tags": [
-            "documentation",
-            "example",
-            "soap_contract"
-          ],
-          "roles": [
-            "documentation",
-            "example",
-            "soap_contract"
+            "text_document"
           ],
           "signals": 0,
           "symbols": 0
@@ -474,9 +372,43 @@ Rules for examples:
       "boundary_source": "path_partition",
       "boundary_evidence": [],
       "navigation_tags": {
-        "documentation": 1,
-        "example": 1,
-        "soap_contract": 1
+        "structured_file": 2,
+        "text_document": 3
+      },
+      "navigation_signals": {}
+    },
+    {
+      "id": "docs-examples",
+      "name": "docs/examples",
+      "files": 1,
+      "source_files": 0,
+      "lines": 21,
+      "roles": {
+        "structured_file": 1
+      },
+      "languages": {
+        "XML": 21
+      },
+      "signals": {},
+      "top_files": [
+        {
+          "path": "docs/examples/customer-verification-soap.xml",
+          "navigation_score": 26,
+          "score": 26,
+          "navigation_tags": [
+            "structured_file"
+          ],
+          "roles": [
+            "structured_file"
+          ],
+          "signals": 0,
+          "symbols": 0
+        }
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "structured_file": 1
       },
       "navigation_signals": {}
     },
@@ -487,7 +419,7 @@ Rules for examples:
       "source_files": 0,
       "lines": 12,
       "roles": {
-        "build": 1
+        "structured_file": 1
       },
       "languages": {
         "XML": 12
@@ -496,13 +428,13 @@ Rules for examples:
       "top_files": [
         {
           "path": "pom.xml",
-          "navigation_score": 45,
-          "score": 45,
+          "navigation_score": 18,
+          "score": 18,
           "navigation_tags": [
-            "build"
+            "structured_file"
           ],
           "roles": [
-            "build"
+            "structured_file"
           ],
           "signals": 0,
           "symbols": 0
@@ -511,7 +443,7 @@ Rules for examples:
       "boundary_source": "path_partition",
       "boundary_evidence": [],
       "navigation_tags": {
-        "build": 1
+        "structured_file": 1
       },
       "navigation_signals": {}
     },
@@ -522,707 +454,997 @@ Rules for examples:
       "source_files": 0,
       "lines": 4,
       "roles": {
-        "documentation": 1
+        "text_document": 1
       },
       "languages": {
         "Markdown": 4
       },
-      "signals": {
-        "documentation_candidate": 1
-      },
+      "signals": {},
       "top_files": [
         {
           "path": "README.md",
-          "navigation_score": 78,
-          "score": 78,
+          "navigation_score": 16,
+          "score": 16,
           "navigation_tags": [
-            "documentation"
+            "text_document"
           ],
           "roles": [
-            "documentation"
+            "text_document"
           ],
-          "signals": 1,
+          "signals": 0,
           "symbols": 0
         }
       ],
       "boundary_source": "path_partition",
       "boundary_evidence": [],
       "navigation_tags": {
-        "documentation": 1
+        "text_document": 1
       },
-      "navigation_signals": {
-        "documentation_candidate": 1
-      }
+      "navigation_signals": {}
     }
   ],
   "artifact_navigation_candidates": [
     {
+      "path": "src/main/java/com/acme/onboarding/Customer.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 43
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 32
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 46
+    },
+    {
       "path": "docs/examples/customer-verification-soap.xml",
       "language": "XML",
       "navigation_tags": [
-        "documentation",
-        "example",
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "documentation",
-        "example",
-        "soap_contract"
+        "structured_file"
       ],
       "signals": [],
-      "navigation_score": 439,
-      "score": 439,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 21
     },
     {
       "path": "docs/openapi.yml",
       "language": "YAML",
       "navigation_tags": [
-        "api_contract",
-        "config",
-        "documentation"
+        "structured_file"
       ],
       "roles": [
-        "api_contract",
-        "config",
-        "documentation"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "docs/openapi.yml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 391,
-      "score": 391,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 78
     },
     {
       "path": "docs/soap-kyc.wsdl",
       "language": "WSDL",
       "navigation_tags": [
-        "documentation",
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "documentation",
-        "soap_contract"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 346,
-      "score": 346,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 29
+    },
+    {
+      "path": "src/main/resources/onboarding.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 38
     },
     {
       "path": "src/main/resources/openapi.yaml",
       "language": "YAML",
       "navigation_tags": [
-        "api_contract",
-        "config"
+        "structured_file"
       ],
       "roles": [
-        "api_contract",
-        "config"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 312,
-      "score": 312,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 77
+    },
+    {
+      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "language": "YAML",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 103
     },
     {
       "path": "src/main/resources/wsdl/customer-verification.wsdl",
       "language": "WSDL",
       "navigation_tags": [
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "soap_contract"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 279,
-      "score": 279,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 54
+    },
+    {
+      "path": "src/main/resources/wsdl/kyc-status.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 43
     },
     {
       "path": "docs/api-examples.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation",
-        "example"
+        "text_document"
       ],
       "roles": [
-        "documentation",
-        "example"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/api-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 278,
-      "score": 278,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 53
     },
     {
       "path": "docs/business-examples.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation",
-        "example"
+        "text_document"
       ],
       "roles": [
-        "documentation",
-        "example"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 278,
-      "score": 278,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 22
-    },
-    {
-      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-      "language": "YAML",
-      "navigation_tags": [
-        "api_contract",
-        "config"
-      ],
-      "roles": [
-        "api_contract",
-        "config"
-      ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 277,
-      "score": 277,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 103
-    },
-    {
-      "path": "src/main/resources/wsdl/kyc-status.wsdl",
-      "language": "WSDL",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 277,
-      "score": 277,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 43
-    },
-    {
-      "path": "src/main/resources/onboarding.wsdl",
-      "language": "WSDL",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 267,
-      "score": 267,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 38
-    },
-    {
-      "path": "README.md",
-      "language": "Markdown",
-      "navigation_tags": [
-        "documentation"
-      ],
-      "roles": [
-        "documentation"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "README.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 158,
-      "score": 158,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 4
     },
     {
       "path": "docs/business-flows.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation"
+        "text_document"
       ],
       "roles": [
-        "documentation"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-flows.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 133,
-      "score": 133,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 51
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 10
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycClient.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 16
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 6
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycResult.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 19
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 15
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 18
     },
     {
       "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
       "language": "Java",
       "navigation_tags": [
-        "source",
-        "test"
+        "source_file"
       ],
       "roles": [
-        "source",
-        "test"
+        "source_file"
       ],
       "signals": [],
-      "navigation_score": 74,
-      "score": 74,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 8
-    },
-    {
-      "path": "src/main/resources/application.yml",
-      "language": "YAML",
-      "navigation_tags": [
-        "config"
-      ],
-      "roles": [
-        "config"
-      ],
-      "signals": [],
-      "navigation_score": 53,
-      "score": 53,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 8
     },
     {
       "path": "pom.xml",
       "language": "XML",
       "navigation_tags": [
-        "build"
+        "structured_file"
       ],
       "roles": [
-        "build"
+        "structured_file"
       ],
       "signals": [],
-      "navigation_score": 45,
-      "score": 45,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 18,
+      "score": 18,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 12
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "language": "YAML",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 18,
+      "score": 18,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "README.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "text_document"
+      ],
+      "roles": [
+        "text_document"
+      ],
+      "signals": [],
+      "navigation_score": 16,
+      "score": 16,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
     }
   ],
   "important_docs": [
     {
+      "path": "src/main/java/com/acme/onboarding/Customer.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 43
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 32
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 28,
+      "score": 28,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 46
+    },
+    {
       "path": "docs/examples/customer-verification-soap.xml",
       "language": "XML",
       "navigation_tags": [
-        "documentation",
-        "example",
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "documentation",
-        "example",
-        "soap_contract"
+        "structured_file"
       ],
       "signals": [],
-      "navigation_score": 439,
-      "score": 439,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 21
     },
     {
       "path": "docs/openapi.yml",
       "language": "YAML",
       "navigation_tags": [
-        "api_contract",
-        "config",
-        "documentation"
+        "structured_file"
       ],
       "roles": [
-        "api_contract",
-        "config",
-        "documentation"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "docs/openapi.yml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 391,
-      "score": 391,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 78
     },
     {
       "path": "docs/soap-kyc.wsdl",
       "language": "WSDL",
       "navigation_tags": [
-        "documentation",
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "documentation",
-        "soap_contract"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 346,
-      "score": 346,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 29
+    },
+    {
+      "path": "src/main/resources/onboarding.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 38
     },
     {
       "path": "src/main/resources/openapi.yaml",
       "language": "YAML",
       "navigation_tags": [
-        "api_contract",
-        "config"
+        "structured_file"
       ],
       "roles": [
-        "api_contract",
-        "config"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 312,
-      "score": 312,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 77
+    },
+    {
+      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "language": "YAML",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 103
     },
     {
       "path": "src/main/resources/wsdl/customer-verification.wsdl",
       "language": "WSDL",
       "navigation_tags": [
-        "soap_contract"
+        "structured_file"
       ],
       "roles": [
-        "soap_contract"
+        "structured_file"
       ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 279,
-      "score": 279,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 54
+    },
+    {
+      "path": "src/main/resources/wsdl/kyc-status.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 26,
+      "score": 26,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 43
     },
     {
       "path": "docs/api-examples.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation",
-        "example"
+        "text_document"
       ],
       "roles": [
-        "documentation",
-        "example"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/api-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 278,
-      "score": 278,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 53
     },
     {
       "path": "docs/business-examples.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation",
-        "example"
+        "text_document"
       ],
       "roles": [
-        "documentation",
-        "example"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 278,
-      "score": 278,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 22
-    },
-    {
-      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-      "language": "YAML",
-      "navigation_tags": [
-        "api_contract",
-        "config"
-      ],
-      "roles": [
-        "api_contract",
-        "config"
-      ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 277,
-      "score": 277,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 103
-    },
-    {
-      "path": "src/main/resources/wsdl/kyc-status.wsdl",
-      "language": "WSDL",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 277,
-      "score": 277,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 43
-    },
-    {
-      "path": "src/main/resources/onboarding.wsdl",
-      "language": "WSDL",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 267,
-      "score": 267,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 38
-    },
-    {
-      "path": "README.md",
-      "language": "Markdown",
-      "navigation_tags": [
-        "documentation"
-      ],
-      "roles": [
-        "documentation"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "README.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 158,
-      "score": 158,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 4
     },
     {
       "path": "docs/business-flows.md",
       "language": "Markdown",
       "navigation_tags": [
-        "documentation"
+        "text_document"
       ],
       "roles": [
-        "documentation"
+        "text_document"
       ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-flows.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "navigation_score": 133,
-      "score": 133,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "signals": [],
+      "navigation_score": 24,
+      "score": 24,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 51
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 10
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycClient.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 16
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 6
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/KycResult.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 19
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 15
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
+      ],
+      "signals": [],
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 18
     },
     {
       "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
       "language": "Java",
       "navigation_tags": [
-        "source",
-        "test"
+        "source_file"
       ],
       "roles": [
-        "source",
-        "test"
+        "source_file"
       ],
       "signals": [],
-      "navigation_score": 74,
-      "score": 74,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
-      "lines": 8
-    },
-    {
-      "path": "src/main/resources/application.yml",
-      "language": "YAML",
-      "navigation_tags": [
-        "config"
-      ],
-      "roles": [
-        "config"
-      ],
-      "signals": [],
-      "navigation_score": 53,
-      "score": 53,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 20,
+      "score": 20,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 8
     },
     {
       "path": "pom.xml",
       "language": "XML",
       "navigation_tags": [
-        "build"
+        "structured_file"
       ],
       "roles": [
-        "build"
+        "structured_file"
       ],
       "signals": [],
-      "navigation_score": 45,
-      "score": 45,
-      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "navigation_score": 18,
+      "score": 18,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
       "lines": 12
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "language": "YAML",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ],
+      "signals": [],
+      "navigation_score": 18,
+      "score": 18,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 8
+    },
+    {
+      "path": "README.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "text_document"
+      ],
+      "roles": [
+        "text_document"
+      ],
+      "signals": [],
+      "navigation_score": 16,
+      "score": 16,
+      "score_meaning": "Inventory-only ranking for LLM attention. It is based on file format and size only, not path conventions, manifest filenames, imports, symbols, contract names, framework strings or semantic parsing.",
+      "lines": 4
     }
   ],
   "report_component_library": {
@@ -1443,6 +1665,20 @@ Rules for examples:
     "purpose": "Reusable LLM analysis capabilities for repository understanding. The CLI exposes and validates the catalog shape; the LLM decides which skills matter for a repository and how to apply them.",
     "skills": [
       {
+        "id": "analysis_strategy_planning",
+        "label": "Analysis Strategy Planning",
+        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+        "stage_ids": [
+          "llm_analysis_strategy"
+        ],
+        "expected_outputs": [
+          "llm/analysis-strategy.json",
+          "analysis_strategy.whole_repo_first_plan",
+          "analysis_strategy.report_intent"
+        ],
+        "guidance": "Use inventory only as context. The LLM decides how this repository should be understood, which skills matter and where deeper review may be needed."
+      },
+      {
         "id": "whole_repository_understanding",
         "label": "Whole-Repository Understanding",
         "purpose": "Build the repository-wide story, system purpose, source-family landscape and scope boundaries before deep review.",
@@ -1454,6 +1690,23 @@ Rules for examples:
           "analysis_coverage"
         ],
         "guidance": "Start broad. A deep slice can support the story, but it must not become the whole-system narrative."
+      },
+      {
+        "id": "tiered_source_file_analysis",
+        "label": "Tiered Source File Analysis",
+        "purpose": "Create mandatory Tier 1 LLM-authored file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.",
+        "stage_ids": [
+          "llm_source_file_tier_analysis",
+          "llm_whole_repository_building_blocks",
+          "llm_detail_reviews",
+          "llm_final_analysis_document"
+        ],
+        "expected_outputs": [
+          "source_tiers/*.json",
+          "source_tier_coverage",
+          "analysis_document technical drilldown sections"
+        ],
+        "guidance": "Do not let deferred files stand in for understanding. Tier 1 is shallow but real per-file analysis; deeper tiers explain relationships, flows, contracts and decisions."
       },
       {
         "id": "business_extraction",
@@ -1487,7 +1740,7 @@ Rules for examples:
           "graphql",
           "events"
         ],
-        "guidance": "Navigation candidates can point to likely contracts, but the LLM must read evidence and state uncertainty."
+        "guidance": "Inventory seed files are only starting points. The LLM must find and parse contracts from source evidence and state uncertainty."
       },
       {
         "id": "request_response_examples",
@@ -1686,6 +1939,11 @@ Rules for examples:
         "intent": "Build a repository-wide overview and relationship map before deep slices."
       },
       {
+        "id": "tiered_whole_codebase_analysis",
+        "label": "Tiered whole-codebase analysis",
+        "intent": "Analyze every included file at least at Tier 1 before selecting Tier 2-4 technical drilldown, behavior, risk and refactoring depth."
+      },
+      {
         "id": "e2e_relationships",
         "label": "E2E relationships",
         "intent": "Explain how functions, code blocks, modules and systems collaborate through representative flows."
@@ -1712,6 +1970,61 @@ Rules for examples:
       }
     ],
     "llm_trace_guidance": "The final LLM-authored requirements_trace may use repository-specific wording and additional rows, but it should add goal_contract_refs using required_output_shape.<key>, required_levels.<id>, required_views.<id> and required_report_behaviors.<id> so the LLM explicitly accounts for output shape, management/business readability, levels, views and behaviors with covered|partial|open statuses, evidence and open questions."
+  },
+  "source_tier_model": {
+    "model_kind": "tiered_whole_codebase_analysis",
+    "version": "source-tier-v1",
+    "semantic_authority": "llm",
+    "deterministic_authority": "task_materialization_and_path_contract_only",
+    "purpose": "Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 LLM-authored file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.",
+    "tiers": [
+      {
+        "id": "tier0_inventory",
+        "depth": 0,
+        "owner": "cli",
+        "meaning": "Deterministic inventory only: path, size, language/format and navigation partition. This is never semantic understanding."
+      },
+      {
+        "id": "tier1_file_card",
+        "depth": 1,
+        "owner": "llm",
+        "required_for_every_included_file": true,
+        "meaning": "A short LLM-authored per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence."
+      },
+      {
+        "id": "tier2_module_or_source_family",
+        "depth": 2,
+        "owner": "llm",
+        "meaning": "Module/source-family synthesis built from Tier 1 cards and direct source inspection: responsibilities, internal relationships, technical drilldown and uncertainty."
+      },
+      {
+        "id": "tier3_behavior_contract_flow",
+        "depth": 3,
+        "owner": "llm",
+        "meaning": "Deep behavior review for important flows, interfaces, contracts, state changes, examples, failure paths and side effects."
+      },
+      {
+        "id": "tier4_decision_transformation",
+        "depth": 4,
+        "owner": "llm",
+        "meaning": "Decision-level findings, risks, process improvements, refactoring and target-architecture options."
+      }
+    ],
+    "completion_rule": "Final readiness requires Tier 1 file-card coverage for every included source-inventory file. Deferred files are not completed analysis; they remain gaps until a Tier 1 card exists.",
+    "llm_rules": [
+      "Do not summarize files from path names alone.",
+      "Open each listed file or use an already-opened exact source excerpt before authoring its Tier 1 card.",
+      "Use unknown/none when business relevance cannot be proven.",
+      "Keep evidence exact with file:line references.",
+      "Use Tier 1 to prevent blind spots; use Tier 2-4 to explain interactions and decision implications."
+    ]
+  },
+  "source_tier_task_manifest": {
+    "task_count": 1,
+    "total_files": 32,
+    "manifest_file": ".analysis/source-tier-task-manifest.json",
+    "task_dir": ".analysis/source_tier_tasks",
+    "output_dir": ".analysis/source_tiers"
   },
   "tool_positioning_reference": {
     "reference_kind": "external_tool_positioning_context",
@@ -1761,7 +2074,7 @@ Rules for examples:
           "software and platform delivery acceleration",
           "scaled delivery governance"
         ],
-        "handoff_boundary": "Use Codebase Analysis Pack to create source-derived decision documents; use consulting/gen-AI delivery suites for scaled delivery programs, transformation governance and execution capacity.",
+        "handoff_boundary": "Use Cognianalysis to create source-derived decision documents; use consulting/gen-AI delivery suites for scaled delivery programs, transformation governance and execution capacity.",
         "report_question": "Where does this source-derived analysis provide a decision document that can complement or replace consulting-style discovery work, and where does it still need owner or specialist follow-up?"
       },
       {
@@ -1790,7 +2103,7 @@ Rules for examples:
           "impact analysis for brownfield changes",
           "agent context for architecture reasoning"
         ],
-        "handoff_boundary": "Use Codebase Analysis Pack for LLM-authored narrative, business/technical decision framing and evidence-backed drilldown; use structural graph tooling when exhaustive dependency graphs, transaction maps or data lineage need deterministic graph proof.",
+        "handoff_boundary": "Use Cognianalysis for LLM-authored narrative, business/technical decision framing and evidence-backed drilldown; use structural graph tooling when exhaustive dependency graphs, transaction maps or data lineage need deterministic graph proof.",
         "report_question": "Which relationships are proven from source evidence, which are representative, and where would deterministic graph tooling add confidence?"
       },
       {
@@ -1819,7 +2132,7 @@ Rules for examples:
           "code smells and maintainability thresholds",
           "CI/CD quality gates"
         ],
-        "handoff_boundary": "Use Codebase Analysis Pack to explain visible source risks in business and architecture context; use static analysis gates for repeatable issue detection, thresholds and CI enforcement.",
+        "handoff_boundary": "Use Cognianalysis to explain visible source risks in business and architecture context; use static analysis gates for repeatable issue detection, thresholds and CI enforcement.",
         "report_question": "Which quality and security risks are visible in the source review, and which findings require a dedicated static-analysis/security scan before decisions?"
       },
       {
@@ -1848,650 +2161,173 @@ Rules for examples:
           "safe mechanical code transformations",
           "large-scale modernization execution"
         ],
-        "handoff_boundary": "Use Codebase Analysis Pack to decide and prioritize modernization options; use automated transformation engines when recommendations can be encoded as repeatable recipes or migration tasks.",
+        "handoff_boundary": "Use Cognianalysis to decide and prioritize modernization options; use automated transformation engines when recommendations can be encoded as repeatable recipes or migration tasks.",
         "report_question": "Which modernization steps are analysis recommendations only, and which could become repeatable automated recipes or migration tasks?"
       }
     ]
   },
-  "artifact_navigation_hints": [
-    {
-      "type": "documentation_candidate",
-      "label": "Documentation artifact candidate",
-      "path": "docs/api-examples.md",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "documentation_candidate",
-      "label": "Documentation artifact candidate",
-      "path": "docs/business-examples.md",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "documentation_candidate",
-      "label": "Documentation artifact candidate",
-      "path": "docs/business-flows.md",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "api_contract_candidate",
-      "label": "OpenAPI/Swagger artifact candidate",
-      "path": "docs/openapi.yml",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "soap_contract_candidate",
-      "label": "SOAP/WSDL/XSD artifact candidate",
-      "path": "docs/soap-kyc.wsdl",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "documentation_candidate",
-      "label": "Documentation artifact candidate",
-      "path": "README.md",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "soap_contract_candidate",
-      "label": "SOAP/WSDL/XSD artifact candidate",
-      "path": "src/main/resources/onboarding.wsdl",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "api_contract_candidate",
-      "label": "OpenAPI/Swagger artifact candidate",
-      "path": "src/main/resources/openapi.yaml",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "api_contract_candidate",
-      "label": "OpenAPI/Swagger artifact candidate",
-      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "soap_contract_candidate",
-      "label": "SOAP/WSDL/XSD artifact candidate",
-      "path": "src/main/resources/wsdl/customer-verification.wsdl",
-      "line": 1,
-      "confidence": "navigation"
-    },
-    {
-      "type": "soap_contract_candidate",
-      "label": "SOAP/WSDL/XSD artifact candidate",
-      "path": "src/main/resources/wsdl/kyc-status.wsdl",
-      "line": 1,
-      "confidence": "navigation"
-    }
-  ],
+  "deterministic_signal_list": [],
   "top_capsules": [
-    {
-      "path": "docs/examples/customer-verification-soap.xml",
-      "navigation_tags": [
-        "documentation",
-        "example",
-        "soap_contract"
-      ],
-      "roles": [
-        "documentation",
-        "example",
-        "soap_contract"
-      ],
-      "signals": [],
-      "symbols": []
-    },
-    {
-      "path": "docs/openapi.yml",
-      "navigation_tags": [
-        "api_contract",
-        "config",
-        "documentation"
-      ],
-      "roles": [
-        "api_contract",
-        "config",
-        "documentation"
-      ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "docs/openapi.yml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "src/main/resources/openapi.yaml",
-      "navigation_tags": [
-        "api_contract",
-        "config"
-      ],
-      "roles": [
-        "api_contract",
-        "config"
-      ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "docs/soap-kyc.wsdl",
-      "navigation_tags": [
-        "documentation",
-        "soap_contract"
-      ],
-      "roles": [
-        "documentation",
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": [
-        {
-          "type": "xml_element",
-          "name": "VerifyIdentityRequest",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 7
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyIdentityResponse",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 12
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyIdentity",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 17
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyIdentity",
-          "path": "docs/soap-kyc.wsdl",
-          "line": 24
-        }
-      ]
-    },
-    {
-      "path": "docs/api-examples.md",
-      "navigation_tags": [
-        "documentation",
-        "example"
-      ],
-      "roles": [
-        "documentation",
-        "example"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/api-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "docs/business-examples.md",
-      "navigation_tags": [
-        "documentation",
-        "example"
-      ],
-      "roles": [
-        "documentation",
-        "example"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-examples.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "src/main/resources/wsdl/customer-verification.wsdl",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": [
-        {
-          "type": "xml_element",
-          "name": "VerifyCustomerRequest",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 10
-        },
-        {
-          "type": "xml_element",
-          "name": "customerId",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 13
-        },
-        {
-          "type": "xml_element",
-          "name": "birthDate",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 14
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyCustomerResponse",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 18
-        },
-        {
-          "type": "xml_element",
-          "name": "approved",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 21
-        },
-        {
-          "type": "xml_element",
-          "name": "reference",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 22
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyCustomerInput",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 28
-        },
-        {
-          "type": "xml_element",
-          "name": "VerifyCustomerOutput",
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "line": 31
-        }
-      ]
-    },
-    {
-      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-      "navigation_tags": [
-        "api_contract",
-        "config"
-      ],
-      "roles": [
-        "api_contract",
-        "config"
-      ],
-      "signals": [
-        {
-          "type": "api_contract_candidate",
-          "label": "OpenAPI/Swagger artifact candidate",
-          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "src/main/resources/wsdl/kyc-status.wsdl",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": [
-        {
-          "type": "xml_element",
-          "name": "GetKycStatusRequest",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 9
-        },
-        {
-          "type": "xml_element",
-          "name": "kycReference",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 12
-        },
-        {
-          "type": "xml_element",
-          "name": "GetKycStatusResponse",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 16
-        },
-        {
-          "type": "xml_element",
-          "name": "approved",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 19
-        },
-        {
-          "type": "xml_element",
-          "name": "reference",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 20
-        },
-        {
-          "type": "xml_element",
-          "name": "GetKycStatusInput",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 26
-        },
-        {
-          "type": "xml_element",
-          "name": "GetKycStatusOutput",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 27
-        },
-        {
-          "type": "xml_element",
-          "name": "GetKycStatus",
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "line": 29
-        }
-      ]
-    },
-    {
-      "path": "src/main/resources/onboarding.wsdl",
-      "navigation_tags": [
-        "soap_contract"
-      ],
-      "roles": [
-        "soap_contract"
-      ],
-      "signals": [
-        {
-          "type": "soap_contract_candidate",
-          "label": "SOAP/WSDL/XSD artifact candidate",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": [
-        {
-          "type": "xml_element",
-          "name": "StartOnboardingRequest",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 8
-        },
-        {
-          "type": "xml_element",
-          "name": "StartOnboardingResponse",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 14
-        },
-        {
-          "type": "xml_element",
-          "name": "StartOnboarding",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 19
-        },
-        {
-          "type": "xml_element",
-          "name": "StartOnboarding",
-          "path": "src/main/resources/onboarding.wsdl",
-          "line": 26
-        }
-      ]
-    },
-    {
-      "path": "README.md",
-      "navigation_tags": [
-        "documentation"
-      ],
-      "roles": [
-        "documentation"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "README.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
-    },
-    {
-      "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-      "navigation_tags": [
-        "source",
-        "test"
-      ],
-      "roles": [
-        "source",
-        "test"
-      ],
-      "signals": [],
-      "symbols": [
-        {
-          "type": "class",
-          "name": "OnboardingServiceTest",
-          "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-          "line": 3
-        }
-      ]
-    },
     {
       "path": "src/main/java/com/acme/onboarding/Customer.java",
       "navigation_tags": [
-        "source"
+        "source_file"
       ],
       "roles": [
-        "source"
-      ],
-      "signals": [],
-      "symbols": [
-        {
-          "type": "class",
-          "name": "Customer",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 5
-        },
-        {
-          "type": "method",
-          "name": "pending",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 16
-        },
-        {
-          "type": "method",
-          "name": "markManualReview",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 26
-        },
-        {
-          "type": "method",
-          "name": "activate",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 33
-        },
-        {
-          "type": "method",
-          "name": "id",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 39
-        },
-        {
-          "type": "method",
-          "name": "status",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 40
-        },
-        {
-          "type": "method",
-          "name": "reviewReason",
-          "path": "src/main/java/com/acme/onboarding/Customer.java",
-          "line": 41
-        }
+        "source_file"
       ]
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
       "navigation_tags": [
-        "source"
+        "source_file"
       ],
       "roles": [
-        "source"
-      ],
-      "signals": [],
-      "symbols": [
-        {
-          "type": "class",
-          "name": "OnboardingController",
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "line": 14
-        },
-        {
-          "type": "method",
-          "name": "onboard",
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "line": 22
-        },
-        {
-          "type": "method",
-          "name": "status",
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "line": 28
-        }
+        "source_file"
       ]
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
       "navigation_tags": [
-        "source"
+        "source_file"
       ],
       "roles": [
-        "source"
+        "source_file"
+      ]
+    },
+    {
+      "path": "docs/examples/customer-verification-soap.xml",
+      "navigation_tags": [
+        "structured_file"
       ],
-      "signals": [],
-      "symbols": [
-        {
-          "type": "class",
-          "name": "OnboardingService",
-          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-          "line": 8
-        },
-        {
-          "type": "method",
-          "name": "startOnboarding",
-          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-          "line": 23
-        },
-        {
-          "type": "method",
-          "name": "getStatus",
-          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-          "line": 40
-        }
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "docs/openapi.yml",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "docs/soap-kyc.wsdl",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "src/main/resources/onboarding.wsdl",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "src/main/resources/openapi.yaml",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "src/main/resources/wsdl/customer-verification.wsdl",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "src/main/resources/wsdl/kyc-status.wsdl",
+      "navigation_tags": [
+        "structured_file"
+      ],
+      "roles": [
+        "structured_file"
+      ]
+    },
+    {
+      "path": "docs/api-examples.md",
+      "navigation_tags": [
+        "text_document"
+      ],
+      "roles": [
+        "text_document"
+      ]
+    },
+    {
+      "path": "docs/business-examples.md",
+      "navigation_tags": [
+        "text_document"
+      ],
+      "roles": [
+        "text_document"
       ]
     },
     {
       "path": "docs/business-flows.md",
       "navigation_tags": [
-        "documentation"
+        "text_document"
       ],
       "roles": [
-        "documentation"
-      ],
-      "signals": [
-        {
-          "type": "documentation_candidate",
-          "label": "Documentation artifact candidate",
-          "path": "docs/business-flows.md",
-          "line": 1,
-          "confidence": "navigation"
-        }
-      ],
-      "symbols": []
+        "text_document"
+      ]
     },
     {
-      "path": "src/main/resources/application.yml",
+      "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
       "navigation_tags": [
-        "config"
+        "source_file"
       ],
       "roles": [
-        "config"
-      ],
-      "signals": [],
-      "symbols": []
+        "source_file"
+      ]
     },
     {
-      "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+      "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
       "navigation_tags": [
-        "source"
+        "source_file"
       ],
       "roles": [
-        "source"
+        "source_file"
+      ]
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+      "navigation_tags": [
+        "source_file"
       ],
-      "signals": [],
-      "symbols": [
-        {
-          "type": "class",
-          "name": "OnboardingResponse",
-          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-          "line": 3
-        },
-        {
-          "type": "method",
-          "name": "OnboardingResponse",
-          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-          "line": 3
-        },
-        {
-          "type": "method",
-          "name": "from",
-          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-          "line": 4
-        }
+      "roles": [
+        "source_file"
+      ]
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+      "navigation_tags": [
+        "source_file"
+      ],
+      "roles": [
+        "source_file"
       ]
     }
   ],
@@ -2510,26 +2346,26 @@ Rules for examples:
       "interface_ids": ["interface-id"],
       "summary": "Short business/technical summary.",
       "mermaid": {
-        "diagram_type": "sequenceDiagram|flowchart TD|stateDiagram-v2",
+        "diagram_type": "Mermaid diagram type chosen to fit the flow.",
         "source": "sequenceDiagram
   participant Client
   Client->>API: ...",
         "evidence": []
       },
       "steps": [
-        {"order": 1, "actor": "client/system/db/external", "description":"step", "kind":"request|validation|business_rule|persistence|external_call|event|response|error|state_change", "request_response_ref":"optional interface/example id", "evidence": []}
+        {"order": 1, "actor": "Repository-specific actor/system.", "description":"step", "kind":"Repository-specific step kind.", "request_response_ref":"optional interface/example id", "evidence": []}
       ],
       "business_logic_refs": ["capability-id#logic-name"],
-      "side_effects": [{"type":"database_write|event_publish|external_call|state_change", "description":"...", "evidence": []}],
-      "examples": [{"title":"Flow example", "input": {}, "output": {}, "example_origin":"doc|test|inferred", "evidence": []}],
+      "side_effects": [{"type":"Repository-specific side effect type.", "description":"...", "evidence": []}],
+      "examples": [{"title":"Flow example", "input": {}, "output": {}, "example_origin":"doc, test or inferred", "evidence": []}],
       "evidence": [],
-      "confidence": "high|medium|low",
+      "confidence": "Repository-specific confidence statement.",
       "open_questions": []
     }
   ],
   "documentation": {
     "mermaid_flows": [
-      {"title":"Flow title", "flow_id":"optional", "diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram
+      {"title":"Flow title", "flow_id":"optional", "diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram
   A->>B: ...", "evidence": []}
     ]
   }
@@ -2537,7 +2373,9 @@ Rules for examples:
 
 ## Required Source Inventory Accounting
 
-For this task, list the files you inspected for this extraction area and the files from the inventory that you intentionally deferred for this extraction area.
+For this task, list the files you inspected for this extraction area. Use deferred files only for this task-local extraction scope; deferral does not satisfy whole-codebase completion.
+
+Whole-codebase completion is checked through `.analysis/source_tiers/*.json` Tier 1 file-card coverage. Do not use `deferred_files` as a substitute for file analysis.
 
 Include this top-level object in the JSON:
 
@@ -2549,7 +2387,7 @@ Include this top-level object in the JSON:
       {"path": "relative/path/File.ext", "reason": "Why this file was inspected for semantic extraction.", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
     ],
     "deferred_files": [
-      {"path": "relative/path/File.ext", "reason": "generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
+      {"path": "relative/path/File.ext", "reason": "Repository-specific task-local reason; deferral never counts as completed Tier 1 analysis.", "evidence": [{"path": "relative/path/File.ext", "line": 1}]}
     ],
     "open_questions": []
   }

@@ -1,11 +1,11 @@
 {
-  "name": "codebase-analysis-pack",
-  "version": "0.6.0",
-  "description": "TypeScript implementation of an LLM-first Codex-compatible codebase understanding pack with one-command finalization and evidence-first interactive HTML reports.",
+  "name": "cognianalysis",
+  "version": "0.7.0",
+  "description": "LLM-first source-code analysis, documentation and decision-reporting library for Codex-compatible workflows.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "cba": "dist/cli.js"
+    "cognianalysis": "dist/cli.js"
   },
   "main": "dist/index.js",
   "files": [
@@ -16,7 +16,11 @@
     "README.md",
     "LICENSE",
     "src",
-    "examples",
+    "examples/demo-repo/.analysis-seed",
+    "examples/demo-repo/docs",
+    "examples/demo-repo/src",
+    "examples/demo-repo/README.md",
+    "examples/demo-repo/pom.xml",
     ".agents",
     "AGENTS.md"
   ],
@@ -32,6 +36,7 @@
   },
   "keywords": [
     "codex",
+    "cognianalysis",
     "agent-skills",
     "codebase-understanding",
     "reverse-engineering",

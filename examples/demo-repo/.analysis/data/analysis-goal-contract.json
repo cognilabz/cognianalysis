@@ -57,6 +57,11 @@
       "intent": "Build a repository-wide overview and relationship map before deep slices."
     },
     {
+      "id": "tiered_whole_codebase_analysis",
+      "label": "Tiered whole-codebase analysis",
+      "intent": "Analyze every included file at least at Tier 1 before selecting Tier 2-4 technical drilldown, behavior, risk and refactoring depth."
+    },
+    {
       "id": "e2e_relationships",
       "label": "E2E relationships",
       "intent": "Explain how functions, code blocks, modules and systems collaborate through representative flows."

@@ -1,22 +1,25 @@
-# Target Coverage
+# Target Capability Context
 
-This document defines the product-level coverage matrix used by `cba finalize`, `cba coverage` and the HTML report.
+This document defines the product-level target context used by `cognianalysis finalize` and `cognianalysis coverage`.
 
-The implementation intentionally separates two kinds of coverage:
+The target rows are not semantic coverage and are not CLI-scored. They preserve the original capability picture as LLM trace context:
 
-1. **Design coverage** — the pack has a skill, task, schema expectation, aggregator field and report section for the capability.
-2. **Output coverage** — the current repository analysis has evidence-backed extracted data for that capability.
+1. **Target context** — stable capability IDs, descriptions and expected-output hints for LLM authoring.
+2. **LLM semantic judgment** — the final `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 
-Whole-codebase source coverage is a separate output gate: every included file from `.analysis/data/source-inventory.json` must be evidence-backed, explicitly inspected by Codex/LLM, or explicitly deferred with a reason. Source capsules and code-map ranking do not count as semantic coverage by themselves.
+Whole-codebase source inventory accounting is a separate structural gate: every included file from `.analysis/data/source-inventory.json` must be evidence-backed or explicitly inspected by Codex/LLM. Files that are only deferred remain incomplete and do not count as finished analysis. Source capsules and code-map ranking do not count as semantic coverage by themselves.
 
-A repository can therefore show `covered / pending` when the workflow supports a capability but Codex has not yet written the corresponding `.analysis/llm/*.json` output.
+Tiered whole-codebase analysis is the semantic base layer: every included file must receive a Tier 1 LLM-authored file card in `.analysis/source_tiers/*.json`; selected areas are then promoted to Tier 2-4 module/source-family synthesis, behavior/contract/flow analysis, quality/process findings and refactoring decisions.
+
+A repository must not show target rows as `covered`, `present`, `partial`, `missing` or `pending` from deterministic output-key checks. If a capability is semantically satisfied, that status must be authored by the LLM in the final requirements trace or quality review.
 
 ## Required capabilities
 
 - Existing-harness execution
 - LLM-first semantic extraction
 - Non-authoritative code map signals
-- Whole-codebase source coverage
+- Whole-codebase source inventory accounting
+- Tiered whole-codebase analysis
 - Business capability extraction
 - Functional view
 - Business logic extraction

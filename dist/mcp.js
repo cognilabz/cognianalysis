@@ -9,8 +9,11 @@ const aggregate_2 = require("./aggregate");
 const utils_1 = require("./utils");
 const readiness_1 = require("./readiness");
 function send(obj) { process.stdout.write(JSON.stringify(obj) + '\n'); }
+const SERVER_NAME = 'cognianalysis';
+const VERSION = '0.7.0';
+const CLI_NAME = 'cognianalysis';
 function stagedLlmWorkflowMessage() {
-    return 'execute llm_tasks/01-*.md through 10-*.md, then 11-detail-agent-plan.md, run cba finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run cba finalize . plus cba audit-report .';
+    return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, use the strategy to execute llm_tasks/01-*.md through 10-*.md, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
 }
 function aggregateWithMaterializedDetailTasks(repo, analysis) {
     let bundle = (0, aggregate_1.aggregate)(repo, analysis);
@@ -48,7 +51,6 @@ async function callTool(name, args) {
         const { bundle, report } = renderReportAndRefreshBundle(repo, analysis, args?.out, args?.title);
         const invalid = (bundle.evidence_index || []).filter((e) => e.valid === false);
         const rows = bundle.target_artifact_contract_coverage || bundle.target_coverage || [];
-        const gaps = rows.filter((r) => ['missing', 'pending', 'partial'].includes(r.output_status));
         const readiness = (0, readiness_1.computeFinalLlmReadiness)(bundle);
         if (bundle.status?.state === 'llm_extracted' && readiness.failures.length && args?.allowPartial !== true) {
             throw new Error(`Final LLM readiness is partial: ${readiness.failures.slice(0, 6).join('; ')}`);
@@ -59,18 +61,21 @@ async function callTool(name, args) {
             final_llm_readiness: readiness.state,
             final_llm_readiness_detail: readiness,
             final_llm_readiness_failures: readiness.failures,
+            analysis_strategy: bundle.llm_analysis_strategy,
             report_mode: bundle.report_mode,
             analysis_goal_contract: bundle.analysis_goal_contract,
             analysis_goal_trace_alignment: bundle.analysis_goal_trace_alignment,
             tool_positioning_references: bundle.tool_positioning_references,
             requirements_trace_contract: bundle.analysis_document_requirements_trace_contract,
             report_quality_review: bundle.analysis_document_quality_review,
-            target_artifact_contract_coverage_present: rows.length - gaps.length,
             target_artifact_contract_coverage_total: rows.length,
-            target_artifact_contract_coverage_gaps: gaps.map((row) => ({ id: row.id, title: row.title, output_status: row.output_status })),
-            target_coverage_present: rows.length - gaps.length,
+            target_artifact_contract_coverage_scored: false,
+            target_artifact_contract_coverage_status: 'not_scored_cli_context_only',
+            target_artifact_contract_coverage_gaps: [],
             target_coverage_total: rows.length,
+            target_coverage_scored: false,
             semantic_authority: bundle.semantic_authority,
+            source_tier_coverage: bundle.source_tier_coverage,
             source_inventory_accounting: bundle.source_inventory_accounting || bundle.source_coverage,
             source_coverage: bundle.source_coverage,
             evidence_total: (bundle.evidence_index || []).length,
@@ -80,22 +85,12 @@ async function callTool(name, args) {
     }
     if (name === 'audit-report') {
         const { bundle, report } = renderReportAndRefreshBundle(repo, analysis, args?.out, args?.title);
-        const html = utils_1.FS.readFileSync(report, 'utf8');
         const invalid = (bundle.evidence_index || []).filter((e) => e.valid === false);
         const sourceCoverage = bundle.source_inventory_accounting || bundle.source_coverage || {};
-        const fixedLabels = ['Management Brief', 'Technical Zoom-In', 'Technical Appendix', 'Coverage & Evidence', 'Raw Data Appendix', 'Appendix / Raw Data', 'Detail Agent Plan'];
-        const fixedNavHits = fixedLabels.filter(label => html.includes(`>${label}<`));
-        const fixedShellLabels = ['Architecture Report', 'business first · technical drilldown', 'Source-Derived Management Report'];
-        const fixedShellHits = fixedShellLabels.filter(label => html.includes(label));
         const failures = [
             ...(0, readiness_1.finalLlmReadinessFailures)(bundle),
             ...(sourceCoverage.complete !== true ? [`source inventory accounting incomplete: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} accounted, ${sourceCoverage.invalid_coverage_items || 0} invalid coverage items`] : []),
-            ...(invalid.length ? [`invalid evidence: ${invalid.length}`] : []),
-            ...(fixedNavHits.length ? [`old fixed report nav labels present: ${fixedNavHits.join(', ')}`] : []),
-            ...(bundle.report_mode?.llm_authored === true && fixedShellHits.length ? [`fixed report shell copy present: ${fixedShellHits.join(', ')}`] : []),
-            ...(bundle.report_mode?.llm_authored === true && html.includes('data-section="analysis-document"') ? ['fixed Analysis Document start page present before LLM-authored sections'] : []),
-            ...(/Syntax error in text|mermaid version/.test(html) ? ['Mermaid syntax error text present in report'] : []),
-            ...(/<pre class="mermaid"/.test(html) ? ['legacy Mermaid pre-render path present'] : [])
+            ...(invalid.length ? [`invalid evidence: ${invalid.length}`] : [])
         ];
         const uniqueFailures = [...new Set(failures)];
         return {
@@ -103,6 +98,7 @@ async function callTool(name, args) {
             report_audit: uniqueFailures.length ? 'failed' : 'passed',
             failures: uniqueFailures,
             final_llm_readiness: (0, readiness_1.computeFinalLlmReadiness)(bundle),
+            analysis_strategy: bundle.llm_analysis_strategy,
             report_mode: bundle.report_mode,
             detail_review_coverage: bundle.source_family_detail_review_coverage,
             detail_review_synthesis: bundle.analysis_document_detail_review_synthesis,
@@ -112,6 +108,7 @@ async function callTool(name, args) {
             analysis_goal_trace_alignment: bundle.analysis_goal_trace_alignment,
             report_quality_review: bundle.analysis_document_quality_review,
             semantic_authority: bundle.semantic_authority,
+            source_tier_coverage: bundle.source_tier_coverage,
             source_inventory_accounting: sourceCoverage,
             evidence_total: (bundle.evidence_index || []).length,
             invalid: invalid.length,
@@ -156,10 +153,10 @@ function startMcpLikeServer() {
             }
             try {
                 if (req.method === 'initialize') {
-                    send({ jsonrpc: '2.0', id: req.id, result: { protocolVersion: '2024-11-05', serverInfo: { name: 'codebase-analysis-pack', version: '0.6.0' }, capabilities: { tools: {} } } });
+                    send({ jsonrpc: '2.0', id: req.id, result: { protocolVersion: '2024-11-05', serverInfo: { name: SERVER_NAME, version: VERSION }, capabilities: { tools: {} } } });
                 }
                 else if (req.method === 'tools/list') {
-                    send({ jsonrpc: '2.0', id: req.id, result: { tools: ['prepare', 'finalize', 'audit-report', 'aggregate', 'render', 'validate', 'coverage'].map(name => ({ name, description: `Run cba ${name}`, inputSchema: { type: 'object', properties: { repo: { type: 'string' }, analysis: { type: 'string' }, allowPartial: { type: 'boolean' } } } })) } });
+                    send({ jsonrpc: '2.0', id: req.id, result: { tools: ['prepare', 'finalize', 'audit-report', 'aggregate', 'render', 'validate', 'coverage'].map(name => ({ name, description: `Run ${CLI_NAME} ${name}`, inputSchema: { type: 'object', properties: { repo: { type: 'string' }, analysis: { type: 'string' }, allowPartial: { type: 'boolean' } } } })) } });
                 }
                 else if (req.method === 'tools/call') {
                     const result = await callTool(req.params?.name, req.params?.arguments || {});

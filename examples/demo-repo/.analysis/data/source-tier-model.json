@@ -1,0 +1,48 @@
+{
+  "model_kind": "tiered_whole_codebase_analysis",
+  "version": "source-tier-v1",
+  "semantic_authority": "llm",
+  "deterministic_authority": "task_materialization_and_path_contract_only",
+  "purpose": "Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 LLM-authored file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.",
+  "tiers": [
+    {
+      "id": "tier0_inventory",
+      "depth": 0,
+      "owner": "cli",
+      "meaning": "Deterministic inventory only: path, size, language/format and navigation partition. This is never semantic understanding."
+    },
+    {
+      "id": "tier1_file_card",
+      "depth": 1,
+      "owner": "llm",
+      "required_for_every_included_file": true,
+      "meaning": "A short LLM-authored per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence."
+    },
+    {
+      "id": "tier2_module_or_source_family",
+      "depth": 2,
+      "owner": "llm",
+      "meaning": "Module/source-family synthesis built from Tier 1 cards and direct source inspection: responsibilities, internal relationships, technical drilldown and uncertainty."
+    },
+    {
+      "id": "tier3_behavior_contract_flow",
+      "depth": 3,
+      "owner": "llm",
+      "meaning": "Deep behavior review for important flows, interfaces, contracts, state changes, examples, failure paths and side effects."
+    },
+    {
+      "id": "tier4_decision_transformation",
+      "depth": 4,
+      "owner": "llm",
+      "meaning": "Decision-level findings, risks, process improvements, refactoring and target-architecture options."
+    }
+  ],
+  "completion_rule": "Final readiness requires Tier 1 file-card coverage for every included source-inventory file. Deferred files are not completed analysis; they remain gaps until a Tier 1 card exists.",
+  "llm_rules": [
+    "Do not summarize files from path names alone.",
+    "Open each listed file or use an already-opened exact source excerpt before authoring its Tier 1 card.",
+    "Use unknown/none when business relevance cannot be proven.",
+    "Keep evidence exact with file:line references.",
+    "Use Tier 1 to prevent blind spots; use Tier 2-4 to explain interactions and decision implications."
+  ]
+}

@@ -1,6 +1,6 @@
 # Source-Family Detail Review · src/main
 
-You are a focused source-family detail agent for Codebase Analysis Pack.
+You are a focused source-family detail agent for Cognianalysis.
 
 ## Inputs
 
@@ -8,6 +8,8 @@ Read first:
 
 - `.analysis/llm_instructions.md`
 - `.analysis/data/source-inventory.json`
+- `.analysis/data/source-tier-model.json`
+- `.analysis/source_tiers/*.json`
 - `.analysis/data/analysis-goal-contract.json`
 - `.analysis/data/code-map.json`
 - `.analysis/data/source-family-inventory.json`
@@ -18,6 +20,7 @@ Read first:
 - the seed files listed below
 
 This task is a semantic review, not a code-map summary. Open source files, tests, docs, contracts, schemas and configuration directly. Do not use filename, regex or word-match hints as proof of behavior.
+Use Tier 1 file cards as broad context only. They help prevent blind spots, but deep review claims still need direct file:line evidence from source.
 
 ## Source family
 
@@ -56,7 +59,7 @@ Expected JSON:
 {
   "source_family_detail_review": {
     "source_family": "src/main",
-    "review_status": "complete|partial|blocked",
+    "review_status": "complete, partial or blocked",
     "summary": "Human-readable purpose and role of this source family.",
     "business_view": {
       "purpose": "...",
@@ -70,40 +73,40 @@ Expected JSON:
     "technical_view": {
       "architecture_role": "...",
       "entry_points": [
-        {"name":"...", "protocol":"REST|SOAP|event|job|cli|ui|db|internal|unknown", "path":"optional", "description":"...", "evidence":[]}
+        {"name":"...", "protocol":"Repository-specific protocol/interface style, or unknown.", "path":"optional", "description":"...", "evidence":[]}
       ],
       "exits_or_integrations": [
         {"name":"...", "protocol":"...", "description":"...", "evidence":[]}
       ],
       "data_and_state": [
-        {"name":"...", "kind":"entity|table|store|message|state|unknown", "description":"...", "evidence":[]}
+        {"name":"...", "kind":"Repository-specific data/state kind, or unknown.", "description":"...", "evidence":[]}
       ]
     },
     "flows": [
       {
         "title":"...",
         "summary":"...",
-        "mermaid":{"diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\n  A->>B: ...", "evidence":[]},
+        "mermaid":{"diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram\n  A->>B: ...", "evidence":[]},
         "steps":[{"order":1, "actor":"...", "description":"...", "evidence":[]}],
         "evidence":[]
       }
     ],
     "quality_and_process": {
       "findings": [
-        {"title":"...", "category":"bug|security|quality|process|testability|maintainability|documentation|operability", "severity":"low|medium|high|critical", "description":"...", "recommendation":"...", "evidence":[]}
+        {"title":"...", "category":"Repository-specific finding category.", "severity":"Repository-specific severity or priority.", "description":"...", "recommendation":"...", "evidence":[]}
       ],
-      "test_readiness": "none|partial|good|strong|unknown",
+      "test_readiness": "Repository-specific readiness statement.",
       "process_improvements": [
         {"title":"...", "description":"...", "evidence":[]}
       ]
     },
     "refactoring_and_target_architecture": {
       "recommendations": [
-        {"title":"...", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "target_state":"...", "evidence":[]}
+        {"title":"...", "benefit":"...", "risk":"Repository-specific risk statement.", "effort":"Repository-specific effort estimate.", "target_state":"...", "evidence":[]}
       ]
     },
     "open_questions": [
-      {"question":"...", "why_it_matters":"...", "owner":"business|architecture|engineering|operations|unknown", "evidence":[]}
+      {"question":"...", "why_it_matters":"...", "owner":"Repository-specific owner or unknown.", "evidence":[]}
     ],
     "evidence": []
   },
@@ -113,7 +116,7 @@ Expected JSON:
       {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "deferred_files": [
-      {"path":"relative/path/File.ext", "reason":"generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+      {"path":"relative/path/File.ext", "reason":"Repository-specific task-local reason; deferral never counts as completed Tier 1 analysis.", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
     ],
     "open_questions": []
   }

@@ -30,7 +30,8 @@
         ],
         "goal_contract_refs": [
           "required_levels.reverse_engineering_documentation",
-          "required_report_behaviors.whole_repo_first"
+          "required_report_behaviors.whole_repo_first",
+          "required_report_behaviors.tiered_whole_codebase_analysis"
         ]
       },
       {

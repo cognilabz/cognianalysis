@@ -7,6 +7,12 @@
   },
   {
     "path": "docs/api-examples.md",
+    "line": 3,
+    "valid": true,
+    "snippet": "## Start onboarding request"
+  },
+  {
+    "path": "docs/api-examples.md",
     "line": 26,
     "valid": true,
     "snippet": "## SOAP KYC status request"
@@ -16,6 +22,12 @@
     "line": 28,
     "valid": true,
     "snippet": "```xml"
+  },
+  {
+    "path": "docs/api-examples.md",
+    "line": 38,
+    "valid": true,
+    "snippet": "## Mermaid overview"
   },
   {
     "path": "docs/business-examples.md",

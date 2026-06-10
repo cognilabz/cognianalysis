@@ -2,12 +2,12 @@
   {
     "id": "existing-harness-execution",
     "title": "Existing harness execution",
-    "description": "The pack is launched from Codex or another harness through skills/CLI, not by a custom coding agent.",
+    "description": "Cognianalysis is launched from Codex or another harness through skills/CLI, not by a custom coding agent.",
     "addressed_by": [
       "resources/AGENTS.md",
-      ".agents/skills/codebase-assessment/SKILL.md",
+      ".agents/skills/cognianalysis/SKILL.md",
       "CLI commands",
-      "optional cba mcp"
+      "optional cognianalysis mcp"
     ],
     "expected_outputs": [
       ".analysis/llm_tasks/*.md",
@@ -16,17 +16,20 @@
     "output_keys": [
       "tasks"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "tasks",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -51,69 +54,117 @@
       "interfaces",
       "flows"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "capabilities",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "interfaces",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "flows",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
+      }
+    ]
+  },
+  {
+    "id": "llm-authored-analysis-strategy",
+    "title": "LLM-authored analysis strategy",
+    "description": "The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before fixed workbench tasks and final synthesis.",
+    "addressed_by": [
+      "00-analysis-strategy.md",
+      "llm/analysis-strategy.json",
+      "analysis_pipeline llm_analysis_strategy stage"
+    ],
+    "expected_outputs": [
+      "llm_analysis_strategy.uses_pre_analysis_strategy_artifact=true",
+      "llm_analysis_strategy.strategy_present=true"
+    ],
+    "output_keys": [
+      "llm_analysis_strategy.uses_pre_analysis_strategy_artifact",
+      "llm_analysis_strategy.strategy_present"
+    ],
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
+    "semantic_verdict_authority": "llm",
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
+    "output_details": [
+      {
+        "key": "llm_analysis_strategy.uses_pre_analysis_strategy_artifact",
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
+      },
+      {
+        "key": "llm_analysis_strategy.strategy_present",
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
   {
     "id": "non-authoritative-code-map",
-    "title": "Non-authoritative code map signals",
-    "description": "Broad signals help navigation but are never final entrypoint facts.",
+    "title": "Non-authoritative inventory map",
+    "description": "Inventory metadata helps navigation but never parses or decides imports, symbols, frameworks, contracts, examples, entrypoints or relationships.",
     "addressed_by": [
       "code-map.json extraction_policy",
       "Main skill non-goals",
       "Generated task warnings"
     ],
     "expected_outputs": [
-      "code_map.extraction_policy.signals_are_authoritative=false"
+      "extraction_policy.deterministic_parsing_disabled=true"
     ],
     "output_keys": [
-      "signals"
+      "extraction_policy.deterministic_parsing_disabled"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
-        "key": "signals",
-        "present": true
+        "key": "extraction_policy.deterministic_parsing_disabled",
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
   {
     "id": "whole-codebase-source-inventory-accounting",
     "title": "Whole-codebase source inventory accounting",
-    "description": "Every included repository file is accounted for by evidence, explicitly inspected by Codex/LLM, or explicitly deferred with a reason. This is an inventory contract, not a deterministic semantic-quality verdict.",
+    "description": "Every included repository file is accounted for by evidence or explicit Codex/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.",
     "addressed_by": [
       "source-inventory.json",
       "analysis_coverage in LLM outputs",
-      "cba finalize source inventory accounting contract",
+      "cognianalysis finalize source inventory accounting contract",
       "embedded report audit data"
     ],
     "expected_outputs": [
@@ -124,21 +175,66 @@
       "source_inventory_accounting.complete",
       "analysis_coverage"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "source_inventory_accounting.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_coverage",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
+      }
+    ]
+  },
+  {
+    "id": "tiered-whole-codebase-analysis",
+    "title": "Tiered whole-codebase analysis",
+    "description": "Every included file receives at least a Tier 1 LLM-authored file card before repository synthesis; selected areas receive deeper Tier 2-4 technical, behavioral, quality and refactoring analysis.",
+    "addressed_by": [
+      "source-tier-task-manifest.json",
+      "source_tier_tasks/*.md",
+      "source_tiers/*.json",
+      "source_tier_coverage",
+      "analysis_document technical drilldown sections"
+    ],
+    "expected_outputs": [
+      "source_tier_coverage.complete=true",
+      "source_file_tier_reviews[]"
+    ],
+    "output_keys": [
+      "source_tier_coverage.complete",
+      "source_file_tier_reviews"
+    ],
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
+    "semantic_verdict_authority": "llm",
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
+    "output_details": [
+      {
+        "key": "source_tier_coverage.complete",
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
+      },
+      {
+        "key": "source_file_tier_reviews",
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -160,21 +256,25 @@
       "assessment.repository_wide_view",
       "source_inventory_accounting.complete"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment.repository_wide_view",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "source_inventory_accounting.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -212,41 +312,50 @@
       "analysis_document.sections",
       "analysis_document_component_coverage.complete"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "analysis_document_prerequisite_coverage.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_document_quality_review.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.llm_authored",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.final_after_detail_reviews",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.final_synthesis_ready",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_document.sections",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_document_component_coverage.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -267,21 +376,25 @@
       "analysis_document_quality_review.complete",
       "report_mode.report_quality_review_decision_ready"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "analysis_document_quality_review.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.report_quality_review_decision_ready",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -303,21 +416,25 @@
       "analysis_document_requirements_trace_contract.complete",
       "analysis_document_quality_review.complete"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "analysis_document_requirements_trace_contract.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_document_quality_review.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -339,21 +456,25 @@
       "analysis_document_requirements_trace_contract.complete",
       "analysis_goal_trace_alignment.complete"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "analysis_document_requirements_trace_contract.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_goal_trace_alignment.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -375,21 +496,25 @@
       "llm_detail_agent_plan.uses_pre_final_plan_artifact",
       "llm_detail_agent_plan.planning_decision_present"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "llm_detail_agent_plan.uses_pre_final_plan_artifact",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "llm_detail_agent_plan.planning_decision_present",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -410,17 +535,20 @@
     "output_keys": [
       "detail_task_manifest.tasks"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "detail_task_manifest.tasks",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -439,17 +567,20 @@
     "output_keys": [
       "source_family_detail_reviews"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "source_family_detail_reviews",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -471,21 +602,25 @@
       "source_family_detail_review_coverage.uses_pre_final_plan_artifact",
       "source_family_detail_review_coverage.complete"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "source_family_detail_review_coverage.uses_pre_final_plan_artifact",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "source_family_detail_review_coverage.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -511,29 +646,35 @@
       "report_mode.final_after_detail_reviews",
       "report_mode.final_synthesis_ready"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "analysis_document_prerequisite_coverage.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "analysis_document_detail_review_synthesis.complete",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.final_after_detail_reviews",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.final_synthesis_ready",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -551,17 +692,20 @@
     "output_keys": [
       "capabilities"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "capabilities",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -581,17 +725,20 @@
     "output_keys": [
       "assessment.functional_view"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment.functional_view",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -611,21 +758,25 @@
       "business_logic",
       "capabilities"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "business_logic",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "capabilities",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -644,17 +795,20 @@
     "output_keys": [
       "interfaces"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "interfaces",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -674,21 +828,25 @@
       "documentation.request_response_examples",
       "interfaces"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "documentation.request_response_examples",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "interfaces",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -708,21 +866,25 @@
       "documentation.openapi",
       "interfaces"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "documentation.openapi",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "interfaces",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -742,21 +904,25 @@
       "documentation.soap",
       "interfaces"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "documentation.soap",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "interfaces",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -777,17 +943,20 @@
     "output_keys": [
       "assessment.technical_view"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment.technical_view",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -807,21 +976,25 @@
       "flows",
       "documentation.mermaid_flows"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "flows",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "documentation.mermaid_flows",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -845,29 +1018,35 @@
       "integrations",
       "side_effects"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "domain_model",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "data_model",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "integrations",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "side_effects",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -885,17 +1064,20 @@
     "output_keys": [
       "architecture"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "architecture",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -915,21 +1097,25 @@
       "process",
       "quality"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "process",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "quality",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -951,21 +1137,25 @@
       "findings",
       "quality"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "findings",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "quality",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -984,17 +1174,20 @@
     "output_keys": [
       "assessment.decision_basis"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment.decision_basis",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1014,21 +1207,25 @@
       "refactoring",
       "modernization"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "refactoring",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "modernization",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1048,21 +1245,25 @@
       "architecture.target_architecture",
       "modernization"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "architecture.target_architecture",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "modernization",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1081,17 +1282,20 @@
     "output_keys": [
       "assessment.tool_positioning"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "assessment.tool_positioning",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1110,17 +1314,20 @@
     "output_keys": [
       "evidence_index"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "evidence_index",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1141,25 +1348,30 @@
       "report_artifacts.analysis_data_json",
       "report_mode.llm_authored"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "report_artifacts.index_html",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_artifacts.analysis_data_json",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       },
       {
         "key": "report_mode.llm_authored",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1177,17 +1389,20 @@
     "output_keys": [
       "tooling.portfolio_mode_available"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "tooling.portfolio_mode_available",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   },
@@ -1198,7 +1413,7 @@
     "addressed_by": [
       "AGENTS.md",
       "skills",
-      "cba mcp"
+      "cognianalysis mcp"
     ],
     "expected_outputs": [
       "skills",
@@ -1207,17 +1422,20 @@
     "output_keys": [
       "tasks"
     ],
-    "coverage_kind": "artifact_contract",
+    "coverage_kind": "goal_contract_context",
+    "artifact_contract_kind": "llm_trace_target_context",
     "semantic_verdict_authority": "llm",
-    "output_status_meaning": "Whether the required LLM-authored artifact, detail review, evidence index, renderer contract or CLI output exists. This matrix is diagnostic provenance, not a deterministic readiness gate or semantic-quality judgment.",
-    "design_status": "tracked",
-    "design_status_meaning": "The target capability is registered in the matrix. This is not a claim that the capability is semantically satisfied.",
-    "output_status": "present",
-    "output_ratio": 1,
+    "deterministic_contract_scope": "target capability registration and expected-output hints only; no output-key presence scoring, semantic matching, quality scoring or readiness judgment",
+    "output_status": "not_scored",
+    "output_status_meaning": "Not scored by the CLI. The row is context for LLM-authored requirements_trace/report_quality_review and must not be read as present, partial, missing or covered.",
+    "design_status": "context",
+    "design_status_meaning": "The target capability is preserved as original goal context for LLM traceability. This is not a claim that the capability is semantically satisfied.",
+    "output_ratio": null,
     "output_details": [
       {
         "key": "tasks",
-        "present": true
+        "deterministic_presence_scored": false,
+        "role": "expected LLM artifact or renderer output hint for the authoring task"
       }
     ]
   }
