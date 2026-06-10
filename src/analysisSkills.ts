@@ -11,7 +11,7 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
   {
     id: 'analysis_strategy_planning',
     label: 'Analysis Strategy Planning',
-    purpose: 'Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.',
+    purpose: 'Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.',
     stage_ids: ['llm_analysis_strategy'],
     expected_outputs: ['llm/analysis-strategy.json', 'analysis_strategy.whole_repo_first_plan', 'analysis_strategy.report_intent'],
     guidance: 'Use inventory only as context. The LLM decides how this repository should be understood, which skills matter and where deeper review may be needed.'

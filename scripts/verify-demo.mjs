@@ -58,7 +58,7 @@ function runtimeSourceFiles(dir) {
     .flatMap(name => {
       const full = join(dir, name);
       if (statSync(full).isDirectory()) return runtimeSourceFiles(full);
-      return full.endsWith('.ts') && !full.endsWith('.d.ts') ? [full] : [];
+      return (full.endsWith('.ts') && !full.endsWith('.d.ts')) || full.endsWith('.js') ? [full] : [];
     });
 }
 
@@ -71,6 +71,7 @@ assert(auditOutput.includes('Source inventory:'), 'Audit output must use source 
 assert(!auditOutput.includes('Source coverage:'), 'Audit output must not expose source coverage as a visible verdict label');
 const coverageOutput = run(['coverage', demo], { capture: true }).stdout || '';
 assert(coverageOutput.includes('Source inventory accounting:'), 'Coverage output must expose source inventory accounting wording');
+assert(coverageOutput.includes('Tier 1 task backlog:'), 'Coverage output must expose Tier 1 task backlog wording');
 assert(!coverageOutput.includes('Source coverage:'), 'Coverage output must not expose source coverage as a visible verdict label');
 assert(coverageOutput.includes('target capabilities are registered as LLM trace context'), 'Coverage output must describe target rows as unscored LLM trace context');
 assert(!coverageOutput.includes('tracked linked'), 'Coverage output must not describe target rows as linked/present artifacts');
@@ -86,16 +87,59 @@ const demoGoalContract = JSON.parse(readFileSync(join(demo, '.analysis', 'data',
 const demoToolPositioningReferences = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'tool-positioning-references.json'), 'utf8'));
 const demoComponentLibrary = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'report-component-library.json'), 'utf8'));
 const demoSourceTierModel = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'source-tier-model.json'), 'utf8'));
+const demoSourceTierBacklog = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'source-tier-backlog.json'), 'utf8'));
 const demoSkillCatalog = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-skill-catalog.json'), 'utf8'));
 const demoPipeline = JSON.parse(readFileSync(join(demo, '.analysis', 'analysis-pipeline.json'), 'utf8'));
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const demoTaskManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'task-manifest.json'), 'utf8'));
+const demoCapabilityTemplateManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'capability-template-manifest.json'), 'utf8'));
 const instructions = readFileSync(join(demo, '.analysis', 'llm_instructions.md'), 'utf8');
 const finalReportTask = readFileSync(join(demo, '.analysis', 'llm_tasks', '12-analysis-document.md'), 'utf8');
 const strategyTask = readFileSync(join(demo, '.analysis', 'llm_tasks', '00-analysis-strategy.md'), 'utf8');
 const rootAgents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
 const resourceAgents = readFileSync(join(root, 'resources', 'AGENTS.md'), 'utf8');
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
+const helpOutput = run(['--help'], { capture: true }).stdout || '';
+assert(helpOutput.includes('init-harness'), 'CLI help must expose the generic harness installer');
+assert(helpOutput.includes('init-codex'), 'CLI help must keep the Codex compatibility installer');
+const tempHarnessRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-harness-install-'));
+try {
+  const harnessTarget = join(tempHarnessRoot, 'target');
+  run(['init-harness', harnessTarget, '--harness', 'all'], { capture: true });
+  const expectedHarnessFiles = [
+    'AGENTS.md',
+    '.agents/skills/cognianalysis/SKILL.md',
+    'CLAUDE.md',
+    '.cursor/rules/cognianalysis/RULE.md',
+    '.devin/rules/cognianalysis.md',
+    '.github/copilot-instructions.md',
+    'CONVENTIONS.md',
+    '.aider.conf.yml',
+    'COGNIANALYSIS_HARNESS.md'
+  ];
+  for (const file of expectedHarnessFiles) {
+    assert(existsSync(join(harnessTarget, file)), `init-harness --harness all must write ${file}`);
+  }
+  assert(readFileSync(join(harnessTarget, 'CLAUDE.md'), 'utf8').includes('agent harness/LLM performs the semantic extraction'), 'Claude adapter must use harness-neutral extraction wording');
+  assert(readFileSync(join(harnessTarget, '.cursor/rules/cognianalysis/RULE.md'), 'utf8').includes('alwaysApply: true'), 'Cursor adapter must be an always-on project rule');
+  assert(readFileSync(join(harnessTarget, '.devin/rules/cognianalysis.md'), 'utf8').includes('trigger: always_on'), 'Windsurf adapter must be an always-on workspace rule');
+  assert(readFileSync(join(harnessTarget, '.github/copilot-instructions.md'), 'utf8').includes('Cognianalysis for GitHub Copilot'), 'Copilot adapter must be repository instructions');
+  assert(readFileSync(join(harnessTarget, '.aider.conf.yml'), 'utf8').includes('read: CONVENTIONS.md'), 'Aider adapter must configure the conventions file as readable context');
+
+  const codexOnlyTarget = join(tempHarnessRoot, 'codex-only');
+  run(['init-codex', codexOnlyTarget], { capture: true });
+  assert(existsSync(join(codexOnlyTarget, 'AGENTS.md')), 'init-codex must still write AGENTS.md');
+  assert(existsSync(join(codexOnlyTarget, '.agents/skills/cognianalysis/SKILL.md')), 'init-codex must still write Codex skills');
+  assert(!existsSync(join(codexOnlyTarget, 'CLAUDE.md')), 'init-codex must stay Codex-only and not write Claude adapter files');
+
+  const noSkillsTarget = join(tempHarnessRoot, 'no-skills');
+  run(['init-harness', noSkillsTarget, '--harness', 'claude', '--no-skills'], { capture: true });
+  assert(existsSync(join(noSkillsTarget, 'AGENTS.md')), 'init-harness --no-skills must still write AGENTS.md');
+  assert(existsSync(join(noSkillsTarget, 'CLAUDE.md')), 'init-harness --harness claude must write CLAUDE.md');
+  assert(!existsSync(join(noSkillsTarget, '.agents')), 'init-harness --no-skills must not copy .agents skills');
+} finally {
+  rmSync(tempHarnessRoot, { recursive: true, force: true });
+}
 for (const marker of ['Accenture GenWizard', 'CAST Imaging', 'SonarQube', 'OpenRewrite']) {
   assert(instructions.includes(marker), `Generated LLM instructions are missing tool-positioning reference marker: ${marker}`);
 }
@@ -119,6 +163,8 @@ assert(demoTargetRows.every(row => row.output_status === 'not_scored'), 'No targ
 assert(demoTargetRows.every(row => row.output_status_meaning?.includes('Not scored by the CLI')), 'Every target row must clarify output status is not CLI-scored');
 assert(demoTargetRows.every(row => row.design_status_meaning?.includes('not a claim')), 'Every target row must clarify design status is not semantic satisfaction');
 assert(bundle.analysis_document_prerequisite_coverage?.complete === true, `Demo final synthesis prerequisites incomplete: ${(bundle.analysis_document_prerequisite_coverage?.missing_outputs || []).join(', ')}`);
+assert(bundle.analysis_document_prerequisite_coverage?.deterministic_contract_scope?.includes('optional capability-template outputs are not a fixed final-readiness gate'), 'Demo prerequisite coverage must not make optional capability templates a fixed gate');
+assert(!(bundle.analysis_document_prerequisite_coverage?.missing_outputs || []).includes('llm/flows-mermaid.json'), 'Optional flow template output must not be a required final prerequisite');
 assert(bundle.analysis_document_requirements_trace_contract?.complete === true, `Demo original requirement trace contract incomplete: ${(bundle.analysis_document_requirements_trace_contract?.missing || []).join(', ')} ${(bundle.analysis_document_requirements_trace_contract?.weak || []).join(', ')}`);
 assert(bundle.analysis_document_requirements_trace_contract?.contract_kind === 'llm_authored_requirements_trace', 'Demo requirements trace must be marked as an LLM-authored trace contract');
 assert(bundle.analysis_goal_trace_alignment?.complete === true, `Demo LLM goal trace references incomplete: ${(bundle.analysis_goal_trace_alignment?.missing_goal_refs || []).map(item => item.ref || item).join(', ')}`);
@@ -135,7 +181,12 @@ assert(bundle.report_mode?.pre_final_building_blocks_complete === true, 'Demo re
 assert(bundle.analysis_pipeline_contract?.complete === true, `Demo analysis pipeline contract incomplete: ${(bundle.analysis_pipeline_contract?.missing || []).join(', ')}`);
 assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_final_report', 'Demo analysis pipeline must describe overview-detail-final LLM flow');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
+assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
+assert(bundle.skill_workbench_coverage?.complete === true, `Demo LLM-planned skill workbench coverage incomplete: ${bundle.skill_workbench_coverage?.status || 'unknown'}`);
+assert(bundle.skill_workbench_coverage?.executed_count === 3, 'Demo must execute all three LLM-planned skill workbenches from analysis_strategy.skill_application_plan');
+assert(bundle.analysis_document_skill_workbench_synthesis?.complete === true, `Demo skill-workbench synthesis incomplete: ${bundle.analysis_document_skill_workbench_synthesis?.status || 'unknown'}`);
+assert(bundle.analysis_document_skill_workbench_synthesis?.integrated_count === 3, 'Demo final report must synthesize all executed skill workbench reviews');
 assert(bundle.source_family_detail_review_coverage?.complete === true, `Demo LLM-planned detail review coverage incomplete: ${bundle.source_family_detail_review_coverage?.status || 'unknown'}`);
 assert(bundle.source_family_detail_review_coverage?.no_detail_review_decision_present === true, 'Demo detail-agent plan must include an LLM-authored detail/no-detail decision');
 assert((bundle.source_family_detail_review_coverage?.unexpected_reviews || []).length === 0, 'Demo must not execute detail reviews outside the LLM-authored detail-agent plan');
@@ -148,6 +199,13 @@ for (const [name, text] of [['AGENTS.md', rootAgents], ['resources/AGENTS.md', r
 assert(strategyTask.includes('pre_source_tier_pre_overview'), 'Generated strategy task must require the pre-source-tier LLM strategy stage');
 assert(finalReportTask.includes('analysis-strategy.json'), 'Final report task must require reading the LLM analysis strategy');
 assert(demoTaskManifest.tasks?.every(task => typeof task.id === 'string' && task.id.length > 0), 'Demo task manifest must expose stable task ids');
+assert(demoTaskManifest.tasks?.length === 3, 'Demo task manifest must contain only required workflow tasks');
+assert(demoTaskManifest.tasks?.every(task => task.task_kind === 'workflow_task' && task.required_for_final === true), 'Required task manifest entries must be workflow gates');
+assert(demoTaskManifest.capability_templates?.length === 10, 'Demo task manifest must expose optional capability templates separately');
+assert(demoCapabilityTemplateManifest.mode === 'optional_llm_capability_templates', 'Capability template manifest must mark templates as optional');
+assert(demoCapabilityTemplateManifest.templates?.every(template => template.required_for_final === false), 'Capability templates must not be final-readiness gates');
+assert(!existsSync(join(demo, '.analysis', 'llm_tasks', '01-core-assessment.md')), 'Generic capability templates must not be generated as required llm_tasks');
+assert(existsSync(join(demo, '.analysis', 'capability_templates', '01-core-assessment.md')), 'Generic capability templates must live under capability_templates');
 assert(readFileSync(join(root, 'src', 'tasks.ts'), 'utf8').includes('schemaForTask(task.id)'), 'Task schema selection must use explicit task ids');
 assert(!readFileSync(join(root, 'src', 'tasks.ts'), 'utf8').includes('schemaForTitle'), 'Task schema selection must not depend on title string matching');
 assert(!readFileSync(join(root, 'src', 'tasks.ts'), 'utf8').includes('title.includes'), 'Task routing must not use title.includes string matching');
@@ -156,7 +214,11 @@ assert(packageJson.bin?.cognianalysis === 'dist/cli.js', 'Package must expose th
 assert(!Object.prototype.hasOwnProperty.call(packageJson.bin || {}, 'cba'), 'Package must not expose the legacy cba CLI alias');
 assert(!packageJson.files?.includes('examples'), 'Package must not publish generated demo .analysis artifacts through the broad examples folder');
 assert(packageJson.files?.includes('examples/demo-repo/.analysis-seed'), 'Package must publish reusable demo seed data');
-const semanticRuntimeSources = runtimeSourceFiles(join(root, 'src'))
+const semanticRuntimeSources = ['src', 'dist']
+  .flatMap(dir => {
+    const full = join(root, dir);
+    return existsSync(full) ? runtimeSourceFiles(full) : [];
+  })
   .map(file => [file.slice(root.length + 1), readFileSync(file, 'utf8')]);
 const forbiddenSemanticRuntimeSnippets = [
   'prefixKey',
@@ -258,6 +320,14 @@ assert(bundle.source_tier_coverage?.complete === true, `Demo Tier 1 file-card co
 assert(bundle.source_tier_coverage?.tier1_file_cards === bundle.source_tier_coverage?.total_files, 'Every included demo file must have a Tier 1 file card');
 assert(bundle.source_tier_coverage?.missing_tier1_files === 0, 'Demo must not miss Tier 1 file cards');
 assert(bundle.source_tier_coverage?.invalid_file_cards === 0, 'Demo Tier 1 file cards must be structurally valid');
+assert(bundle.source_tier_backlog?.complete === true, 'Demo bundle must expose complete Tier 1 task backlog');
+assert(demoSourceTierBacklog.complete === true, 'Demo must write complete source-tier-backlog.json');
+const tierStatusOutput = run(['tier-status', demo, '--limit', '2'], { capture: true }).stdout || '';
+assert(tierStatusOutput.includes('Tier 1 execution backlog: complete'), 'tier-status must report complete backlog for demo');
+const tierNextOutput = run(['tier-next', demo, '--limit', '1', '--max-chars', '200'], { capture: true }).stdout || '';
+assert(tierNextOutput.includes('Prepared 0 Tier 1 source contexts'), 'tier-next must not select tasks when demo Tier 1 backlog is complete');
+const cliSource = readFileSync(join(root, 'src', 'cli.ts'), 'utf8');
+assert(!cliSource.includes('tier-run-openai'), 'Cognianalysis must not expose a direct LLM API runner; Codex executes Tier 1 workpacks');
 assert(demoCodeMap.navigation_policy?.semantic_authority === false, 'Demo code map must declare navigation policy as non-semantic');
 assert(demoCodeMap.extraction_policy?.navigation_scores_are_authoritative === false, 'Demo code map navigation scores must not be authoritative');
 assert(demoCodeMap.extraction_policy?.mode === 'llm_first_inventory_only', 'Demo code map must run in inventory-only LLM-first mode');
@@ -332,6 +402,7 @@ assert(bundle.report_artifacts?.index_html === true && bundle.report_artifacts?.
 assert(bundle.report_mode?.final_synthesis_ready === true, 'Demo final report must be final-synthesis ready');
 const mcpFinalize = callMcpTool('finalize', { repo: demo });
 assert(mcpFinalize.final_llm_readiness === 'ready', `MCP finalize must expose ready LLM readiness, got ${mcpFinalize.final_llm_readiness}`);
+assert(mcpFinalize.skill_workbench_coverage?.complete === true, 'MCP finalize must expose complete skill workbench coverage');
 assert(mcpFinalize.report_quality_review?.verdict === 'decision_ready', 'MCP finalize must expose the LLM report-quality verdict');
 assert(mcpFinalize.analysis_goal_contract?.contract_kind === 'analysis_goal_context', 'MCP finalize must expose the original goal context');
 assert(mcpFinalize.analysis_goal_trace_alignment?.complete === true, 'MCP finalize must expose complete LLM goal-trace references');
@@ -341,6 +412,8 @@ assert(mcpFinalize.target_artifact_contract_coverage_total > 0, 'MCP target capa
 const mcpAudit = callMcpTool('audit-report', { repo: demo });
 assert(mcpAudit.report_audit === 'passed', `MCP audit-report must pass, got ${mcpAudit.report_audit}: ${(mcpAudit.failures || []).join('; ')}`);
 assert(mcpAudit.analysis_pipeline_contract?.complete === true, 'MCP audit-report must expose complete analysis pipeline contract');
+assert(mcpAudit.skill_workbench_coverage?.complete === true, 'MCP audit-report must expose complete skill workbench coverage');
+assert(mcpAudit.skill_workbench_synthesis?.complete === true, 'MCP audit-report must expose current skill workbench synthesis');
 assert(mcpAudit.final_llm_readiness?.state === 'ready', 'MCP audit-report must expose ready final LLM readiness');
 
 const tempRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-no-plan-'));
@@ -359,21 +432,56 @@ try {
   rmSync(tempRoot, { recursive: true, force: true });
 }
 
-const tempRootMissingBlock = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-block-'));
+const tempRootMissingOptionalTemplateOutput = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-optional-template-output-'));
 try {
-  const tempDemo = join(tempRootMissingBlock, 'demo-repo');
+  const tempDemo = join(tempRootMissingOptionalTemplateOutput, 'demo-repo');
   cpSync(demo, tempDemo, { recursive: true });
   const blockPath = join(tempDemo, '.analysis', 'llm', 'flows-mermaid.json');
   assert(existsSync(blockPath), 'Positive demo setup did not produce flows-mermaid.json');
   rmSync(blockPath);
 
+  const positive = run(['audit-report', tempDemo], { capture: true });
+  const output = `${positive.stdout || ''}\n${positive.stderr || ''}`;
+  assert(output.includes('Report audit: passed'), 'Missing optional capability-template output must not fail final readiness');
+  const refreshedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
+  assert(refreshedBundle.analysis_document_prerequisite_coverage?.complete === true, 'Missing optional capability-template output must not fail prerequisite coverage');
+  assert(!(refreshedBundle.analysis_document_prerequisite_coverage?.missing_outputs || []).includes('llm/flows-mermaid.json'), 'Optional flows-mermaid output must not appear as a missing required prerequisite');
+} finally {
+  rmSync(tempRootMissingOptionalTemplateOutput, { recursive: true, force: true });
+}
+
+const tempRootMissingSkillReview = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-skill-review-'));
+try {
+  const tempDemo = join(tempRootMissingSkillReview, 'demo-repo');
+  cpSync(demo, tempDemo, { recursive: true });
+  const skillReviewPath = join(tempDemo, '.analysis', 'skill_reviews', 'flow-mermaid-analysis.json');
+  assert(existsSync(skillReviewPath), 'Positive demo setup did not produce flow-mermaid-analysis skill review');
+  rmSync(skillReviewPath);
+
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('final synthesis prerequisites incomplete'), 'Missing building-block audit did not fail prerequisite coverage');
-  assert(output.includes('llm/flows-mermaid.json'), 'Missing building-block audit did not name the missing flows artifact');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Missing building-block audit did not block final synthesis readiness');
+  assert(output.includes('LLM-planned skill workbench execution incomplete'), 'Missing skill-review audit did not fail the LLM-planned skill workbench contract');
+  assert(output.includes('Skill workbenches: partial'), 'Missing skill-review audit did not surface partial skill workbench execution');
 } finally {
-  rmSync(tempRootMissingBlock, { recursive: true, force: true });
+  rmSync(tempRootMissingSkillReview, { recursive: true, force: true });
+}
+
+const tempRootMissingSkillSynthesis = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-skill-synthesis-'));
+try {
+  const tempDemo = join(tempRootMissingSkillSynthesis, 'demo-repo');
+  cpSync(demo, tempDemo, { recursive: true });
+  const documentPath = join(tempDemo, '.analysis', 'llm', 'analysis-document.json');
+  const document = JSON.parse(readFileSync(documentPath, 'utf8'));
+  assert(document.analysis_document?.skill_workbench_synthesis, 'Positive demo setup did not produce skill_workbench_synthesis');
+  delete document.analysis_document.skill_workbench_synthesis;
+  writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
+
+  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
+  assert(output.includes('skill-workbench synthesis stale'), 'Missing skill-workbench synthesis audit did not fail final report freshness');
+  assert(output.includes('Skill workbench synthesis: stale'), 'Missing skill-workbench synthesis audit did not surface stale synthesis status');
+} finally {
+  rmSync(tempRootMissingSkillSynthesis, { recursive: true, force: true });
 }
 
 const tempRootMissingQuality = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-quality-'));
@@ -766,11 +874,15 @@ try {
   writeFileSync(join(tempRepo, 'tools', '.venvs', 'ignored-env', 'generated.py'), 'print("not source inventory")\n');
   const mcpPrepare = callMcpTool('prepare', { repo: tempRepo });
   assert(mcpPrepare.staged_llm_workflow?.includes('00-analysis-strategy.md'), 'MCP prepare must expose the LLM analysis strategy step');
+  assert(mcpPrepare.staged_llm_workflow?.includes('skill_workbench_tasks'), 'MCP prepare must expose the LLM-planned skill workbench materialization step');
+  assert(mcpPrepare.staged_llm_workflow?.includes('capability_templates'), 'MCP prepare must describe optional capability templates');
   assert(mcpPrepare.staged_llm_workflow?.includes('11-detail-agent-plan.md'), 'MCP prepare must expose the staged detail-agent plan step');
   assert(mcpPrepare.staged_llm_workflow?.includes('12-analysis-document.md'), 'MCP prepare must expose final report authoring after detail reviews');
   const analyzePending = run(['analyze', tempRepo, '--no-seed', '--no-html'], { capture: true });
   const analyzePendingOutput = `${analyzePending.stdout || ''}\n${analyzePending.stderr || ''}`;
   assert(analyzePendingOutput.includes('00-analysis-strategy.md'), 'Analyze pending output must describe the LLM analysis strategy step');
+  assert(analyzePendingOutput.includes('skill_workbench_tasks'), 'Analyze pending output must describe LLM-planned skill workbench materialization');
+  assert(analyzePendingOutput.includes('capability_templates'), 'Analyze pending output must describe optional capability templates');
   assert(analyzePendingOutput.includes('11-detail-agent-plan.md'), 'Analyze pending output must describe the staged LLM detail-agent plan step');
   assert(analyzePendingOutput.includes('12-analysis-document.md'), 'Analyze pending output must describe final report authoring after detail reviews');
   assert(analyzePendingOutput.includes('--allow-partial'), 'Analyze pending output must describe the partial finalize step that materializes detail tasks');
@@ -778,6 +890,8 @@ try {
   const preparePending = run(['prepare', tempRepo, '--no-seed'], { capture: true });
   const preparePendingOutput = `${preparePending.stdout || ''}\n${preparePending.stderr || ''}`;
   assert(preparePendingOutput.includes('00-analysis-strategy.md'), 'Prepare output must describe the LLM analysis strategy step');
+  assert(preparePendingOutput.includes('skill_workbench_tasks'), 'Prepare output must describe LLM-planned skill workbench materialization');
+  assert(preparePendingOutput.includes('capability_templates'), 'Prepare output must describe optional capability templates');
   assert(preparePendingOutput.includes('11-detail-agent-plan.md'), 'Prepare output must describe the staged LLM detail-agent plan step');
   assert(preparePendingOutput.includes('12-analysis-document.md'), 'Prepare output must describe final report authoring after detail reviews');
   assert(!preparePendingOutput.includes('execute .analysis/llm_tasks/*.md, write .analysis/llm/*.json'), 'Prepare output must not describe the old flat task workflow');
@@ -814,4 +928,4 @@ try {
   rmSync(tempBoundaryRoot, { recursive: true, force: true });
 }
 
-console.log('verify-demo: positive, missing-plan, missing-building-block, missing-quality-review, partial-quality-verdict, missing-partial-rationale, missing-requirements-trace, unexpected-detail-review, missing-goal-trace-refs, empty-doc-block, business-narrative-fields, custom-component-labels, stale-contract-refresh, custom-trace-labels, custom-quality-review, unscored-target-context, neutral-path-partition and no-seed semantic-fallback regression checks passed');
+console.log('verify-demo: positive, missing-plan, optional-template-output, missing-quality-review, partial-quality-verdict, missing-partial-rationale, missing-requirements-trace, unexpected-detail-review, missing-goal-trace-refs, empty-doc-block, business-narrative-fields, custom-component-labels, stale-contract-refresh, custom-trace-labels, custom-quality-review, unscored-target-context, neutral-path-partition and no-seed semantic-fallback regression checks passed');

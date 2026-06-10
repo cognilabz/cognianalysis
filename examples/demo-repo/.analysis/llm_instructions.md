@@ -1,15 +1,15 @@
 # Cognianalysis · LLM-first Instructions
 
-This repository must be analyzed semantically by Codex/LLM. The generated code map is a navigation aid, not the source of final truth.
+This repository must be analyzed semantically by an agent harness/LLM. The generated code map is a navigation aid, not the source of final truth.
 
 ## Non-negotiable rules
 
 - Treat `code-map.json`, `source-capsules.json`, `navigation-artifact-candidates.json` and the legacy `important-docs.json` as inventory/discovery aids.
 	- Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
 	- The deterministic map is intentionally inventory-only: it does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships. The LLM must open source files and parse/understand those semantics itself.
-	- Start with `.analysis/llm_tasks/00-analysis-strategy.md`. The LLM-authored `.analysis/llm/analysis-strategy.json` is the repository-specific analysis plan; the remaining task files are capability workbenches and renderer contracts, not a fixed semantic information architecture.
+	- Start with `.analysis/llm_tasks/00-analysis-strategy.md`. The LLM-authored `.analysis/llm/analysis-strategy.json` is the repository-specific analysis plan. The files under `.analysis/capability_templates/` are optional templates, not a fixed semantic information architecture and not a mandatory execution list.
 	- Treat `source-family-inventory.json` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; the LLM must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
-- Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
+	- Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
 - Use source files, tests, DTO/schema files, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples, CI/CD files, configuration and documentation as evidence.
 - Every relevant assertion must include `evidence: [{"path":"...", "line": 123, "symbol":"optional"}]`.
 - Extract requests, responses, contracts, examples, business logic, functions, flows, domain models, data effects, integrations, process readiness, architecture and refactoring options.
@@ -27,7 +27,8 @@ This repository must be analyzed semantically by Codex/LLM. The generated code m
 - Execute every `.analysis/source_tier_tasks/*.md` task before the final analysis document. These tasks create Tier 1 LLM-authored file cards for every included file. A file that is only listed in `analysis_coverage.deferred_files` is not analyzed and must not count as done.
 - Use the tier model explicitly: Tier 0 is CLI inventory only, Tier 1 is mandatory per-file LLM understanding, Tier 2 is module/source-family synthesis, Tier 3 is behavior/contract/flow deep dive, and Tier 4 is decision/refactoring/process analysis.
 - For monorepos or multi-module repositories, summarize the complete source-family landscape: purpose, responsibility, entry points, exits/integrations, tests/examples, confidence and open questions for each relevant family.
-	- Create the LLM detail-agent plan only after the LLM-authored analysis strategy and whole-repository extraction tasks have produced a repository-wide picture.
+	- Create repository-specific skill workbench tasks from the LLM-authored analysis strategy before treating any generic capability template output as useful. Capability templates are optional output contracts, not the repository-specific semantic plan and not final-readiness gates.
+	- Create the LLM detail-agent plan only after the LLM-authored analysis strategy, Tier 1 file cards, LLM-planned skill workbench reviews and whole-repository extraction tasks have produced a repository-wide picture.
 - Author final summaries, E2E understanding, management statements and the visible report only after all planned detail-agent reviews exist and have been synthesized. Earlier tasks may extract building blocks, but must not pretend to be the final report.
 - Do not make one module the narrative center unless the source inventory proves the repository is actually single-module. A focused deep review must be labelled as a deep slice and must not replace the whole-repository view.
 - If E2E flow extraction is deep only for part of the repository, state that boundary explicitly and keep the remaining source families visible as surface-reviewed or follow-up drilldown areas.
@@ -643,7 +644,7 @@ This model prevents blind spots. Source inventory alone is Tier 0 and has no sem
   "source_tier_tasks": ".analysis/source_tier_tasks/*.md",
   "source_tier_outputs": ".analysis/source_tiers/*.json"
 }
-```
+	```
 
 ## LLM analysis skill catalog
 
@@ -659,7 +660,7 @@ Use these as reusable analysis capabilities, not as deterministic routing rules.
     {
       "id": "analysis_strategy_planning",
       "label": "Analysis Strategy Planning",
-      "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+      "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.",
       "stage_ids": [
         "llm_analysis_strategy"
       ],
@@ -880,8 +881,8 @@ Use these as reusable analysis capabilities, not as deterministic routing rules.
 {
   "repo_name": "demo-repo",
   "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-  "analyzed_at": "2026-06-10T12:14:00Z",
-  "commit": "f975972ef58cd244659331e3613f0df369cc2314",
+  "analyzed_at": "2026-06-10T18:06:14Z",
+  "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
   "repo_type": "source-inventory",
   "languages": {
     "Java": 261
@@ -2012,8 +2013,12 @@ Use this renderer/styling contract for `analysis_document.sections[].blocks[]`. 
 
 ## Top glossary terms
 
-Domain terms must be extracted by Codex/LLM from source evidence, not from generated word lists.
+Domain terms must be extracted by the agent harness/LLM from source evidence, not from generated word lists.
 
 ## Context capsules
 
 The full included file inventory is in `.analysis/data/source-inventory.json`. The source excerpts are in `.analysis/source-capsules.json`. Use capsules to decide what to open next, but inspect full source files whenever evidence is needed. Do not treat capsule coverage as whole-codebase coverage.
+
+## Optional capability templates
+
+Generic templates live in `.analysis/capability_templates/*.md`. They are reusable prompts for common output shapes only. Do not execute all templates by default. The LLM-authored analysis strategy and skill workbench findings decide whether a template output is useful for this repository.

@@ -6,7 +6,8 @@ import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './tasks';
 import { FS, Path, argValue, copyRecursive, ensureDir, hasFlag, numericArg, writeJson, writeText } from './utils';
 import { startMcpLikeServer } from './mcp';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
-import { writeSourceTierContext } from './sourceTiers';
+import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
+import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
 
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
@@ -29,6 +30,8 @@ Usage:
   ${CLI_NAME} render [repo] [--analysis .analysis] [--out report-dir] [--title title]
   ${CLI_NAME} validate [repo] [--analysis .analysis]
   ${CLI_NAME} coverage [repo] [--analysis .analysis]
+  ${CLI_NAME} tier-status [repo] [--analysis .analysis] [--limit 20]
+  ${CLI_NAME} tier-next [repo] [--analysis .analysis] [--limit 1] [--max-chars 6000]
   ${CLI_NAME} tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
   ${CLI_NAME} audit-report [repo] [--analysis .analysis]
   ${CLI_NAME} init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
@@ -40,7 +43,7 @@ Usage:
 }
 
 function stagedLlmWorkflowMessage(): string {
-  return `Next step for an agent harness: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, then use the strategy to execute llm_tasks/01-*.md through 10-*.md, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+  return `Next step for an agent harness: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} finalize . --allow-partial to materialize LLM-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the LLM strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
 }
 
 function repoArg(args: string[], fallback = '.'): string {
@@ -70,10 +73,15 @@ function cmdPrepare(args: string[]): number {
   if (FS.existsSync(sourceTierSeedDir) && !hasFlag(args, '--no-seed')) {
     copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
   }
+  const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
+  if (FS.existsSync(skillReviewSeedDir) && !hasFlag(args, '--no-seed')) {
+    copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
+  }
   console.log(`Prepared LLM-first analysis workspace: ${analysis}`);
   console.log(`Code map: ${Path.join(analysis, 'data', 'code-map.json')}`);
   console.log(`Source capsules: ${Path.join(analysis, 'source-capsules.json')}`);
-  console.log(`LLM task files: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
+  console.log(`Required LLM workflow task files: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
+  console.log(`Optional capability templates: ${Path.join(analysis, 'capability_templates')}`);
   console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; the agent harness/LLM extracts those from source.');
   console.log(stagedLlmWorkflowMessage());
   return 0;
@@ -135,13 +143,16 @@ function cmdCoverage(args: string[]): number {
   const rows = bundle.target_artifact_contract_coverage || bundle.target_coverage || [];
   const sc = bundle.source_inventory_accounting || bundle.source_coverage || {};
   const tier = bundle.source_tier_coverage || {};
+  const backlog = bundle.source_tier_backlog || {};
   console.log('Target capability context:');
   for (const row of rows) {
     console.log(`${String(row.design_status || 'context').padEnd(8)} ${String(row.output_status || 'not_scored').padEnd(11)} ${row.title}`);
   }
   console.log(`\n${rows.length} target capabilities are registered as LLM trace context. Target rows are not presence-scored by the CLI; semantic quality and completeness are controlled by the LLM-authored requirements trace and report_quality_review.`);
   console.log(`Tier 1 file-card coverage: ${tier.tier1_file_cards || 0}/${tier.total_files || 0} files · ${tier.missing_tier1_files || 0} missing · ${tier.invalid_file_cards || 0} invalid · ${tier.coverage_percent || 0}%`);
+  console.log(`Tier 1 task backlog: ${backlog.complete_tasks || 0}/${backlog.total_tasks || 0} tasks complete · ${backlog.incomplete_tasks || 0} incomplete · ${backlog.missing_tasks || 0} missing outputs`);
   console.log(`Source inventory accounting: ${sc.accounted_files ?? sc.covered_files ?? 0}/${sc.total_files || 0} files accounted · ${sc.unaccounted_files ?? sc.uncovered_files ?? 0} unaccounted · ${sc.invalid_coverage_items || 0} invalid coverage items · ${sc.inventory_accounting_percent ?? sc.coverage_percent ?? 0}%`);
+  for (const row of (backlog.next_tasks || []).slice(0, 5)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
   for (const item of (sc.invalid_coverage_item_examples || []).slice(0, 10)) console.log(`INVALID-COVERAGE ${item.kind || 'coverage'} ${item.path || JSON.stringify(item.item) || ''} ${item.reason || ''}`);
   return 0;
 }
@@ -157,8 +168,46 @@ function cmdTierContext(args: string[]): number {
   return 0;
 }
 
+function cmdTierStatus(args: string[]): number {
+  const repo = repoArg(args);
+  const analysis = analysisPath(repo, argValue(args, '--analysis'));
+  const limit = numericArg(args, '--limit', 20);
+  const backlog = sourceTierBacklogArtifact(analysis);
+  writeJson(Path.join(analysis, 'data', 'source-tier-backlog.json'), backlog);
+  console.log(`Tier 1 execution backlog: ${backlog.complete ? 'complete' : 'partial'}`);
+  console.log(`Tasks: ${backlog.complete_tasks}/${backlog.total_tasks} complete · ${backlog.incomplete_tasks} incomplete · ${backlog.missing_tasks} missing · ${backlog.partial_tasks} partial · ${backlog.invalid_tasks} invalid · ${backlog.invalid_file_card_tasks || 0} invalid file-card batches · ${backlog.blocked_tasks} blocked`);
+  console.log(`File cards in task outputs: ${backlog.authored_file_cards_in_task_outputs}/${backlog.total_task_files}`);
+  console.log(`Backlog artifact: ${Path.join(analysis, 'data', 'source-tier-backlog.json')}`);
+  for (const row of (backlog.next_tasks || []).slice(0, limit)) {
+    console.log(`NEXT ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} missing=${row.missing_file_count} invalid_cards=${row.invalid_file_card_count || 0} output=${row.expected_output}`);
+    if (row.error) console.log(`  error: ${row.error}`);
+    if (row.first_path || row.last_path) console.log(`  files: ${row.first_path}${row.last_path && row.last_path !== row.first_path ? ` ... ${row.last_path}` : ''}`);
+  }
+  return 0;
+}
+
+function cmdTierNext(args: string[]): number {
+  const repo = repoArg(args);
+  const analysis = analysisPath(repo, argValue(args, '--analysis'));
+  const limit = numericArg(args, '--limit', 1);
+  const maxChars = numericArg(args, '--max-chars', 6000);
+  const plan = writeNextSourceTierContexts(repo, analysis, limit, maxChars);
+  console.log(`Prepared ${plan.selected_count} Tier 1 source context${plan.selected_count === 1 ? '' : 's'}.`);
+  if (plan.selected_count) console.log(`Plan: ${Path.join(analysis, 'source-tier-next.json')}`);
+  if (plan.codex_workpack) console.log(`Codex workpack: ${plan.codex_workpack}`);
+  for (const context of plan.contexts || []) {
+    console.log(`NEXT ${context.task_id} context=${context.output_path} task=${context.task_file} output=${context.expected_output} files=${context.file_count}`);
+  }
+  if (!plan.selected_count) console.log('No incomplete Tier 1 tasks found.');
+  return 0;
+}
+
 function aggregateWithMaterializedDetailTasks(repo: string, analysis: string): any {
   let bundle = aggregate(repo, analysis);
+  if (bundle.source_tier_coverage?.complete === true && bundle.llm_skill_workbench_plan?.uses_analysis_strategy_artifact === true && bundle.llm_skill_workbench_plan?.planning_decision_present === true) {
+    writeSkillWorkbenchTasksFromLlmStrategy(analysis, bundle.analysis_strategy);
+    bundle = aggregate(repo, analysis);
+  }
   if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && (bundle.llm_detail_agent_plan?.tasks || []).length) {
     writeDetailTasksFromLlmPlan(analysis, bundle.llm_detail_agent_plan);
     bundle = aggregate(repo, analysis);
@@ -183,8 +232,11 @@ function cmdAuditReport(args: string[]): number {
   const sourceCoverage = bundle.source_inventory_accounting || bundle.source_coverage || {};
   const prerequisiteCoverage = bundle.analysis_document_prerequisite_coverage || {};
   const synthesis = bundle.analysis_document_detail_review_synthesis || {};
+  const skillSynthesis = bundle.analysis_document_skill_workbench_synthesis || {};
   const detailCoverage = bundle.source_family_detail_review_coverage || {};
   const sourceTierCoverage = bundle.source_tier_coverage || {};
+  const sourceTierBacklog = bundle.source_tier_backlog || {};
+  const skillWorkbenchCoverage = bundle.skill_workbench_coverage || {};
   const componentCoverage = bundle.analysis_document_component_coverage || {};
   const qualityReview = bundle.analysis_document_quality_review || {};
   const requirementsTraceContract = bundle.analysis_document_requirements_trace_contract || bundle.analysis_document_goal_coverage || {};
@@ -206,6 +258,8 @@ function cmdAuditReport(args: string[]): number {
   if (pipelineContract.complete !== true) failures.push(`LLM analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
   if (skillCatalogContract.complete !== true) failures.push(`LLM analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
   if (sourceTierCoverage.complete !== true) failures.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
+  if (skillWorkbenchCoverage.complete !== true) failures.push(`LLM-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
+  if (skillSynthesis.complete !== true) failures.push(`skill-workbench synthesis ${skillSynthesis.status || 'not complete'}`);
   if (sourceCoverage.complete !== true) failures.push(`source inventory accounting incomplete: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} accounted, ${sourceCoverage.invalid_coverage_items || 0} invalid coverage items`);
   if (invalid.length) failures.push(`invalid evidence: ${invalid.length}`);
   if (detailCoverage.complete !== true) failures.push(`source-family detail review coverage ${detailCoverage.status || 'not complete'}: ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed, ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
@@ -216,15 +270,19 @@ function cmdAuditReport(args: string[]): number {
   console.log(`Mode: ${bundle.report_mode?.state || 'unknown'} · Target capabilities: ${rows.length} LLM trace context rows · Source inventory: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} · Evidence invalid: ${invalid.length}`);
   console.log(`Analysis strategy: ${bundle.llm_analysis_strategy?.strategy_present ? 'structured' : 'missing'} · ${bundle.llm_analysis_strategy?.planning_source || 'missing_llm_analysis_strategy'}`);
   console.log(`Tier 1 file cards: ${sourceTierCoverage.complete ? 'complete' : 'partial'} ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} · ${sourceTierCoverage.missing_tier1_files || 0} missing · ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
+  console.log(`Tier 1 task backlog: ${sourceTierBacklog.complete_tasks || 0}/${sourceTierBacklog.total_tasks || 0} complete · ${sourceTierBacklog.incomplete_tasks || 0} incomplete · ${sourceTierBacklog.missing_tasks || 0} missing outputs`);
   console.log(`Detail review execution: ${detailCoverage.status || 'unknown'} ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed · ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
+  console.log(`Skill workbench synthesis: ${skillSynthesis.status || 'unknown'} ${skillSynthesis.integrated_count || 0}/${skillSynthesis.executed_count || 0}`);
   console.log(`Detail synthesis: ${synthesis.status || 'unknown'} ${synthesis.integrated_count || 0}/${synthesis.executed_count || 0}`);
   console.log(`Final prerequisites: ${prerequisiteCoverage.complete ? 'complete' : 'partial'} · ${prerequisiteCoverage.ready_count || 0}/${prerequisiteCoverage.total_count || 0}`);
   console.log(`Analysis pipeline contract: ${pipelineContract.complete ? 'complete' : 'partial'} · ${pipelineContract.stage_count || 0}/${pipelineContract.required_stage_count || 0} stages`);
   console.log(`Analysis skill catalog: ${skillCatalogContract.complete ? 'complete' : 'partial'} · ${skillCatalogContract.skill_count || 0}/${skillCatalogContract.required_skill_count || 0} skills`);
+  console.log(`Skill workbenches: ${skillWorkbenchCoverage.complete ? 'complete' : 'partial'} · ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed`);
   console.log(`Component contract: ${componentCoverage.complete ? 'complete' : 'partial'} · ${componentCoverage.missing?.length || 0} missing`);
   console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · LLM statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
   console.log(`Goal trace references: ${goalTraceAlignment.complete ? 'explicit' : 'partial'} · ${(goalTraceAlignment.referenced_goal_refs || []).length}/${(goalTraceAlignment.expected_goal_refs || []).length} goal refs linked by LLM trace`);
   console.log(`Report quality review: ${qualityReview.complete ? 'structured' : 'partial'} · ${qualityReview.verdict || 'unknown'}`);
+  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
   for (const failure of failures) console.log(`FAIL ${failure}`);
   return failures.length ? 1 : 0;
 }
@@ -246,6 +304,7 @@ function cmdFinalize(args: string[]): number {
   const invalid = (bundle.evidence_index || []).filter((e: any) => e.valid === false);
   const sourceCoverage = bundle.source_inventory_accounting || bundle.source_coverage || {};
   const sourceTierCoverage = bundle.source_tier_coverage || {};
+  const sourceTierBacklog = bundle.source_tier_backlog || {};
   const uncovered = sourceCoverage.uncovered || [];
   const readiness = computeFinalLlmReadiness(bundle);
   const readinessFailures = readiness.failures;
@@ -254,6 +313,7 @@ function cmdFinalize(args: string[]): number {
   console.log(`Status: ${bundle.status?.state}`);
   console.log(`Target capabilities: ${rows.length} registered as LLM trace context · not CLI-scored`);
   console.log(`Tier 1 file-card coverage: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} files · ${sourceTierCoverage.missing_tier1_files || 0} missing · ${sourceTierCoverage.invalid_file_cards || 0} invalid · ${sourceTierCoverage.coverage_percent || 0}%`);
+  console.log(`Tier 1 task backlog: ${sourceTierBacklog.complete_tasks || 0}/${sourceTierBacklog.total_tasks || 0} complete · ${sourceTierBacklog.incomplete_tasks || 0} incomplete · ${sourceTierBacklog.missing_tasks || 0} missing outputs`);
   console.log(`Source inventory accounting: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} files accounted · ${sourceCoverage.unaccounted_files ?? sourceCoverage.uncovered_files ?? 0} unaccounted · ${sourceCoverage.invalid_coverage_items || 0} invalid coverage items · ${sourceCoverage.inventory_accounting_percent ?? sourceCoverage.coverage_percent ?? 0}%`);
   console.log(`Evidence: ${(bundle.evidence_index || []).length} total · ${invalid.length} invalid`);
   console.log(`Final LLM readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
@@ -261,6 +321,7 @@ function cmdFinalize(args: string[]): number {
 
   for (const e of invalid.slice(0, 30)) console.log(`INVALID ${e.path}:${e.line} ${e.reason || ''}`);
   for (const f of uncovered.slice(0, 30)) console.log(`UNCOVERED ${f.path}`);
+  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
   for (const item of (sourceCoverage.invalid_coverage_item_examples || []).slice(0, 30)) console.log(`INVALID-COVERAGE ${item.kind || 'coverage'} ${item.path || JSON.stringify(item.item) || ''} ${item.reason || ''}`);
   for (const failure of readinessFailures.slice(0, 20)) console.log(`LLM-READINESS ${failure}`);
   if (invalid.length && !hasFlag(args, '--allow-invalid')) return 1;
@@ -431,7 +492,7 @@ function portfolioHtml(rows: any[]): string {
 
 function esc(v: any): string { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-export function main(argv = process.argv.slice(2)): number {
+export async function main(argv = process.argv.slice(2)): Promise<number> {
   const command = argv[0];
   const args = argv.slice(1);
   try {
@@ -444,6 +505,8 @@ export function main(argv = process.argv.slice(2)): number {
     if (command === 'render') return cmdRender(args);
     if (command === 'validate') return cmdValidate(args);
     if (command === 'coverage') return cmdCoverage(args);
+    if (command === 'tier-status') return cmdTierStatus(args);
+    if (command === 'tier-next') return cmdTierNext(args);
     if (command === 'tier-context') return cmdTierContext(args);
     if (command === 'audit-report') return cmdAuditReport(args);
     if (command === 'init-harness' || command === 'init-agent') return cmdInitHarness(args);
@@ -460,5 +523,10 @@ export function main(argv = process.argv.slice(2)): number {
 
 if (require.main === module) {
   if (process.argv[2] === 'mcp') startMcpLikeServer();
-  else process.exit(main());
+  else main()
+    .then(code => process.exit(code))
+    .catch((err: any) => {
+      console.error(`Error: ${err?.message || String(err)}`);
+      process.exit(1);
+    });
 }

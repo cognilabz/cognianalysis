@@ -1,5 +1,5 @@
 import { CodeMap } from './types';
-import { FS, Path, asList, ensureDir, getLine, loadJson, mergeDict, writeJson } from './utils';
+import { FS, Path, asList, cleanId, ensureDir, getLine, loadJson, mergeDict, writeJson } from './utils';
 import { computeTargetCoverage, TARGET_CAPABILITIES } from './targetCoverage';
 import { reportComponentLibraryArtifact, supportedReportComponentTypes } from './reportComponents';
 import { analysisPipelineArtifact, computeAnalysisPipelineContract } from './analysisPipeline';
@@ -7,7 +7,8 @@ import { analysisSkillCatalogArtifact, analysisSkillIds } from './analysisSkills
 import { computeFinalLlmReadiness } from './readiness';
 import { analysisGoalContractArtifact } from './analysisGoal';
 import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
-import { sourceTierModelArtifact } from './sourceTiers';
+import { sourceTierBacklogArtifact, sourceTierModelArtifact } from './sourceTiers';
+import { SKILL_WORKBENCH_VERSION } from './skillWorkbenches';
 
 export function prepareAnalysis(repo: string, analysisDir: string, codeMap: CodeMap): void {
   const dataDir = Path.join(analysisDir, 'data');
@@ -49,10 +50,13 @@ export function aggregate(repo: string, analysisDir: string): any {
   const analysisStrategyArtifact = loadJson<any | null>(Path.join(analysisDir, 'llm', 'analysis-strategy.json'), null);
   const detailAgentPlanArtifact = loadJson<any | null>(Path.join(analysisDir, 'llm', 'detail-agent-plan.json'), null);
   const detail = loadDetailOutputs(Path.join(analysisDir, 'detail_reviews'));
+  const skillWorkbench = loadSkillWorkbenchOutputs(Path.join(analysisDir, 'skill_reviews'));
   const sourceTier = loadSourceTierOutputs(Path.join(analysisDir, 'source_tiers'));
   const sourceFamilyInventory = loadJson<any>(Path.join(dataDir, 'source-family-inventory.json'), {});
   const detailTaskManifest = loadJson<any>(Path.join(analysisDir, 'detail-task-manifest.json'), { tasks: [] });
+  const skillWorkbenchTaskManifest = loadJson<any>(Path.join(analysisDir, 'skill-workbench-task-manifest.json'), { tasks: [] });
   const sourceTierTaskManifest = loadJson<any>(Path.join(analysisDir, 'source-tier-task-manifest.json'), { tasks: [] });
+  const capabilityTemplateManifest = loadJson<any>(Path.join(analysisDir, 'capability-template-manifest.json'), { templates: [] });
 
   const assessment = llm.assessment || null;
   const capabilities = asList(llm.capabilities);
@@ -75,15 +79,21 @@ export function aggregate(repo: string, analysisDir: string): any {
   const detailAgentPlan = detailAgentPlanArtifact?.detail_agent_plan || detailAgentPlanArtifact || llm.detail_agent_plan || null;
   const hasAnalysisStrategyArtifact = !!analysisStrategyArtifact && typeof analysisStrategyArtifact === 'object' && !Array.isArray(analysisStrategyArtifact);
   const hasDetailAgentPlanArtifact = !!detailAgentPlanArtifact && typeof detailAgentPlanArtifact === 'object' && !Array.isArray(detailAgentPlanArtifact);
-  const analysisCoverage = validateNested(repo, mergeCoverage(llm.analysis_coverage || pendingAnalysisCoverage(), detail.coverageItems));
+  const analysisCoverage = validateNested(repo, mergeCoverage(llm.analysis_coverage || pendingAnalysisCoverage(), [...skillWorkbench.coverageItems, ...detail.coverageItems]));
 
   const hasLlmAuthoredOutput = hasLlmAuthoredOutputPresence(llmOutputPresence, sourceTier.reviews, detail.reviews);
   const status = hasLlmAuthoredOutput
     ? { state: 'llm_extracted', message: 'LLM-authored analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
     : { state: 'awaiting_llm_extraction', message: 'Agent harness/LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by the LLM from source.' };
 
-  const tasks = loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [] }).tasks || [];
-  const analysisPipeline = analysisPipelineArtifact(tasks);
+  const taskManifest = loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [], capability_templates: [] });
+  const manifestTasks = asList(taskManifest.tasks);
+  const tasks = manifestTasks.filter(isRequiredWorkflowTask);
+  const capabilityTemplates = asList(taskManifest.capability_templates || capabilityTemplateManifest.templates);
+  const normalizedCapabilityTemplates = capabilityTemplates.length
+    ? capabilityTemplates
+    : manifestTasks.filter((task: any) => !isRequiredWorkflowTask(task)).map(legacyTaskToCapabilityTemplate);
+  const analysisPipeline = analysisPipelineArtifact(tasks, normalizedCapabilityTemplates);
   const bundle: any = {
     profile,
     status,
@@ -124,10 +134,15 @@ export function aggregate(repo: string, analysisDir: string): any {
     analysis_strategy: validateNested(repo, analysisStrategy),
     analysis_document: validateNested(repo, analysisDocument),
     detail_agent_plan: validateNested(repo, detailAgentPlan),
+    llm_skill_workbench_plan: validateNested(repo, extractLlmSkillWorkbenchPlan(analysisStrategy, skillWorkbenchTaskManifest, hasAnalysisStrategyArtifact)),
     llm_detail_agent_plan: validateNested(repo, extractLlmDetailAgentPlan(detailAgentPlan, analysisDocument, hasDetailAgentPlanArtifact)),
     source_family_inventory: validateNested(repo, sourceFamilyInventory),
     detail_task_manifest: validateNested(repo, detailTaskManifest),
+    skill_workbench_task_manifest: validateNested(repo, skillWorkbenchTaskManifest),
+    capability_template_manifest: validateNested(repo, normalizeCapabilityTemplateManifest(capabilityTemplateManifest, normalizedCapabilityTemplates)),
+    capability_templates: validateItems(repo, normalizedCapabilityTemplates),
     source_file_tier_reviews: validateItems(repo, sourceTier.reviews),
+    skill_workbench_reviews: validateItems(repo, skillWorkbench.reviews),
     source_family_detail_reviews: validateItems(repo, detail.reviews),
     analysis_coverage: analysisCoverage,
     tasks,
@@ -138,9 +153,10 @@ export function aggregate(repo: string, analysisDir: string): any {
 
   let evidence: any[] = [];
   for (const key of ['capabilities','interfaces','flows','business_logic','integrations','side_effects','findings','refactoring','modernization']) evidence = evidence.concat(collectEvidence(bundle[key] || []));
-  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis_strategy','detail_agent_plan','analysis_document','source_file_tier_reviews','source_family_detail_reviews','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
+  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis_strategy','detail_agent_plan','analysis_document','source_file_tier_reviews','skill_workbench_reviews','source_family_detail_reviews','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
   bundle.evidence_index = dedupeEvidence(evidence);
   bundle.source_tier_coverage = computeSourceTierCoverage(codeMap, bundle.source_file_tier_reviews, bundle.source_tier_task_manifest);
+  bundle.source_tier_backlog = sourceTierBacklogArtifact(analysisDir);
   bundle.source_inventory_accounting = computeSourceCoverage(codeMap, bundle.evidence_index, bundle.analysis_coverage);
   bundle.source_coverage = bundle.source_inventory_accounting;
   bundle.analysis_document_requirements_trace_contract = computeAnalysisDocumentRequirementsTraceContract(bundle.analysis_document);
@@ -150,9 +166,11 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.analysis_document_quality_review = computeAnalysisDocumentQualityReview(bundle.analysis_document);
   bundle.llm_artifacts = computeLlmArtifactStatus(analysisDir, bundle.tasks);
   bundle.analysis_document_prerequisite_coverage = computeAnalysisDocumentPrerequisiteCoverage(bundle.llm_artifacts);
+  bundle.skill_workbench_coverage = computeSkillWorkbenchCoverage(bundle.llm_skill_workbench_plan, bundle.skill_workbench_reviews, bundle.skill_workbench_task_manifest, bundle.source_tier_coverage);
+  bundle.analysis_document_skill_workbench_synthesis = computeSkillWorkbenchSynthesisStatus(bundle.analysis_document, bundle.skill_workbench_reviews);
   bundle.analysis_document_detail_review_synthesis = computeDetailReviewSynthesisStatus(bundle.analysis_document, bundle.source_family_detail_reviews);
   bundle.source_family_detail_review_coverage = computeDetailReviewCoverage(bundle.llm_detail_agent_plan, bundle.source_family_detail_reviews, bundle.analysis_document_detail_review_synthesis);
-  bundle.report_mode = computeReportMode(bundle.analysis_document, bundle.source_family_detail_review_coverage, bundle.analysis_document_detail_review_synthesis, bundle.analysis_document_prerequisite_coverage, bundle.analysis_document_quality_review, bundle.analysis_goal_trace_alignment);
+  bundle.report_mode = computeReportMode(bundle.analysis_document, bundle.source_family_detail_review_coverage, bundle.analysis_document_detail_review_synthesis, bundle.analysis_document_skill_workbench_synthesis, bundle.analysis_document_prerequisite_coverage, bundle.analysis_document_quality_review, bundle.analysis_goal_trace_alignment);
   bundle.analysis_pipeline_contract = computeAnalysisPipelineContract(bundle);
   bundle.analysis_skill_catalog_contract = computeAnalysisSkillCatalogContract(bundle.analysis_skill_catalog);
   bundle.semantic_authority = computeSemanticAuthority(bundle);
@@ -165,8 +183,11 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'tool-positioning-references.json'), bundle.tool_positioning_references);
   writeJson(Path.join(dataDir, 'report-component-library.json'), bundle.report_component_library);
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), bundle.analysis_skill_catalog);
+  writeJson(Path.join(dataDir, 'capability-template-manifest.json'), bundle.capability_template_manifest);
   writeJson(Path.join(dataDir, 'source-tier-model.json'), bundle.source_tier_model);
   writeJson(Path.join(dataDir, 'source-tier-coverage.json'), bundle.source_tier_coverage);
+  writeJson(Path.join(dataDir, 'source-tier-backlog.json'), bundle.source_tier_backlog);
+  writeJson(Path.join(dataDir, 'skill-workbench-coverage.json'), bundle.skill_workbench_coverage);
   writeJson(Path.join(dataDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
   writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
   writeJson(Path.join(dataDir, 'analysis-goal-trace-alignment.json'), bundle.analysis_goal_trace_alignment);
@@ -214,6 +235,43 @@ function computeReportArtifacts(analysisDir: string): any {
   };
 }
 
+const REQUIRED_WORKFLOW_OUTPUTS = new Set([
+  'llm/analysis-strategy.json',
+  'llm/detail-agent-plan.json',
+  'llm/analysis-document.json'
+]);
+
+function isRequiredWorkflowTask(task: any): boolean {
+  const output = String(task?.expected_output || task?.suggested_output || '');
+  if (!REQUIRED_WORKFLOW_OUTPUTS.has(output)) return false;
+  return task?.required_for_final !== false && task?.task_kind !== 'capability_template';
+}
+
+function legacyTaskToCapabilityTemplate(task: any): any {
+  const expectedOutput = String(task?.expected_output || '');
+  return {
+    id: task?.id || cleanId(task?.title || expectedOutput),
+    title: task?.title || expectedOutput,
+    task_kind: 'capability_template',
+    required_for_final: false,
+    template_file: task?.template_file || task?.task_file || '',
+    suggested_output: expectedOutput,
+    status: 'available_when_llm_strategy_selects',
+    compatibility_note: 'Normalized from an older task manifest where generic capability templates were listed as llm_tasks.'
+  };
+}
+
+function normalizeCapabilityTemplateManifest(manifest: any, templates: any[]): any {
+  if (manifest?.mode === 'optional_llm_capability_templates') return { ...manifest, templates };
+  return {
+    mode: 'optional_llm_capability_templates',
+    semantic_authority: 'llm',
+    deterministic_authority: 'template_catalog_shape_only',
+    summary: 'Generic capability templates are optional and do not block final readiness unless the LLM strategy explicitly uses their outputs.',
+    templates
+  };
+}
+
 function artifactStatus(analysisDir: string, task: any): any {
   const expectedOutput = String(task?.expected_output || '');
   const full = Path.join(analysisDir, expectedOutput);
@@ -247,9 +305,12 @@ function artifactStatus(analysisDir: string, task: any): any {
 function computeLlmArtifactStatus(analysisDir: string, tasks: any[]): any {
   const artifacts = asList(tasks)
     .filter((task: any) => String(task?.expected_output || '').startsWith('llm/'))
+    .filter(isRequiredWorkflowTask)
     .map((task: any) => artifactStatus(analysisDir, task));
   const missing = artifacts.filter((row: any) => !row.exists || !row.valid_json || !row.has_content);
   return {
+    contract_kind: 'required_llm_workflow_artifact_status',
+    deterministic_contract_scope: 'required LLM workflow artifacts only; optional capability template outputs do not block final readiness unless the LLM final report depends on them',
     complete: artifacts.length > 0 && missing.length === 0,
     total_count: artifacts.length,
     ready_count: artifacts.length - missing.length,
@@ -273,8 +334,9 @@ function computeAnalysisDocumentPrerequisiteCoverage(llmArtifacts: any): any {
   const missing = prerequisites.filter((row: any) => !row.exists || !row.valid_json || !row.has_content);
   return {
     complete: prerequisites.length > 0 && missing.length === 0,
-    stage: 'pre_final_building_blocks',
+    stage: 'required_pre_final_workflow_artifacts',
     required_before: finalOutput,
+    deterministic_contract_scope: 'analysis strategy and detail plan artifact presence only; optional capability-template outputs are not a fixed final-readiness gate',
     total_count: prerequisites.length,
     ready_count: prerequisites.length - missing.length,
     missing_count: missing.length,
@@ -282,8 +344,8 @@ function computeAnalysisDocumentPrerequisiteCoverage(llmArtifacts: any): any {
     missing_outputs: missing.map((row: any) => row.expected_output),
     missing,
     summary: missing.length
-      ? `Final analysis document prerequisites are incomplete: ${missing.map((row: any) => row.expected_output).join(', ')}.`
-      : 'All pre-final LLM building-block artifacts are present before the final analysis document.'
+      ? `Required final analysis document workflow prerequisites are incomplete: ${missing.map((row: any) => row.expected_output).join(', ')}.`
+      : 'All required pre-final LLM workflow artifacts are present before the final analysis document. Optional capability-template outputs are incorporated only when the LLM chose to use them.'
   };
 }
 
@@ -808,6 +870,7 @@ function computeSemanticAuthority(bundle: any): any {
   const componentContract = bundle.analysis_document_component_coverage || {};
   const pipelineContract = bundle.analysis_pipeline_contract || {};
   const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
+  const skillWorkbenchCoverage = bundle.skill_workbench_coverage || {};
   return {
     semantic_decider: 'llm',
     final_verdict_source: 'analysis_document.report_quality_review.verdict',
@@ -825,6 +888,7 @@ function computeSemanticAuthority(bundle: any): any {
       requirements_trace: !!presence['analysis_document.requirements_trace'],
       report_quality_review: !!presence['analysis_document.report_quality_review'],
       source_file_tier_reviews: asList(bundle.source_file_tier_reviews).length,
+      skill_workbench_reviews: asList(bundle.skill_workbench_reviews).length,
       detail_agent_plan: bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true,
       detail_reviews: asList(bundle.source_family_detail_reviews).length
     },
@@ -836,6 +900,7 @@ function computeSemanticAuthority(bundle: any): any {
       'file_line_evidence_validation',
       'source_tier_file_card_path_and_evidence_contract',
       'source_inventory_accounting',
+      'llm_strategy_skill_workbench_execution',
       'llm_analysis_pipeline_order',
       'pre_final_artifact_order',
       'detail_review_execution_and_integration',
@@ -844,6 +909,7 @@ function computeSemanticAuthority(bundle: any): any {
       'static_html_artifact_materialization'
     ],
     analysis_skill_catalog_contract_complete: skillCatalogContract.complete === true,
+    skill_workbench_contract_complete: skillWorkbenchCoverage.complete === true,
     analysis_pipeline_contract_complete: pipelineContract.complete === true,
     analysis_pipeline_kind: bundle.analysis_pipeline?.pipeline_kind || '',
     non_authoritative_navigation_artifacts: [
@@ -893,6 +959,46 @@ function extractLlmAnalysisStrategy(strategyDoc: any, hasStrategyArtifact: boole
     missing,
     candidate_source_slice_count: candidateSlices.length,
     skill_application_count: skillPlan.length,
+    evidence: asList(directStrategy?.evidence)
+  };
+}
+
+function skillWorkbenchId(value: any, index = 0): string {
+  if (typeof value === 'string') return cleanId(value) || `skill-workbench-${index + 1}`;
+  if (!value || typeof value !== 'object') return '';
+  return cleanId(value.id || value.skill_workbench_id || value.task_id || value.skill_id || value.name) || `skill-workbench-${index + 1}`;
+}
+
+function extractLlmSkillWorkbenchPlan(strategyDoc: any, manifest: any, hasStrategyArtifact: boolean): any {
+  const directStrategy = strategyDoc?.analysis_strategy && typeof strategyDoc.analysis_strategy === 'object'
+    ? strategyDoc.analysis_strategy
+    : strategyDoc;
+  const plannedRows = asList(directStrategy?.skill_application_plan || directStrategy?.skills || directStrategy?.planned_skill_workbenches);
+  const tasks = plannedRows.map((row: any, index: number) => ({
+    id: skillWorkbenchId(row, index),
+    skill_id: row?.skill_id || row?.id || row?.name || skillWorkbenchId(row, index),
+    purpose: row?.purpose || row?.why_it_matters || '',
+    scope: row?.scope || row?.source_scope || '',
+    focus: asList(row?.focus || row?.expected_outputs),
+    evidence: asList(row?.evidence || row?.initial_evidence)
+  }));
+  const manifestTasks = asList(manifest?.tasks);
+  const noSkillDecision = directStrategy?.no_skill_workbenches_needed === true || asList(directStrategy?.skill_workbench_not_planned || directStrategy?.not_planned).length > 0;
+  return {
+    contract_kind: 'llm_strategy_skill_workbench_plan',
+    semantic_verdict_authority: 'llm',
+    deterministic_contract_scope: 'analysis_strategy.skill_application_plan shape, materialized task manifest presence and exact planned review id reconciliation only',
+    planning_source: hasStrategyArtifact ? 'llm/analysis-strategy.json' : 'missing_llm_analysis_strategy',
+    uses_analysis_strategy_artifact: hasStrategyArtifact,
+    version: SKILL_WORKBENCH_VERSION,
+    planning_decision_present: tasks.length > 0 || noSkillDecision,
+    no_skill_workbenches_needed: directStrategy?.no_skill_workbenches_needed === true,
+    planned_count: tasks.length,
+    materialized_task_count: manifestTasks.length,
+    materialized_task_manifest_present: manifest?.mode === 'llm_strategy_skill_workbenches',
+    tasks,
+    materialized_tasks: manifestTasks,
+    not_planned: asList(directStrategy?.skill_workbench_not_planned || directStrategy?.not_planned),
     evidence: asList(directStrategy?.evidence)
   };
 }
@@ -1012,6 +1118,128 @@ function computeDetailReviewSynthesisStatus(doc: any, reviews: any[]): any {
   };
 }
 
+function skillReviewId(value: any, index = 0): string {
+  if (typeof value === 'string') return cleanId(value) || `skill-workbench-${index + 1}`;
+  if (!value || typeof value !== 'object') return '';
+  return cleanId(value.id || value.skill_workbench_id || value.task_id || value.skill_id || value.name) || `skill-workbench-${index + 1}`;
+}
+
+function computeSkillWorkbenchCoverage(plan: any, reviews: any[], manifest: any, sourceTierCoverage: any): any {
+  const planned = asList(plan?.tasks)
+    .map((task: any, index: number) => skillReviewId(task, index))
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b));
+  const plannedIds = [...new Set(planned)];
+  const materializedIds = [...new Set(asList(manifest?.tasks)
+    .map((task: any, index: number) => skillReviewId(task, index))
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b)))];
+  const executedIds = [...new Set(asList(reviews)
+    .map((review: any, index: number) => skillReviewId(review, index))
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b)))];
+  const materializedSet = new Set(materializedIds);
+  const executedSet = new Set(executedIds);
+  const pendingMaterialization = plannedIds.filter(id => !materializedSet.has(id));
+  const pendingExecution = plannedIds.filter(id => !executedSet.has(id));
+  const unexpectedReviews = executedIds.filter(id => !plannedIds.includes(id));
+  const usesAnalysisStrategyPlan = plan?.uses_analysis_strategy_artifact === true;
+  const sourceTierComplete = sourceTierCoverage?.complete === true;
+  const materializedTaskManifestPresent = plan?.materialized_task_manifest_present === true;
+  const planningDecisionPresent = plan?.planning_decision_present === true;
+  const noSkillDecision = plan?.no_skill_workbenches_needed === true;
+  const complete = usesAnalysisStrategyPlan
+    && sourceTierComplete
+    && planningDecisionPresent
+    && (noSkillDecision || materializedTaskManifestPresent)
+    && pendingMaterialization.length === 0
+    && pendingExecution.length === 0
+    && unexpectedReviews.length === 0;
+  const status = !usesAnalysisStrategyPlan
+    ? 'missing_analysis_strategy'
+    : !sourceTierComplete
+      ? 'waiting_for_tier1_file_cards'
+    : !planningDecisionPresent
+      ? 'missing_skill_workbench_decision'
+      : unexpectedReviews.length
+        ? 'unexpected_skill_reviews'
+        : plannedIds.length === 0
+          ? 'no_skill_workbenches_planned'
+          : !materializedTaskManifestPresent
+            ? 'missing_materialized_skill_tasks'
+            : complete
+              ? 'complete'
+              : 'partial';
+  return {
+    contract_kind: 'llm_strategy_skill_workbench_execution',
+    semantic_verdict_authority: 'llm',
+    deterministic_contract_scope: 'planned skill ids from analysis_strategy, materialized task ids and executed skill_reviews ids only; no semantic scoring of skill-review quality',
+    complete,
+    status,
+    planning_source: plan?.planning_source || 'missing_llm_analysis_strategy',
+    uses_analysis_strategy_artifact: usesAnalysisStrategyPlan,
+    source_tier_complete_before_skill_workbenches: sourceTierComplete,
+    materialized_task_manifest_present: materializedTaskManifestPresent,
+    planning_decision_present: planningDecisionPresent,
+    no_skill_workbenches_needed: noSkillDecision,
+    planned_count: plannedIds.length,
+    materialized_count: materializedIds.length,
+    executed_count: plannedIds.filter(id => executedSet.has(id)).length,
+    pending_materialization: pendingMaterialization,
+    pending_execution: pendingExecution,
+    unexpected_reviews: unexpectedReviews,
+    planned_skill_workbenches: plannedIds,
+    materialized_skill_workbenches: materializedIds,
+    executed_skill_workbenches: executedIds,
+    summary: plannedIds.length
+      ? sourceTierComplete
+        ? `${plannedIds.filter(id => executedSet.has(id)).length}/${plannedIds.length} LLM-planned skill workbenches executed.`
+        : `Skill workbenches are planned but wait for Tier 1 file-card coverage: ${sourceTierCoverage?.tier1_file_cards || 0}/${sourceTierCoverage?.total_files || 0} files.`
+      : planningDecisionPresent
+        ? 'The LLM analysis strategy explicitly decided that no skill workbench tasks are needed.'
+        : 'The LLM analysis strategy did not plan skill workbenches and did not explicitly justify skipping them.'
+  };
+}
+
+function computeSkillWorkbenchSynthesisStatus(doc: any, reviews: any[]): any {
+  const executedIds = asList(reviews)
+    .map((review: any, index: number) => skillReviewId(review, index))
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b));
+  const uniqueExecuted = [...new Set(executedIds)];
+  const synthesis = doc?.skill_workbench_synthesis || {};
+  const integratedIds = asList(synthesis.integrated_skill_workbenches || synthesis.integrated_reviews)
+    .map((item: any, index: number) => skillReviewId(item, index))
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b));
+  const integratedSet = new Set(integratedIds);
+  const missing = uniqueExecuted.filter(id => !integratedSet.has(id));
+  const extra = integratedIds.filter(id => !uniqueExecuted.includes(id));
+  const hasDoc = !!doc && typeof doc === 'object' && Object.keys(doc).length > 0;
+  const complete = hasDoc && missing.length === 0;
+  const status = !hasDoc
+    ? 'missing_analysis_document'
+    : uniqueExecuted.length === 0
+      ? 'no_executed_skill_workbenches'
+      : complete
+        ? 'current'
+        : 'stale';
+  return {
+    complete,
+    status,
+    executed_count: uniqueExecuted.length,
+    integrated_count: uniqueExecuted.filter(id => integratedSet.has(id)).length,
+    missing_integrations: missing,
+    extra_integrations: extra,
+    executed_skill_workbenches: uniqueExecuted,
+    integrated_skill_workbenches: integratedIds,
+    summary: synthesis.summary || (uniqueExecuted.length
+      ? 'The final analysis document must explicitly integrate every executed LLM-planned skill workbench review.'
+      : 'No LLM-planned skill workbench reviews have been executed yet.'),
+    evidence: asList(synthesis.evidence)
+  };
+}
+
 function computeDetailReviewCoverage(plan: any, reviews: any[], synthesis: any): any {
   const planned = asList(plan?.tasks)
     .map((t: any) => detailReviewFamilyId(t))
@@ -1081,7 +1309,7 @@ function computeDetailReviewCoverage(plan: any, reviews: any[], synthesis: any):
   };
 }
 
-function computeReportMode(doc: any, detailCoverage: any, synthesis: any, prerequisiteCoverage: any, qualityReview: any, goalTraceAlignment: any): any {
+function computeReportMode(doc: any, detailCoverage: any, synthesis: any, skillSynthesis: any, prerequisiteCoverage: any, qualityReview: any, goalTraceAlignment: any): any {
   const sections = Array.isArray(doc?.sections) ? doc.sections : [];
   const hasAuthoredSections = sections.length > 0;
   const authoringMode = String(doc?.authoring_mode || '').toLowerCase();
@@ -1095,7 +1323,8 @@ function computeReportMode(doc: any, detailCoverage: any, synthesis: any, prereq
   const preFinalPlanReady = detailCoverage?.uses_pre_final_plan_artifact === true && detailCoverage?.planning_decision_present === true;
   const detailReviewsComplete = detailCoverage?.complete === true;
   const detailSynthesisCurrent = synthesis?.complete === true;
-  const finalSynthesisReady = llmAuthored && finalAfterDetailReviews && prerequisitesComplete && qualityReviewDecisionReady && goalTraceReferenceContractComplete && preFinalPlanReady && detailReviewsComplete && detailSynthesisCurrent;
+  const skillSynthesisCurrent = skillSynthesis?.complete === true;
+  const finalSynthesisReady = llmAuthored && finalAfterDetailReviews && prerequisitesComplete && qualityReviewDecisionReady && goalTraceReferenceContractComplete && preFinalPlanReady && detailReviewsComplete && detailSynthesisCurrent && skillSynthesisCurrent;
   return {
     llm_authored: llmAuthored,
     final_synthesis_ready: finalSynthesisReady,
@@ -1112,6 +1341,7 @@ function computeReportMode(doc: any, detailCoverage: any, synthesis: any, prereq
     pre_final_detail_plan_ready: preFinalPlanReady,
     detail_reviews_complete: detailReviewsComplete,
     detail_synthesis_current: detailSynthesisCurrent,
+    skill_workbench_synthesis_current: skillSynthesisCurrent,
     state: hasAuthoredSections
       ? finalSynthesisReady
         ? 'final_llm_authored_report'
@@ -1120,9 +1350,9 @@ function computeReportMode(doc: any, detailCoverage: any, synthesis: any, prereq
     visible_report_source: hasAuthoredSections ? 'analysis_document.sections' : 'pending_notice',
     section_count: sections.length,
     message: finalSynthesisReady
-      ? 'The visible human report is rendered from LLM-authored analysis_document.sections after pre-final extraction artifacts, planned detail reviews and LLM report-quality review were completed.'
+      ? 'The visible human report is rendered from LLM-authored analysis_document.sections after pre-final extraction artifacts, planned skill workbenches, planned detail reviews and LLM report-quality review were completed.'
       : hasAuthoredSections
-      ? 'The visible human report exists, but final readiness waits for pre-final LLM building-block artifacts, synthesis_stage=final_after_detail_reviews, an LLM report-quality review with verdict=decision_ready, explicit LLM goal-trace references, a pre-final LLM detail-agent plan, planned detail-review execution and synthesis.'
+      ? 'The visible human report exists, but final readiness waits for required workflow artifacts, synthesis_stage=final_after_detail_reviews, an LLM report-quality review with verdict=decision_ready, explicit LLM goal-trace references, planned skill-workbench synthesis, a pre-final LLM detail-agent plan, planned detail-review execution and synthesis.'
       : 'The visible human report is not complete until an LLM-authored analysis_document with sections is provided.'
   };
 }
@@ -1158,6 +1388,21 @@ function loadLlmOutputs(llmDir: string): any {
     }
   }
   return result;
+}
+
+function loadSkillWorkbenchOutputs(reviewDir: string): any {
+  const fs = require('node:fs');
+  const reviews: any[] = [];
+  const coverageItems: any[] = [];
+  if (!fs.existsSync(reviewDir)) return { reviews, coverageItems };
+  const files = fs.readdirSync(reviewDir).filter((f: string) => f.endsWith('.json')).sort();
+  for (const f of files) {
+    const data = loadJson<any>(Path.join(reviewDir, f), {});
+    if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+    if (data.skill_workbench_review) reviews.push(data.skill_workbench_review);
+    if (data.analysis_coverage) coverageItems.push(data.analysis_coverage);
+  }
+  return { reviews, coverageItems };
 }
 
 function hasOutputContent(value: any): boolean {

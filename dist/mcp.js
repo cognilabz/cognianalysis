@@ -8,15 +8,20 @@ const tasks_1 = require("./tasks");
 const aggregate_2 = require("./aggregate");
 const utils_1 = require("./utils");
 const readiness_1 = require("./readiness");
+const skillWorkbenches_1 = require("./skillWorkbenches");
 function send(obj) { process.stdout.write(JSON.stringify(obj) + '\n'); }
 const SERVER_NAME = 'cognianalysis';
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 function stagedLlmWorkflowMessage() {
-    return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, use the strategy to execute llm_tasks/01-*.md through 10-*.md, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+    return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, run ${CLI_NAME} finalize . --allow-partial to materialize LLM-planned skill_workbench_tasks, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the LLM strategy or skill reviews need that output shape, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
 }
 function aggregateWithMaterializedDetailTasks(repo, analysis) {
     let bundle = (0, aggregate_1.aggregate)(repo, analysis);
+    if (bundle.source_tier_coverage?.complete === true && bundle.llm_skill_workbench_plan?.uses_analysis_strategy_artifact === true && bundle.llm_skill_workbench_plan?.planning_decision_present === true) {
+        (0, skillWorkbenches_1.writeSkillWorkbenchTasksFromLlmStrategy)(analysis, bundle.analysis_strategy);
+        bundle = (0, aggregate_1.aggregate)(repo, analysis);
+    }
     if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && (bundle.llm_detail_agent_plan?.tasks || []).length) {
         (0, tasks_1.writeDetailTasksFromLlmPlan)(analysis, bundle.llm_detail_agent_plan);
         bundle = (0, aggregate_1.aggregate)(repo, analysis);
@@ -43,6 +48,9 @@ async function callTool(name, args) {
         const detailReviewSeedDir = utils_1.Path.join(repo, '.analysis-seed', 'detail_reviews');
         if (utils_1.FS.existsSync(detailReviewSeedDir))
             (0, utils_1.copyRecursive)(detailReviewSeedDir, utils_1.Path.join(analysis, 'detail_reviews'), false);
+        const skillReviewSeedDir = utils_1.Path.join(repo, '.analysis-seed', 'skill_reviews');
+        if (utils_1.FS.existsSync(skillReviewSeedDir))
+            (0, utils_1.copyRecursive)(skillReviewSeedDir, utils_1.Path.join(analysis, 'skill_reviews'), false);
         return { analysis, tasks: tasks.length, staged_llm_workflow: stagedLlmWorkflowMessage() };
     }
     if (name === 'aggregate')
@@ -76,6 +84,7 @@ async function callTool(name, args) {
             target_coverage_scored: false,
             semantic_authority: bundle.semantic_authority,
             source_tier_coverage: bundle.source_tier_coverage,
+            skill_workbench_coverage: bundle.skill_workbench_coverage,
             source_inventory_accounting: bundle.source_inventory_accounting || bundle.source_coverage,
             source_coverage: bundle.source_coverage,
             evidence_total: (bundle.evidence_index || []).length,
@@ -102,8 +111,10 @@ async function callTool(name, args) {
             report_mode: bundle.report_mode,
             detail_review_coverage: bundle.source_family_detail_review_coverage,
             detail_review_synthesis: bundle.analysis_document_detail_review_synthesis,
+            skill_workbench_synthesis: bundle.analysis_document_skill_workbench_synthesis,
             analysis_pipeline_contract: bundle.analysis_pipeline_contract,
             analysis_skill_catalog_contract: bundle.analysis_skill_catalog_contract,
+            skill_workbench_coverage: bundle.skill_workbench_coverage,
             requirements_trace_contract: bundle.analysis_document_requirements_trace_contract,
             analysis_goal_trace_alignment: bundle.analysis_goal_trace_alignment,
             report_quality_review: bundle.analysis_document_quality_review,
@@ -127,6 +138,7 @@ async function callTool(name, args) {
         return {
             target_artifact_contract_coverage: bundle.target_artifact_contract_coverage || bundle.target_coverage || [],
             target_coverage: bundle.target_coverage || [],
+            skill_workbench_coverage: bundle.skill_workbench_coverage,
             source_inventory_accounting: bundle.source_inventory_accounting || bundle.source_coverage,
             source_coverage: bundle.source_coverage
         };

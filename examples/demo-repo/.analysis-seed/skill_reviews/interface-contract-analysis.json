@@ -1,0 +1,124 @@
+{
+  "skill_workbench_review": {
+    "id": "interface-contract-analysis",
+    "skill_id": "interface_contract_analysis",
+    "version": "skill-workbench-v1",
+    "review_status": "complete",
+    "summary": "The repository exposes a REST onboarding/status surface and includes OpenAPI plus SOAP/WSDL material for contract-level drilldown.",
+    "scope": "Reviewed controller methods, OpenAPI contract files, SOAP/WSDL resources and example documents.",
+    "findings": [
+      {
+        "title": "REST entry and contract examples are available for request/response explanation.",
+        "description": "The controller defines onboarding and status operations while OpenAPI/example files provide human-readable contract evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          },
+          {
+            "path": "docs/api-examples.md",
+            "line": 26
+          }
+        ]
+      },
+      {
+        "title": "SOAP/WSDL resources are supporting integration contracts.",
+        "description": "The WSDL material describes KYC/customer-verification style contract surfaces that should be kept in technical drilldown.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29
+          }
+        ]
+      }
+    ],
+    "outputs_for_later_synthesis": [
+      {
+        "kind": "technical_contract_drilldown",
+        "description": "Use REST/OpenAPI as system entry evidence and SOAP/WSDL as integration-contract evidence in the final technical view.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          },
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29
+          }
+        ]
+      }
+    ],
+    "confidence": "high for visible demo contracts; production auth remains an open architectural question.",
+    "open_questions": [
+      {
+        "question": "Which production authorization policy protects the REST operations?",
+        "why_it_matters": "The controller and contracts show operations, but not production security enforcement.",
+        "owner": "architecture",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 12
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "line": 21
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "The interface-contract workbench inspected controller, OpenAPI, WSDL and API examples.",
+    "inspected_files": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "REST entrypoint evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "reason": "OpenAPI operation evidence.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "SOAP/WSDL integration evidence.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "path": "docs/api-examples.md",
+        "reason": "Request/response examples.",
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 26
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}
+

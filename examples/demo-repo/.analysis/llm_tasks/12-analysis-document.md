@@ -1,8 +1,11 @@
 # Final LLM Authored Analysis Document
 
-You are running inside Codex as the semantic extraction step for Cognianalysis.
+You are running inside an agent harness as the semantic extraction step for Cognianalysis.
 
 Task id: `analysis_document`
+Task kind: `required workflow task`
+
+This file is part of the required LLM workflow gate for analysis strategy, detail planning or final report authoring.
 
 Read these files first:
 
@@ -10,8 +13,11 @@ Read these files first:
 - `.analysis/data/code-map.json`
 - `.analysis/data/source-inventory.json`
 - `.analysis/data/source-tier-model.json`
-- `.analysis/source-tier-task-manifest.json`
-- all completed `.analysis/source_tiers/*.json` outputs
+	- `.analysis/source-tier-task-manifest.json`
+	- all completed `.analysis/source_tiers/*.json` outputs
+	- `.analysis/skill-workbench-task-manifest.json` when it exists
+	- all completed `.analysis/skill_reviews/*.json` outputs
+- `.analysis/capability-template-manifest.json` only as optional template context; it is not the semantic plan
 - `.analysis/data/analysis-goal-contract.json`
 - `.analysis/data/tool-positioning-references.json`
 - `.analysis/data/navigation-artifact-candidates.json` (or legacy `.analysis/data/important-docs.json`)
@@ -19,9 +25,11 @@ Read these files first:
 - `.analysis/source-capsules.json`
 
 	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
-	If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
-	Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
-For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
+		If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
+		Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
+		After `analysis_strategy` and Tier 1 cards exist, run `cognianalysis finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
+		Generic capability templates are optional. Prefer repository-specific `.analysis/skill_workbench_tasks/*.md` and direct final synthesis. If you use a template output, explain in the JSON why this capability output was needed for this repository.
+	For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
 Write your result to `.analysis/llm/analysis-document.json` as valid JSON.
 
@@ -45,8 +53,8 @@ General rules:
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
-- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier tasks to build source-backed blocks, examples, flows, findings and the detail-agent plan.
-- The final analysis-document task must read all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
+	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.
+	- The final analysis-document task must read all skill workbench reviews, all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
 - Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an `open_questions` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
 - Use a clear `confidence` statement and `open_questions` when behavior is unclear.
@@ -67,8 +75,8 @@ Rules for examples:
   "repo": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T12:14:00Z",
-    "commit": "f975972ef58cd244659331e3613f0df369cc2314",
+    "analyzed_at": "2026-06-10T18:06:14Z",
+    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -1667,7 +1675,7 @@ Rules for examples:
       {
         "id": "analysis_strategy_planning",
         "label": "Analysis Strategy Planning",
-        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.",
         "stage_ids": [
           "llm_analysis_strategy"
         ],
@@ -2337,7 +2345,7 @@ Rules for examples:
 
 ## Expected JSON
 
-This is the final synthesis task. Author it only after `.analysis/llm/analysis-strategy.json`, the whole-repository extraction outputs, `.analysis/llm/detail-agent-plan.json`, and all planned `.analysis/detail_reviews/*.json` outputs are present. Read all previous `.analysis/llm/*.json` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
+	This is the final synthesis task. Author it only after `.analysis/llm/analysis-strategy.json`, Tier 1 file-card coverage, all LLM-planned `.analysis/skill_reviews/*.json`, the whole-repository extraction outputs, `.analysis/llm/detail-agent-plan.json`, and all planned `.analysis/detail_reviews/*.json` outputs are present. Read all previous `.analysis/skill_reviews/*.json`, all previous `.analysis/llm/*.json` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
 
 The HTML renderer will provide the component library and styling. You decide the section order, emphasis and depth. When an `analysis_document` is present, `analysis_document.sections[]` is the complete visible report navigation and start order; generated code-map, coverage, quality-review, requirements-trace and raw-data views remain audit artifacts unless you intentionally author repository-specific sections/blocks for them.
 
@@ -2354,9 +2362,10 @@ Required report intent:
   - refactoring_target_architecture: modernization path, target architecture or new tech-stack options
 - Include functional view and technical view.
 - Include comparison/tool positioning: how this automated analysis compares to or complements consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Name the repo-specific decision value, what can be replaced, what is only complemented and the handoff boundaries. Use `.analysis/data/tool-positioning-references.json` as official market context only; source-code evidence remains required for repository-specific claims.
-- Include confidence, known gaps and open questions. Do not overclaim.
-- Every substantive claim must include evidence, or must be clearly listed as an open question.
-- Explicitly synthesize every executed source-family detail review into the document. List the integrated source families in `detail_review_synthesis.integrated_detail_reviews`; otherwise finalization will mark the report stale.
+	- Include confidence, known gaps and open questions. Do not overclaim.
+	- Every substantive claim must include evidence, or must be clearly listed as an open question.
+	- Explicitly synthesize every executed LLM-planned skill workbench into the document. List the integrated skill workbench IDs in `skill_workbench_synthesis.integrated_skill_workbenches`; otherwise finalization will mark the report stale.
+	- Explicitly synthesize every executed source-family detail review into the document. List the integrated source families in `detail_review_synthesis.integrated_detail_reviews`; otherwise finalization will mark the report stale.
 - If the detail-agent plan still has unexecuted tasks, do not claim final readiness. Either wait for the reviews or mark the report partial with the missing families and open questions.
 - If technical drilldown, evidence governance, quality-review, requirements-trace, coverage or raw-data explanation matters to the audience, create repository-specific sections for them inside `analysis_document.sections`. Do not rely on fixed appendix menu items.
 - Each visible section should earn its place by explaining a business decision, business use, system relationship, risk, improvement path or technical drilldown. Avoid sections that merely enumerate classes, functions or files.
@@ -2390,14 +2399,20 @@ Any block may include a `labels` object when the default component wording is no
       {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]}
     ],
-    "executive_decision_basis": {
-      "summary": "Decision-grade summary.",
+	    "executive_decision_basis": {
+	      "summary": "Decision-grade summary.",
       "recommendation": "What stakeholders should do next.",
       "confidence": "Repository-specific confidence statement.",
       "evidence": [],
-      "open_questions": []
-    },
-    "detail_review_synthesis": {
+	      "open_questions": []
+	    },
+	    "skill_workbench_synthesis": {
+	      "integrated_skill_workbenches": ["skill workbench id from .analysis/skill_reviews/*.json"],
+	      "summary": "How LLM-planned skill workbench reviews shaped the final analysis document.",
+	      "coverage_statement": "Which strategy-planned skill reviews are incorporated, which remain planned only, and whether the document is current.",
+	      "evidence": []
+	    },
+	    "detail_review_synthesis": {
       "integrated_detail_reviews": ["source-family name from .analysis/detail_reviews/*.json"],
       "summary": "How executed detail-agent reviews changed or confirmed the final analysis document.",
       "coverage_statement": "Which source-family detail reviews are incorporated, which remain planned only, and whether the document is current.",
@@ -2533,7 +2548,7 @@ Any block may include a `labels` object when the default component wording is no
   }
 }
 
-## Required Source Inventory Accounting
+	## Required Source Inventory Accounting
 
 For this task, list the files you inspected for this extraction area. Use deferred files only for this task-local extraction scope; deferral does not satisfy whole-codebase completion.
 
@@ -2555,3 +2570,4 @@ Include this top-level object in the JSON:
   }
 }
 ```
+	

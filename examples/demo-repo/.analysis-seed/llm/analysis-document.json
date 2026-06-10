@@ -186,6 +186,29 @@
       ],
       "open_questions": []
     },
+    "skill_workbench_synthesis": {
+      "integrated_skill_workbenches": [
+        "whole-repository-understanding",
+        "interface-contract-analysis",
+        "flow-mermaid-analysis"
+      ],
+      "summary": "The final report uses the strategy-planned skill workbenches to keep the narrative whole-repository first, preserve REST/OpenAPI and SOAP/WSDL technical drilldown, and explain the onboarding E2E flow as collaboration rather than a class list.",
+      "coverage_statement": "All three LLM-planned demo skill workbenches are incorporated before detail-review synthesis and final report authoring.",
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 6
+        },
+        {
+          "path": "docs/business-flows.md",
+          "line": 30
+        }
+      ]
+    },
     "detail_review_synthesis": {
       "integrated_detail_reviews": [
         "src/main"

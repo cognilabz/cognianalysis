@@ -7,7 +7,7 @@
     {
       "id": "analysis_strategy_planning",
       "label": "Analysis Strategy Planning",
-      "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+      "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.",
       "stage_ids": [
         "llm_analysis_strategy"
       ],

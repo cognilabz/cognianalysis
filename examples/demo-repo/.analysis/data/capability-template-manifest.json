@@ -1,0 +1,98 @@
+{
+  "mode": "optional_llm_capability_templates",
+  "semantic_authority": "llm",
+  "deterministic_authority": "template_catalog_shape_only",
+  "summary": "These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the LLM strategy explicitly uses their outputs.",
+  "templates": [
+    {
+      "id": "core_assessment",
+      "title": "Core Assessment and Decision Summary",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/01-core-assessment.md",
+      "suggested_output": "llm/core-assessment.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "business_capabilities_logic",
+      "title": "Business Capabilities and Business Logic",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/02-business-capabilities-logic.md",
+      "suggested_output": "llm/business-capabilities-logic.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "interface_contract_extraction",
+      "title": "Interface and Contract Extraction",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/03-interface-contract-extraction.md",
+      "suggested_output": "llm/interfaces-contracts.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "request_response_examples",
+      "title": "Request and Response Examples",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/04-request-response-examples.md",
+      "suggested_output": "llm/request-response-examples.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "openapi_soap_graphql",
+      "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/05-openapi-soap-graphql.md",
+      "suggested_output": "llm/openapi-soap-graphql.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "flows_mermaid",
+      "title": "Flows, Scenarios and Mermaid Diagrams",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/06-flows-mermaid.md",
+      "suggested_output": "llm/flows-mermaid.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "domain_data_integrations",
+      "title": "Domain, Data, Integrations and Side Effects",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/07-domain-data-integrations.md",
+      "suggested_output": "llm/domain-data-integrations.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "process_quality_readiness",
+      "title": "Process, Quality and Readiness Assessment",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/08-process-quality-readiness.md",
+      "suggested_output": "llm/process-quality-readiness.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "architecture_refactoring_roadmap",
+      "title": "Architecture, Refactoring and Modernization Roadmap",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/09-architecture-refactoring-roadmap.md",
+      "suggested_output": "llm/architecture-refactoring-roadmap.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "report_completeness_review",
+      "title": "Report Completeness and Gap Review",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/10-report-completeness-review.md",
+      "suggested_output": "llm/report-completeness-review.json",
+      "status": "available_when_llm_strategy_selects"
+    }
+  ]
+}

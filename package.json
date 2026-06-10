@@ -21,7 +21,6 @@
     "examples/demo-repo/src",
     "examples/demo-repo/README.md",
     "examples/demo-repo/pom.xml",
-    ".agents",
     "AGENTS.md"
   ],
   "scripts": {

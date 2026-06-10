@@ -2,11 +2,12 @@
   "pipeline_kind": "llm_driven_overview_detail_final_report",
   "semantic_authority": "llm",
   "deterministic_authority": "artifact_contracts_only",
-  "summary": "The CLI prepares context, materializes Tier 1 file-card tasks and detail tasks, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, semantic extraction, detail-review priorities and the final decision document.",
+  "summary": "The CLI prepares context, materializes Tier 1 file-card tasks, LLM-planned skill workbench tasks and detail tasks, exposes optional capability templates, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, repository-specific skill application, detail-review priorities and the final decision document.",
   "invariants": [
-    "The LLM authors a repository-specific analysis strategy before source tiering, building blocks, detail planning and the final report.",
+    "The LLM authors a repository-specific analysis strategy before source tiering, optional capability templates, detail planning and the final report.",
     "Every included file receives an LLM-authored Tier 1 file card before whole-repository synthesis.",
-    "Whole-repository extraction building blocks are authored before detail-agent planning.",
+    "Repository-specific skill workbench tasks are materialized from analysis_strategy.skill_application_plan before detail-agent planning.",
+    "Whole-repository building blocks come from Tier 1 file cards, LLM-planned skill workbench reviews and any optional capability templates the LLM strategy explicitly uses.",
     "The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.",
     "Focused detail-review tasks are mechanically materialized from the LLM-authored plan.",
     "Final analysis_document is authored only after pre-final LLM building blocks and planned detail reviews exist.",
@@ -36,7 +37,7 @@
       "depends_on": [
         "deterministic_context_preparation"
       ],
-      "purpose": "Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before the fixed workbench tasks are used.",
+      "purpose": "Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before source tiering, optional capability templates, detail planning and final synthesis are used.",
       "task_file": "llm_tasks/00-analysis-strategy.md",
       "expected_output": "llm/analysis-strategy.json"
     },
@@ -54,64 +55,101 @@
       ]
     },
     {
+      "id": "deterministic_skill_workbench_task_materialization",
+      "controller": "cli",
+      "semantic_authority": false,
+      "depends_on": [
+        "llm_analysis_strategy",
+        "llm_source_file_tier_analysis"
+      ],
+      "purpose": "Materialize repository-specific skill workbench tasks from the LLM-authored analysis strategy without choosing semantic scope.",
+      "outputs": [
+        ".analysis/skill_workbench_tasks/*.md",
+        ".analysis/skill-workbench-task-manifest.json"
+      ]
+    },
+    {
+      "id": "llm_skill_workbench_reviews",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "deterministic_skill_workbench_task_materialization"
+      ],
+      "purpose": "Execute the LLM-planned skill workbenches as reusable semantic extraction building blocks.",
+      "outputs": [
+        ".analysis/skill_reviews/*.json"
+      ]
+    },
+    {
       "id": "llm_whole_repository_building_blocks",
       "controller": "llm",
       "semantic_authority": true,
       "depends_on": [
         "llm_analysis_strategy",
-        "llm_source_file_tier_analysis"
+        "llm_source_file_tier_analysis",
+        "llm_skill_workbench_reviews"
       ],
-      "purpose": "Author whole-repository extraction building blocks before final report synthesis.",
-      "tasks": [
+      "purpose": "Author whole-repository building blocks before final report synthesis. Optional capability templates provide reusable output shapes; repository-specific semantic emphasis comes from the LLM-planned skill workbenches.",
+      "optional_capability_templates": [
         {
           "title": "Core Assessment and Decision Summary",
-          "task_file": "llm_tasks/01-core-assessment.md",
-          "expected_output": "llm/core-assessment.json"
+          "template_file": "capability_templates/01-core-assessment.md",
+          "suggested_output": "llm/core-assessment.json",
+          "required_for_final": false
         },
         {
           "title": "Business Capabilities and Business Logic",
-          "task_file": "llm_tasks/02-business-capabilities-logic.md",
-          "expected_output": "llm/business-capabilities-logic.json"
+          "template_file": "capability_templates/02-business-capabilities-logic.md",
+          "suggested_output": "llm/business-capabilities-logic.json",
+          "required_for_final": false
         },
         {
           "title": "Interface and Contract Extraction",
-          "task_file": "llm_tasks/03-interface-contract-extraction.md",
-          "expected_output": "llm/interfaces-contracts.json"
+          "template_file": "capability_templates/03-interface-contract-extraction.md",
+          "suggested_output": "llm/interfaces-contracts.json",
+          "required_for_final": false
         },
         {
           "title": "Request and Response Examples",
-          "task_file": "llm_tasks/04-request-response-examples.md",
-          "expected_output": "llm/request-response-examples.json"
+          "template_file": "capability_templates/04-request-response-examples.md",
+          "suggested_output": "llm/request-response-examples.json",
+          "required_for_final": false
         },
         {
           "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
-          "task_file": "llm_tasks/05-openapi-soap-graphql.md",
-          "expected_output": "llm/openapi-soap-graphql.json"
+          "template_file": "capability_templates/05-openapi-soap-graphql.md",
+          "suggested_output": "llm/openapi-soap-graphql.json",
+          "required_for_final": false
         },
         {
           "title": "Flows, Scenarios and Mermaid Diagrams",
-          "task_file": "llm_tasks/06-flows-mermaid.md",
-          "expected_output": "llm/flows-mermaid.json"
+          "template_file": "capability_templates/06-flows-mermaid.md",
+          "suggested_output": "llm/flows-mermaid.json",
+          "required_for_final": false
         },
         {
           "title": "Domain, Data, Integrations and Side Effects",
-          "task_file": "llm_tasks/07-domain-data-integrations.md",
-          "expected_output": "llm/domain-data-integrations.json"
+          "template_file": "capability_templates/07-domain-data-integrations.md",
+          "suggested_output": "llm/domain-data-integrations.json",
+          "required_for_final": false
         },
         {
           "title": "Process, Quality and Readiness Assessment",
-          "task_file": "llm_tasks/08-process-quality-readiness.md",
-          "expected_output": "llm/process-quality-readiness.json"
+          "template_file": "capability_templates/08-process-quality-readiness.md",
+          "suggested_output": "llm/process-quality-readiness.json",
+          "required_for_final": false
         },
         {
           "title": "Architecture, Refactoring and Modernization Roadmap",
-          "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
-          "expected_output": "llm/architecture-refactoring-roadmap.json"
+          "template_file": "capability_templates/09-architecture-refactoring-roadmap.md",
+          "suggested_output": "llm/architecture-refactoring-roadmap.json",
+          "required_for_final": false
         },
         {
           "title": "Report Completeness and Gap Review",
-          "task_file": "llm_tasks/10-report-completeness-review.md",
-          "expected_output": "llm/report-completeness-review.json"
+          "template_file": "capability_templates/10-report-completeness-review.md",
+          "suggested_output": "llm/report-completeness-review.json",
+          "required_for_final": false
         }
       ]
     },
@@ -120,7 +158,8 @@
       "controller": "llm",
       "semantic_authority": true,
       "depends_on": [
-        "llm_whole_repository_building_blocks"
+        "llm_whole_repository_building_blocks",
+        "llm_skill_workbench_reviews"
       ],
       "purpose": "Choose focused detail-review areas after the whole-repository picture exists.",
       "task_file": "llm_tasks/11-detail-agent-plan.md",

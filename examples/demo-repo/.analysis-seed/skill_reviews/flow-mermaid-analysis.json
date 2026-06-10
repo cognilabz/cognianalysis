@@ -1,0 +1,88 @@
+{
+  "skill_workbench_review": {
+    "id": "flow-mermaid-analysis",
+    "skill_id": "flow_mermaid_analysis",
+    "version": "skill-workbench-v1",
+    "review_status": "complete",
+    "summary": "The key E2E flow is customer onboarding: client request, service orchestration, KYC, risk decision, persistence and event publication.",
+    "scope": "Reviewed service orchestration, API examples and business-flow documentation to prepare flow content for final synthesis.",
+    "findings": [
+      {
+        "title": "Onboarding collaboration crosses API, KYC, risk, persistence and event exit.",
+        "description": "The service sequence gives the final report a business-readable flow and a technical drilldown path.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 16
+          },
+          {
+            "path": "docs/business-flows.md",
+            "line": 30
+          }
+        ]
+      }
+    ],
+    "outputs_for_later_synthesis": [
+      {
+        "kind": "e2e_flow",
+        "description": "Use a Mermaid-supported onboarding flow in the final document, with narrative explaining how code blocks collaborate rather than only listing files.",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 30
+          }
+        ]
+      }
+    ],
+    "confidence": "high for the happy path; failure and production retry behavior should stay bounded to visible source/tests.",
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "docs/business-flows.md",
+        "line": 30
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "The flow workbench inspected service orchestration, event publication and flow documentation.",
+    "inspected_files": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Primary collaboration and side-effect sequence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "reason": "Event exit evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 16
+          }
+        ]
+      },
+      {
+        "path": "docs/business-flows.md",
+        "reason": "Human-readable flow and Mermaid support.",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 30
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}
+

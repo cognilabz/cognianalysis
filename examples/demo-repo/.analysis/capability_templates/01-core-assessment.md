@@ -1,8 +1,11 @@
-# Process, Quality and Readiness Assessment
+# Core Assessment and Decision Summary
 
-You are running inside Codex as the semantic extraction step for Cognianalysis.
+You are running inside an agent harness as the semantic extraction step for Cognianalysis.
 
-Task id: `process_quality_readiness`
+Task id: `core_assessment`
+Task kind: `optional capability template`
+
+This file is a reusable capability template, not a mandatory repository-analysis step. Execute it only when the LLM-authored analysis strategy, a skill workbench review or the final synthesis explicitly needs this output. Do not execute all capability templates just because they exist.
 
 Read these files first:
 
@@ -10,8 +13,11 @@ Read these files first:
 - `.analysis/data/code-map.json`
 - `.analysis/data/source-inventory.json`
 - `.analysis/data/source-tier-model.json`
-- `.analysis/source-tier-task-manifest.json`
-- all completed `.analysis/source_tiers/*.json` outputs
+	- `.analysis/source-tier-task-manifest.json`
+	- all completed `.analysis/source_tiers/*.json` outputs
+	- `.analysis/skill-workbench-task-manifest.json` when it exists
+	- all completed `.analysis/skill_reviews/*.json` outputs
+- `.analysis/capability-template-manifest.json` only as optional template context; it is not the semantic plan
 - `.analysis/data/analysis-goal-contract.json`
 - `.analysis/data/tool-positioning-references.json`
 - `.analysis/data/navigation-artifact-candidates.json` (or legacy `.analysis/data/important-docs.json`)
@@ -19,11 +25,13 @@ Read these files first:
 - `.analysis/source-capsules.json`
 
 	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
-	If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
-	Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
-For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
+		If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
+		Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
+		After `analysis_strategy` and Tier 1 cards exist, run `cognianalysis finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
+		Generic capability templates are optional. Prefer repository-specific `.analysis/skill_workbench_tasks/*.md` and direct final synthesis. If you use a template output, explain in the JSON why this capability output was needed for this repository.
+	For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
-Write your result to `.analysis/llm/process-quality-readiness.json` as valid JSON.
+Write your result to `.analysis/llm/core-assessment.json` as valid JSON.
 
 Evidence format for every relevant claim:
 
@@ -45,8 +53,8 @@ General rules:
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
-- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier tasks to build source-backed blocks, examples, flows, findings and the detail-agent plan.
-- The final analysis-document task must read all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
+	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.
+	- The final analysis-document task must read all skill workbench reviews, all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
 - Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an `open_questions` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
 - Use a clear `confidence` statement and `open_questions` when behavior is unclear.
@@ -67,8 +75,8 @@ Rules for examples:
   "repo": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T12:14:00Z",
-    "commit": "f975972ef58cd244659331e3613f0df369cc2314",
+    "analyzed_at": "2026-06-10T18:06:14Z",
+    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -1667,7 +1675,7 @@ Rules for examples:
       {
         "id": "analysis_strategy_planning",
         "label": "Analysis Strategy Planning",
-        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.",
         "stage_ids": [
           "llm_analysis_strategy"
         ],
@@ -2338,28 +2346,87 @@ Rules for examples:
 ## Expected JSON
 
 {
-  "process": {
-    "summary": "Assessment of development, delivery and operational readiness visible in the repository.",
-    "tests": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
-    "ci_cd": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
-    "release": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
-    "observability": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
-    "configuration": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
-    "local_setup": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
+  "assessment": {
+    "executive_summary": "Decision-grade summary of what the repository appears to do and how complete the extraction is.",
+    "repository_wide_view": {
+      "summary": "Whole-repository business and technical story before any module deep dive.",
+      "coverage_statement": "How the full included source inventory was considered.",
+      "source_families": [
+        {
+          "name": "module or source-family name",
+          "purpose": "Human-readable responsibility in the repository",
+          "business_use": "Business or operational use visible from evidence",
+          "entry_points": ["interface/path/job/topic/command if known"],
+          "exits_or_integrations": ["external system/protocol/store/topic if known"],
+          "evidence_level": "Repository-specific evidence depth statement.",
+          "confidence": "Repository-specific confidence statement.",
+          "evidence": [],
+          "open_questions": []
+        }
+      ],
+      "deep_slice_boundaries": [
+        {"name":"Deeply reviewed area", "reason":"Why this area is deeper than the rest", "evidence": []}
+      ],
+      "e2e_coverage_statement": "Which source families have route/process-level E2E flow evidence and which remain pending."
+    },
+    "system_purpose": "Business purpose inferred from code/docs/tests.",
+    "assessment_scope": ["What was analyzed"],
+    "key_capabilities": ["Short capability names"],
+    "key_interfaces": ["Main inbound/outbound interfaces"],
+    "functional_view": {
+      "summary": "What the system does from a business/user perspective.",
+      "actors": ["actor or system role"],
+      "capabilities": ["capability"],
+      "user_or_system_flows": [{"name":"flow", "description":"...", "evidence": []}],
+      "evidence": []
+    },
+    "technical_view": {
+      "summary": "How the system is built and integrated.",
+      "apis": ["API or interface"],
+      "architecture": ["architecture component or style"],
+      "data_and_integrations": ["data store, message, external system"],
+      "evidence": []
+    },
+    "decision_basis": {
+      "decision_summary": "Decision-grade conclusion for stakeholders.",
+      "recommended_actions": [{"title":"action", "rationale":"...", "priority":"Repository-specific priority rationale or label.", "evidence": []}],
+      "tradeoffs": [{"topic":"...", "options": [], "recommendation":"...", "evidence": []}],
+      "readiness": {"status":"Repository-specific readiness status.", "rationale":"...", "evidence": []},
+      "evidence": []
+    },
+    "tool_positioning": {
+      "summary": "How this analysis output acts as an alternative or complement to existing code analysis/documentation tools.",
+      "automation_level": "Repository-specific automation assessment.",
+      "comparison_dimensions": [
+        {"category":"Tool or service category being compared.", "positioning":"Repository-specific replace/complement/handoff assessment.", "summary":"...", "evidence":[]}
+      ],
+      "strengths_vs_traditional_tools": [],
+      "complements": [],
+      "boundaries": [],
+      "recommended_use": "How stakeholders should use this report in a decision workflow.",
+      "evidence": []
+    },
+    "top_risks": [
+      {"title":"risk", "severity":"Repository-specific severity or priority.", "description":"...", "evidence": []}
+    ],
+    "completeness": {
+      "whole_repository_view": "Repository-specific completeness assessment.",
+      "source_family_coverage": "Repository-specific completeness assessment.",
+      "business_logic": "Repository-specific completeness assessment.",
+      "interfaces": "Repository-specific completeness assessment.",
+      "flows": "Repository-specific completeness assessment.",
+      "examples": "Repository-specific completeness assessment.",
+      "process_readiness": "Repository-specific completeness assessment.",
+      "refactoring_roadmap": "Repository-specific completeness assessment."
+    },
+    "recommended_next_steps": [
+      {"title":"step", "reason":"...", "evidence": []}
+    ],
     "open_questions": []
-  },
-  "quality": {
-    "summary": "Maintainability and quality assessment visible from code/docs/tests.",
-    "strengths": [{"title":"...", "description":"...", "evidence": []}],
-    "risks": [{"title":"...", "severity":"Repository-specific severity or priority.", "description":"...", "recommendation":"...", "evidence": []}],
-    "testability": [{"title":"...", "description":"...", "evidence": []}]
-  },
-  "findings": [
-    {"id":"finding-id", "category":"Repository-specific finding category.", "severity":"Repository-specific severity or priority.", "title":"...", "description":"...", "recommendation":"...", "evidence": []}
-  ]
+  }
 }
 
-## Required Source Inventory Accounting
+	## Required Source Inventory Accounting
 
 For this task, list the files you inspected for this extraction area. Use deferred files only for this task-local extraction scope; deferral does not satisfy whole-codebase completion.
 
@@ -2381,3 +2448,4 @@ Include this top-level object in the JSON:
   }
 }
 ```
+	

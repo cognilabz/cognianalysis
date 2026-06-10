@@ -2,8 +2,8 @@
   "profile": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T12:14:00Z",
-    "commit": "f975972ef58cd244659331e3613f0df369cc2314",
+    "analyzed_at": "2026-06-10T18:06:14Z",
+    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -2683,6 +2683,6 @@
     "deterministic_build_tool_detection": false,
     "deterministic_contract_detection": false,
     "implementation_language": "TypeScript",
-    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. Codex/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
+    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. The agent harness/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
   }
 }

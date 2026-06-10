@@ -2,8 +2,8 @@
   "profile": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T12:14:00Z",
-    "commit": "f975972ef58cd244659331e3613f0df369cc2314",
+    "analyzed_at": "2026-06-10T18:06:14Z",
+    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -1722,7 +1722,7 @@
     "deterministic_build_tool_detection": false,
     "deterministic_contract_detection": false,
     "implementation_language": "TypeScript",
-    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. Codex/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
+    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. The agent harness/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
   },
   "artifact_navigation_candidates": [
     {
@@ -3139,7 +3139,7 @@
       {
         "id": "analysis_strategy_planning",
         "label": "Analysis Strategy Planning",
-        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before fixed workbench tasks are used.",
+        "purpose": "Author the repository-specific analysis plan, source-slice hypotheses, skill application plan and report intent before source tiering, skill workbenches, optional templates or final synthesis are used.",
         "stage_ids": [
           "llm_analysis_strategy"
         ],
@@ -3460,6 +3460,40 @@
         "task_file": "source_tier_tasks/source-tier-0001.md",
         "expected_output": "source_tiers/source-tier-0001.json",
         "file_count": 32,
+        "file_paths": [
+          "src/main/java/com/acme/onboarding/Customer.java",
+          "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "docs/examples/customer-verification-soap.xml",
+          "docs/openapi.yml",
+          "docs/soap-kyc.wsdl",
+          "src/main/resources/onboarding.wsdl",
+          "src/main/resources/openapi.yaml",
+          "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+          "src/main/resources/wsdl/customer-verification.wsdl",
+          "src/main/resources/wsdl/kyc-status.wsdl",
+          "docs/api-examples.md",
+          "docs/business-examples.md",
+          "docs/business-flows.md",
+          "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+          "src/main/java/com/acme/onboarding/CustomerRepository.java",
+          "src/main/java/com/acme/onboarding/CustomerStatus.java",
+          "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+          "src/main/java/com/acme/onboarding/KycClient.java",
+          "src/main/java/com/acme/onboarding/KycRequest.java",
+          "src/main/java/com/acme/onboarding/KycResult.java",
+          "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+          "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+          "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+          "src/main/java/com/acme/onboarding/OnboardingResult.java",
+          "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+          "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+          "src/main/java/com/acme/onboarding/RiskScoringService.java",
+          "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+          "pom.xml",
+          "src/main/resources/application.yml",
+          "README.md"
+        ],
         "first_path": "src/main/java/com/acme/onboarding/Customer.java",
         "last_path": "README.md",
         "status": "pending"
@@ -3470,11 +3504,12 @@
     "pipeline_kind": "llm_driven_overview_detail_final_report",
     "semantic_authority": "llm",
     "deterministic_authority": "artifact_contracts_only",
-    "summary": "The CLI prepares context, materializes Tier 1 file-card tasks and detail tasks, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, semantic extraction, detail-review priorities and the final decision document.",
+    "summary": "The CLI prepares context, materializes Tier 1 file-card tasks, LLM-planned skill workbench tasks and detail tasks, exposes optional capability templates, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, repository-specific skill application, detail-review priorities and the final decision document.",
     "invariants": [
-      "The LLM authors a repository-specific analysis strategy before source tiering, building blocks, detail planning and the final report.",
+      "The LLM authors a repository-specific analysis strategy before source tiering, optional capability templates, detail planning and the final report.",
       "Every included file receives an LLM-authored Tier 1 file card before whole-repository synthesis.",
-      "Whole-repository extraction building blocks are authored before detail-agent planning.",
+      "Repository-specific skill workbench tasks are materialized from analysis_strategy.skill_application_plan before detail-agent planning.",
+      "Whole-repository building blocks come from Tier 1 file cards, LLM-planned skill workbench reviews and any optional capability templates the LLM strategy explicitly uses.",
       "The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.",
       "Focused detail-review tasks are mechanically materialized from the LLM-authored plan.",
       "Final analysis_document is authored only after pre-final LLM building blocks and planned detail reviews exist.",
@@ -3504,7 +3539,7 @@
         "depends_on": [
           "deterministic_context_preparation"
         ],
-        "purpose": "Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before the fixed workbench tasks are used.",
+        "purpose": "Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before source tiering, optional capability templates, detail planning and final synthesis are used.",
         "task_file": "llm_tasks/00-analysis-strategy.md",
         "expected_output": "llm/analysis-strategy.json"
       },
@@ -3522,64 +3557,101 @@
         ]
       },
       {
+        "id": "deterministic_skill_workbench_task_materialization",
+        "controller": "cli",
+        "semantic_authority": false,
+        "depends_on": [
+          "llm_analysis_strategy",
+          "llm_source_file_tier_analysis"
+        ],
+        "purpose": "Materialize repository-specific skill workbench tasks from the LLM-authored analysis strategy without choosing semantic scope.",
+        "outputs": [
+          ".analysis/skill_workbench_tasks/*.md",
+          ".analysis/skill-workbench-task-manifest.json"
+        ]
+      },
+      {
+        "id": "llm_skill_workbench_reviews",
+        "controller": "llm",
+        "semantic_authority": true,
+        "depends_on": [
+          "deterministic_skill_workbench_task_materialization"
+        ],
+        "purpose": "Execute the LLM-planned skill workbenches as reusable semantic extraction building blocks.",
+        "outputs": [
+          ".analysis/skill_reviews/*.json"
+        ]
+      },
+      {
         "id": "llm_whole_repository_building_blocks",
         "controller": "llm",
         "semantic_authority": true,
         "depends_on": [
           "llm_analysis_strategy",
-          "llm_source_file_tier_analysis"
+          "llm_source_file_tier_analysis",
+          "llm_skill_workbench_reviews"
         ],
-        "purpose": "Author whole-repository extraction building blocks before final report synthesis.",
-        "tasks": [
+        "purpose": "Author whole-repository building blocks before final report synthesis. Optional capability templates provide reusable output shapes; repository-specific semantic emphasis comes from the LLM-planned skill workbenches.",
+        "optional_capability_templates": [
           {
             "title": "Core Assessment and Decision Summary",
-            "task_file": "llm_tasks/01-core-assessment.md",
-            "expected_output": "llm/core-assessment.json"
+            "template_file": "capability_templates/01-core-assessment.md",
+            "suggested_output": "llm/core-assessment.json",
+            "required_for_final": false
           },
           {
             "title": "Business Capabilities and Business Logic",
-            "task_file": "llm_tasks/02-business-capabilities-logic.md",
-            "expected_output": "llm/business-capabilities-logic.json"
+            "template_file": "capability_templates/02-business-capabilities-logic.md",
+            "suggested_output": "llm/business-capabilities-logic.json",
+            "required_for_final": false
           },
           {
             "title": "Interface and Contract Extraction",
-            "task_file": "llm_tasks/03-interface-contract-extraction.md",
-            "expected_output": "llm/interfaces-contracts.json"
+            "template_file": "capability_templates/03-interface-contract-extraction.md",
+            "suggested_output": "llm/interfaces-contracts.json",
+            "required_for_final": false
           },
           {
             "title": "Request and Response Examples",
-            "task_file": "llm_tasks/04-request-response-examples.md",
-            "expected_output": "llm/request-response-examples.json"
+            "template_file": "capability_templates/04-request-response-examples.md",
+            "suggested_output": "llm/request-response-examples.json",
+            "required_for_final": false
           },
           {
             "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
-            "task_file": "llm_tasks/05-openapi-soap-graphql.md",
-            "expected_output": "llm/openapi-soap-graphql.json"
+            "template_file": "capability_templates/05-openapi-soap-graphql.md",
+            "suggested_output": "llm/openapi-soap-graphql.json",
+            "required_for_final": false
           },
           {
             "title": "Flows, Scenarios and Mermaid Diagrams",
-            "task_file": "llm_tasks/06-flows-mermaid.md",
-            "expected_output": "llm/flows-mermaid.json"
+            "template_file": "capability_templates/06-flows-mermaid.md",
+            "suggested_output": "llm/flows-mermaid.json",
+            "required_for_final": false
           },
           {
             "title": "Domain, Data, Integrations and Side Effects",
-            "task_file": "llm_tasks/07-domain-data-integrations.md",
-            "expected_output": "llm/domain-data-integrations.json"
+            "template_file": "capability_templates/07-domain-data-integrations.md",
+            "suggested_output": "llm/domain-data-integrations.json",
+            "required_for_final": false
           },
           {
             "title": "Process, Quality and Readiness Assessment",
-            "task_file": "llm_tasks/08-process-quality-readiness.md",
-            "expected_output": "llm/process-quality-readiness.json"
+            "template_file": "capability_templates/08-process-quality-readiness.md",
+            "suggested_output": "llm/process-quality-readiness.json",
+            "required_for_final": false
           },
           {
             "title": "Architecture, Refactoring and Modernization Roadmap",
-            "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
-            "expected_output": "llm/architecture-refactoring-roadmap.json"
+            "template_file": "capability_templates/09-architecture-refactoring-roadmap.md",
+            "suggested_output": "llm/architecture-refactoring-roadmap.json",
+            "required_for_final": false
           },
           {
             "title": "Report Completeness and Gap Review",
-            "task_file": "llm_tasks/10-report-completeness-review.md",
-            "expected_output": "llm/report-completeness-review.json"
+            "template_file": "capability_templates/10-report-completeness-review.md",
+            "suggested_output": "llm/report-completeness-review.json",
+            "required_for_final": false
           }
         ]
       },
@@ -3588,7 +3660,8 @@
         "controller": "llm",
         "semantic_authority": true,
         "depends_on": [
-          "llm_whole_repository_building_blocks"
+          "llm_whole_repository_building_blocks",
+          "llm_skill_workbench_reviews"
         ],
         "purpose": "Choose focused detail-review areas after the whole-repository picture exists.",
         "task_file": "llm_tasks/11-detail-agent-plan.md",
@@ -7636,6 +7709,35 @@
       ],
       "open_questions": []
     },
+    "skill_workbench_synthesis": {
+      "integrated_skill_workbenches": [
+        "whole-repository-understanding",
+        "interface-contract-analysis",
+        "flow-mermaid-analysis"
+      ],
+      "summary": "The final report uses the strategy-planned skill workbenches to keep the narrative whole-repository first, preserve REST/OpenAPI and SOAP/WSDL technical drilldown, and explain the onboarding E2E flow as collaboration rather than a class list.",
+      "coverage_statement": "All three LLM-planned demo skill workbenches are incorporated before detail-review synthesis and final report authoring.",
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23,
+          "valid": true,
+          "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 6,
+          "valid": true,
+          "snippet": "/customers/onboard:"
+        },
+        {
+          "path": "docs/business-flows.md",
+          "line": 30,
+          "valid": true,
+          "snippet": "```mermaid"
+        }
+      ]
+    },
     "detail_review_synthesis": {
       "integrated_detail_reviews": [
         "src/main"
@@ -8445,6 +8547,149 @@
       }
     ]
   },
+  "llm_skill_workbench_plan": {
+    "contract_kind": "llm_strategy_skill_workbench_plan",
+    "semantic_verdict_authority": "llm",
+    "deterministic_contract_scope": "analysis_strategy.skill_application_plan shape, materialized task manifest presence and exact planned review id reconciliation only",
+    "planning_source": "llm/analysis-strategy.json",
+    "uses_analysis_strategy_artifact": true,
+    "version": "skill-workbench-v1",
+    "planning_decision_present": true,
+    "no_skill_workbenches_needed": false,
+    "planned_count": 3,
+    "materialized_task_count": 3,
+    "materialized_task_manifest_present": true,
+    "tasks": [
+      {
+        "id": "whole-repository-understanding",
+        "skill_id": "whole_repository_understanding",
+        "purpose": "Build the complete onboarding-system story before presenting the runtime flow as the central example.",
+        "scope": "Runtime source, contracts, examples, tests and configuration.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "valid": true,
+            "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+          }
+        ]
+      },
+      {
+        "id": "interface-contract-analysis",
+        "skill_id": "interface_contract_analysis",
+        "purpose": "Explain REST/OpenAPI and SOAP/WSDL surfaces with request and response semantics.",
+        "scope": "OpenAPI, WSDL, controller methods and example documents.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "valid": true,
+            "snippet": "@PostMapping(\"/onboard\")"
+          },
+          {
+            "path": "docs/api-examples.md",
+            "line": 26,
+            "valid": true,
+            "snippet": "## SOAP KYC status request"
+          }
+        ]
+      },
+      {
+        "id": "flow-mermaid-analysis",
+        "skill_id": "flow_mermaid_analysis",
+        "purpose": "Show the E2E onboarding collaboration as narrative plus Mermaid support.",
+        "scope": "Controller, service, KYC, repository, publisher and example flow documentation.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 38,
+            "valid": true,
+            "snippet": "## Mermaid overview"
+          }
+        ]
+      }
+    ],
+    "materialized_tasks": [
+      {
+        "id": "whole-repository-understanding",
+        "skill_id": "whole_repository_understanding",
+        "purpose": "Build the complete onboarding-system story before presenting the runtime flow as the central example.",
+        "scope": "Runtime source, contracts, examples, tests and configuration.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "valid": true,
+            "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/001-whole-repository-understanding.md",
+        "expected_output": "skill_reviews/whole-repository-understanding.json",
+        "status": "pending"
+      },
+      {
+        "id": "interface-contract-analysis",
+        "skill_id": "interface_contract_analysis",
+        "purpose": "Explain REST/OpenAPI and SOAP/WSDL surfaces with request and response semantics.",
+        "scope": "OpenAPI, WSDL, controller methods and example documents.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "valid": true,
+            "snippet": "@PostMapping(\"/onboard\")"
+          },
+          {
+            "path": "docs/api-examples.md",
+            "line": 26,
+            "valid": true,
+            "snippet": "## SOAP KYC status request"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/002-interface-contract-analysis.md",
+        "expected_output": "skill_reviews/interface-contract-analysis.json",
+        "status": "pending"
+      },
+      {
+        "id": "flow-mermaid-analysis",
+        "skill_id": "flow_mermaid_analysis",
+        "purpose": "Show the E2E onboarding collaboration as narrative plus Mermaid support.",
+        "scope": "Controller, service, KYC, repository, publisher and example flow documentation.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 38,
+            "valid": true,
+            "snippet": "## Mermaid overview"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/003-flow-mermaid-analysis.md",
+        "expected_output": "skill_reviews/flow-mermaid-analysis.json",
+        "status": "pending"
+      }
+    ],
+    "not_planned": [],
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 23,
+        "valid": true,
+        "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+      },
+      {
+        "path": "docs/api-examples.md",
+        "line": 38,
+        "valid": true,
+        "snippet": "## Mermaid overview"
+      }
+    ]
+  },
   "llm_detail_agent_plan": {
     "planning_stage": "post_overview_pre_final_report",
     "planning_source": "llm/detail-agent-plan.json",
@@ -8996,6 +9241,266 @@
       }
     ]
   },
+  "skill_workbench_task_manifest": {
+    "mode": "llm_strategy_skill_workbenches",
+    "version": "skill-workbench-v1",
+    "semantic_authority": "llm",
+    "deterministic_authority": "task_materialization_from_analysis_strategy_only",
+    "planning_source": "llm/analysis-strategy.json",
+    "summary": "These skill workbench tasks were mechanically materialized from analysis_strategy.skill_application_plan[]. Execute them before detail-agent planning and final report synthesis.",
+    "tasks": [
+      {
+        "id": "whole-repository-understanding",
+        "skill_id": "whole_repository_understanding",
+        "purpose": "Build the complete onboarding-system story before presenting the runtime flow as the central example.",
+        "scope": "Runtime source, contracts, examples, tests and configuration.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "valid": true,
+            "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/001-whole-repository-understanding.md",
+        "expected_output": "skill_reviews/whole-repository-understanding.json",
+        "status": "pending"
+      },
+      {
+        "id": "interface-contract-analysis",
+        "skill_id": "interface_contract_analysis",
+        "purpose": "Explain REST/OpenAPI and SOAP/WSDL surfaces with request and response semantics.",
+        "scope": "OpenAPI, WSDL, controller methods and example documents.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "valid": true,
+            "snippet": "@PostMapping(\"/onboard\")"
+          },
+          {
+            "path": "docs/api-examples.md",
+            "line": 26,
+            "valid": true,
+            "snippet": "## SOAP KYC status request"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/002-interface-contract-analysis.md",
+        "expected_output": "skill_reviews/interface-contract-analysis.json",
+        "status": "pending"
+      },
+      {
+        "id": "flow-mermaid-analysis",
+        "skill_id": "flow_mermaid_analysis",
+        "purpose": "Show the E2E onboarding collaboration as narrative plus Mermaid support.",
+        "scope": "Controller, service, KYC, repository, publisher and example flow documentation.",
+        "focus": [],
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 38,
+            "valid": true,
+            "snippet": "## Mermaid overview"
+          }
+        ],
+        "task_file": "skill_workbench_tasks/003-flow-mermaid-analysis.md",
+        "expected_output": "skill_reviews/flow-mermaid-analysis.json",
+        "status": "pending"
+      }
+    ]
+  },
+  "capability_template_manifest": {
+    "mode": "optional_llm_capability_templates",
+    "semantic_authority": "llm",
+    "deterministic_authority": "template_catalog_shape_only",
+    "summary": "These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the LLM strategy explicitly uses their outputs.",
+    "templates": [
+      {
+        "id": "core_assessment",
+        "title": "Core Assessment and Decision Summary",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/01-core-assessment.md",
+        "suggested_output": "llm/core-assessment.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "business_capabilities_logic",
+        "title": "Business Capabilities and Business Logic",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/02-business-capabilities-logic.md",
+        "suggested_output": "llm/business-capabilities-logic.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "interface_contract_extraction",
+        "title": "Interface and Contract Extraction",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/03-interface-contract-extraction.md",
+        "suggested_output": "llm/interfaces-contracts.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "request_response_examples",
+        "title": "Request and Response Examples",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/04-request-response-examples.md",
+        "suggested_output": "llm/request-response-examples.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "openapi_soap_graphql",
+        "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/05-openapi-soap-graphql.md",
+        "suggested_output": "llm/openapi-soap-graphql.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "flows_mermaid",
+        "title": "Flows, Scenarios and Mermaid Diagrams",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/06-flows-mermaid.md",
+        "suggested_output": "llm/flows-mermaid.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "domain_data_integrations",
+        "title": "Domain, Data, Integrations and Side Effects",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/07-domain-data-integrations.md",
+        "suggested_output": "llm/domain-data-integrations.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "process_quality_readiness",
+        "title": "Process, Quality and Readiness Assessment",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/08-process-quality-readiness.md",
+        "suggested_output": "llm/process-quality-readiness.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "architecture_refactoring_roadmap",
+        "title": "Architecture, Refactoring and Modernization Roadmap",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/09-architecture-refactoring-roadmap.md",
+        "suggested_output": "llm/architecture-refactoring-roadmap.json",
+        "status": "available_when_llm_strategy_selects"
+      },
+      {
+        "id": "report_completeness_review",
+        "title": "Report Completeness and Gap Review",
+        "task_kind": "capability_template",
+        "required_for_final": false,
+        "template_file": "capability_templates/10-report-completeness-review.md",
+        "suggested_output": "llm/report-completeness-review.json",
+        "status": "available_when_llm_strategy_selects"
+      }
+    ]
+  },
+  "capability_templates": [
+    {
+      "id": "core_assessment",
+      "title": "Core Assessment and Decision Summary",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/01-core-assessment.md",
+      "suggested_output": "llm/core-assessment.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "business_capabilities_logic",
+      "title": "Business Capabilities and Business Logic",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/02-business-capabilities-logic.md",
+      "suggested_output": "llm/business-capabilities-logic.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "interface_contract_extraction",
+      "title": "Interface and Contract Extraction",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/03-interface-contract-extraction.md",
+      "suggested_output": "llm/interfaces-contracts.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "request_response_examples",
+      "title": "Request and Response Examples",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/04-request-response-examples.md",
+      "suggested_output": "llm/request-response-examples.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "openapi_soap_graphql",
+      "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/05-openapi-soap-graphql.md",
+      "suggested_output": "llm/openapi-soap-graphql.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "flows_mermaid",
+      "title": "Flows, Scenarios and Mermaid Diagrams",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/06-flows-mermaid.md",
+      "suggested_output": "llm/flows-mermaid.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "domain_data_integrations",
+      "title": "Domain, Data, Integrations and Side Effects",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/07-domain-data-integrations.md",
+      "suggested_output": "llm/domain-data-integrations.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "process_quality_readiness",
+      "title": "Process, Quality and Readiness Assessment",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/08-process-quality-readiness.md",
+      "suggested_output": "llm/process-quality-readiness.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "architecture_refactoring_roadmap",
+      "title": "Architecture, Refactoring and Modernization Roadmap",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/09-architecture-refactoring-roadmap.md",
+      "suggested_output": "llm/architecture-refactoring-roadmap.json",
+      "status": "available_when_llm_strategy_selects"
+    },
+    {
+      "id": "report_completeness_review",
+      "title": "Report Completeness and Gap Review",
+      "task_kind": "capability_template",
+      "required_for_final": false,
+      "template_file": "capability_templates/10-report-completeness-review.md",
+      "suggested_output": "llm/report-completeness-review.json",
+      "status": "available_when_llm_strategy_selects"
+    }
+  ],
   "source_file_tier_reviews": [
     {
       "task_id": "source-tier-0001",
@@ -9787,6 +10292,214 @@
         }
       ],
       "open_questions": []
+    }
+  ],
+  "skill_workbench_reviews": [
+    {
+      "id": "flow-mermaid-analysis",
+      "skill_id": "flow_mermaid_analysis",
+      "version": "skill-workbench-v1",
+      "review_status": "complete",
+      "summary": "The key E2E flow is customer onboarding: client request, service orchestration, KYC, risk decision, persistence and event publication.",
+      "scope": "Reviewed service orchestration, API examples and business-flow documentation to prepare flow content for final synthesis.",
+      "findings": [
+        {
+          "title": "Onboarding collaboration crosses API, KYC, risk, persistence and event exit.",
+          "description": "The service sequence gives the final report a business-readable flow and a technical drilldown path.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23,
+              "valid": true,
+              "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+              "line": 16,
+              "valid": true,
+              "snippet": "kafkaTemplate.send(\"customer.onboarding.started\", customerId, event);"
+            },
+            {
+              "path": "docs/business-flows.md",
+              "line": 30,
+              "valid": true,
+              "snippet": "```mermaid"
+            }
+          ]
+        }
+      ],
+      "outputs_for_later_synthesis": [
+        {
+          "kind": "e2e_flow",
+          "description": "Use a Mermaid-supported onboarding flow in the final document, with narrative explaining how code blocks collaborate rather than only listing files.",
+          "evidence": [
+            {
+              "path": "docs/business-flows.md",
+              "line": 30,
+              "valid": true,
+              "snippet": "```mermaid"
+            }
+          ]
+        }
+      ],
+      "confidence": "high for the happy path; failure and production retry behavior should stay bounded to visible source/tests.",
+      "open_questions": [],
+      "evidence": [
+        {
+          "path": "docs/business-flows.md",
+          "line": 30,
+          "valid": true,
+          "snippet": "```mermaid"
+        }
+      ]
+    },
+    {
+      "id": "interface-contract-analysis",
+      "skill_id": "interface_contract_analysis",
+      "version": "skill-workbench-v1",
+      "review_status": "complete",
+      "summary": "The repository exposes a REST onboarding/status surface and includes OpenAPI plus SOAP/WSDL material for contract-level drilldown.",
+      "scope": "Reviewed controller methods, OpenAPI contract files, SOAP/WSDL resources and example documents.",
+      "findings": [
+        {
+          "title": "REST entry and contract examples are available for request/response explanation.",
+          "description": "The controller defines onboarding and status operations while OpenAPI/example files provide human-readable contract evidence.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21,
+              "valid": true,
+              "snippet": "@PostMapping(\"/onboard\")"
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 6,
+              "valid": true,
+              "snippet": "/customers/onboard:"
+            },
+            {
+              "path": "docs/api-examples.md",
+              "line": 26,
+              "valid": true,
+              "snippet": "## SOAP KYC status request"
+            }
+          ]
+        },
+        {
+          "title": "SOAP/WSDL resources are supporting integration contracts.",
+          "description": "The WSDL material describes KYC/customer-verification style contract surfaces that should be kept in technical drilldown.",
+          "evidence": [
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 29,
+              "valid": true,
+              "snippet": "<operation name=\"GetKycStatus\">"
+            }
+          ]
+        }
+      ],
+      "outputs_for_later_synthesis": [
+        {
+          "kind": "technical_contract_drilldown",
+          "description": "Use REST/OpenAPI as system entry evidence and SOAP/WSDL as integration-contract evidence in the final technical view.",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 6,
+              "valid": true,
+              "snippet": "/customers/onboard:"
+            },
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 29,
+              "valid": true,
+              "snippet": "<operation name=\"GetKycStatus\">"
+            }
+          ]
+        }
+      ],
+      "confidence": "high for visible demo contracts; production auth remains an open architectural question.",
+      "open_questions": [
+        {
+          "question": "Which production authorization policy protects the REST operations?",
+          "why_it_matters": "The controller and contracts show operations, but not production security enforcement.",
+          "owner": "architecture",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 12,
+              "valid": true,
+              "snippet": "@RestController"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 21,
+          "valid": true,
+          "snippet": "@PostMapping(\"/onboard\")"
+        }
+      ]
+    },
+    {
+      "id": "whole-repository-understanding",
+      "skill_id": "whole_repository_understanding",
+      "version": "skill-workbench-v1",
+      "review_status": "complete",
+      "summary": "The demo repository is a compact customer-onboarding service with runtime Java code, REST/OpenAPI and SOAP/WSDL contract material, Markdown examples, tests and configuration.",
+      "scope": "Reviewed the runtime service/controller, API examples, tests and configuration as the whole-repository basis for later final synthesis.",
+      "findings": [
+        {
+          "title": "Onboarding runtime is the business center, but contracts and tests are part of the system evidence.",
+          "description": "The service orchestrates onboarding while the examples and tests explain request/status behavior and expected decisions.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23,
+              "valid": true,
+              "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+            },
+            {
+              "path": "docs/api-examples.md",
+              "line": 3,
+              "valid": true,
+              "snippet": "## Start onboarding request"
+            },
+            {
+              "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+              "line": 1,
+              "valid": true,
+              "snippet": "package com.acme.onboarding;"
+            }
+          ]
+        }
+      ],
+      "outputs_for_later_synthesis": [
+        {
+          "kind": "whole_repository_story",
+          "description": "Use the onboarding decision path as the lead narrative, while keeping contract, test and configuration evidence visible as first-class repository families.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23,
+              "valid": true,
+              "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+            }
+          ]
+        }
+      ],
+      "confidence": "high for the demo repository because the inventory is compact and all included files have Tier 1 cards.",
+      "open_questions": [],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23,
+          "valid": true,
+          "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+        }
+      ]
     }
   ],
   "source_family_detail_reviews": [
@@ -10671,6 +11384,126 @@
         ]
       },
       {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Primary collaboration and side-effect sequence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "valid": true,
+            "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "reason": "Event exit evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 16,
+            "valid": true,
+            "snippet": "kafkaTemplate.send(\"customer.onboarding.started\", customerId, event);"
+          }
+        ]
+      },
+      {
+        "path": "docs/business-flows.md",
+        "reason": "Human-readable flow and Mermaid support.",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 30,
+            "valid": true,
+            "snippet": "```mermaid"
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "REST entrypoint evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "valid": true,
+            "snippet": "@PostMapping(\"/onboard\")"
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "reason": "OpenAPI operation evidence.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6,
+            "valid": true,
+            "snippet": "/customers/onboard:"
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "SOAP/WSDL integration evidence.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29,
+            "valid": true,
+            "snippet": "<operation name=\"GetKycStatus\">"
+          }
+        ]
+      },
+      {
+        "path": "docs/api-examples.md",
+        "reason": "Request/response examples.",
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 26,
+            "valid": true,
+            "snippet": "## SOAP KYC status request"
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Primary runtime orchestration evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "valid": true,
+            "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+          }
+        ]
+      },
+      {
+        "path": "docs/api-examples.md",
+        "reason": "Human-readable API and flow examples.",
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 3,
+            "valid": true,
+            "snippet": "## Start onboarding request"
+          }
+        ]
+      },
+      {
+        "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "reason": "Executable behavior examples.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1,
+            "valid": true,
+            "snippet": "package com.acme.onboarding;"
+          }
+        ]
+      },
+      {
         "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
         "reason": "REST entrypoint and status endpoint behavior.",
         "evidence": [
@@ -10762,83 +11595,17 @@
     {
       "id": "analysis_strategy",
       "title": "LLM Repository Analysis Strategy",
+      "task_kind": "workflow_task",
+      "required_for_final": true,
       "task_file": "llm_tasks/00-analysis-strategy.md",
       "expected_output": "llm/analysis-strategy.json",
       "status": "pending"
     },
     {
-      "id": "core_assessment",
-      "title": "Core Assessment and Decision Summary",
-      "task_file": "llm_tasks/01-core-assessment.md",
-      "expected_output": "llm/core-assessment.json",
-      "status": "pending"
-    },
-    {
-      "id": "business_capabilities_logic",
-      "title": "Business Capabilities and Business Logic",
-      "task_file": "llm_tasks/02-business-capabilities-logic.md",
-      "expected_output": "llm/business-capabilities-logic.json",
-      "status": "pending"
-    },
-    {
-      "id": "interface_contract_extraction",
-      "title": "Interface and Contract Extraction",
-      "task_file": "llm_tasks/03-interface-contract-extraction.md",
-      "expected_output": "llm/interfaces-contracts.json",
-      "status": "pending"
-    },
-    {
-      "id": "request_response_examples",
-      "title": "Request and Response Examples",
-      "task_file": "llm_tasks/04-request-response-examples.md",
-      "expected_output": "llm/request-response-examples.json",
-      "status": "pending"
-    },
-    {
-      "id": "openapi_soap_graphql",
-      "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
-      "task_file": "llm_tasks/05-openapi-soap-graphql.md",
-      "expected_output": "llm/openapi-soap-graphql.json",
-      "status": "pending"
-    },
-    {
-      "id": "flows_mermaid",
-      "title": "Flows, Scenarios and Mermaid Diagrams",
-      "task_file": "llm_tasks/06-flows-mermaid.md",
-      "expected_output": "llm/flows-mermaid.json",
-      "status": "pending"
-    },
-    {
-      "id": "domain_data_integrations",
-      "title": "Domain, Data, Integrations and Side Effects",
-      "task_file": "llm_tasks/07-domain-data-integrations.md",
-      "expected_output": "llm/domain-data-integrations.json",
-      "status": "pending"
-    },
-    {
-      "id": "process_quality_readiness",
-      "title": "Process, Quality and Readiness Assessment",
-      "task_file": "llm_tasks/08-process-quality-readiness.md",
-      "expected_output": "llm/process-quality-readiness.json",
-      "status": "pending"
-    },
-    {
-      "id": "architecture_refactoring_roadmap",
-      "title": "Architecture, Refactoring and Modernization Roadmap",
-      "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
-      "expected_output": "llm/architecture-refactoring-roadmap.json",
-      "status": "pending"
-    },
-    {
-      "id": "report_completeness_review",
-      "title": "Report Completeness and Gap Review",
-      "task_file": "llm_tasks/10-report-completeness-review.md",
-      "expected_output": "llm/report-completeness-review.json",
-      "status": "pending"
-    },
-    {
       "id": "detail_agent_plan",
       "title": "LLM Source-Family Detail Agent Plan",
+      "task_kind": "workflow_task",
+      "required_for_final": true,
       "task_file": "llm_tasks/11-detail-agent-plan.md",
       "expected_output": "llm/detail-agent-plan.json",
       "status": "pending"
@@ -10846,6 +11613,8 @@
     {
       "id": "analysis_document",
       "title": "Final LLM Authored Analysis Document",
+      "task_kind": "workflow_task",
+      "required_for_final": true,
       "task_file": "llm_tasks/12-analysis-document.md",
       "expected_output": "llm/analysis-document.json",
       "status": "pending"
@@ -10874,7 +11643,7 @@
     "analysis_data_json_path": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo/.analysis/report/analysis-data.json",
     "index_html": true,
     "analysis_data_json": true,
-    "generated_at": "2026-06-10T12:14:01Z",
+    "generated_at": "2026-06-10T18:06:16Z",
     "renderer": "src/report.ts"
   },
   "llm_output_presence": {
@@ -10891,6 +11660,11 @@
     "analysis_document.executive_decision_basis.recommendation": true,
     "analysis_document.executive_decision_basis.confidence": true,
     "analysis_document.executive_decision_basis.evidence": true,
+    "analysis_document.skill_workbench_synthesis": true,
+    "analysis_document.skill_workbench_synthesis.integrated_skill_workbenches": true,
+    "analysis_document.skill_workbench_synthesis.summary": true,
+    "analysis_document.skill_workbench_synthesis.coverage_statement": true,
+    "analysis_document.skill_workbench_synthesis.evidence": true,
     "analysis_document.detail_review_synthesis": true,
     "analysis_document.detail_review_synthesis.integrated_detail_reviews": true,
     "analysis_document.detail_review_synthesis.summary": true,
@@ -11885,6 +12659,48 @@
     "duplicate_file_card_examples": [],
     "blocked_task_examples": [],
     "summary": "Every included source-inventory file has a valid LLM-authored Tier 1 file card."
+  },
+  "source_tier_backlog": {
+    "contract_kind": "source_tier_execution_backlog",
+    "semantic_authority": "llm",
+    "deterministic_authority": "task/output reconciliation only",
+    "total_tasks": 1,
+    "complete_tasks": 1,
+    "incomplete_tasks": 0,
+    "missing_tasks": 0,
+    "partial_tasks": 0,
+    "invalid_tasks": 0,
+    "invalid_file_card_tasks": 0,
+    "blocked_tasks": 0,
+    "total_task_files": 32,
+    "authored_file_cards_in_task_outputs": 32,
+    "complete": true,
+    "next_tasks": [],
+    "rows": [
+      {
+        "id": "source-tier-0001",
+        "task_file": "source_tier_tasks/source-tier-0001.md",
+        "expected_output": "source_tiers/source-tier-0001.json",
+        "file_count": 32,
+        "first_path": "src/main/java/com/acme/onboarding/Customer.java",
+        "last_path": "README.md",
+        "output_exists": true,
+        "valid_json": true,
+        "review_status": "complete",
+        "card_count": 32,
+        "missing_file_count": 0,
+        "missing_file_examples": [],
+        "extra_file_count": 0,
+        "duplicate_file_count": 0,
+        "error": "",
+        "extra_file_examples": [],
+        "duplicate_file_examples": [],
+        "invalid_file_card_count": 0,
+        "invalid_file_card_examples": [],
+        "status": "complete"
+      }
+    ],
+    "summary": "All Tier 1 task outputs are present and complete."
   },
   "source_inventory_accounting": {
     "contract_kind": "source_inventory_accounting",
@@ -13794,9 +14610,11 @@
     "open_questions": []
   },
   "llm_artifacts": {
+    "contract_kind": "required_llm_workflow_artifact_status",
+    "deterministic_contract_scope": "required LLM workflow artifacts only; optional capability template outputs do not block final readiness unless the LLM final report depends on them",
     "complete": true,
-    "total_count": 13,
-    "ready_count": 13,
+    "total_count": 3,
+    "ready_count": 3,
     "missing_count": 0,
     "artifacts": [
       {
@@ -13809,129 +14627,6 @@
         "top_level_keys": [
           "analysis_coverage",
           "analysis_strategy"
-        ]
-      },
-      {
-        "title": "Core Assessment and Decision Summary",
-        "task_file": "llm_tasks/01-core-assessment.md",
-        "expected_output": "llm/core-assessment.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "assessment"
-        ]
-      },
-      {
-        "title": "Business Capabilities and Business Logic",
-        "task_file": "llm_tasks/02-business-capabilities-logic.md",
-        "expected_output": "llm/business-capabilities-logic.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "business_logic",
-          "capabilities",
-          "domain_model"
-        ]
-      },
-      {
-        "title": "Interface and Contract Extraction",
-        "task_file": "llm_tasks/03-interface-contract-extraction.md",
-        "expected_output": "llm/interfaces-contracts.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "interfaces"
-        ]
-      },
-      {
-        "title": "Request and Response Examples",
-        "task_file": "llm_tasks/04-request-response-examples.md",
-        "expected_output": "llm/request-response-examples.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "documentation"
-        ]
-      },
-      {
-        "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
-        "task_file": "llm_tasks/05-openapi-soap-graphql.md",
-        "expected_output": "llm/openapi-soap-graphql.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "documentation"
-        ]
-      },
-      {
-        "title": "Flows, Scenarios and Mermaid Diagrams",
-        "task_file": "llm_tasks/06-flows-mermaid.md",
-        "expected_output": "llm/flows-mermaid.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "documentation",
-          "flows"
-        ]
-      },
-      {
-        "title": "Domain, Data, Integrations and Side Effects",
-        "task_file": "llm_tasks/07-domain-data-integrations.md",
-        "expected_output": "llm/domain-data-integrations.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "data_model",
-          "integrations",
-          "side_effects"
-        ]
-      },
-      {
-        "title": "Process, Quality and Readiness Assessment",
-        "task_file": "llm_tasks/08-process-quality-readiness.md",
-        "expected_output": "llm/process-quality-readiness.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "findings",
-          "process",
-          "quality"
-        ]
-      },
-      {
-        "title": "Architecture, Refactoring and Modernization Roadmap",
-        "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
-        "expected_output": "llm/architecture-refactoring-roadmap.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "architecture",
-          "findings",
-          "modernization",
-          "refactoring"
-        ]
-      },
-      {
-        "title": "Report Completeness and Gap Review",
-        "task_file": "llm_tasks/10-report-completeness-review.md",
-        "expected_output": "llm/report-completeness-review.json",
-        "exists": true,
-        "valid_json": true,
-        "has_content": true,
-        "top_level_keys": [
-          "analysis_coverage",
-          "goal_coverage",
-          "open_questions",
-          "recommended_follow_up_tasks"
         ]
       },
       {
@@ -13962,28 +14657,93 @@
   },
   "analysis_document_prerequisite_coverage": {
     "complete": true,
-    "stage": "pre_final_building_blocks",
+    "stage": "required_pre_final_workflow_artifacts",
     "required_before": "llm/analysis-document.json",
-    "total_count": 12,
-    "ready_count": 12,
+    "deterministic_contract_scope": "analysis strategy and detail plan artifact presence only; optional capability-template outputs are not a fixed final-readiness gate",
+    "total_count": 2,
+    "ready_count": 2,
     "missing_count": 0,
     "ready_outputs": [
       "llm/analysis-strategy.json",
-      "llm/core-assessment.json",
-      "llm/business-capabilities-logic.json",
-      "llm/interfaces-contracts.json",
-      "llm/request-response-examples.json",
-      "llm/openapi-soap-graphql.json",
-      "llm/flows-mermaid.json",
-      "llm/domain-data-integrations.json",
-      "llm/process-quality-readiness.json",
-      "llm/architecture-refactoring-roadmap.json",
-      "llm/report-completeness-review.json",
       "llm/detail-agent-plan.json"
     ],
     "missing_outputs": [],
     "missing": [],
-    "summary": "All pre-final LLM building-block artifacts are present before the final analysis document."
+    "summary": "All required pre-final LLM workflow artifacts are present before the final analysis document. Optional capability-template outputs are incorporated only when the LLM chose to use them."
+  },
+  "skill_workbench_coverage": {
+    "contract_kind": "llm_strategy_skill_workbench_execution",
+    "semantic_verdict_authority": "llm",
+    "deterministic_contract_scope": "planned skill ids from analysis_strategy, materialized task ids and executed skill_reviews ids only; no semantic scoring of skill-review quality",
+    "complete": true,
+    "status": "complete",
+    "planning_source": "llm/analysis-strategy.json",
+    "uses_analysis_strategy_artifact": true,
+    "source_tier_complete_before_skill_workbenches": true,
+    "materialized_task_manifest_present": true,
+    "planning_decision_present": true,
+    "no_skill_workbenches_needed": false,
+    "planned_count": 3,
+    "materialized_count": 3,
+    "executed_count": 3,
+    "pending_materialization": [],
+    "pending_execution": [],
+    "unexpected_reviews": [],
+    "planned_skill_workbenches": [
+      "flow-mermaid-analysis",
+      "interface-contract-analysis",
+      "whole-repository-understanding"
+    ],
+    "materialized_skill_workbenches": [
+      "flow-mermaid-analysis",
+      "interface-contract-analysis",
+      "whole-repository-understanding"
+    ],
+    "executed_skill_workbenches": [
+      "flow-mermaid-analysis",
+      "interface-contract-analysis",
+      "whole-repository-understanding"
+    ],
+    "summary": "3/3 LLM-planned skill workbenches executed."
+  },
+  "analysis_document_skill_workbench_synthesis": {
+    "complete": true,
+    "status": "current",
+    "executed_count": 3,
+    "integrated_count": 3,
+    "missing_integrations": [],
+    "extra_integrations": [],
+    "executed_skill_workbenches": [
+      "flow-mermaid-analysis",
+      "interface-contract-analysis",
+      "whole-repository-understanding"
+    ],
+    "integrated_skill_workbenches": [
+      "flow-mermaid-analysis",
+      "interface-contract-analysis",
+      "whole-repository-understanding"
+    ],
+    "summary": "The final report uses the strategy-planned skill workbenches to keep the narrative whole-repository first, preserve REST/OpenAPI and SOAP/WSDL technical drilldown, and explain the onboarding E2E flow as collaboration rather than a class list.",
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 23,
+        "valid": true,
+        "snippet": "public OnboardingResult startOnboarding(OnboardingRequest request) {"
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "line": 6,
+        "valid": true,
+        "snippet": "/customers/onboard:"
+      },
+      {
+        "path": "docs/business-flows.md",
+        "line": 30,
+        "valid": true,
+        "snippet": "```mermaid"
+      }
+    ]
   },
   "analysis_document_detail_review_synthesis": {
     "complete": true,
@@ -14057,10 +14817,11 @@
     "pre_final_detail_plan_ready": true,
     "detail_reviews_complete": true,
     "detail_synthesis_current": true,
+    "skill_workbench_synthesis_current": true,
     "state": "final_llm_authored_report",
     "visible_report_source": "analysis_document.sections",
     "section_count": 5,
-    "message": "The visible human report is rendered from LLM-authored analysis_document.sections after pre-final extraction artifacts, planned detail reviews and LLM report-quality review were completed."
+    "message": "The visible human report is rendered from LLM-authored analysis_document.sections after pre-final extraction artifacts, planned skill workbenches, planned detail reviews and LLM report-quality review were completed."
   },
   "analysis_pipeline_contract": {
     "contract_kind": "llm_driven_analysis_pipeline_contract",
@@ -14068,10 +14829,11 @@
     "deterministic_contract_scope": "stage order, artifact presence and authority boundaries only",
     "complete": true,
     "missing": [],
-    "stage_count": 9,
-    "required_stage_count": 9,
+    "stage_count": 11,
+    "required_stage_count": 11,
     "analysis_strategy_complete": true,
     "source_file_tier_analysis_complete": true,
+    "skill_workbench_reviews_complete": true,
     "pre_final_building_blocks_complete": true,
     "planned_detail_reviews_complete": true,
     "final_after_detail_reviews": true,
@@ -14121,6 +14883,7 @@
       "requirements_trace": true,
       "report_quality_review": true,
       "source_file_tier_reviews": 1,
+      "skill_workbench_reviews": 3,
       "detail_agent_plan": true,
       "detail_reviews": 1
     },
@@ -14132,6 +14895,7 @@
       "file_line_evidence_validation",
       "source_tier_file_card_path_and_evidence_contract",
       "source_inventory_accounting",
+      "llm_strategy_skill_workbench_execution",
       "llm_analysis_pipeline_order",
       "pre_final_artifact_order",
       "detail_review_execution_and_integration",
@@ -14140,6 +14904,7 @@
       "static_html_artifact_materialization"
     ],
     "analysis_skill_catalog_contract_complete": true,
+    "skill_workbench_contract_complete": true,
     "analysis_pipeline_contract_complete": true,
     "analysis_pipeline_kind": "llm_driven_overview_detail_final_report",
     "non_authoritative_navigation_artifacts": [
@@ -14163,16 +14928,17 @@
     "semantic_verdict_authority": "llm",
     "final_verdict_source": "analysis_document.report_quality_review.verdict",
     "final_verdict": "decision_ready",
-    "deterministic_contract_scope": "prerequisite artifacts, explicit LLM goal-trace references, Tier 1 source-file analysis coverage, detail-review integration, renderer contract, evidence/index contracts, and LLM-authored verdict/rationale presence only",
+    "deterministic_contract_scope": "prerequisite artifacts, explicit LLM goal-trace references, Tier 1 source-file analysis coverage, LLM-planned skill workbench execution, detail-review integration, renderer contract, evidence/index contracts, and LLM-authored verdict/rationale presence only",
     "failures": []
   },
   "target_coverage": [
     {
       "id": "existing-harness-execution",
       "title": "Existing harness execution",
-      "description": "Cognianalysis is launched from Codex or another harness through skills/CLI, not by a custom coding agent.",
+      "description": "Cognianalysis is launched from an existing harness through AGENTS.md, harness-native instruction files, CLI commands or optional MCP tools, not by a custom coding agent.",
       "addressed_by": [
         "resources/AGENTS.md",
+        "harness-native instruction files",
         ".agents/skills/cognianalysis/SKILL.md",
         "CLI commands",
         "optional cognianalysis mcp"
@@ -14204,9 +14970,9 @@
     {
       "id": "llm-first-semantic-extraction",
       "title": "LLM-first semantic extraction",
-      "description": "Codex extracts meaning. The CLI prepares context and validates evidence only.",
+      "description": "The agent harness/LLM extracts meaning. The CLI prepares context and validates evidence only.",
       "addressed_by": [
-        "Main skill workflow",
+        "Main harness workflow",
         "llm_instructions.md",
         "source-capsules.json"
       ],
@@ -14257,7 +15023,7 @@
     {
       "id": "llm-authored-analysis-strategy",
       "title": "LLM-authored analysis strategy",
-      "description": "The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before fixed workbench tasks and final synthesis.",
+      "description": "The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before source tiering, skill workbenches, optional templates and final synthesis.",
       "addressed_by": [
         "00-analysis-strategy.md",
         "llm/analysis-strategy.json",
@@ -14328,7 +15094,7 @@
     {
       "id": "whole-codebase-source-inventory-accounting",
       "title": "Whole-codebase source inventory accounting",
-      "description": "Every included repository file is accounted for by evidence or explicit Codex/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.",
+      "description": "Every included repository file is accounted for by evidence or explicit agent harness/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.",
       "addressed_by": [
         "source-inventory.json",
         "analysis_coverage in LLM outputs",
@@ -14411,8 +15177,8 @@
       "title": "Whole-repository documentation",
       "description": "The report starts with a complete repository narrative and source-family map before any module-specific deep review.",
       "addressed_by": [
-        "01-core-assessment.md repository_wide_view",
-        "module surface reviews",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/01-core-assessment.md repository_wide_view when selected",
         "source inventory accounting contract",
         "LLM-authored analysis document sections"
       ],
@@ -14851,7 +15617,7 @@
       "title": "Business capabilities",
       "description": "Business capabilities, actors, domain terms and use cases.",
       "addressed_by": [
-        "02-business-capabilities-logic.md",
+        "LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md",
         "LLM-authored capability/business sections"
       ],
       "expected_outputs": [
@@ -14882,9 +15648,8 @@
       "title": "Functional view",
       "description": "Decision-ready functional view of what the system does, including capabilities, actors, use cases and user/system flows.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "02-business-capabilities-logic.md",
-        "06-flows-mermaid.md",
+        "LLM-planned skill workbench reviews",
+        "optional functional/flow capability templates when selected",
         "LLM-authored functional sections"
       ],
       "expected_outputs": [
@@ -14915,7 +15680,7 @@
       "title": "Business logic",
       "description": "Validations, decisions, calculations, status transitions, authorization behavior and examples.",
       "addressed_by": [
-        "02-business-capabilities-logic.md",
+        "LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md",
         "LLM-authored business logic sections"
       ],
       "expected_outputs": [
@@ -14953,8 +15718,7 @@
       "title": "Interfaces and contracts",
       "description": "HTTP/REST, GraphQL, events, jobs, CLI commands, UI routes, SOAP, OpenAPI, database touchpoints and external calls.",
       "addressed_by": [
-        "03-interface-contract-extraction.md",
-        "05-openapi-soap-graphql.md",
+        "LLM-selected interface/contract workbench or optional capability_templates/03-interface-contract-extraction.md and 05-openapi-soap-graphql.md",
         "LLM-authored interface/contract sections"
       ],
       "expected_outputs": [
@@ -14985,7 +15749,7 @@
       "title": "Request/response examples",
       "description": "Req/res examples from docs/tests/contracts or inferred examples clearly marked as inferred.",
       "addressed_by": [
-        "04-request-response-examples.md",
+        "LLM-selected example extraction workbench or optional capability_templates/04-request-response-examples.md",
         "LLM-authored example/drilldown sections"
       ],
       "expected_outputs": [
@@ -15023,7 +15787,7 @@
       "title": "OpenAPI / Swagger extraction",
       "description": "OpenAPI/Swagger operations, schemas and examples where present.",
       "addressed_by": [
-        "05-openapi-soap-graphql.md",
+        "LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md",
         "LLM-authored contract/drilldown sections"
       ],
       "expected_outputs": [
@@ -15061,7 +15825,7 @@
       "title": "SOAP / WSDL / XSD extraction",
       "description": "SOAP/WSDL/XSD operations, messages, faults, SOAP actions and envelope examples where present.",
       "addressed_by": [
-        "05-openapi-soap-graphql.md",
+        "LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md",
         "LLM-authored contract/drilldown sections"
       ],
       "expected_outputs": [
@@ -15099,10 +15863,8 @@
       "title": "Technical view",
       "description": "Decision-ready technical view covering APIs, interfaces, contracts, architecture, data stores and integrations.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "03-interface-contract-extraction.md",
-        "07-domain-data-integrations.md",
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-planned skill workbench reviews",
+        "optional technical capability templates when selected",
         "LLM-authored technical sections"
       ],
       "expected_outputs": [
@@ -15133,7 +15895,7 @@
       "title": "Flows with Mermaid",
       "description": "Happy paths, failure paths, state changes, side effects and external calls represented with Mermaid source.",
       "addressed_by": [
-        "06-flows-mermaid.md",
+        "LLM-selected flow workbench or optional capability_templates/06-flows-mermaid.md",
         "LLM-authored flow component blocks"
       ],
       "expected_outputs": [
@@ -15171,7 +15933,7 @@
       "title": "Domain, data and integrations",
       "description": "Domain entities, data stores, state models, integrations and side effects.",
       "addressed_by": [
-        "07-domain-data-integrations.md",
+        "LLM-selected domain/data/integration workbench or optional capability_templates/07-domain-data-integrations.md",
         "LLM-authored domain/data/integration sections"
       ],
       "expected_outputs": [
@@ -15223,7 +15985,7 @@
       "title": "Architecture assessment",
       "description": "Modules, responsibilities, dependencies, external systems, runtime hints and architecture observations.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored architecture sections"
       ],
       "expected_outputs": [
@@ -15254,7 +16016,7 @@
       "title": "Process and readiness assessment",
       "description": "Tests, CI/CD, release, observability, configuration, local setup and operational readiness.",
       "addressed_by": [
-        "08-process-quality-readiness.md",
+        "LLM-selected process/quality workbench or optional capability_templates/08-process-quality-readiness.md",
         "LLM-authored process/readiness sections"
       ],
       "expected_outputs": [
@@ -15292,8 +16054,7 @@
       "title": "Bugs, vulnerabilities and quality findings",
       "description": "Visible bugs, weaknesses, security risks, maintainability, documentation, testability and operability findings.",
       "addressed_by": [
-        "08-process-quality-readiness.md",
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected quality/architecture workbenches or optional process/architecture capability templates",
         "LLM-authored findings/risk sections"
       ],
       "expected_outputs": [
@@ -15332,8 +16093,8 @@
       "title": "Structured decision basis",
       "description": "Structured analysis document that supports decisions with verdicts, trade-offs, risks, recommendations and evidence.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "10-report-completeness-review.md",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/10-report-completeness-review.md when selected",
         "LLM-authored decision sections"
       ],
       "expected_outputs": [
@@ -15364,7 +16125,7 @@
       "title": "Refactoring and modernization roadmap",
       "description": "Practical roadmap with benefit, risk, effort, candidate files and evidence.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored roadmap sections"
       ],
       "expected_outputs": [
@@ -15402,7 +16163,7 @@
       "title": "Target architecture / new tech stack",
       "description": "Refactoring and modernization route toward a target architecture or new technology stack where justified by evidence.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored target-architecture sections"
       ],
       "expected_outputs": [
@@ -15440,8 +16201,8 @@
       "title": "Tool alternative positioning",
       "description": "Evidence-based positioning as an alternative or complement to consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, including automation and handoff boundaries.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "10-report-completeness-review.md",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/10-report-completeness-review.md when selected",
         "LLM-authored decision sections"
       ],
       "expected_outputs": [
@@ -15612,9 +16373,10 @@
     {
       "id": "existing-harness-execution",
       "title": "Existing harness execution",
-      "description": "Cognianalysis is launched from Codex or another harness through skills/CLI, not by a custom coding agent.",
+      "description": "Cognianalysis is launched from an existing harness through AGENTS.md, harness-native instruction files, CLI commands or optional MCP tools, not by a custom coding agent.",
       "addressed_by": [
         "resources/AGENTS.md",
+        "harness-native instruction files",
         ".agents/skills/cognianalysis/SKILL.md",
         "CLI commands",
         "optional cognianalysis mcp"
@@ -15646,9 +16408,9 @@
     {
       "id": "llm-first-semantic-extraction",
       "title": "LLM-first semantic extraction",
-      "description": "Codex extracts meaning. The CLI prepares context and validates evidence only.",
+      "description": "The agent harness/LLM extracts meaning. The CLI prepares context and validates evidence only.",
       "addressed_by": [
-        "Main skill workflow",
+        "Main harness workflow",
         "llm_instructions.md",
         "source-capsules.json"
       ],
@@ -15699,7 +16461,7 @@
     {
       "id": "llm-authored-analysis-strategy",
       "title": "LLM-authored analysis strategy",
-      "description": "The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before fixed workbench tasks and final synthesis.",
+      "description": "The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before source tiering, skill workbenches, optional templates and final synthesis.",
       "addressed_by": [
         "00-analysis-strategy.md",
         "llm/analysis-strategy.json",
@@ -15770,7 +16532,7 @@
     {
       "id": "whole-codebase-source-inventory-accounting",
       "title": "Whole-codebase source inventory accounting",
-      "description": "Every included repository file is accounted for by evidence or explicit Codex/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.",
+      "description": "Every included repository file is accounted for by evidence or explicit agent harness/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.",
       "addressed_by": [
         "source-inventory.json",
         "analysis_coverage in LLM outputs",
@@ -15853,8 +16615,8 @@
       "title": "Whole-repository documentation",
       "description": "The report starts with a complete repository narrative and source-family map before any module-specific deep review.",
       "addressed_by": [
-        "01-core-assessment.md repository_wide_view",
-        "module surface reviews",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/01-core-assessment.md repository_wide_view when selected",
         "source inventory accounting contract",
         "LLM-authored analysis document sections"
       ],
@@ -16293,7 +17055,7 @@
       "title": "Business capabilities",
       "description": "Business capabilities, actors, domain terms and use cases.",
       "addressed_by": [
-        "02-business-capabilities-logic.md",
+        "LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md",
         "LLM-authored capability/business sections"
       ],
       "expected_outputs": [
@@ -16324,9 +17086,8 @@
       "title": "Functional view",
       "description": "Decision-ready functional view of what the system does, including capabilities, actors, use cases and user/system flows.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "02-business-capabilities-logic.md",
-        "06-flows-mermaid.md",
+        "LLM-planned skill workbench reviews",
+        "optional functional/flow capability templates when selected",
         "LLM-authored functional sections"
       ],
       "expected_outputs": [
@@ -16357,7 +17118,7 @@
       "title": "Business logic",
       "description": "Validations, decisions, calculations, status transitions, authorization behavior and examples.",
       "addressed_by": [
-        "02-business-capabilities-logic.md",
+        "LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md",
         "LLM-authored business logic sections"
       ],
       "expected_outputs": [
@@ -16395,8 +17156,7 @@
       "title": "Interfaces and contracts",
       "description": "HTTP/REST, GraphQL, events, jobs, CLI commands, UI routes, SOAP, OpenAPI, database touchpoints and external calls.",
       "addressed_by": [
-        "03-interface-contract-extraction.md",
-        "05-openapi-soap-graphql.md",
+        "LLM-selected interface/contract workbench or optional capability_templates/03-interface-contract-extraction.md and 05-openapi-soap-graphql.md",
         "LLM-authored interface/contract sections"
       ],
       "expected_outputs": [
@@ -16427,7 +17187,7 @@
       "title": "Request/response examples",
       "description": "Req/res examples from docs/tests/contracts or inferred examples clearly marked as inferred.",
       "addressed_by": [
-        "04-request-response-examples.md",
+        "LLM-selected example extraction workbench or optional capability_templates/04-request-response-examples.md",
         "LLM-authored example/drilldown sections"
       ],
       "expected_outputs": [
@@ -16465,7 +17225,7 @@
       "title": "OpenAPI / Swagger extraction",
       "description": "OpenAPI/Swagger operations, schemas and examples where present.",
       "addressed_by": [
-        "05-openapi-soap-graphql.md",
+        "LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md",
         "LLM-authored contract/drilldown sections"
       ],
       "expected_outputs": [
@@ -16503,7 +17263,7 @@
       "title": "SOAP / WSDL / XSD extraction",
       "description": "SOAP/WSDL/XSD operations, messages, faults, SOAP actions and envelope examples where present.",
       "addressed_by": [
-        "05-openapi-soap-graphql.md",
+        "LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md",
         "LLM-authored contract/drilldown sections"
       ],
       "expected_outputs": [
@@ -16541,10 +17301,8 @@
       "title": "Technical view",
       "description": "Decision-ready technical view covering APIs, interfaces, contracts, architecture, data stores and integrations.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "03-interface-contract-extraction.md",
-        "07-domain-data-integrations.md",
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-planned skill workbench reviews",
+        "optional technical capability templates when selected",
         "LLM-authored technical sections"
       ],
       "expected_outputs": [
@@ -16575,7 +17333,7 @@
       "title": "Flows with Mermaid",
       "description": "Happy paths, failure paths, state changes, side effects and external calls represented with Mermaid source.",
       "addressed_by": [
-        "06-flows-mermaid.md",
+        "LLM-selected flow workbench or optional capability_templates/06-flows-mermaid.md",
         "LLM-authored flow component blocks"
       ],
       "expected_outputs": [
@@ -16613,7 +17371,7 @@
       "title": "Domain, data and integrations",
       "description": "Domain entities, data stores, state models, integrations and side effects.",
       "addressed_by": [
-        "07-domain-data-integrations.md",
+        "LLM-selected domain/data/integration workbench or optional capability_templates/07-domain-data-integrations.md",
         "LLM-authored domain/data/integration sections"
       ],
       "expected_outputs": [
@@ -16665,7 +17423,7 @@
       "title": "Architecture assessment",
       "description": "Modules, responsibilities, dependencies, external systems, runtime hints and architecture observations.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored architecture sections"
       ],
       "expected_outputs": [
@@ -16696,7 +17454,7 @@
       "title": "Process and readiness assessment",
       "description": "Tests, CI/CD, release, observability, configuration, local setup and operational readiness.",
       "addressed_by": [
-        "08-process-quality-readiness.md",
+        "LLM-selected process/quality workbench or optional capability_templates/08-process-quality-readiness.md",
         "LLM-authored process/readiness sections"
       ],
       "expected_outputs": [
@@ -16734,8 +17492,7 @@
       "title": "Bugs, vulnerabilities and quality findings",
       "description": "Visible bugs, weaknesses, security risks, maintainability, documentation, testability and operability findings.",
       "addressed_by": [
-        "08-process-quality-readiness.md",
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected quality/architecture workbenches or optional process/architecture capability templates",
         "LLM-authored findings/risk sections"
       ],
       "expected_outputs": [
@@ -16774,8 +17531,8 @@
       "title": "Structured decision basis",
       "description": "Structured analysis document that supports decisions with verdicts, trade-offs, risks, recommendations and evidence.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "10-report-completeness-review.md",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/10-report-completeness-review.md when selected",
         "LLM-authored decision sections"
       ],
       "expected_outputs": [
@@ -16806,7 +17563,7 @@
       "title": "Refactoring and modernization roadmap",
       "description": "Practical roadmap with benefit, risk, effort, candidate files and evidence.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored roadmap sections"
       ],
       "expected_outputs": [
@@ -16844,7 +17601,7 @@
       "title": "Target architecture / new tech stack",
       "description": "Refactoring and modernization route toward a target architecture or new technology stack where justified by evidence.",
       "addressed_by": [
-        "09-architecture-refactoring-roadmap.md",
+        "LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md",
         "LLM-authored target-architecture sections"
       ],
       "expected_outputs": [
@@ -16882,8 +17639,8 @@
       "title": "Tool alternative positioning",
       "description": "Evidence-based positioning as an alternative or complement to consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, including automation and handoff boundaries.",
       "addressed_by": [
-        "01-core-assessment.md",
-        "10-report-completeness-review.md",
+        "LLM-planned skill workbench reviews",
+        "optional capability_templates/10-report-completeness-review.md when selected",
         "LLM-authored decision sections"
       ],
       "expected_outputs": [

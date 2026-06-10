@@ -20,7 +20,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'llm-authored-analysis-strategy',
     title: 'LLM-authored analysis strategy',
-    description: 'The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before fixed workbench tasks and final synthesis.',
+    description: 'The repository-specific analysis approach, source slices, skill plan and report intent are authored by the LLM before source tiering, skill workbenches, optional templates and final synthesis.',
     addressed_by: ['00-analysis-strategy.md', 'llm/analysis-strategy.json', 'analysis_pipeline llm_analysis_strategy stage'],
     expected_outputs: ['llm_analysis_strategy.uses_pre_analysis_strategy_artifact=true', 'llm_analysis_strategy.strategy_present=true'],
     output_keys: ['llm_analysis_strategy.uses_pre_analysis_strategy_artifact', 'llm_analysis_strategy.strategy_present']
@@ -53,7 +53,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'whole-repository-documentation',
     title: 'Whole-repository documentation',
     description: 'The report starts with a complete repository narrative and source-family map before any module-specific deep review.',
-    addressed_by: ['01-core-assessment.md repository_wide_view', 'module surface reviews', 'source inventory accounting contract', 'LLM-authored analysis document sections'],
+    addressed_by: ['LLM-planned skill workbench reviews', 'optional capability_templates/01-core-assessment.md repository_wide_view when selected', 'source inventory accounting contract', 'LLM-authored analysis document sections'],
     expected_outputs: ['assessment.repository_wide_view', 'source_inventory_accounting.complete=true'],
     output_keys: ['assessment.repository_wide_view', 'source_inventory_accounting.complete']
   },
@@ -133,7 +133,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'business-capabilities',
     title: 'Business capabilities',
     description: 'Business capabilities, actors, domain terms and use cases.',
-    addressed_by: ['02-business-capabilities-logic.md', 'LLM-authored capability/business sections'],
+    addressed_by: ['LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md', 'LLM-authored capability/business sections'],
     expected_outputs: ['capabilities[]'],
     output_keys: ['capabilities']
   },
@@ -141,7 +141,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'functional-view',
     title: 'Functional view',
     description: 'Decision-ready functional view of what the system does, including capabilities, actors, use cases and user/system flows.',
-    addressed_by: ['01-core-assessment.md', '02-business-capabilities-logic.md', '06-flows-mermaid.md', 'LLM-authored functional sections'],
+    addressed_by: ['LLM-planned skill workbench reviews', 'optional functional/flow capability templates when selected', 'LLM-authored functional sections'],
     expected_outputs: ['assessment.functional_view'],
     output_keys: ['assessment.functional_view']
   },
@@ -149,7 +149,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'business-logic',
     title: 'Business logic',
     description: 'Validations, decisions, calculations, status transitions, authorization behavior and examples.',
-    addressed_by: ['02-business-capabilities-logic.md', 'LLM-authored business logic sections'],
+    addressed_by: ['LLM-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md', 'LLM-authored business logic sections'],
     expected_outputs: ['business_logic[]', 'capabilities[].business_logic[]'],
     output_keys: ['business_logic', 'capabilities']
   },
@@ -157,7 +157,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'interfaces-contracts',
     title: 'Interfaces and contracts',
     description: 'HTTP/REST, GraphQL, events, jobs, CLI commands, UI routes, SOAP, OpenAPI, database touchpoints and external calls.',
-    addressed_by: ['03-interface-contract-extraction.md', '05-openapi-soap-graphql.md', 'LLM-authored interface/contract sections'],
+    addressed_by: ['LLM-selected interface/contract workbench or optional capability_templates/03-interface-contract-extraction.md and 05-openapi-soap-graphql.md', 'LLM-authored interface/contract sections'],
     expected_outputs: ['interfaces[]'],
     output_keys: ['interfaces']
   },
@@ -165,7 +165,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'request-response-examples',
     title: 'Request/response examples',
     description: 'Req/res examples from docs/tests/contracts or inferred examples clearly marked as inferred.',
-    addressed_by: ['04-request-response-examples.md', 'LLM-authored example/drilldown sections'],
+    addressed_by: ['LLM-selected example extraction workbench or optional capability_templates/04-request-response-examples.md', 'LLM-authored example/drilldown sections'],
     expected_outputs: ['documentation.request_response_examples[]', 'interfaces[].examples[]'],
     output_keys: ['documentation.request_response_examples', 'interfaces']
   },
@@ -173,7 +173,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'openapi-swagger',
     title: 'OpenAPI / Swagger extraction',
     description: 'OpenAPI/Swagger operations, schemas and examples where present.',
-    addressed_by: ['05-openapi-soap-graphql.md', 'LLM-authored contract/drilldown sections'],
+    addressed_by: ['LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md', 'LLM-authored contract/drilldown sections'],
     expected_outputs: ['documentation.openapi[]', 'interfaces[].openapi'],
     output_keys: ['documentation.openapi', 'interfaces']
   },
@@ -181,7 +181,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'soap-wsdl-xsd',
     title: 'SOAP / WSDL / XSD extraction',
     description: 'SOAP/WSDL/XSD operations, messages, faults, SOAP actions and envelope examples where present.',
-    addressed_by: ['05-openapi-soap-graphql.md', 'LLM-authored contract/drilldown sections'],
+    addressed_by: ['LLM-selected contract workbench or optional capability_templates/05-openapi-soap-graphql.md', 'LLM-authored contract/drilldown sections'],
     expected_outputs: ['documentation.soap[]', 'interfaces[].soap'],
     output_keys: ['documentation.soap', 'interfaces']
   },
@@ -189,7 +189,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'technical-view',
     title: 'Technical view',
     description: 'Decision-ready technical view covering APIs, interfaces, contracts, architecture, data stores and integrations.',
-    addressed_by: ['01-core-assessment.md', '03-interface-contract-extraction.md', '07-domain-data-integrations.md', '09-architecture-refactoring-roadmap.md', 'LLM-authored technical sections'],
+    addressed_by: ['LLM-planned skill workbench reviews', 'optional technical capability templates when selected', 'LLM-authored technical sections'],
     expected_outputs: ['assessment.technical_view'],
     output_keys: ['assessment.technical_view']
   },
@@ -197,7 +197,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'mermaid-flows',
     title: 'Flows with Mermaid',
     description: 'Happy paths, failure paths, state changes, side effects and external calls represented with Mermaid source.',
-    addressed_by: ['06-flows-mermaid.md', 'LLM-authored flow component blocks'],
+    addressed_by: ['LLM-selected flow workbench or optional capability_templates/06-flows-mermaid.md', 'LLM-authored flow component blocks'],
     expected_outputs: ['flows[].mermaid', 'documentation.mermaid_flows[]'],
     output_keys: ['flows', 'documentation.mermaid_flows']
   },
@@ -205,7 +205,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'domain-data-integrations',
     title: 'Domain, data and integrations',
     description: 'Domain entities, data stores, state models, integrations and side effects.',
-    addressed_by: ['07-domain-data-integrations.md', 'LLM-authored domain/data/integration sections'],
+    addressed_by: ['LLM-selected domain/data/integration workbench or optional capability_templates/07-domain-data-integrations.md', 'LLM-authored domain/data/integration sections'],
     expected_outputs: ['domain_model', 'data_model', 'integrations[]', 'side_effects[]'],
     output_keys: ['domain_model', 'data_model', 'integrations', 'side_effects']
   },
@@ -213,7 +213,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'architecture-assessment',
     title: 'Architecture assessment',
     description: 'Modules, responsibilities, dependencies, external systems, runtime hints and architecture observations.',
-    addressed_by: ['09-architecture-refactoring-roadmap.md', 'LLM-authored architecture sections'],
+    addressed_by: ['LLM-selected architecture workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'LLM-authored architecture sections'],
     expected_outputs: ['architecture'],
     output_keys: ['architecture']
   },
@@ -221,7 +221,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'process-readiness',
     title: 'Process and readiness assessment',
     description: 'Tests, CI/CD, release, observability, configuration, local setup and operational readiness.',
-    addressed_by: ['08-process-quality-readiness.md', 'LLM-authored process/readiness sections'],
+    addressed_by: ['LLM-selected process/quality workbench or optional capability_templates/08-process-quality-readiness.md', 'LLM-authored process/readiness sections'],
     expected_outputs: ['process', 'quality'],
     output_keys: ['process', 'quality']
   },
@@ -229,7 +229,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'quality-risks-findings',
     title: 'Bugs, vulnerabilities and quality findings',
     description: 'Visible bugs, weaknesses, security risks, maintainability, documentation, testability and operability findings.',
-    addressed_by: ['08-process-quality-readiness.md', '09-architecture-refactoring-roadmap.md', 'LLM-authored findings/risk sections'],
+    addressed_by: ['LLM-selected quality/architecture workbenches or optional process/architecture capability templates', 'LLM-authored findings/risk sections'],
     expected_outputs: ['findings[]', 'quality.risks[]', 'quality.security[]'],
     output_keys: ['findings', 'quality']
   },
@@ -237,7 +237,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'structured-decision-basis',
     title: 'Structured decision basis',
     description: 'Structured analysis document that supports decisions with verdicts, trade-offs, risks, recommendations and evidence.',
-    addressed_by: ['01-core-assessment.md', '10-report-completeness-review.md', 'LLM-authored decision sections'],
+    addressed_by: ['LLM-planned skill workbench reviews', 'optional capability_templates/10-report-completeness-review.md when selected', 'LLM-authored decision sections'],
     expected_outputs: ['assessment.decision_basis'],
     output_keys: ['assessment.decision_basis']
   },
@@ -245,7 +245,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'refactoring-modernization',
     title: 'Refactoring and modernization roadmap',
     description: 'Practical roadmap with benefit, risk, effort, candidate files and evidence.',
-    addressed_by: ['09-architecture-refactoring-roadmap.md', 'LLM-authored roadmap sections'],
+    addressed_by: ['LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'LLM-authored roadmap sections'],
     expected_outputs: ['refactoring[]', 'modernization[]'],
     output_keys: ['refactoring', 'modernization']
   },
@@ -253,7 +253,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'target-architecture-tech-stack',
     title: 'Target architecture / new tech stack',
     description: 'Refactoring and modernization route toward a target architecture or new technology stack where justified by evidence.',
-    addressed_by: ['09-architecture-refactoring-roadmap.md', 'LLM-authored target-architecture sections'],
+    addressed_by: ['LLM-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'LLM-authored target-architecture sections'],
     expected_outputs: ['architecture.target_architecture', 'modernization[].target_state'],
     output_keys: ['architecture.target_architecture', 'modernization']
   },
@@ -261,7 +261,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'tool-alternative-positioning',
     title: 'Tool alternative positioning',
     description: 'Evidence-based positioning as an alternative or complement to consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, including automation and handoff boundaries.',
-    addressed_by: ['01-core-assessment.md', '10-report-completeness-review.md', 'LLM-authored decision sections'],
+    addressed_by: ['LLM-planned skill workbench reviews', 'optional capability_templates/10-report-completeness-review.md when selected', 'LLM-authored decision sections'],
     expected_outputs: ['assessment.tool_positioning'],
     output_keys: ['assessment.tool_positioning']
   },

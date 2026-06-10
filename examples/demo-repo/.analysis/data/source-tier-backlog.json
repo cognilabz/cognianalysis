@@ -1,0 +1,42 @@
+{
+  "contract_kind": "source_tier_execution_backlog",
+  "semantic_authority": "llm",
+  "deterministic_authority": "task/output reconciliation only",
+  "total_tasks": 1,
+  "complete_tasks": 1,
+  "incomplete_tasks": 0,
+  "missing_tasks": 0,
+  "partial_tasks": 0,
+  "invalid_tasks": 0,
+  "invalid_file_card_tasks": 0,
+  "blocked_tasks": 0,
+  "total_task_files": 32,
+  "authored_file_cards_in_task_outputs": 32,
+  "complete": true,
+  "next_tasks": [],
+  "rows": [
+    {
+      "id": "source-tier-0001",
+      "task_file": "source_tier_tasks/source-tier-0001.md",
+      "expected_output": "source_tiers/source-tier-0001.json",
+      "file_count": 32,
+      "first_path": "src/main/java/com/acme/onboarding/Customer.java",
+      "last_path": "README.md",
+      "output_exists": true,
+      "valid_json": true,
+      "review_status": "complete",
+      "card_count": 32,
+      "missing_file_count": 0,
+      "missing_file_examples": [],
+      "extra_file_count": 0,
+      "duplicate_file_count": 0,
+      "error": "",
+      "extra_file_examples": [],
+      "duplicate_file_examples": [],
+      "invalid_file_card_count": 0,
+      "invalid_file_card_examples": [],
+      "status": "complete"
+    }
+  ],
+  "summary": "All Tier 1 task outputs are present and complete."
+}
