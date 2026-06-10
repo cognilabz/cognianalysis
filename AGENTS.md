@@ -2,11 +2,13 @@
 
 This repository is configured for Cognianalysis.
 
-Use the main skill:
+Use the main workflow. In Codex, call the packaged skill:
 
 ```text
 Use the cognianalysis skill.
 ```
+
+In other agent harnesses, read this file as the project instruction file and execute the same workflow below.
 
 ## Rules
 
@@ -28,4 +30,4 @@ Use the cognianalysis skill.
 - If behavior cannot be proven, add it to `open_questions`.
 - After final report JSON extraction, run `cognianalysis finalize .` and `cognianalysis audit-report .`. Finalization aggregates, computes artifact/inventory contracts, renders the HTML report and validates evidence. It does not judge semantic completeness, documentation quality or management readiness.
 
-The CLI is implemented in TypeScript. It prepares context, validates evidence, checks deterministic artifact/reference contracts and renders reports. Codex/LLM performs the semantic extraction, final report authoring and readiness judgment through `analysis_document.requirements_trace`, explicit `goal_contract_refs` and `analysis_document.report_quality_review`.
+The CLI is implemented in TypeScript. It prepares context, validates evidence, checks deterministic artifact/reference contracts and renders reports. The agent harness/LLM performs the semantic extraction, final report authoring and readiness judgment through `analysis_document.requirements_trace`, explicit `goal_contract_refs` and `analysis_document.report_quality_review`.

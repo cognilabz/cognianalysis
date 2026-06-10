@@ -1,7 +1,7 @@
 {
   "name": "cognianalysis",
   "version": "0.7.0",
-  "description": "LLM-first source-code analysis, documentation and decision-reporting library for Codex-compatible workflows.",
+  "description": "LLM-first source-code analysis, documentation and decision-reporting library for existing agent harness workflows.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
@@ -35,7 +35,12 @@
     "node": ">=18"
   },
   "keywords": [
+    "agent-harness",
     "codex",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "aider",
     "cognianalysis",
     "agent-skills",
     "codebase-understanding",

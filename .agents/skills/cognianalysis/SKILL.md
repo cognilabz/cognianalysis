@@ -55,6 +55,20 @@ and Codex should still execute the full workflow below without asking the user t
 18. Check the finalization and audit output for the LLM analysis strategy, Tier 1 file-card coverage, artifact/reference contracts, source inventory accounting, final prerequisite artifacts, source-family/detail-agent execution, LLM-authored report-quality review, LLM-authored report contract and evidence validation.
 19. If evidence validation, LLM analysis strategy, Tier 1 file-card coverage, source inventory accounting, artifact contract checks, or the LLM-authored `requirements_trace`/`report_quality_review` show gaps, fix invalid evidence, missing `.analysis/source_tiers/*.json` file cards, incomplete `analysis_coverage` references or missing whole-repo/source-family/report statements and rerun `cognianalysis finalize .` and `cognianalysis audit-report .`.
 
+## Companion skill map
+
+This is the only end-to-end agent skill. Keep report finalization and HTML rendering here instead of using a separate report-writer skill.
+
+The focused companion skills are optional workbench prompts for deeper extraction:
+
+| Agent skill | Main analysis catalog ids |
+|---|---|
+| `business-extraction` | `business_extraction`, `domain_data_integration_analysis` |
+| `interface-contract-analysis` | `interface_contract_analysis`, `request_response_examples` |
+| `flow-mermaid-analysis` | `flow_mermaid_analysis` |
+
+The generated `.analysis/data/analysis-skill-catalog.json` is a reusable LLM capability map, not a set of separate Codex entrypoints. The LLM may reference those catalog ids in `analysis_strategy.skill_application_plan[]`, while this main skill remains responsible for prepare, Tier 1 coverage, building blocks, detail planning, final report authoring, finalization and audit.
+
 ## Required target capability trace context
 
 The assessment must address all target capabilities, not only documentation generation:

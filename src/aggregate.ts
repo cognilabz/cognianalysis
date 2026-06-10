@@ -80,7 +80,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   const hasLlmAuthoredOutput = hasLlmAuthoredOutputPresence(llmOutputPresence, sourceTier.reviews, detail.reviews);
   const status = hasLlmAuthoredOutput
     ? { state: 'llm_extracted', message: 'LLM-authored analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
-    : { state: 'awaiting_llm_extraction', message: 'Codex/LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by the LLM from source.' };
+    : { state: 'awaiting_llm_extraction', message: 'Agent harness/LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by the LLM from source.' };
 
   const tasks = loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [] }).tasks || [];
   const analysisPipeline = analysisPipelineArtifact(tasks);
@@ -1473,6 +1473,6 @@ function pendingAnalysisCoverage(): any {
     summary: 'Pending whole-codebase coverage accounting.',
     inspected_files: [],
     deferred_files: [],
-    open_questions: ['Codex has not yet recorded which files from the source inventory were semantically inspected and which Tier 1 file cards still need to be authored.']
+    open_questions: ['The agent harness/LLM has not yet recorded which files from the source inventory were semantically inspected and which Tier 1 file cards still need to be authored.']
   };
 }

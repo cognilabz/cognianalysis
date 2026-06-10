@@ -880,8 +880,8 @@ Use these as reusable analysis capabilities, not as deterministic routing rules.
 {
   "repo_name": "demo-repo",
   "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-  "analyzed_at": "2026-06-10T12:02:08Z",
-  "commit": "8c3460b410a0007d97dd974add18969b0f558391",
+  "analyzed_at": "2026-06-10T12:14:00Z",
+  "commit": "f975972ef58cd244659331e3613f0df369cc2314",
   "repo_type": "source-inventory",
   "languages": {
     "Java": 261

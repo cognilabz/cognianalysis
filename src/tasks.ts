@@ -310,7 +310,7 @@ function sourceFamilyInventory(codeMap: CodeMap): any {
 function overview(profile: any, modules: any[], signals: any[], glossary: string[], capsules: any[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any, tierManifest: any): string {
   return `# Cognianalysis · LLM-first Instructions
 
-This repository must be analyzed semantically by Codex/LLM. The generated code map is a navigation aid, not the source of final truth.
+This repository must be analyzed semantically by an agent harness/LLM. The generated code map is a navigation aid, not the source of final truth.
 
 ## Non-negotiable rules
 
@@ -425,7 +425,7 @@ ${JSON.stringify(componentLibrary, null, 2)}
 
 ## Top glossary terms
 
-Domain terms must be extracted by Codex/LLM from source evidence, not from generated word lists.
+Domain terms must be extracted by the agent harness/LLM from source evidence, not from generated word lists.
 
 ## Context capsules
 
@@ -463,7 +463,7 @@ function taskBody(task: LlmTaskDefinition, profile: any, modules: any[], signals
   };
   return `# ${task.title}
 
-You are running inside Codex as the semantic extraction step for Cognianalysis.
+You are running inside an agent harness as the semantic extraction step for Cognianalysis.
 
 Task id: \`${task.id}\`
 

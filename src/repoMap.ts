@@ -206,7 +206,7 @@ export function buildRepoMap(root: string, opts: { maxFileSize?: number, capsule
       deterministic_build_tool_detection: false,
       deterministic_contract_detection: false,
       implementation_language: 'TypeScript',
-      description: 'The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. Codex/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence.'
+      description: 'The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. The agent harness/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence.'
     }
   };
 }

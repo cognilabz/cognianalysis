@@ -39,12 +39,33 @@ src/                         TypeScript source
   mcp.ts                     optional stdio-style tool bridge
 
 dist/                        compiled JavaScript used by the cognianalysis binary
-resources/                   AGENTS.md and .agents/skills assets
+resources/                   source templates for AGENTS.md and .agents/skills assets
 schemas/                     JSON schema/example assets
 examples/demo-repo           runnable demo repository
 ```
 
 The runtime uses Node built-ins only. TypeScript is only required when rebuilding from source.
+
+## Skill layout
+
+There are two different skill layers:
+
+| Layer | Purpose | Source of truth |
+|---|---|---|
+| Codex agent skills | Human/agent entrypoints copied by `cognianalysis init-codex .` | `resources/agents/skills/*/SKILL.md` |
+| LLM analysis skills | Fine-grained reusable capabilities used inside generated analysis tasks | `src/analysisSkills.ts` and `.analysis/data/analysis-skill-catalog.json` |
+
+The only end-to-end Codex entrypoint is `cognianalysis`. It owns prepare, Tier 1 file cards, building-block extraction, detail planning, final report authoring, HTML rendering, finalization and audit.
+
+The companion Codex skills are intentionally narrow workbench prompts:
+
+| Codex skill | Internal catalog alignment |
+|---|---|
+| `business-extraction` | `business_extraction`, `domain_data_integration_analysis` |
+| `interface-contract-analysis` | `interface_contract_analysis`, `request_response_examples` |
+| `flow-mermaid-analysis` | `flow_mermaid_analysis` |
+
+The internal catalog remains more granular because it is used for LLM planning, requirement traceability and report completeness. It is not a list of separate agent entrypoints.
 
 ## Target picture
 

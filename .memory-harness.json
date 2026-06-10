@@ -79,6 +79,11 @@
           "type": "accessed",
           "at": "2026-06-10T12:09:13.911Z",
           "actor": "system"
+        },
+        {
+          "type": "accessed",
+          "at": "2026-06-10T12:12:49.401Z",
+          "actor": "system"
         }
       ],
       "pinned": false,
@@ -110,8 +115,8 @@
       "updatedAt": "2026-06-10T12:02:17.459Z",
       "trust": 0.81,
       "importance": 0.61,
-      "accessCount": 3,
-      "lastAccessedAt": "2026-06-10T12:09:13.911Z"
+      "accessCount": 4,
+      "lastAccessedAt": "2026-06-10T12:12:49.401Z"
     }
   ],
   "episodes": [],
@@ -124,29 +129,29 @@
   },
   "metrics": {
     "memoriesAdded": 1,
-    "searches": 57,
+    "searches": 59,
     "feedback": 0,
     "dreams": 0,
     "contradictionsResolved": 0,
-    "noHitSearches": 54,
-    "averageSearchResults": 0.05263157894736842,
+    "noHitSearches": 55,
+    "averageSearchResults": 0.06779661016949153,
     "averageQualityScore": 1,
     "truthGate": {
       "excluded": 0,
       "reviewed": 0,
-      "missingClaim": 3,
+      "missingClaim": 4,
       "suppressedClaims": 0,
       "revalidate": 0
     },
     "dreamActions": {},
     "sessions": {
       "global": {
-        "searches": 57,
-        "noHitSearches": 54,
-        "averageResults": 0.05263157894736842
+        "searches": 59,
+        "noHitSearches": 55,
+        "averageResults": 0.06779661016949153
       }
     },
-    "lowConfidenceSearches": 3
+    "lowConfidenceSearches": 4
   },
   "feedback": [],
   "claims": [
@@ -2203,6 +2208,75 @@
       "previousHash": "c_1xbteh7",
       "payloadHash": "c_alhht7",
       "hash": "c_1slkhu0"
+    },
+    {
+      "id": "audit_ssapg0",
+      "type": "search.run",
+      "timestamp": "2026-06-10T12:12:49.401Z",
+      "userId": "michaelhubeny",
+      "metadata": {
+        "resultCount": 1,
+        "deniedByPolicy": 0,
+        "profileId": "default",
+        "intent": "preference_procedural"
+      },
+      "journalType": "memory.retrieved",
+      "sequence": 111,
+      "previousHash": "c_1slkhu0",
+      "payloadHash": "c_1xy8n3z",
+      "hash": "c_fyeyzt"
+    },
+    {
+      "id": "audit_eymei1",
+      "type": "search.run",
+      "timestamp": "2026-06-10T12:12:49.407Z",
+      "userId": "michaelhubeny",
+      "metadata": {
+        "resultCount": 0,
+        "deniedByPolicy": 0,
+        "profileId": "default",
+        "intent": "project_context"
+      },
+      "journalType": "memory.retrieved",
+      "sequence": 112,
+      "previousHash": "c_fyeyzt",
+      "payloadHash": "c_9nku44",
+      "hash": "c_1967gx9"
+    },
+    {
+      "id": "audit_2tj3ri",
+      "type": "search.run",
+      "timestamp": "2026-06-10T12:12:49.409Z",
+      "userId": "michaelhubeny",
+      "metadata": {
+        "resource": "evidence-pack",
+        "contextPackId": "ctx_wwz8ld",
+        "query": "audit cognianalysis for hardcoded regex/string semantic decisions outside repo map",
+        "memories": 0
+      },
+      "journalType": "context_pack.created",
+      "sequence": 113,
+      "previousHash": "c_1967gx9",
+      "payloadHash": "c_1xtxug5",
+      "hash": "c_1qz5w2j"
+    },
+    {
+      "id": "audit_199iveb",
+      "type": "search.run",
+      "timestamp": "2026-06-10T12:12:49.410Z",
+      "userId": "michaelhubeny",
+      "metadata": {
+        "resource": "coding-context-pack",
+        "contextPackId": "code_ctx_1r291h8",
+        "query": "audit cognianalysis for hardcoded regex/string semantic decisions outside repo map",
+        "sections": 1,
+        "memories": 1
+      },
+      "journalType": "memory.retrieved",
+      "sequence": 114,
+      "previousHash": "c_1qz5w2j",
+      "payloadHash": "c_6c3xx0",
+      "hash": "c_j88z4o"
     }
   ],
   "webhooks": [],
@@ -7798,6 +7872,83 @@
       "truthDecisions": [],
       "temporalState": {
         "generatedAt": "2026-06-10T12:09:13.916Z",
+        "stale": 0,
+        "valid": 0,
+        "needsVerification": 0,
+        "contradicted": 0
+      },
+      "summary": {
+        "included": 0,
+        "warnings": 0,
+        "excluded": 0,
+        "stale": 0,
+        "contradictions": 0
+      }
+    },
+    {
+      "schemaVersion": "1.0",
+      "id": "ctx_wwz8ld",
+      "generatedAt": "2026-06-10T12:12:49.408Z",
+      "query": "audit cognianalysis for hardcoded regex/string semantic decisions outside repo map",
+      "actor": {
+        "userId": "michaelhubeny"
+      },
+      "userId": "michaelhubeny",
+      "scope": {
+        "userId": "michaelhubeny"
+      },
+      "retrievalProfile": {
+        "id": "default",
+        "label": "Default benchmark profile",
+        "weights": {
+          "semantic": 0.24761904761904763,
+          "keyword": 0.22857142857142856,
+          "entity": 0.15238095238095237,
+          "temporal": 0.07619047619047618,
+          "behavioral": 0.047619047619047616,
+          "trust": 0.1714285714285714,
+          "graph": 0.05714285714285714,
+          "access": 0.019047619047619046
+        },
+        "updatedAt": "2026-06-10T09:56:57.345Z",
+        "provenance": "constructor"
+      },
+      "queryIntent": {
+        "query": "audit cognianalysis for hardcoded regex/string semantic decisions outside repo map",
+        "intent": "project_context",
+        "confidence": 0.74,
+        "recommendedMode": "hybrid",
+        "reasons": [
+          "project context language detected"
+        ],
+        "plan": {
+          "query": "audit cognianalysis for hardcoded regex/string semantic decisions outside repo map",
+          "queryType": "project_state",
+          "secondaryTypes": [],
+          "intent": "project_context",
+          "recommendedMode": "hybrid",
+          "strategies": [
+            "project",
+            "keyword",
+            "temporal",
+            "semantic"
+          ],
+          "explanation": [
+            "project context language detected"
+          ],
+          "confidence": 0.74
+        }
+      },
+      "tokenBudget": 900,
+      "hash": "c_vspnlh",
+      "context": "",
+      "results": [],
+      "excludedResults": [],
+      "policyDecisions": [],
+      "graphPaths": [],
+      "truthDecisions": [],
+      "temporalState": {
+        "generatedAt": "2026-06-10T12:12:49.408Z",
         "stale": 0,
         "valid": 0,
         "needsVerification": 0,

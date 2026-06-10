@@ -4,16 +4,16 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'existing-harness-execution',
     title: 'Existing harness execution',
-    description: 'Cognianalysis is launched from Codex or another harness through skills/CLI, not by a custom coding agent.',
-    addressed_by: ['resources/AGENTS.md', '.agents/skills/cognianalysis/SKILL.md', 'CLI commands', 'optional cognianalysis mcp'],
+    description: 'Cognianalysis is launched from an existing harness through AGENTS.md, harness-native instruction files, CLI commands or optional MCP tools, not by a custom coding agent.',
+    addressed_by: ['resources/AGENTS.md', 'harness-native instruction files', '.agents/skills/cognianalysis/SKILL.md', 'CLI commands', 'optional cognianalysis mcp'],
     expected_outputs: ['.analysis/llm_tasks/*.md', '.analysis/llm/*.json'],
     output_keys: ['tasks']
   },
   {
     id: 'llm-first-semantic-extraction',
     title: 'LLM-first semantic extraction',
-    description: 'Codex extracts meaning. The CLI prepares context and validates evidence only.',
-    addressed_by: ['Main skill workflow', 'llm_instructions.md', 'source-capsules.json'],
+    description: 'The agent harness/LLM extracts meaning. The CLI prepares context and validates evidence only.',
+    addressed_by: ['Main harness workflow', 'llm_instructions.md', 'source-capsules.json'],
     expected_outputs: ['assessment', 'capabilities', 'interfaces', 'flows'],
     output_keys: ['assessment', 'capabilities', 'interfaces', 'flows']
   },
@@ -36,7 +36,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'whole-codebase-source-inventory-accounting',
     title: 'Whole-codebase source inventory accounting',
-    description: 'Every included repository file is accounted for by evidence or explicit Codex/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.',
+    description: 'Every included repository file is accounted for by evidence or explicit agent harness/LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.',
     addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cognianalysis finalize source inventory accounting contract', 'embedded report audit data'],
     expected_outputs: ['source_inventory_accounting.complete=true', 'analysis_coverage.inspected_files[]'],
     output_keys: ['source_inventory_accounting.complete', 'analysis_coverage']

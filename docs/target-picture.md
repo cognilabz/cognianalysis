@@ -2,7 +2,7 @@
 
 The pack is designed around one main objective:
 
-> Use an existing agent harness such as Codex to perform LLM-first semantic extraction from a repository, then produce a decision-grade interactive HTML report with evidence.
+> Use an existing agent harness to perform LLM-first semantic extraction from a repository, then produce a decision-grade interactive HTML report with evidence.
 
 ## Target capabilities preserved for LLM traceability
 
@@ -39,7 +39,7 @@ The pack is designed around one main objective:
 - `cognianalysis finalize .` preserves target rows as unscored LLM trace context; `cognianalysis coverage .` prints that context plus Tier 1 file-card coverage and source inventory accounting.
 - Whole-codebase source inventory accounting is computed from `.analysis/data/source-inventory.json`, validated evidence paths and LLM-provided `analysis_coverage` accounting. Deferred files remain incomplete.
 - Tiered whole-codebase analysis is computed from `.analysis/source_tiers/*.json`; every included file needs a Tier 1 LLM-authored file card before the final report can be ready.
-- Semantic content must come from `.analysis/llm/*.json`, produced by Codex from `.analysis/llm_tasks/*.md`.
+- Semantic content must come from `.analysis/llm/*.json`, produced by the agent harness/LLM from `.analysis/llm_tasks/*.md`.
 - Semantic completeness and decision readiness must be authored in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 - Code-map signals are never authoritative facts.
 

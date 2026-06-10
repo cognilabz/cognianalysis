@@ -31,7 +31,9 @@ Usage:
   ${CLI_NAME} coverage [repo] [--analysis .analysis]
   ${CLI_NAME} tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
   ${CLI_NAME} audit-report [repo] [--analysis .analysis]
-  ${CLI_NAME} init-codex [target] [--force]
+  ${CLI_NAME} init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
+  ${CLI_NAME} init-agent [target]   # alias for init-harness
+  ${CLI_NAME} init-codex [target]   # compatibility alias for init-harness --harness codex
   ${CLI_NAME} portfolio --repos repos.txt --out portfolio-analysis
   ${CLI_NAME} mcp
 `);
@@ -71,8 +73,8 @@ function cmdPrepare(args: string[]): number {
   console.log(`Prepared LLM-first analysis workspace: ${analysis}`);
   console.log(`Code map: ${Path.join(analysis, 'data', 'code-map.json')}`);
   console.log(`Source capsules: ${Path.join(analysis, 'source-capsules.json')}`);
-  console.log(`Codex tasks: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
-  console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; Codex/LLM extracts those from source.');
+  console.log(`LLM task files: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
+  console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; the agent harness/LLM extracts those from source.');
   console.log(stagedLlmWorkflowMessage());
   return 0;
 }
@@ -271,16 +273,120 @@ function resourceRoot(): string {
   return Path.resolve(__dirname, '..', 'resources');
 }
 
-function cmdInitCodex(args: string[]): number {
-  const target = repoArg(args);
+const KNOWN_HARNESSES = ['codex', 'claude', 'cursor', 'windsurf', 'copilot', 'aider', 'generic'] as const;
+type HarnessName = typeof KNOWN_HARNESSES[number];
+
+function targetArg(args: string[], fallback = '.'): string {
+  const first = args[0];
+  return Path.resolve(first && !first.startsWith('--') ? first : fallback);
+}
+
+function selectedHarnesses(args: string[], fallback: HarnessName[] = [...KNOWN_HARNESSES]): HarnessName[] {
+  const raw = argValue(args, '--harness', 'all') || 'all';
+  const values = raw.split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
+  if (!values.length || values.includes('all')) return fallback;
+  const unknown = values.filter(value => !(KNOWN_HARNESSES as readonly string[]).includes(value));
+  if (unknown.length) throw new Error(`Unknown harness: ${unknown.join(', ')}. Expected one of: all, ${KNOWN_HARNESSES.join(', ')}`);
+  return [...new Set(values)] as HarnessName[];
+}
+
+function writeTemplate(file: string, text: string, force: boolean, written: string[], skipped: string[]): void {
+  if (FS.existsSync(file) && !force) {
+    skipped.push(file);
+    return;
+  }
+  writeText(file, text);
+  written.push(file);
+}
+
+function copyAsset(src: string, dst: string, force: boolean, written: string[], skipped: string[]): void {
+  if (FS.existsSync(dst) && !force) {
+    skipped.push(dst);
+    return;
+  }
+  copyRecursive(src, dst, force);
+  written.push(dst);
+}
+
+function harnessBody(harness: string, agentsText: string): string {
+  return `# Cognianalysis for ${harness}
+
+This file connects ${harness} to the same Cognianalysis workflow used by other agent harnesses.
+
+Use the rules below as the operational contract. The CLI prepares context and validates artifacts; the agent harness/LLM authors the semantic extraction JSON and final report.
+
+${agentsText.trim()}
+`;
+}
+
+function cursorRule(agentsText: string): string {
+  return `---
+description: "Run Cognianalysis LLM-first repository assessment workflow."
+alwaysApply: true
+---
+
+${harnessBody('Cursor', agentsText)}`;
+}
+
+function windsurfRule(agentsText: string): string {
+  return `---
+trigger: always_on
+description: "Run Cognianalysis LLM-first repository assessment workflow."
+---
+
+${harnessBody('Windsurf or Devin Desktop', agentsText)}`;
+}
+
+function installHarnessAssets(target: string, harnesses: HarnessName[], args: string[]): { written: string[], skipped: string[] } {
   const force = hasFlag(args, '--force');
-  ensureDir(target);
+  const noSkills = hasFlag(args, '--no-skills');
   const root = resourceRoot();
-  copyRecursive(Path.join(root, 'AGENTS.md'), Path.join(target, 'AGENTS.md'), force);
-  copyRecursive(Path.join(root, 'agents'), Path.join(target, '.agents'), force);
+  const agentsText = FS.readFileSync(Path.join(root, 'AGENTS.md'), 'utf8');
+  const written: string[] = [];
+  const skipped: string[] = [];
+
+  ensureDir(target);
+  copyAsset(Path.join(root, 'AGENTS.md'), Path.join(target, 'AGENTS.md'), force, written, skipped);
+  if (!noSkills) copyAsset(Path.join(root, 'agents'), Path.join(target, '.agents'), force, written, skipped);
+
+  for (const harness of harnesses) {
+    if (harness === 'claude') {
+      writeTemplate(Path.join(target, 'CLAUDE.md'), harnessBody('Claude Code', agentsText), force, written, skipped);
+    } else if (harness === 'cursor') {
+      writeTemplate(Path.join(target, '.cursor', 'rules', 'cognianalysis', 'RULE.md'), cursorRule(agentsText), force, written, skipped);
+    } else if (harness === 'windsurf') {
+      writeTemplate(Path.join(target, '.devin', 'rules', 'cognianalysis.md'), windsurfRule(agentsText), force, written, skipped);
+    } else if (harness === 'copilot') {
+      writeTemplate(Path.join(target, '.github', 'copilot-instructions.md'), harnessBody('GitHub Copilot', agentsText), force, written, skipped);
+    } else if (harness === 'aider') {
+      writeTemplate(Path.join(target, 'CONVENTIONS.md'), harnessBody('Aider', agentsText), force, written, skipped);
+      writeTemplate(Path.join(target, '.aider.conf.yml'), 'read: CONVENTIONS.md\n', force, written, skipped);
+    } else if (harness === 'generic') {
+      writeTemplate(Path.join(target, 'COGNIANALYSIS_HARNESS.md'), harnessBody('generic agent harnesses', agentsText), force, written, skipped);
+    }
+  }
+
+  return { written, skipped };
+}
+
+function cmdInitHarness(args: string[]): number {
+  const target = targetArg(args);
+  const harnesses = selectedHarnesses(args);
+  const { written, skipped } = installHarnessAssets(target, harnesses, args);
+  console.log(`Installed Cognianalysis harness assets into ${target}`);
+  console.log(`Harnesses: ${harnesses.join(', ')}`);
+  for (const file of written) console.log(`- wrote ${file}`);
+  for (const file of skipped) console.log(`- kept existing ${file}`);
+  return 0;
+}
+
+function cmdInitCodex(args: string[]): number {
+  const target = targetArg(args);
+  const force = hasFlag(args, '--force');
+  const { written, skipped } = installHarnessAssets(target, ['codex'], force ? [...args, '--force'] : args);
   console.log(`Installed Codex assets into ${target}`);
-  console.log(`- ${Path.join(target, 'AGENTS.md')}`);
-  console.log(`- ${Path.join(target, '.agents')}`);
+  for (const file of written) console.log(`- wrote ${file}`);
+  for (const file of skipped) console.log(`- kept existing ${file}`);
   return 0;
 }
 
@@ -340,6 +446,7 @@ export function main(argv = process.argv.slice(2)): number {
     if (command === 'coverage') return cmdCoverage(args);
     if (command === 'tier-context') return cmdTierContext(args);
     if (command === 'audit-report') return cmdAuditReport(args);
+    if (command === 'init-harness' || command === 'init-agent') return cmdInitHarness(args);
     if (command === 'init-codex') return cmdInitCodex(args);
     if (command === 'portfolio') return cmdPortfolio(args);
     if (command === 'mcp') { startMcpLikeServer(); return 0; }
