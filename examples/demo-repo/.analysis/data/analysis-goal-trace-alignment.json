@@ -1,0 +1,422 @@
+{
+  "contract_kind": "llm_authored_goal_trace_references",
+  "semantic_verdict_authority": "llm",
+  "status_source": "analysis_document.requirements_trace[].status and analysis_document.report_quality_review.verdict",
+  "deterministic_contract_scope": "explicit goal-contract reference syntax only; no semantic matching, keyword matching, coverage scoring or report-quality judgment",
+  "complete": true,
+  "status": "explicit_llm_goal_trace",
+  "expected_goal_refs": [
+    {
+      "ref": "required_output_shape.deliverable",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "deliverable",
+      "label": "Structured decision-basis analysis document",
+      "intent": "The output is a structured decision document, not only raw extraction data."
+    },
+    {
+      "ref": "required_output_shape.visible_report_authority",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "visible_report_authority",
+      "label": "Visible report authored by the LLM",
+      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by the LLM."
+    },
+    {
+      "ref": "required_output_shape.style_system",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "style_system",
+      "label": "Stable component/style library",
+      "intent": "The visual system is stable while report wording, ordering and emphasis remain LLM-authored."
+    },
+    {
+      "ref": "required_output_shape.source_basis",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "source_basis",
+      "label": "Source-code evidence basis",
+      "intent": "The analysis is grounded in source code, tests, docs, contracts, examples and configuration."
+    },
+    {
+      "ref": "required_output_shape.automation_goal",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "automation_goal",
+      "label": "Automated source-code analysis goal",
+      "intent": "The workflow should be as automated as possible from source code through final analysis document."
+    },
+    {
+      "ref": "required_output_shape.management_drilldown",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "management_drilldown",
+      "label": "management drilldown",
+      "intent": "textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence"
+    },
+    {
+      "ref": "required_levels.reverse_engineering_documentation",
+      "group": "required_levels",
+      "type": "level",
+      "id": "reverse_engineering_documentation",
+      "label": "Reverse Engineering & Documentation",
+      "intent": "Derive functionality, business capabilities and user/system flows from source evidence."
+    },
+    {
+      "ref": "required_levels.code_analysis",
+      "group": "required_levels",
+      "type": "level",
+      "id": "code_analysis",
+      "label": "Code Analysis",
+      "intent": "Identify visible bugs, vulnerabilities, maintainability risks, code quality issues and testability concerns."
+    },
+    {
+      "ref": "required_levels.process_analysis",
+      "group": "required_levels",
+      "type": "level",
+      "id": "process_analysis",
+      "label": "Process Analysis",
+      "intent": "Derive improvement and optimization potential for delivery, operations, readiness and process quality."
+    },
+    {
+      "ref": "required_levels.refactoring_target_architecture",
+      "group": "required_levels",
+      "type": "level",
+      "id": "refactoring_target_architecture",
+      "label": "Refactoring / Target Architecture",
+      "intent": "Describe modernization, refactoring and target architecture or new technology stack options where evidence justifies them."
+    },
+    {
+      "ref": "required_views.functional_view",
+      "group": "required_views",
+      "type": "view",
+      "id": "functional_view",
+      "label": "Functional View",
+      "intent": "Explain what the system does from a business/user/system perspective."
+    },
+    {
+      "ref": "required_views.technical_view",
+      "group": "required_views",
+      "type": "view",
+      "id": "technical_view",
+      "label": "Technical View",
+      "intent": "Explain APIs, interfaces, contracts, architecture, data stores and integrations."
+    },
+    {
+      "ref": "required_report_behaviors.whole_repo_first",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "whole_repo_first",
+      "label": "Whole repository first",
+      "intent": "Build a repository-wide overview and relationship map before deep slices."
+    },
+    {
+      "ref": "required_report_behaviors.e2e_relationships",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "e2e_relationships",
+      "label": "E2E relationships",
+      "intent": "Explain how functions, code blocks, modules and systems collaborate through representative flows."
+    },
+    {
+      "ref": "required_report_behaviors.llm_authored_report",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "llm_authored_report",
+      "label": "LLM-authored report",
+      "intent": "Let the LLM decide the repository-specific report structure while the renderer supplies styling and components."
+    },
+    {
+      "ref": "required_report_behaviors.detail_agents_after_overview",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "detail_agents_after_overview",
+      "label": "Detail agents after overview",
+      "intent": "Plan and execute focused source-family/detail reviews only after whole-repository building blocks exist."
+    },
+    {
+      "ref": "required_report_behaviors.tool_positioning",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "tool_positioning",
+      "label": "Tool positioning",
+      "intent": "Position the analysis as an alternative or complement to consulting/gen-AI suites, architecture mapping, static quality/security gates and automated transformation engines."
+    },
+    {
+      "ref": "required_report_behaviors.evidence_and_uncertainty",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "evidence_and_uncertainty",
+      "label": "Evidence and uncertainty",
+      "intent": "Keep claims evidence-backed and show open questions where behavior cannot be proven from source."
+    }
+  ],
+  "referenced_goal_refs": [
+    {
+      "ref": "required_output_shape.deliverable",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "deliverable",
+      "label": "Structured decision-basis analysis document",
+      "intent": "The output is a structured decision document, not only raw extraction data."
+    },
+    {
+      "ref": "required_output_shape.visible_report_authority",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "visible_report_authority",
+      "label": "Visible report authored by the LLM",
+      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by the LLM."
+    },
+    {
+      "ref": "required_output_shape.style_system",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "style_system",
+      "label": "Stable component/style library",
+      "intent": "The visual system is stable while report wording, ordering and emphasis remain LLM-authored."
+    },
+    {
+      "ref": "required_output_shape.source_basis",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "source_basis",
+      "label": "Source-code evidence basis",
+      "intent": "The analysis is grounded in source code, tests, docs, contracts, examples and configuration."
+    },
+    {
+      "ref": "required_output_shape.automation_goal",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "automation_goal",
+      "label": "Automated source-code analysis goal",
+      "intent": "The workflow should be as automated as possible from source code through final analysis document."
+    },
+    {
+      "ref": "required_output_shape.management_drilldown",
+      "group": "required_output_shape",
+      "type": "output_shape",
+      "id": "management_drilldown",
+      "label": "management drilldown",
+      "intent": "textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence"
+    },
+    {
+      "ref": "required_levels.reverse_engineering_documentation",
+      "group": "required_levels",
+      "type": "level",
+      "id": "reverse_engineering_documentation",
+      "label": "Reverse Engineering & Documentation",
+      "intent": "Derive functionality, business capabilities and user/system flows from source evidence."
+    },
+    {
+      "ref": "required_levels.code_analysis",
+      "group": "required_levels",
+      "type": "level",
+      "id": "code_analysis",
+      "label": "Code Analysis",
+      "intent": "Identify visible bugs, vulnerabilities, maintainability risks, code quality issues and testability concerns."
+    },
+    {
+      "ref": "required_levels.process_analysis",
+      "group": "required_levels",
+      "type": "level",
+      "id": "process_analysis",
+      "label": "Process Analysis",
+      "intent": "Derive improvement and optimization potential for delivery, operations, readiness and process quality."
+    },
+    {
+      "ref": "required_levels.refactoring_target_architecture",
+      "group": "required_levels",
+      "type": "level",
+      "id": "refactoring_target_architecture",
+      "label": "Refactoring / Target Architecture",
+      "intent": "Describe modernization, refactoring and target architecture or new technology stack options where evidence justifies them."
+    },
+    {
+      "ref": "required_views.functional_view",
+      "group": "required_views",
+      "type": "view",
+      "id": "functional_view",
+      "label": "Functional View",
+      "intent": "Explain what the system does from a business/user/system perspective."
+    },
+    {
+      "ref": "required_views.technical_view",
+      "group": "required_views",
+      "type": "view",
+      "id": "technical_view",
+      "label": "Technical View",
+      "intent": "Explain APIs, interfaces, contracts, architecture, data stores and integrations."
+    },
+    {
+      "ref": "required_report_behaviors.whole_repo_first",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "whole_repo_first",
+      "label": "Whole repository first",
+      "intent": "Build a repository-wide overview and relationship map before deep slices."
+    },
+    {
+      "ref": "required_report_behaviors.e2e_relationships",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "e2e_relationships",
+      "label": "E2E relationships",
+      "intent": "Explain how functions, code blocks, modules and systems collaborate through representative flows."
+    },
+    {
+      "ref": "required_report_behaviors.llm_authored_report",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "llm_authored_report",
+      "label": "LLM-authored report",
+      "intent": "Let the LLM decide the repository-specific report structure while the renderer supplies styling and components."
+    },
+    {
+      "ref": "required_report_behaviors.detail_agents_after_overview",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "detail_agents_after_overview",
+      "label": "Detail agents after overview",
+      "intent": "Plan and execute focused source-family/detail reviews only after whole-repository building blocks exist."
+    },
+    {
+      "ref": "required_report_behaviors.tool_positioning",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "tool_positioning",
+      "label": "Tool positioning",
+      "intent": "Position the analysis as an alternative or complement to consulting/gen-AI suites, architecture mapping, static quality/security gates and automated transformation engines."
+    },
+    {
+      "ref": "required_report_behaviors.evidence_and_uncertainty",
+      "group": "required_report_behaviors",
+      "type": "report_behavior",
+      "id": "evidence_and_uncertainty",
+      "label": "Evidence and uncertainty",
+      "intent": "Keep claims evidence-backed and show open questions where behavior cannot be proven from source."
+    }
+  ],
+  "missing_goal_refs": [],
+  "unknown_goal_refs": [],
+  "trace_rows": [
+    {
+      "id": "reverse_engineering_and_documentation",
+      "label": "Reverse Engineering & Documentation",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_levels.reverse_engineering_documentation",
+        "required_report_behaviors.whole_repo_first"
+      ],
+      "valid_goal_contract_refs": [
+        "required_levels.reverse_engineering_documentation",
+        "required_report_behaviors.whole_repo_first"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "code_analysis",
+      "label": "Code Analysis",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_levels.code_analysis"
+      ],
+      "valid_goal_contract_refs": [
+        "required_levels.code_analysis"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "process_analysis",
+      "label": "Process Analysis",
+      "status": "partial",
+      "goal_contract_refs": [
+        "required_levels.process_analysis"
+      ],
+      "valid_goal_contract_refs": [
+        "required_levels.process_analysis"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "refactoring_target_architecture",
+      "label": "Refactoring / Target Architecture",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_levels.refactoring_target_architecture"
+      ],
+      "valid_goal_contract_refs": [
+        "required_levels.refactoring_target_architecture"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "functional_view",
+      "label": "Functional View",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_views.functional_view",
+        "required_report_behaviors.e2e_relationships"
+      ],
+      "valid_goal_contract_refs": [
+        "required_views.functional_view",
+        "required_report_behaviors.e2e_relationships"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "technical_view",
+      "label": "Technical View",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_views.technical_view"
+      ],
+      "valid_goal_contract_refs": [
+        "required_views.technical_view"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "decision_document_output_shape",
+      "label": "Decision document output shape",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_output_shape.deliverable",
+        "required_output_shape.visible_report_authority",
+        "required_output_shape.style_system",
+        "required_output_shape.source_basis",
+        "required_output_shape.automation_goal",
+        "required_output_shape.management_drilldown"
+      ],
+      "valid_goal_contract_refs": [
+        "required_output_shape.deliverable",
+        "required_output_shape.visible_report_authority",
+        "required_output_shape.style_system",
+        "required_output_shape.source_basis",
+        "required_output_shape.automation_goal",
+        "required_output_shape.management_drilldown"
+      ],
+      "unknown_goal_contract_refs": []
+    },
+    {
+      "id": "automation_and_tool_positioning",
+      "label": "Automation and tool positioning",
+      "status": "covered",
+      "goal_contract_refs": [
+        "required_report_behaviors.llm_authored_report",
+        "required_report_behaviors.detail_agents_after_overview",
+        "required_report_behaviors.tool_positioning",
+        "required_report_behaviors.evidence_and_uncertainty"
+      ],
+      "valid_goal_contract_refs": [
+        "required_report_behaviors.llm_authored_report",
+        "required_report_behaviors.detail_agents_after_overview",
+        "required_report_behaviors.tool_positioning",
+        "required_report_behaviors.evidence_and_uncertainty"
+      ],
+      "unknown_goal_contract_refs": []
+    }
+  ],
+  "rows_without_goal_refs": [],
+  "summary": "Every original goal-contract item is explicitly referenced by at least one LLM-authored requirements_trace row. The LLM-authored row statuses and report_quality_review remain the semantic verdict."
+}

@@ -23,7 +23,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare-demo": "node dist/cli.js prepare examples/demo-repo",
-    "demo-report": "node dist/cli.js render examples/demo-repo"
+    "demo-report": "node dist/cli.js render examples/demo-repo",
+    "audit-demo": "node dist/cli.js audit-report examples/demo-repo",
+    "verify:demo": "npm run build && node scripts/verify-demo.mjs"
   },
   "engines": {
     "node": ">=18"

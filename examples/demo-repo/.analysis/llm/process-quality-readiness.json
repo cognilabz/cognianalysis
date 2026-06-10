@@ -182,28 +182,6 @@
         ]
       }
     ],
-    "security": [
-      {
-        "title": "No visible REST authentication enforcement",
-        "severity": "medium",
-        "description": "The REST controller exposes onboarding and status endpoints, while the compact build file does not show a Spring Security dependency or security configuration in the analyzed scope.",
-        "recommendation": "Confirm intended access model; if these endpoints are not public, add authentication/authorization configuration and tests.",
-        "evidence": [
-          {
-            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-            "line": 21
-          },
-          {
-            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-            "line": 27
-          },
-          {
-            "path": "pom.xml",
-            "line": 6
-          }
-        ]
-      }
-    ],
     "testability": [
       {
         "title": "Business scenarios are named",
@@ -264,28 +242,6 @@
         },
         {
           "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-          "line": 6
-        }
-      ]
-    },
-    {
-      "id": "finding-visible-auth-gap",
-      "category": "security",
-      "severity": "medium",
-      "title": "Authentication requirements are not visible",
-      "description": "The analyzed repository exposes customer onboarding REST endpoints, but no authentication or authorization configuration is visible in the compact source scope.",
-      "recommendation": "Document whether the API is intentionally public; otherwise add auth configuration and endpoint-level security tests.",
-      "evidence": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "line": 21
-        },
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-          "line": 27
-        },
-        {
-          "path": "pom.xml",
           "line": 6
         }
       ]

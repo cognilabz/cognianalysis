@@ -2,8 +2,13 @@
   "included_files": [
     {
       "path": "docs/examples/customer-verification-soap.xml",
-      "module": "docs",
+      "module": "docs/examples",
       "language": "XML",
+      "navigation_tags": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "example",
@@ -16,6 +21,11 @@
       "path": "docs/openapi.yml",
       "module": "docs",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
       "roles": [
         "api_contract",
         "config",
@@ -28,6 +38,10 @@
       "path": "src/main/resources/openapi.yaml",
       "module": "src/main",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -39,6 +53,10 @@
       "path": "docs/soap-kyc.wsdl",
       "module": "docs",
       "language": "WSDL",
+      "navigation_tags": [
+        "documentation",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "soap_contract"
@@ -50,6 +68,10 @@
       "path": "docs/api-examples.md",
       "module": "docs",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -61,6 +83,10 @@
       "path": "docs/business-examples.md",
       "module": "docs",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -72,6 +98,9 @@
       "path": "src/main/resources/wsdl/customer-verification.wsdl",
       "module": "src/main",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -82,6 +111,10 @@
       "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
       "module": "src/main",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -93,6 +126,9 @@
       "path": "src/main/resources/wsdl/kyc-status.wsdl",
       "module": "src/main",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -103,6 +139,9 @@
       "path": "src/main/resources/onboarding.wsdl",
       "module": "src/main",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -113,6 +152,9 @@
       "path": "README.md",
       "module": "README.md",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -121,8 +163,12 @@
     },
     {
       "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-      "module": "src/test/java/com",
+      "module": "src/test",
       "language": "Java",
+      "navigation_tags": [
+        "source",
+        "test"
+      ],
       "roles": [
         "source",
         "test"
@@ -132,8 +178,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/Customer.java",
-      "module": "com/acme/onboarding/Customer.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -142,8 +191,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-      "module": "com/acme/onboarding/OnboardingController.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -152,8 +204,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-      "module": "com/acme/onboarding/OnboardingService.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -164,6 +219,9 @@
       "path": "docs/business-flows.md",
       "module": "docs",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -174,6 +232,9 @@
       "path": "src/main/resources/application.yml",
       "module": "src/main",
       "language": "YAML",
+      "navigation_tags": [
+        "config"
+      ],
       "roles": [
         "config"
       ],
@@ -182,8 +243,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-      "module": "com/acme/onboarding/OnboardingResponse.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -192,8 +256,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-      "module": "com/acme/onboarding/CustomerRepository.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -202,8 +269,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-      "module": "com/acme/onboarding/CustomerStatus.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -212,8 +282,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/KycClient.java",
-      "module": "com/acme/onboarding/KycClient.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -222,8 +295,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-      "module": "com/acme/onboarding/KycRequest.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -232,8 +308,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/KycResult.java",
-      "module": "com/acme/onboarding/KycResult.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -242,8 +321,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-      "module": "com/acme/onboarding/OnboardingEventPublisher.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -252,8 +334,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-      "module": "com/acme/onboarding/OnboardingRequest.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -262,8 +347,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-      "module": "com/acme/onboarding/OnboardingResult.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -272,8 +360,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-      "module": "com/acme/onboarding/OnboardingStartedEvent.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -282,8 +373,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-      "module": "com/acme/onboarding/OnboardingStatusResponse.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -292,8 +386,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-      "module": "com/acme/onboarding/RiskScoringService.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -304,6 +401,9 @@
       "path": "pom.xml",
       "module": "pom.xml",
       "language": "XML",
+      "navigation_tags": [
+        "build"
+      ],
       "roles": [
         "build"
       ],
@@ -312,8 +412,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
-      "module": "com/acme/onboarding/CustomerNotFoundException.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -322,8 +425,11 @@
     },
     {
       "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-      "module": "com/acme/onboarding/DuplicateCustomerException.java",
+      "module": "src/main",
       "language": "Java",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -332,5 +438,5 @@
     }
   ],
   "skipped_files": [],
-  "scope_note": "Every included file is in scope for semantic analysis. Source capsules are only navigation aids; files must be covered by evidence, explicit inspection, or an explicit deferral reason."
+  "scope_note": "Every included file is in scope for semantic analysis. Source capsules, navigation tags and artifact candidates are only navigation aids; files must be accounted for by evidence, explicit inspection, or an explicit deferral reason."
 }

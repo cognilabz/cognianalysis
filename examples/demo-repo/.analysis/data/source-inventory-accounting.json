@@ -1,0 +1,71 @@
+{
+  "contract_kind": "source_inventory_accounting",
+  "semantic_verdict_authority": "llm",
+  "accounting_status_meaning": "Whether each included source file is accounted for by validated evidence, LLM analysis_coverage.inspected_files, or LLM analysis_coverage.deferred_files with a reason. This is not a deterministic judgment that every file is deeply understood or well documented.",
+  "deterministic_contract_scope": "included inventory path reconciliation and structured analysis_coverage path/reason validation only",
+  "status": "complete",
+  "complete": true,
+  "scope": "all included files from .analysis/data/source-inventory.json",
+  "total_files": 32,
+  "accounted_files": 32,
+  "unaccounted_files": 0,
+  "covered_files": 32,
+  "uncovered_files": 0,
+  "evidence_backed_files": 32,
+  "explicitly_inspected_files": 32,
+  "deferred_files": 0,
+  "invalid_coverage_items": 0,
+  "invalid_coverage_item_examples": [],
+  "ignored_out_of_scope_coverage_items": 0,
+  "ignored_out_of_scope_coverage_item_examples": [],
+  "skipped_files": 0,
+  "inventory_accounting_percent": 100,
+  "coverage_percent": 100,
+  "modules": [
+    {
+      "name": "docs",
+      "files": 5,
+      "covered_files": 5,
+      "uncovered_files": 0
+    },
+    {
+      "name": "docs/examples",
+      "files": 1,
+      "covered_files": 1,
+      "uncovered_files": 0
+    },
+    {
+      "name": "pom.xml",
+      "files": 1,
+      "covered_files": 1,
+      "uncovered_files": 0
+    },
+    {
+      "name": "README.md",
+      "files": 1,
+      "covered_files": 1,
+      "uncovered_files": 0
+    },
+    {
+      "name": "src/main",
+      "files": 23,
+      "covered_files": 23,
+      "uncovered_files": 0
+    },
+    {
+      "name": "src/test",
+      "files": 1,
+      "covered_files": 1,
+      "uncovered_files": 0
+    }
+  ],
+  "uncovered": [],
+  "skipped": [],
+  "rules": [
+    "A file is accounted for when it has validated evidence, appears in analysis_coverage.inspected_files, or appears in analysis_coverage.deferred_files with a reason.",
+    "analysis_coverage entries must be objects with exact included inventory paths and non-empty reasons; strings, globs and patterns are invalid, while exact paths outside the included source inventory are ignored for accounting.",
+    "Source inventory accounting does not decide semantic completeness, documentation quality or management readiness.",
+    "Source capsules and code-map rankings do not count as semantic understanding by themselves.",
+    "Skipped files are reported separately because they exceeded the configured max file size before semantic extraction."
+  ]
+}

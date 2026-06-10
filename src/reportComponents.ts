@@ -1,0 +1,107 @@
+export interface ReportComponentDefinition {
+  id: string;
+  label: string;
+  purpose: string;
+  expected_fields: string[];
+  guidance: string;
+}
+
+export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
+  {
+    id: 'narrative',
+    label: 'Narrative',
+    purpose: 'Human-readable paragraphs for management/business meaning and technical explanation.',
+    expected_fields: ['type', 'title?', 'labels?', 'text|paragraphs|summary|description', 'business_need?', 'business_use?', 'technical_drilldown?', 'evidence?'],
+    guidance: 'Use for authored prose that explains business need, business use, system meaning or technical drilldown. Do not use it as a dumping ground for class/function lists.'
+  },
+  {
+    id: 'statement_list',
+    label: 'Statement List',
+    purpose: 'Evidence-backed claims, findings, risks, recommendations or decisions.',
+    expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title|name|criterion|verdict|id', 'items[].description|summary|reason|recommendation', 'items[].evidence?'],
+    guidance: 'Use when each statement should stand alone with confidence, severity or evidence.'
+  },
+  {
+    id: 'metric_grid',
+    label: 'Metric Grid',
+    purpose: 'Compact facts that orient the reader without replacing analysis.',
+    expected_fields: ['type', 'title?', 'labels?', 'metrics[]', 'metrics[].label', 'metrics[].value', 'metrics[].detail?'],
+    guidance: 'Use sparingly for source inventory accounting, counts and status facts. Metrics are not semantic proof.'
+  },
+  {
+    id: 'source_family_map',
+    label: 'Source Family Map',
+    purpose: 'Whole-repository family/module responsibilities before deep drilldown.',
+    expected_fields: ['type', 'title?', 'labels?', 'families[]', 'families[].name', 'families[].role|business_use|technical_shape', 'families[].confidence?', 'families[].evidence?'],
+    guidance: 'Use for LLM-authored source-family understanding. Deterministic inventory partitions remain navigation aids only.'
+  },
+  {
+    id: 'boundary_map',
+    label: 'Boundary Map',
+    purpose: 'System entry, system exit/integration and state/data boundaries.',
+    expected_fields: ['type', 'title?', 'labels.entries?', 'labels.exits?', 'labels.state?', 'entries[]', 'exits[]', 'state[]', 'evidence?'],
+    guidance: 'Use when explaining how the system is entered, what it calls or emits, and where state changes. Set labels when repository terminology differs from the default entry/exit/state wording.'
+  },
+  {
+    id: 'flow',
+    label: 'Flow',
+    purpose: 'E2E, process, request/response or failure flow with optional Mermaid.',
+    expected_fields: ['type', 'title?', 'labels?', 'summary|description?', 'mermaid?|source?', 'steps[]?', 'evidence?'],
+    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems.'
+  },
+  {
+    id: 'four_level_assessment',
+    label: 'Four-Level Assessment',
+    purpose: 'The four requested analysis levels in one structured view.',
+    expected_fields: ['type', 'title?', 'labels.next_steps?', 'levels[]', 'levels[].level', 'levels[].status', 'levels[].summary', 'levels[].next_steps?', 'levels[].evidence?'],
+    guidance: 'Use for reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture.'
+  },
+  {
+    id: 'decision_matrix',
+    label: 'Decision Matrix',
+    purpose: 'Options, trade-offs, recommendations, confidence and risks.',
+    expected_fields: ['type', 'title?', 'labels.decision?', 'labels.options?', 'labels.recommendation?', 'labels.risk?', 'rows[]', 'rows[].decision', 'rows[].options?', 'rows[].recommendation?', 'rows[].risk?', 'rows[].confidence?', 'rows[].evidence?'],
+    guidance: 'Use when the report needs to become a decision basis rather than only documentation. Set labels when the repository-specific decision vocabulary should drive table wording.'
+  },
+  {
+    id: 'roadmap',
+    label: 'Roadmap',
+    purpose: 'Modernization, refactoring, process or quality improvement path.',
+    expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title', 'items[].phase?', 'items[].benefit?', 'items[].description?', 'items[].effort?', 'items[].risk?', 'items[].evidence?'],
+    guidance: 'Use for target architecture or migration/optimization recommendations.'
+  },
+  {
+    id: 'agent_plan',
+    label: 'Agent Plan',
+    purpose: 'Planned/executed detail reviews and remaining follow-up.',
+    expected_fields: ['type', 'title?', 'labels.source_family?', 'labels.priority?', 'labels.focus?', 'labels.expected_outputs?', 'labels.task_output?', 'labels.seed_files?', 'summary?', 'tasks[]|detail_agent_tasks[]', 'tasks[].source_family', 'tasks[].focus?', 'tasks[].expected_outputs?', 'tasks[].seed_files?'],
+    guidance: 'Use only to show detail-review basis or follow-up. Executable pre-report tasks come from llm/detail-agent-plan.json. Set labels when the report needs repository-specific follow-up wording.'
+  },
+  {
+    id: 'technical_drilldown',
+    label: 'Technical Drilldown',
+    purpose: 'Links into technical catalogues, contracts, evidence or deeper sections.',
+    expected_fields: ['type', 'title?', 'labels?', 'references[]', 'references[].label', 'references[].target?', 'references[].description?'],
+    guidance: 'Use to keep the main narrative readable while preserving deep technical access.'
+  },
+  {
+    id: 'open_questions',
+    label: 'Open Questions',
+    purpose: 'Missing proof, owner questions and follow-up analysis.',
+    expected_fields: ['type', 'title?', 'labels.question?', 'items[]', 'items[].question|title', 'items[].why_it_matters|description?', 'items[].owner?', 'items[].evidence?'],
+    guidance: 'Use when code evidence cannot support a stronger claim.'
+  }
+];
+
+export function supportedReportComponentTypes(): string[] {
+  return REPORT_COMPONENT_LIBRARY.map(component => component.id);
+}
+
+export function reportComponentLibraryArtifact(): any {
+  return {
+    library_kind: 'analysis_document_component_library',
+    semantic_authority: false,
+    purpose: 'Stable renderer and styling contract for LLM-authored analysis_document.sections. It does not decide report quality or semantic completeness; empty sections or blocks are structural renderer gaps and must be rewritten by the LLM instead of filled by deterministic placeholder prose. Blocks may include labels to let the LLM control repository-specific wording inside stable visual components.',
+    components: REPORT_COMPONENT_LIBRARY
+  };
+}

@@ -1,8 +1,8 @@
 {
   "repo_name": "demo-repo",
   "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-  "analyzed_at": "2026-06-09T11:07:11Z",
-  "commit": "dc18fff5d4fea61aea020bd2329af031fbbf7a5f",
+  "analyzed_at": "2026-06-09T20:48:59Z",
+  "commit": "2d36455096f3c607f2fef54e0ebf548c358e450f",
   "repo_type": "library/application",
   "languages": {
     "Java": 261

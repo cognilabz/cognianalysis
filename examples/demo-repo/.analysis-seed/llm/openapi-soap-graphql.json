@@ -1,0 +1,99 @@
+{
+  "documentation": {
+    "summary": "OpenAPI and SOAP/WSDL examples extracted from the demo repository.",
+    "openapi": [
+      {
+        "title": "POST /customers/onboard",
+        "path": "src/main/resources/openapi.yaml",
+        "operation_id": "startCustomerOnboarding",
+        "method": "POST",
+        "route": "/customers/onboard",
+        "request_schema": "OnboardingRequest",
+        "response_schema": "OnboardingResponse",
+        "request_example": {
+          "email": "max.mustermann@example.com",
+          "firstName": "Max",
+          "lastName": "Mustermann",
+          "birthDate": "1984-04-21",
+          "referralCode": "PARTNER-42"
+        },
+        "response_example": {
+          "customerId": "cus_12345",
+          "status": "ACTIVE",
+          "riskScore": 35,
+          "kycReference": "KYC-2026-0001"
+        },
+        "example_origin": "openapi",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 16
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 31
+          }
+        ]
+      },
+      {
+        "title": "GET /customers/{customerId}/status",
+        "path": "src/main/resources/openapi.yaml",
+        "operation_id": "getOnboardingStatus",
+        "method": "GET",
+        "route": "/customers/{customerId}/status",
+        "request_schema": "path parameter customerId",
+        "response_schema": "OnboardingStatusResponse",
+        "request_example": {
+          "customerId": "cus_98765"
+        },
+        "response_example": {
+          "customerId": "cus_98765",
+          "status": "MANUAL_REVIEW",
+          "reviewReason": "KYC rejected or risk score too high"
+        },
+        "example_origin": "openapi",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 38
+          },
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 53
+          }
+        ]
+      }
+    ],
+    "soap": [
+      {
+        "title": "GetKycStatus SOAP operation",
+        "operation": "GetKycStatus",
+        "soap_action": "https://acme.example/kyc/GetKycStatus",
+        "input_message": "GetKycStatusInput",
+        "output_message": "GetKycStatusOutput",
+        "request_envelope": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:kyc=\"https://acme.example/kyc\">\n  <soapenv:Body>\n    <kyc:GetKycStatusRequest>\n      <kyc:kycReference>KYC-2026-0001</kyc:kycReference>\n    </kyc:GetKycStatusRequest>\n  </soapenv:Body>\n</soapenv:Envelope>",
+        "response_envelope": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:kyc=\"https://acme.example/kyc\">\n  <soapenv:Body>\n    <kyc:GetKycStatusResponse>\n      <kyc:approved>true</kyc:approved>\n      <kyc:reference>KYC-2026-0001</kyc:reference>\n    </kyc:GetKycStatusResponse>\n  </soapenv:Body>\n</soapenv:Envelope>",
+        "example_origin": "doc",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29
+          },
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 37
+          },
+          {
+            "path": "docs/api-examples.md",
+            "line": 26
+          }
+        ]
+      }
+    ],
+    "contract_examples": []
+  }
+}

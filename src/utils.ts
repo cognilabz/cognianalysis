@@ -127,6 +127,7 @@ export function listFileInventory(root: string, maxFileSize: number): { included
     '.git', '.hg', '.svn', 'node_modules', 'vendor', '.venv', 'venv', '__pycache__', '.mypy_cache', '.pytest_cache',
     'dist', 'build', 'out', 'target', '.gradle', '.idea', '.vscode', '.analysis', '.analysis-seed', 'coverage', '.next', '.turbo', '.cache'
   ]);
+  const ignoredFiles = new Set(['.DS_Store', 'Thumbs.db']);
   function walk(dir: string): void {
     let entries: any[] = [];
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
@@ -136,6 +137,7 @@ export function listFileInventory(root: string, maxFileSize: number): { included
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile()) {
+        if (ignoredFiles.has(entry.name)) continue;
         try {
           const st = fs.statSync(full);
           if (st.size <= maxFileSize) out.push(full);

@@ -2,12 +2,18 @@
   {
     "id": "capsule-2c9b285fdc",
     "path": "docs/examples/customer-verification-soap.xml",
-    "module": "docs",
+    "module": "docs/examples",
+    "navigation_tags": [
+      "documentation",
+      "example",
+      "soap_contract"
+    ],
     "roles": [
       "documentation",
       "example",
       "soap_contract"
     ],
+    "navigation_score": 184,
     "score": 184,
     "language": "XML",
     "lines": 21,
@@ -20,11 +26,17 @@
     "id": "capsule-c68bc23190",
     "path": "docs/openapi.yml",
     "module": "docs",
+    "navigation_tags": [
+      "api_contract",
+      "config",
+      "documentation"
+    ],
     "roles": [
       "api_contract",
       "config",
       "documentation"
     ],
+    "navigation_score": 181,
     "score": 181,
     "language": "YAML",
     "lines": 78,
@@ -45,10 +57,15 @@
     "id": "capsule-ea0d1d7c98",
     "path": "src/main/resources/openapi.yaml",
     "module": "src/main",
+    "navigation_tags": [
+      "api_contract",
+      "config"
+    ],
     "roles": [
       "api_contract",
       "config"
     ],
+    "navigation_score": 147,
     "score": 147,
     "language": "YAML",
     "lines": 77,
@@ -69,10 +86,15 @@
     "id": "capsule-23494bfda4",
     "path": "docs/soap-kyc.wsdl",
     "module": "docs",
+    "navigation_tags": [
+      "documentation",
+      "soap_contract"
+    ],
     "roles": [
       "documentation",
       "soap_contract"
     ],
+    "navigation_score": 136,
     "score": 136,
     "language": "WSDL",
     "lines": 29,
@@ -118,10 +140,15 @@
     "id": "capsule-ba8229dd4a",
     "path": "docs/api-examples.md",
     "module": "docs",
+    "navigation_tags": [
+      "documentation",
+      "example"
+    ],
     "roles": [
       "documentation",
       "example"
     ],
+    "navigation_score": 118,
     "score": 118,
     "language": "Markdown",
     "lines": 53,
@@ -142,10 +169,15 @@
     "id": "capsule-67f8aabbb2",
     "path": "docs/business-examples.md",
     "module": "docs",
+    "navigation_tags": [
+      "documentation",
+      "example"
+    ],
     "roles": [
       "documentation",
       "example"
     ],
+    "navigation_score": 118,
     "score": 118,
     "language": "Markdown",
     "lines": 22,
@@ -166,9 +198,13 @@
     "id": "capsule-e5ac8136f2",
     "path": "src/main/resources/wsdl/customer-verification.wsdl",
     "module": "src/main",
+    "navigation_tags": [
+      "soap_contract"
+    ],
     "roles": [
       "soap_contract"
     ],
+    "navigation_score": 114,
     "score": 114,
     "language": "WSDL",
     "lines": 54,
@@ -250,10 +286,15 @@
     "id": "capsule-0a2d68b0f2",
     "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
     "module": "src/main",
+    "navigation_tags": [
+      "api_contract",
+      "config"
+    ],
     "roles": [
       "api_contract",
       "config"
     ],
+    "navigation_score": 112,
     "score": 112,
     "language": "YAML",
     "lines": 103,
@@ -274,9 +315,13 @@
     "id": "capsule-a8098adc30",
     "path": "src/main/resources/wsdl/kyc-status.wsdl",
     "module": "src/main",
+    "navigation_tags": [
+      "soap_contract"
+    ],
     "roles": [
       "soap_contract"
     ],
+    "navigation_score": 112,
     "score": 112,
     "language": "WSDL",
     "lines": 43,
@@ -352,9 +397,13 @@
     "id": "capsule-ca299b8a4a",
     "path": "src/main/resources/onboarding.wsdl",
     "module": "src/main",
+    "navigation_tags": [
+      "soap_contract"
+    ],
     "roles": [
       "soap_contract"
     ],
+    "navigation_score": 102,
     "score": 102,
     "language": "WSDL",
     "lines": 38,
@@ -400,9 +449,13 @@
     "id": "capsule-8ec9a00bfd",
     "path": "README.md",
     "module": "README.md",
+    "navigation_tags": [
+      "documentation"
+    ],
     "roles": [
       "documentation"
     ],
+    "navigation_score": 78,
     "score": 78,
     "language": "Markdown",
     "lines": 4,
@@ -422,11 +475,16 @@
   {
     "id": "capsule-22e8a39a39",
     "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-    "module": "src/test/java/com",
+    "module": "src/test",
+    "navigation_tags": [
+      "source",
+      "test"
+    ],
     "roles": [
       "source",
       "test"
     ],
+    "navigation_score": 74,
     "score": 74,
     "language": "Java",
     "lines": 8,
@@ -445,10 +503,14 @@
   {
     "id": "capsule-84718e9be2",
     "path": "src/main/java/com/acme/onboarding/Customer.java",
-    "module": "com/acme/onboarding/Customer.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 66,
     "score": 66,
     "language": "Java",
     "lines": 43,
@@ -503,10 +565,14 @@
   {
     "id": "capsule-41c63fee29",
     "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-    "module": "com/acme/onboarding/OnboardingController.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 58,
     "score": 58,
     "language": "Java",
     "lines": 32,
@@ -537,10 +603,14 @@
   {
     "id": "capsule-c6b6af442a",
     "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-    "module": "com/acme/onboarding/OnboardingService.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 58,
     "score": 58,
     "language": "Java",
     "lines": 46,
@@ -572,9 +642,13 @@
     "id": "capsule-f48aa16412",
     "path": "docs/business-flows.md",
     "module": "docs",
+    "navigation_tags": [
+      "documentation"
+    ],
     "roles": [
       "documentation"
     ],
+    "navigation_score": 53,
     "score": 53,
     "language": "Markdown",
     "lines": 51,
@@ -595,9 +669,13 @@
     "id": "capsule-a6d8b8556f",
     "path": "src/main/resources/application.yml",
     "module": "src/main",
+    "navigation_tags": [
+      "config"
+    ],
     "roles": [
       "config"
     ],
+    "navigation_score": 53,
     "score": 53,
     "language": "YAML",
     "lines": 8,
@@ -609,10 +687,14 @@
   {
     "id": "capsule-97b4f08161",
     "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-    "module": "com/acme/onboarding/OnboardingResponse.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 48,
     "score": 48,
     "language": "Java",
     "lines": 8,
@@ -643,10 +725,14 @@
   {
     "id": "capsule-6ba2a0e4d1",
     "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-    "module": "com/acme/onboarding/CustomerRepository.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 10,
@@ -671,10 +757,14 @@
   {
     "id": "capsule-f4107616a1",
     "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-    "module": "com/acme/onboarding/CustomerStatus.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 8,
@@ -699,10 +789,14 @@
   {
     "id": "capsule-4588abec11",
     "path": "src/main/java/com/acme/onboarding/KycClient.java",
-    "module": "com/acme/onboarding/KycClient.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 16,
@@ -727,10 +821,14 @@
   {
     "id": "capsule-89f5b81050",
     "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-    "module": "com/acme/onboarding/KycRequest.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 6,
@@ -755,10 +853,14 @@
   {
     "id": "capsule-e0a71fd63b",
     "path": "src/main/java/com/acme/onboarding/KycResult.java",
-    "module": "com/acme/onboarding/KycResult.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 4,
@@ -783,10 +885,14 @@
   {
     "id": "capsule-8e2cca1912",
     "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-    "module": "com/acme/onboarding/OnboardingEventPublisher.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 19,
@@ -811,10 +917,14 @@
   {
     "id": "capsule-4355f22d24",
     "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-    "module": "com/acme/onboarding/OnboardingRequest.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 15,
@@ -839,10 +949,14 @@
   {
     "id": "capsule-cec1548a9b",
     "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-    "module": "com/acme/onboarding/OnboardingResult.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 4,
@@ -867,10 +981,14 @@
   {
     "id": "capsule-13de1119f1",
     "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-    "module": "com/acme/onboarding/OnboardingStartedEvent.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 4,
@@ -895,10 +1013,14 @@
   {
     "id": "capsule-c7aea02f08",
     "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-    "module": "com/acme/onboarding/OnboardingStatusResponse.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 4,
@@ -923,10 +1045,14 @@
   {
     "id": "capsule-6bfb7f612c",
     "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-    "module": "com/acme/onboarding/RiskScoringService.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 46,
     "score": 46,
     "language": "Java",
     "lines": 18,
@@ -952,9 +1078,13 @@
     "id": "capsule-442292b8a7",
     "path": "pom.xml",
     "module": "pom.xml",
+    "navigation_tags": [
+      "build"
+    ],
     "roles": [
       "build"
     ],
+    "navigation_score": 45,
     "score": 45,
     "language": "XML",
     "lines": 12,
@@ -966,10 +1096,14 @@
   {
     "id": "capsule-40457a8fe7",
     "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
-    "module": "com/acme/onboarding/CustomerNotFoundException.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 44,
     "score": 44,
     "language": "Java",
     "lines": 8,
@@ -988,10 +1122,14 @@
   {
     "id": "capsule-d150ec4382",
     "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-    "module": "com/acme/onboarding/DuplicateCustomerException.java",
+    "module": "src/main",
+    "navigation_tags": [
+      "source"
+    ],
     "roles": [
       "source"
     ],
+    "navigation_score": 44,
     "score": 44,
     "language": "Java",
     "lines": 8,

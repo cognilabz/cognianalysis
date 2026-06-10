@@ -1,0 +1,111 @@
+{
+  "detail_agent_plan": {
+    "planning_stage": "post_overview_pre_final_report",
+    "planning_source": "llm/detail-agent-plan.json",
+    "summary": "The demo repository is small, but the final report should still wait for one focused contract/runtime parity review because the visible business behavior is defined by OpenAPI, SOAP/WSDL, runtime code and configuration together.",
+    "whole_repo_context": "The repository demonstrates customer onboarding with REST, SOAP, rule evaluation, persistence and event publication. The deepest follow-up area is runtime contract parity across the main source family.",
+    "tasks": [
+      {
+        "id": "detail-src-main",
+        "source_family": "src/main",
+        "recommended_agent": "interface-contract-analysis",
+        "priority": "high",
+        "priority_score": 0.9,
+        "focus": [
+          "OpenAPI/runtime parity",
+          "SOAP/KYC contract semantics",
+          "configuration-driven decisions"
+        ],
+        "reason": "The final analysis document needs one deep review that ties the REST contract, SOAP contract, service behavior and configuration-driven routing together before making management-level statements.",
+        "evidence_level_target": "deep",
+        "expected_outputs": [
+          "contract examples",
+          "parity findings",
+          "field-level open questions"
+        ],
+        "seed_files": [
+          "src/main/resources/openapi.yaml",
+          "src/main/resources/wsdl/kyc-status.wsdl",
+          "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "src/main/java/com/acme/onboarding/OnboardingService.java"
+        ],
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          },
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 4
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 12
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      }
+    ],
+    "not_planned": [],
+    "evidence": [
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "line": 6
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 23
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "The plan inspected the contract and runtime files needed to choose the single demo detail review.",
+    "inspected_files": [
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "reason": "REST onboarding contract seed for the detail review.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "SOAP KYC contract seed for the detail review.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 4
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "REST runtime entrypoint seed for the detail review.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 12
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Business/runtime orchestration seed for the detail review.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

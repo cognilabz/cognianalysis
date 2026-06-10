@@ -1,55 +1,311 @@
 import { CodeMap } from './types';
-import { ensureDir, writeJson, writeText } from './utils';
+import { FS, ensureDir, writeJson, writeText } from './utils';
 import { TARGET_CAPABILITIES } from './targetCoverage';
 import { Path } from './utils';
+import { reportComponentLibraryArtifact } from './reportComponents';
+import { analysisPipelineArtifact } from './analysisPipeline';
+import { analysisSkillCatalogArtifact } from './analysisSkills';
+import { analysisGoalContractArtifact } from './analysisGoal';
+import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
 
-const TASKS: [string, string, string][] = [
-  ['01-core-assessment.md', 'core-assessment.json', 'Core Assessment and Decision Summary'],
-  ['02-business-capabilities-logic.md', 'business-capabilities-logic.json', 'Business Capabilities and Business Logic'],
-  ['03-interface-contract-extraction.md', 'interfaces-contracts.json', 'Interface and Contract Extraction'],
-  ['04-request-response-examples.md', 'request-response-examples.json', 'Request and Response Examples'],
-  ['05-openapi-soap-graphql.md', 'openapi-soap-graphql.json', 'OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL'],
-  ['06-flows-mermaid.md', 'flows-mermaid.json', 'Flows, Scenarios and Mermaid Diagrams'],
-  ['07-domain-data-integrations.md', 'domain-data-integrations.json', 'Domain, Data, Integrations and Side Effects'],
-  ['08-process-quality-readiness.md', 'process-quality-readiness.json', 'Process, Quality and Readiness Assessment'],
-  ['09-architecture-refactoring-roadmap.md', 'architecture-refactoring-roadmap.json', 'Architecture, Refactoring and Modernization Roadmap'],
-  ['10-report-completeness-review.md', 'report-completeness-review.json', 'Report Completeness and Gap Review']
+type LlmTaskId =
+  | 'core_assessment'
+  | 'business_capabilities_logic'
+  | 'interface_contract_extraction'
+  | 'request_response_examples'
+  | 'openapi_soap_graphql'
+  | 'flows_mermaid'
+  | 'domain_data_integrations'
+  | 'process_quality_readiness'
+  | 'architecture_refactoring_roadmap'
+  | 'report_completeness_review'
+  | 'detail_agent_plan'
+  | 'analysis_document';
+
+interface LlmTaskDefinition {
+  id: LlmTaskId;
+  filename: string;
+  output: string;
+  title: string;
+  coverage_mode?: 'task_area' | 'final_inventory_reconciliation';
+}
+
+const TASKS: LlmTaskDefinition[] = [
+  { id: 'core_assessment', filename: '01-core-assessment.md', output: 'core-assessment.json', title: 'Core Assessment and Decision Summary' },
+  { id: 'business_capabilities_logic', filename: '02-business-capabilities-logic.md', output: 'business-capabilities-logic.json', title: 'Business Capabilities and Business Logic' },
+  { id: 'interface_contract_extraction', filename: '03-interface-contract-extraction.md', output: 'interfaces-contracts.json', title: 'Interface and Contract Extraction' },
+  { id: 'request_response_examples', filename: '04-request-response-examples.md', output: 'request-response-examples.json', title: 'Request and Response Examples' },
+  { id: 'openapi_soap_graphql', filename: '05-openapi-soap-graphql.md', output: 'openapi-soap-graphql.json', title: 'OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL' },
+  { id: 'flows_mermaid', filename: '06-flows-mermaid.md', output: 'flows-mermaid.json', title: 'Flows, Scenarios and Mermaid Diagrams' },
+  { id: 'domain_data_integrations', filename: '07-domain-data-integrations.md', output: 'domain-data-integrations.json', title: 'Domain, Data, Integrations and Side Effects' },
+  { id: 'process_quality_readiness', filename: '08-process-quality-readiness.md', output: 'process-quality-readiness.json', title: 'Process, Quality and Readiness Assessment' },
+  { id: 'architecture_refactoring_roadmap', filename: '09-architecture-refactoring-roadmap.md', output: 'architecture-refactoring-roadmap.json', title: 'Architecture, Refactoring and Modernization Roadmap' },
+  { id: 'report_completeness_review', filename: '10-report-completeness-review.md', output: 'report-completeness-review.json', title: 'Report Completeness and Gap Review', coverage_mode: 'final_inventory_reconciliation' },
+  { id: 'detail_agent_plan', filename: '11-detail-agent-plan.md', output: 'detail-agent-plan.json', title: 'LLM Source-Family Detail Agent Plan' },
+  { id: 'analysis_document', filename: '12-analysis-document.md', output: 'analysis-document.json', title: 'Final LLM Authored Analysis Document' }
 ];
 
 export function writeLlmTasks(analysisDir: string, codeMap: CodeMap): any[] {
   const tasksDir = Path.join(analysisDir, 'llm_tasks');
   const llmDir = Path.join(analysisDir, 'llm');
+  const dataDir = Path.join(analysisDir, 'data');
   ensureDir(tasksDir);
   ensureDir(llmDir);
+  ensureDir(dataDir);
 
   const profile = codeMap.profile || {};
   const modules = (codeMap.modules || []).slice(0, 24);
   const signals = (codeMap.signals || []).slice(0, 200);
   const capsules = (codeMap.capsules || []).slice(0, 40);
   const glossary = (codeMap.glossary_terms || []).slice(0, 120);
-  const importantDocs = (codeMap.important_docs || []).slice(0, 150);
+  const artifactCandidates = (codeMap.artifact_navigation_candidates || codeMap.important_docs || []).slice(0, 150);
+  const componentLibrary = reportComponentLibraryArtifact();
+  const skillCatalog = analysisSkillCatalogArtifact();
+  const goalContract = analysisGoalContractArtifact();
+  const toolPositioningReferences = toolPositioningReferencesArtifact();
 
-  writeText(Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, importantDocs));
+  writeText(Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences));
+  writeJson(Path.join(dataDir, 'source-family-inventory.json'), sourceFamilyInventory(codeMap));
+  writeJson(Path.join(dataDir, 'analysis-goal-contract.json'), goalContract);
+  writeJson(Path.join(dataDir, 'tool-positioning-references.json'), toolPositioningReferences);
+  const legacyWorkplan = Path.join(dataDir, 'source-family-workplan.json');
+  if (FS.existsSync(legacyWorkplan)) FS.unlinkSync(legacyWorkplan);
 
   const taskDefs: any[] = [];
-  for (const [filename, output, title] of TASKS) {
-    const body = taskBody(title, output, profile, modules, signals, capsules, glossary, importantDocs);
-    writeText(Path.join(tasksDir, filename), body);
-    taskDefs.push({ title, task_file: `llm_tasks/${filename}`, expected_output: `llm/${output}`, status: 'pending' });
+  for (const task of TASKS) {
+    const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences);
+    writeText(Path.join(tasksDir, task.filename), body);
+    taskDefs.push({ id: task.id, title: task.title, task_file: `llm_tasks/${task.filename}`, expected_output: `llm/${task.output}`, status: 'pending' });
   }
-  writeJson(Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first', implementation_language: 'TypeScript', tasks: taskDefs });
+  const pipeline = analysisPipelineArtifact(taskDefs);
+  writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), skillCatalog);
+  writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), pipeline);
+  writeJson(Path.join(dataDir, 'analysis-pipeline.json'), pipeline);
+  writeJson(Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first', implementation_language: 'TypeScript', pipeline, tasks: taskDefs });
   return taskDefs;
 }
 
-function overview(profile: any, modules: any[], signals: any[], glossary: string[], capsules: any[], importantDocs: any[]): string {
+export function writeDetailTasksFromLlmPlan(analysisDir: string, plan: any): any[] {
+  const tasksDir = Path.join(analysisDir, 'detail_tasks');
+  const reviewsDir = Path.join(analysisDir, 'detail_reviews');
+  ensureDir(tasksDir);
+  ensureDir(reviewsDir);
+  for (const file of FS.readdirSync(tasksDir).filter((name: string) => name.endsWith('.md'))) {
+    FS.unlinkSync(Path.join(tasksDir, file));
+  }
+  const planTasks = plan?.tasks || [];
+  const tasks = planTasks.map((task: any, index: number) => {
+    const id = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`).replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+    const filename = `${String(index + 1).padStart(3, '0')}-${id}.md`;
+    const output = `detail_reviews/${id}.json`;
+    writeText(Path.join(tasksDir, filename), detailTaskBody(task, output));
+    return {
+      id,
+      source_family: task.source_family,
+      recommended_agent: task.recommended_agent,
+      task_file: `detail_tasks/${filename}`,
+      expected_output: output,
+      authored_section: task.authored_section,
+      authored_block_title: task.authored_block_title,
+      priority_score: task.priority_score,
+      evidence_level_target: task.evidence_level_target,
+      focus: task.focus,
+      status: 'pending'
+    };
+  });
+  writeJson(Path.join(analysisDir, 'detail-task-manifest.json'), {
+    mode: 'llm_authored_source_family_detail_agents',
+    planning_source: plan?.planning_source || 'llm/detail-agent-plan.json',
+    summary: 'These focused source-family detail tasks were mechanically materialized from the LLM-authored detail-agent plan. Complete these reviews before authoring the final LLM analysis document.',
+    tasks
+  });
+  return tasks;
+}
+
+function detailTaskBody(task: any, output: string): string {
+  return `# Source-Family Detail Review · ${task.source_family}
+
+You are a focused source-family detail agent for Codebase Analysis Pack.
+
+## Inputs
+
+Read first:
+
+- \`.analysis/llm_instructions.md\`
+- \`.analysis/data/source-inventory.json\`
+- \`.analysis/data/analysis-goal-contract.json\`
+- \`.analysis/data/code-map.json\`
+- \`.analysis/data/source-family-inventory.json\`
+- \`.analysis/source-capsules.json\`
+- \`.analysis/llm/detail-agent-plan.json\`
+- existing \`.analysis/llm/*.json\` extraction outputs
+- existing \`.analysis/llm/analysis-document.json\` only when you are updating a previous final report
+- the seed files listed below
+
+This task is a semantic review, not a code-map summary. Open source files, tests, docs, contracts, schemas and configuration directly. Do not use filename, regex or word-match hints as proof of behavior.
+
+## Source family
+
+\`\`\`json
+${JSON.stringify({
+  source_family: task.source_family,
+  recommended_agent: task.recommended_agent,
+  evidence_level_target: task.evidence_level_target,
+  focus: task.focus,
+  reason: task.reason,
+  seed_files: task.seed_files,
+  expected_outputs: task.expected_outputs
+}, null, 2)}
+\`\`\`
+
+## Write Output
+
+Write valid JSON to \`.analysis/${output}\`.
+
+Expected JSON:
+
+\`\`\`json
+{
+  "source_family_detail_review": {
+    "source_family": "${String(task.source_family || '').replace(/"/g, '\\"')}",
+    "review_status": "complete|partial|blocked",
+    "summary": "Human-readable purpose and role of this source family.",
+    "business_view": {
+      "purpose": "...",
+      "capabilities": [
+        {"name":"...", "description":"...", "actors":[], "evidence":[]}
+      ],
+      "user_or_system_flows": [
+        {"name":"...", "description":"...", "evidence":[]}
+      ]
+    },
+    "technical_view": {
+      "architecture_role": "...",
+      "entry_points": [
+        {"name":"...", "protocol":"REST|SOAP|event|job|cli|ui|db|internal|unknown", "path":"optional", "description":"...", "evidence":[]}
+      ],
+      "exits_or_integrations": [
+        {"name":"...", "protocol":"...", "description":"...", "evidence":[]}
+      ],
+      "data_and_state": [
+        {"name":"...", "kind":"entity|table|store|message|state|unknown", "description":"...", "evidence":[]}
+      ]
+    },
+    "flows": [
+      {
+        "title":"...",
+        "summary":"...",
+        "mermaid":{"diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
+        "steps":[{"order":1, "actor":"...", "description":"...", "evidence":[]}],
+        "evidence":[]
+      }
+    ],
+    "quality_and_process": {
+      "findings": [
+        {"title":"...", "category":"bug|security|quality|process|testability|maintainability|documentation|operability", "severity":"low|medium|high|critical", "description":"...", "recommendation":"...", "evidence":[]}
+      ],
+      "test_readiness": "none|partial|good|strong|unknown",
+      "process_improvements": [
+        {"title":"...", "description":"...", "evidence":[]}
+      ]
+    },
+    "refactoring_and_target_architecture": {
+      "recommendations": [
+        {"title":"...", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "target_state":"...", "evidence":[]}
+      ]
+    },
+    "open_questions": [
+      {"question":"...", "why_it_matters":"...", "owner":"business|architecture|engineering|operations|unknown", "evidence":[]}
+    ],
+    "evidence": []
+  },
+  "analysis_coverage": {
+    "summary": "Which source files were inspected for this detail review.",
+    "inspected_files": [
+      {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+    ],
+    "deferred_files": [
+      {"path":"relative/path/File.ext", "reason":"generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+    ],
+    "open_questions": []
+  }
+}
+\`\`\`
+
+Rules:
+
+- Every substantive claim needs file:line evidence.
+- If the source family is generated/config/test-only, say so explicitly and explain what can and cannot be inferred.
+- Preserve uncertainty. Do not claim business-owner meaning unless code/tests/docs/contracts prove it.
+- Include at least one open question when owner-grade semantics are not provable.
+`;
+}
+
+function sourceFamilyInventory(codeMap: CodeMap): any {
+  const filesByModule: Record<string, any[]> = {};
+  for (const file of codeMap.files || []) {
+    const module = file.module || 'repository';
+    filesByModule[module] ||= [];
+    filesByModule[module].push(file);
+  }
+  const partitions = (codeMap.modules || []).map((m: any) => {
+    const files = (filesByModule[m.name] || []).sort((a: any, b: any) => ((b.navigation_score || b.score || 0) - (a.navigation_score || a.score || 0)));
+    return {
+      name: m.name,
+      partition_kind: 'navigation_partition',
+      semantic_authority: false,
+      semantic_family_name: null,
+      llm_detail_plan_authority: false,
+      seed_file_meaning: 'Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.',
+      boundary_source: m.boundary_source || 'path_partition',
+      boundary_evidence: m.boundary_evidence || [],
+      files: m.files || 0,
+      source_files: m.source_files || 0,
+      navigation_tags: m.navigation_tags || m.roles || {},
+      roles: m.roles || {},
+      navigation_signals: m.navigation_signals || m.signals || {},
+      signals: m.signals || {},
+      seed_files: files.slice(0, 12).map((f: any) => ({
+        path: f.path,
+        navigation_tags: f.navigation_tags || f.roles || [],
+        roles: f.roles || [],
+        navigation_score: f.navigation_score || f.score || 0,
+        rank_score: f.navigation_score || f.score || 0,
+        score: f.score || 0,
+        signals: f.signal_count || 0,
+        symbols: f.symbol_count || 0
+      }))
+    };
+  }).sort((a: any, b: any) => (b.files || 0) - (a.files || 0) || String(a.name).localeCompare(String(b.name)));
+  return {
+    artifact_kind: 'navigation_partition_inventory',
+    mode: 'deterministic_inventory_only',
+    semantic_authority: false,
+    deterministic_scope: 'filesystem/module partitioning, path/syntax-derived navigation tags, seed-file ranking and project-boundary manifests only',
+    artifact_name_note: 'The legacy filename source-family-inventory.json is kept for workflow compatibility. Its contents are mechanical navigation partitions, not semantic source families.',
+    forbidden_use: [
+      'Do not treat partition names as semantic source-family names.',
+      'Do not choose detail-review priorities from navigation rank alone.',
+      'Do not use partition counts as evidence that business behavior is understood.',
+      'Do not report seed files as proof of routes, interfaces, flows, quality or architecture.'
+    ],
+    llm_required_action: 'The LLM must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.',
+    summary: 'This is a mechanical inventory partition for navigation. Tags, ranks and boundaries are not semantic proof. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.',
+    total_inventory_partitions: partitions.length,
+    inventory_partitions: partitions
+  };
+}
+
+function overview(profile: any, modules: any[], signals: any[], glossary: string[], capsules: any[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any): string {
   return `# Codebase Analysis Pack · LLM-first Instructions
 
 This repository must be analyzed semantically by Codex/LLM. The generated code map is a navigation aid, not the source of final truth.
 
 ## Non-negotiable rules
 
-- Treat \`code-map.json\`, \`source-capsules.json\` and \`important-docs.json\` as discovery aids.
+- Treat \`code-map.json\`, \`source-capsules.json\`, \`navigation-artifact-candidates.json\` and the legacy \`important-docs.json\` as discovery aids.
 - Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
+- Treat \`source-family-inventory.json\` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; the LLM must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
 - Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
 - Use source files, tests, DTO/schema files, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples, CI/CD files, configuration and documentation as evidence.
 - Every relevant assertion must include \`evidence: [{"path":"...", "line": 123, "symbol":"optional"}]\`.
@@ -61,13 +317,46 @@ This repository must be analyzed semantically by Codex/LLM. The generated code m
 - Extract business logic and function/use-case examples explicitly; do not bury them only in prose.
 - Extract domain/data/integration and process-readiness views; the assessment must not stop at documentation.
 - If behavior cannot be proven from code/docs, put it into \`open_questions\`.
+- Semantic completeness, documentation quality and management readiness are LLM judgments. Deterministic checks may require the LLM-authored judgment to exist and be structured, but must not replace it with keyword, menu or block-presence scoring.
 - Keep production code read-only unless explicitly asked otherwise.
 - Use English for generated JSON text and report-facing content, while preserving original domain terms and identifiers.
+- Always produce whole-repository documentation before any module or source-family deep dive.
+- For monorepos or multi-module repositories, summarize the complete source-family landscape: purpose, responsibility, entry points, exits/integrations, tests/examples, confidence and open questions for each relevant family.
+- Create the LLM detail-agent plan only after the whole-repository extraction tasks have produced a repository-wide picture.
+- Author final summaries, E2E understanding, management statements and the visible report only after all planned detail-agent reviews exist and have been synthesized. Earlier tasks may extract building blocks, but must not pretend to be the final report.
+- Do not make one module the narrative center unless the source inventory proves the repository is actually single-module. A focused deep review must be labelled as a deep slice and must not replace the whole-repository view.
+- If E2E flow extraction is deep only for part of the repository, state that boundary explicitly and keep the remaining source families visible as surface-reviewed or follow-up drilldown areas.
+- The final report should be authored by the LLM as a repo-specific analysis document. The renderer provides a stable component library and validation; it must not dictate a fixed one-size-fits-all information architecture.
+- Tool positioning must be concrete and LLM-authored. Use the official reference facts below as market context, not as repo evidence and not as a deterministic verdict. Then state what this analysis replaces, complements or cannot safely decide for this repository, with source evidence and handoff boundaries.
+
+## Tool-positioning reference categories
+
+These categories are external market context for comparison, not repository evidence. They are also written to \`.analysis/data/tool-positioning-references.json\`. Use them only to frame positioning; use source evidence for claims about this repository. Preserve the distinction between official reference facts, repository evidence and LLM-authored judgment.
+
+\`\`\`json
+${JSON.stringify(toolPositioningReferences, null, 2)}
+\`\`\`
 
 ## Target capabilities that must be addressed
 
 \`\`\`json
 ${JSON.stringify(TARGET_CAPABILITIES.map(c => ({ id: c.id, title: c.title, expected_outputs: c.expected_outputs })), null, 2)}
+\`\`\`
+
+## Original analysis goal contract
+
+This preserves the original product objective for the LLM. It is context, not a deterministic checklist or readiness verdict. Final semantic status must be authored through \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
+
+\`\`\`json
+${JSON.stringify(goalContract, null, 2)}
+\`\`\`
+
+## LLM analysis skill catalog
+
+Use these as reusable analysis capabilities, not as deterministic routing rules. The LLM decides which skills matter for this repository and how deeply to apply them.
+
+\`\`\`json
+${JSON.stringify(skillCatalog, null, 2)}
 \`\`\`
 
 ## Repo snapshot
@@ -82,7 +371,7 @@ ${JSON.stringify(profile, null, 2)}
 ${JSON.stringify(modules.slice(0, 14), null, 2)}
 \`\`\`
 
-## Important docs / contracts / example candidates
+## Navigation artifact candidates, not final facts
 
 \`\`\`json
 ${JSON.stringify(importantDocs.slice(0, 100), null, 2)}
@@ -92,6 +381,14 @@ ${JSON.stringify(importantDocs.slice(0, 100), null, 2)}
 
 \`\`\`json
 ${JSON.stringify(signals.slice(0, 90), null, 2)}
+\`\`\`
+
+## Report component library
+
+Use this renderer/styling contract for \`analysis_document.sections[].blocks[]\`. The component library is not a semantic-quality checklist.
+
+\`\`\`json
+${JSON.stringify(componentLibrary, null, 2)}
 \`\`\`
 
 ## Top glossary terms
@@ -104,7 +401,7 @@ The full included file inventory is in \`.analysis/data/source-inventory.json\`.
 `;
 }
 
-function taskBody(title: string, outputFile: string, profile: any, modules: any[], signals: any[], capsules: any[], glossary: string[], importantDocs: any[]): string {
+function taskBody(task: LlmTaskDefinition, profile: any, modules: any[], signals: any[], capsules: any[], glossary: string[], importantDocs: any[], componentLibrary: any, skillCatalog: any, goalContract: any, toolPositioningReferences: any): string {
   const hints = {
     repo: profile,
     source_inventory: {
@@ -114,26 +411,37 @@ function taskBody(title: string, outputFile: string, profile: any, modules: any[
       inventory_file: '.analysis/data/source-inventory.json'
     },
     top_modules: modules.slice(0, 10),
+    artifact_navigation_candidates: importantDocs.slice(0, 38),
     important_docs: importantDocs.slice(0, 38),
+    report_component_library: componentLibrary,
+    analysis_skill_catalog: skillCatalog,
+    analysis_goal_contract: goalContract,
+    tool_positioning_reference: toolPositioningReferences,
     artifact_navigation_hints: signals.slice(0, 60),
-    top_capsules: capsules.slice(0, 18).map(c => ({ path: c.path, roles: c.roles, signals: (c.signals || []).slice(0, 8), symbols: (c.symbols || []).slice(0, 8) })),
+    top_capsules: capsules.slice(0, 18).map(c => ({ path: c.path, navigation_tags: c.navigation_tags || c.roles, roles: c.roles, signals: (c.signals || []).slice(0, 8), symbols: (c.symbols || []).slice(0, 8) })),
     glossary: glossary.slice(0, 90)
   };
-  return `# ${title}
+  return `# ${task.title}
 
 You are running inside Codex as the semantic extraction step for Codebase Analysis Pack.
+
+Task id: \`${task.id}\`
 
 Read these files first:
 
 - \`.analysis/llm_instructions.md\`
 - \`.analysis/data/code-map.json\`
 - \`.analysis/data/source-inventory.json\`
-- \`.analysis/data/important-docs.json\`
+- \`.analysis/data/analysis-goal-contract.json\`
+- \`.analysis/data/tool-positioning-references.json\`
+- \`.analysis/data/navigation-artifact-candidates.json\` (or legacy \`.analysis/data/important-docs.json\`)
+- \`.analysis/data/source-family-inventory.json\`
 - \`.analysis/source-capsules.json\`
 
 Then open source files, tests, docs, contracts, schemas and configuration as needed. The source capsules and artifact hints are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+For large repositories, use \`.analysis/data/source-family-inventory.json\` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in \`.analysis/llm/detail-agent-plan.json\`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
-Write your result to \`.analysis/llm/${outputFile}\` as valid JSON.
+Write your result to \`.analysis/llm/${task.output}\` as valid JSON.
 
 Evidence format for every relevant claim:
 
@@ -147,7 +455,18 @@ General rules:
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
 - Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
-- Account for source coverage. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered, and \`analysis_coverage.deferred_files[]\` for inventory files intentionally not relevant to this task. The final completeness task must reconcile the full inventory.
+- Account for the source inventory. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered, and \`analysis_coverage.deferred_files[]\` for inventory files intentionally not relevant to this task. The final completeness task must reconcile the full inventory. This is source-inventory accounting, not a deterministic semantic-quality verdict.
+- Start from the full repository scope. Summarize the whole source-family landscape before focusing on a specific module, framework, interface type or flow family.
+- For multi-module repositories, include source-family statements across the repository; a deep slice is acceptable only when clearly labelled and paired with whole-repo coverage context.
+- Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
+- When using navigation partitions, the LLM must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
+- Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
+- The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
+- When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
+- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier tasks to build source-backed blocks, examples, flows, findings and the detail-agent plan.
+- The final analysis-document task must read all extraction outputs and all executed \`.analysis/detail_reviews/*.json\` files, then synthesize the complete picture.
+- Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
+- Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an \`open_questions\` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
 - Use \`confidence: "high|medium|low"\` and \`open_questions\` when behavior is unclear.
 - Do not modify production source files.
 
@@ -165,17 +484,17 @@ Rules for examples:
 ${JSON.stringify(hints, null, 2)}
 \`\`\`
 
-${schemaForTitle(title)}
+${schemaForTask(task.id)}
 
-${coverageSchema(title)}
+${coverageSchema(task)}
 `;
 }
 
-function coverageSchema(title: string): string {
-  const emphasis = title.includes('Report Completeness')
-    ? 'For this final task, reconcile the full `.analysis/data/source-inventory.json` inventory across all previous outputs. Uncovered files must be listed as inspected or deferred with a defensible reason, otherwise leave them uncovered and add an analysis-gap finding.'
+function coverageSchema(task: LlmTaskDefinition): string {
+  const emphasis = task.coverage_mode === 'final_inventory_reconciliation'
+    ? 'For this final task, reconcile the full `.analysis/data/source-inventory.json` inventory across all previous outputs. Uncovered files must be listed as inspected or deferred with a defensible reason, otherwise leave them uncovered and add an analysis-gap finding. Also review the report narrative for single-module bias: if the repository is multi-module, the final output must contain a whole-repository view and source-family coverage notes before any deep slice.'
     : 'For this task, list the files you inspected for this extraction area and the files from the inventory that you intentionally deferred for this extraction area.';
-  return `## Required Source Coverage Accounting
+  return `## Required Source Inventory Accounting
 
 ${emphasis}
 
@@ -197,12 +516,283 @@ Include this top-level object in the JSON:
 \`\`\``;
 }
 
-function schemaForTitle(title: string): string {
-  if (title.includes('Core Assessment')) return `## Expected JSON
+function schemaForTask(taskId: LlmTaskId): string {
+  if (taskId === 'detail_agent_plan') return `## Expected JSON
+
+This task happens after the whole-repository extraction tasks and before the final report. Read all existing \`.analysis/llm/*.json\` outputs except \`analysis-document.json\` as building blocks, plus the source inventory and source-family inventory. Then author a repository-specific plan for focused detail agents.
+
+This is not the final report. Do not write management conclusions or final E2E synthesis here. The purpose is to decide which source families, interface areas or process routes need deeper LLM review before the final analysis document is authored.
+
+Required planning intent:
+
+- Start from the complete repository picture produced by tasks 01-10.
+- Use \`.analysis/data/source-family-inventory.json\` only as navigation context.
+- Select detail tasks because they are important for business understanding, E2E behavior, interfaces/contracts, quality/process risk or refactoring decisions.
+- Keep the plan generic: source families can be modules, bounded contexts, contract families, jobs, UI apps, data/integration areas or any repository-specific slice that makes semantic sense.
+- Include seed files only as starting points; detail agents must open source directly.
+- If no detail review is needed, return an empty \`tasks\` list, set \`no_detail_reviews_needed: true\`, and explain why through \`summary\`, \`not_planned[]\`, evidence or open questions. Do not leave \`tasks[]\` empty without an explicit LLM-authored skip rationale.
+
+{
+  "detail_agent_plan": {
+    "planning_stage": "post_overview_pre_final_report",
+    "planning_source": "llm/detail-agent-plan.json",
+    "summary": "Why these focused detail reviews are needed before the final report.",
+    "no_detail_reviews_needed": false,
+    "whole_repo_context": "Short repository-wide picture used to choose detail slices.",
+    "tasks": [
+      {
+        "id": "detail-source-family-id",
+        "source_family": "Repository-specific family or slice name",
+        "recommended_agent": "business-extraction|interface-contract-analysis|flow-mermaid-analysis|codebase-assessment|custom",
+        "priority": "high|medium|low",
+        "priority_score": 0.0,
+        "focus": ["What this detail review must understand"],
+        "reason": "Why the final report should wait for this detail review.",
+        "evidence_level_target": "deep|representative|contract_level|risk_focused",
+        "expected_outputs": ["business view", "technical view", "flows", "findings", "open questions"],
+        "seed_files": ["relative/path/File.ext"],
+        "evidence": []
+      }
+    ],
+    "not_planned": [
+      {"source_family":"...", "reason":"surface evidence is sufficient|generated only|duplicate|out of scope", "evidence":[]}
+    ],
+    "evidence": []
+  },
+  "analysis_coverage": {
+    "summary": "Which extraction outputs and source inventory areas informed the plan.",
+    "inspected_files": [
+      {"path":"relative/path/File.ext", "reason":"...", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+    ],
+    "deferred_files": [
+      {"path":"relative/path/File.ext", "reason":"generated|duplicate|not_relevant_to_task|superseded_by_contract|too_large|open_question", "evidence":[{"path":"relative/path/File.ext", "line":1}]}
+    ],
+    "open_questions": []
+  }
+}`;
+
+  if (taskId === 'analysis_document') return `## Expected JSON
+
+This is the final synthesis task. Author it only after the whole-repository extraction outputs, \`.analysis/llm/detail-agent-plan.json\`, and all planned \`.analysis/detail_reviews/*.json\` outputs are present. Read all previous \`.analysis/llm/*.json\` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
+
+The HTML renderer will provide the component library and styling. You decide the section order, emphasis and depth. When an \`analysis_document\` is present, \`analysis_document.sections[]\` is the complete visible report navigation and start order; generated code-map, coverage, quality-review, requirements-trace and raw-data views remain audit artifacts unless you intentionally author repository-specific sections/blocks for them.
+
+Required report intent:
+
+- Start with system understanding: whole-repository overview, important relationships, system entry/exit, E2E context, business need, business use and what the system appears to be for.
+- Put the management/business narrative inside visible \`analysis_document.sections[].blocks[]\`, not only in top-level helper fields such as \`executive_decision_basis\`. Top-level fields can support automation, but the human report is the authored sections.
+- Then cover the four required levels:
+  - reverse_engineering_documentation: functionality, user/system flows, business capabilities
+  - code_analysis: bugs, vulnerabilities, code quality, maintainability, test signals
+  - process_analysis: process/readiness, delivery, observability, operational improvements
+  - refactoring_target_architecture: modernization path, target architecture or new tech-stack options
+- Include functional view and technical view.
+- Include comparison/tool positioning: how this automated analysis compares to or complements consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Name the repo-specific decision value, what can be replaced, what is only complemented and the handoff boundaries. Use \`.analysis/data/tool-positioning-references.json\` as official market context only; source-code evidence remains required for repository-specific claims.
+- Include confidence, known gaps and open questions. Do not overclaim.
+- Every substantive claim must include evidence, or must be clearly listed as an open question.
+- Explicitly synthesize every executed source-family detail review into the document. List the integrated source families in \`detail_review_synthesis.integrated_detail_reviews\`; otherwise finalization will mark the report stale.
+- If the detail-agent plan still has unexecuted tasks, do not claim final readiness. Either wait for the reviews or mark the report partial with the missing families and open questions.
+- If technical drilldown, evidence governance, quality-review, requirements-trace, coverage or raw-data explanation matters to the audience, create repository-specific sections for them inside \`analysis_document.sections\`. Do not rely on fixed appendix menu items.
+- Each visible section should earn its place by explaining a business decision, business use, system relationship, risk, improvement path or technical drilldown. Avoid sections that merely enumerate classes, functions or files.
+- Use \`agent_plan\` blocks only to show the already planned/executed detail-review basis or remaining follow-up. The source of executable pre-report detail tasks is \`.analysis/llm/detail-agent-plan.json\`, not the final report.
+- Include \`report_quality_review\` as an LLM-authored self-audit of the final document. This is not a CLI text search. You must explicitly judge whether the authored report is management-ready, repo-specific, whole-repo-first, evidence-aware and covers the four requested service levels plus functional/technical views, improvements/refactoring and tool positioning.
+- The CLI will trust this structured LLM judgment for semantic readiness. It only checks that the judgment exists, is explicit and can be rendered with evidence; it does not infer quality from keywords, class/function lists or fixed report menus.
+- The CLI will also treat \`requirements_trace\` as an LLM-authored trace artifact, not as a fixed deterministic checklist. Use the original target picture below, but word and extend trace rows in the way that best fits the repository. The LLM verdict remains the semantic authority.
+- For every original goal item you address, add \`goal_contract_refs\` to the relevant \`requirements_trace\` row. Use exact IDs from \`analysis_goal_contract\`: \`required_output_shape.<key>\`, \`required_levels.<id>\`, \`required_views.<id>\` and \`required_report_behaviors.<id>\`. This includes \`required_output_shape.management_drilldown\` for the visible business-need/business-use narrative with technical drilldown. The CLI checks only that these explicit references exist and are valid; it does not match trace labels by text and does not decide whether the goal is semantically satisfied.
+- If any \`requirements_trace\` row is \`partial\` or \`open\` and \`report_quality_review.verdict\` is \`decision_ready\`, include \`report_quality_review.partial_requirement_rationale[]\` for every such row. This is where you explicitly explain why the remaining limit is acceptable for decision readiness, what follow-up remains, and which evidence or open question supports that judgment.
+- The suggested \`checks\` are review prompts, not deterministic truth requirements. Set them honestly. If the report is useful but has known limits, use \`verdict: "partial"\` or keep \`verdict: "decision_ready"\` only when the decision basis is sufficient despite clearly stated follow-up.
+
+Use only block types from \`report_component_library.components[].id\` in the context JSON so the renderer can keep the visual system consistent. The component library is a rendering contract, not a semantic-quality checklist.
+Every authored section must contain at least one block, and every block must contain renderable fields or evidence. Do not rely on deterministic placeholder text; write the content, limitation or open question yourself.
+Any block may include a \`labels\` object when the default component wording is not right for this repository. Use this to make group titles, table headers and follow-up wording repo-specific while keeping the same visual component.
+
+{
+  "analysis_document": {
+    "title": "Repository-specific report title",
+    "subtitle": "Short business/technical framing",
+    "audience": ["management", "architecture", "engineering"],
+    "authoring_mode": "llm",
+    "synthesis_stage": "final_after_detail_reviews",
+    "source_basis": "Short statement of which source inventory and extracted artifacts were used.",
+    "requirements_trace": [
+      {"requirement":"Reverse Engineering & Documentation", "goal_contract_refs":["required_levels.reverse_engineering_documentation", "required_report_behaviors.whole_repo_first"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Code Analysis", "goal_contract_refs":["required_levels.code_analysis"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Process Analysis", "goal_contract_refs":["required_levels.process_analysis"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Refactoring / Target Architecture", "goal_contract_refs":["required_levels.refactoring_target_architecture"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Functional View", "goal_contract_refs":["required_views.functional_view", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Technical View", "goal_contract_refs":["required_views.technical_view"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]},
+      {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered|partial|open", "evidence":[]}
+    ],
+    "executive_decision_basis": {
+      "summary": "Decision-grade summary.",
+      "recommendation": "What stakeholders should do next.",
+      "confidence": "high|medium|low",
+      "evidence": [],
+      "open_questions": []
+    },
+    "detail_review_synthesis": {
+      "integrated_detail_reviews": ["source-family name from .analysis/detail_reviews/*.json"],
+      "summary": "How executed detail-agent reviews changed or confirmed the final analysis document.",
+      "coverage_statement": "Which source-family detail reviews are incorporated, which remain planned only, and whether the document is current.",
+      "evidence": []
+    },
+    "report_quality_review": {
+      "reviewer": "llm",
+      "verdict": "decision_ready|partial|not_ready",
+      "summary": "LLM-authored judgment of whether this is a management-ready decision document with technical drilldown.",
+      "criteria": [
+        {"name":"Repository-specific criterion", "verdict":"pass|partial|fail", "reason":"...", "evidence":[]}
+      ],
+      "findings": [
+        {"title":"Quality review finding", "status":"pass|partial|fail", "description":"...", "evidence":[]}
+      ],
+      "partial_requirement_rationale": [
+        {"requirement":"Requirement name copied from requirements_trace when its status is partial/open", "status":"partial|open", "accepted_limit":"What remains incomplete.", "decision_ready_rationale":"Why the report can still be decision-ready, or use verdict partial/not_ready instead.", "follow_up":["..."], "evidence":[], "open_questions":[]}
+      ],
+      "checks": {
+        "repo_specific_information_architecture": true,
+        "management_ready_decision_basis": true,
+        "whole_repo_first_understanding": true,
+        "e2e_relationships_explained": true,
+        "functional_view_explained": true,
+        "technical_view_explained": true,
+        "four_level_model_covered": true,
+        "improvements_and_refactoring_covered": true,
+        "tool_positioning_covered": true,
+        "evidence_and_uncertainty_visible": true
+      },
+      "evidence": [],
+      "open_questions": []
+    },
+    "sections": [
+      {
+        "id": "stable-section-id",
+        "title": "Section title chosen for this repository",
+        "level": "management|functional|technical|deep_technical|appendix",
+        "intent": "Why this section exists for this repository.",
+        "blocks": [
+          {
+            "type": "narrative",
+            "title": "Optional block title",
+            "text": ["Paragraph text"],
+            "evidence": []
+          },
+          {
+            "type": "statement_list",
+            "title": "Optional block title",
+            "items": [
+              {"title":"Statement", "description":"...", "severity":"low|medium|high|critical|info", "confidence":"high|medium|low", "evidence":[]}
+            ]
+          },
+          {
+            "type": "metric_grid",
+            "title": "Optional block title",
+            "metrics": [
+              {"label":"Metric", "value":"123", "detail":"optional", "evidence":[]}
+            ]
+          },
+          {
+            "type": "source_family_map",
+            "title": "Optional block title",
+            "families": [
+              {"name":"source family", "role":"responsibility", "business_use":"...", "technical_shape":"...", "evidence_level":"deep|surface|inventory_only", "confidence":"high|medium|low", "evidence":[]}
+            ]
+          },
+          {
+            "type": "boundary_map",
+            "title": "Optional block title",
+            "labels": {"entries":"Repository-specific entry label", "exits":"Repository-specific exit/integration label", "state":"Repository-specific state/data label"},
+            "entries": [{"name":"entry", "description":"...", "protocol":"...", "evidence":[]}],
+            "exits": [{"name":"exit", "description":"...", "protocol":"...", "evidence":[]}],
+            "state": [{"name":"state/store", "description":"...", "technology":"...", "evidence":[]}]
+          },
+          {
+            "type": "flow",
+            "title": "Optional block title",
+            "summary": "...",
+            "mermaid": {"diagram_type":"sequenceDiagram|flowchart TD|stateDiagram-v2", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
+            "steps": [{"order":1, "actor":"...", "description":"...", "evidence":[]}],
+            "evidence": []
+          },
+          {
+            "type": "four_level_assessment",
+            "title": "Optional block title",
+            "levels": [
+              {"level":"reverse_engineering_documentation|code_analysis|process_analysis|refactoring_target_architecture", "status":"strong|good|partial|open", "summary":"...", "evidence":[], "next_steps":[]}
+            ]
+          },
+          {
+            "type": "decision_matrix",
+            "title": "Optional block title",
+            "labels": {"decision":"Decision", "options":"Options", "recommendation":"Recommendation", "risk":"Risk / Evidence"},
+            "rows": [
+              {"decision":"...", "options":["..."], "recommendation":"...", "risk":"...", "confidence":"high|medium|low", "evidence":[]}
+            ]
+          },
+          {
+            "type": "roadmap",
+            "title": "Optional block title",
+            "items": [
+              {"title":"...", "phase":"now|next|later", "benefit":"...", "risk":"low|medium|high", "effort":"S|M|L|XL", "evidence":[]}
+            ]
+          },
+          {
+            "type": "agent_plan",
+            "title": "Optional block title",
+            "labels": {"source_family":"Source Family", "priority":"Priority", "focus":"Focus", "expected_outputs":"Expected Outputs", "task_output":"Task / Output", "seed_files":"Seed Files"},
+            "summary": "How detail agents should continue after the overview.",
+            "tasks": [
+              {"source_family":"...", "recommended_agent":"...", "priority":"high|medium|low", "focus":["..."], "expected_outputs":["..."], "seed_files":["path"], "evidence":[]}
+            ]
+          },
+          {
+            "type": "technical_drilldown",
+            "title": "Optional block title",
+            "references": [
+              {"label":"...", "target":"#technical|#coverage|#appendix", "description":"..."}
+            ]
+          },
+          {
+            "type": "open_questions",
+            "title": "Optional block title",
+            "items": [
+              {"question":"...", "why_it_matters":"...", "owner":"business|architecture|engineering|operations|unknown", "evidence":[]}
+            ]
+          }
+        ],
+        "evidence": []
+      }
+    ]
+  }
+}`;
+
+  if (taskId === 'core_assessment') return `## Expected JSON
 
 {
   "assessment": {
     "executive_summary": "Decision-grade summary of what the repository appears to do and how complete the extraction is.",
+    "repository_wide_view": {
+      "summary": "Whole-repository business and technical story before any module deep dive.",
+      "coverage_statement": "How the full included source inventory was considered.",
+      "source_families": [
+        {
+          "name": "module or source-family name",
+          "purpose": "Human-readable responsibility in the repository",
+          "business_use": "Business or operational use visible from evidence",
+          "entry_points": ["interface/path/job/topic/command if known"],
+          "exits_or_integrations": ["external system/protocol/store/topic if known"],
+          "evidence_level": "deep|surface|inventory_only",
+          "confidence": "high|medium|low",
+          "evidence": [],
+          "open_questions": []
+        }
+      ],
+      "deep_slice_boundaries": [
+        {"name":"Deeply reviewed area", "reason":"Why this area is deeper than the rest", "evidence": []}
+      ],
+      "e2e_coverage_statement": "Which source families have route/process-level E2E flow evidence and which remain pending."
+    },
     "system_purpose": "Business purpose inferred from code/docs/tests.",
     "assessment_scope": ["What was analyzed"],
     "key_capabilities": ["Short capability names"],
@@ -231,14 +821,21 @@ function schemaForTitle(title: string): string {
     "tool_positioning": {
       "summary": "How this analysis output acts as an alternative or complement to existing code analysis/documentation tools.",
       "automation_level": "manual|assisted|mostly_automated|fully_automated",
+      "comparison_dimensions": [
+        {"category":"consulting_or_genai_delivery_suite|structural_architecture_mapping|static_quality_security_gate|automated_transformation_engine", "positioning":"replace|complement|handoff|required_followup", "summary":"...", "evidence":[]}
+      ],
       "strengths_vs_traditional_tools": [],
+      "complements": [],
       "boundaries": [],
+      "recommended_use": "How stakeholders should use this report in a decision workflow.",
       "evidence": []
     },
     "top_risks": [
       {"title":"risk", "severity":"low|medium|high|critical", "description":"...", "evidence": []}
     ],
     "completeness": {
+      "whole_repository_view": "none|partial|good|strong",
+      "source_family_coverage": "none|partial|good|strong",
       "business_logic": "none|partial|good|strong",
       "interfaces": "none|partial|good|strong",
       "flows": "none|partial|good|strong",
@@ -253,7 +850,7 @@ function schemaForTitle(title: string): string {
   }
 }`;
 
-  if (title.includes('Business Capabilities')) return `## Expected JSON
+  if (taskId === 'business_capabilities_logic') return `## Expected JSON
 
 {
   "domain_model": {
@@ -310,7 +907,7 @@ function schemaForTitle(title: string): string {
   ]
 }`;
 
-  if (title.includes('Interface and Contract')) return `## Expected JSON
+  if (taskId === 'interface_contract_extraction') return `## Expected JSON
 
 {
   "interfaces": [
@@ -345,7 +942,7 @@ function schemaForTitle(title: string): string {
   ]
 }`;
 
-  if (title.includes('Request and Response')) return `## Expected JSON
+  if (taskId === 'request_response_examples') return `## Expected JSON
 
 {
   "documentation": {
@@ -375,7 +972,7 @@ function schemaForTitle(title: string): string {
   }
 }`;
 
-  if (title.includes('OpenAPI')) return `## Expected JSON
+  if (taskId === 'openapi_soap_graphql') return `## Expected JSON
 
 {
   "documentation": {
@@ -414,7 +1011,7 @@ function schemaForTitle(title: string): string {
   }
 }`;
 
-  if (title.includes('Flows')) return `## Expected JSON
+  if (taskId === 'flows_mermaid') return `## Expected JSON
 
 {
   "flows": [
@@ -447,7 +1044,7 @@ function schemaForTitle(title: string): string {
   }
 }`;
 
-  if (title.includes('Domain, Data')) return `## Expected JSON
+  if (taskId === 'domain_data_integrations') return `## Expected JSON
 
 {
   "data_model": {
@@ -469,7 +1066,7 @@ function schemaForTitle(title: string): string {
   ]
 }`;
 
-  if (title.includes('Process')) return `## Expected JSON
+  if (taskId === 'process_quality_readiness') return `## Expected JSON
 
 {
   "process": {
@@ -493,7 +1090,7 @@ function schemaForTitle(title: string): string {
   ]
 }`;
 
-  if (title.includes('Architecture')) return `## Expected JSON
+  if (taskId === 'architecture_refactoring_roadmap') return `## Expected JSON
 
 {
     "architecture": {
@@ -529,6 +1126,8 @@ function schemaForTitle(title: string): string {
 {
   "assessment": {
     "completeness": {
+      "whole_repository_view": "none|partial|good|strong",
+      "source_family_coverage": "none|partial|good|strong",
       "business_logic": "none|partial|good|strong",
       "interfaces": "none|partial|good|strong",
       "flows": "none|partial|good|strong",
@@ -541,7 +1140,7 @@ function schemaForTitle(title: string): string {
   "documentation": {
     "summary": "What examples/contracts were found or inferred and what remains missing.",
     "report_completeness_notes": [
-      {"area":"interfaces|flows|business_logic|process|data|examples|refactoring", "status":"missing|partial|good", "note":"...", "evidence": []}
+      {"area":"whole_repository|source_families|interfaces|flows|business_logic|process|data|examples|refactoring", "status":"missing|partial|good", "note":"...", "evidence": []}
     ]
   },
   "findings": [

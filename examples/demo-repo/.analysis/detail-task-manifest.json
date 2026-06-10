@@ -1,0 +1,24 @@
+{
+  "mode": "llm_authored_source_family_detail_agents",
+  "planning_source": "llm/detail-agent-plan.json",
+  "summary": "These focused source-family detail tasks were mechanically materialized from the LLM-authored detail-agent plan. Complete these reviews before authoring the final LLM analysis document.",
+  "tasks": [
+    {
+      "id": "detail-src-main",
+      "source_family": "src/main",
+      "recommended_agent": "interface-contract-analysis",
+      "task_file": "detail_tasks/001-detail-src-main.md",
+      "expected_output": "detail_reviews/detail-src-main.json",
+      "authored_section": "llm/detail-agent-plan.json",
+      "authored_block_title": "The demo repository is small, but the final report should still wait for one focused contract/runtime parity review beca",
+      "priority_score": 0.9,
+      "evidence_level_target": "deep",
+      "focus": [
+        "OpenAPI/runtime parity",
+        "SOAP/KYC contract semantics",
+        "configuration-driven decisions"
+      ],
+      "status": "pending"
+    }
+  ]
+}

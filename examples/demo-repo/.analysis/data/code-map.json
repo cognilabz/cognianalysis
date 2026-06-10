@@ -2,8 +2,8 @@
   "profile": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-09T11:07:11Z",
-    "commit": "dc18fff5d4fea61aea020bd2329af031fbbf7a5f",
+    "analyzed_at": "2026-06-09T20:48:59Z",
+    "commit": "2d36455096f3c607f2fef54e0ebf548c358e450f",
     "repo_type": "library/application",
     "languages": {
       "Java": 261
@@ -48,208 +48,178 @@
   },
   "modules": [
     {
-      "id": "com-acme-onboarding-onboardingservice-java",
-      "name": "com/acme/onboarding/OnboardingService.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 46,
+      "id": "src-main",
+      "name": "src/main",
+      "files": 23,
+      "source_files": 17,
+      "lines": 576,
       "roles": {
-        "source": 1
+        "api_contract": 2,
+        "config": 3,
+        "soap_contract": 3,
+        "source": 17
       },
       "languages": {
-        "Java": 46
+        "YAML": 188,
+        "WSDL": 135,
+        "Java": 253
       },
-      "signals": {},
+      "signals": {
+        "api_contract_candidate": 2,
+        "soap_contract_candidate": 3
+      },
       "top_files": [
         {
-          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-          "score": 58,
-          "roles": [
-            "source"
+          "path": "src/main/resources/openapi.yaml",
+          "navigation_score": 147,
+          "score": 147,
+          "navigation_tags": [
+            "api_contract",
+            "config"
           ],
-          "signals": 0,
-          "symbols": 3
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-customer-java",
-      "name": "com/acme/onboarding/Customer.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 43,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 43
-      },
-      "signals": {},
-      "top_files": [
+          "roles": [
+            "api_contract",
+            "config"
+          ],
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/wsdl/customer-verification.wsdl",
+          "navigation_score": 114,
+          "score": 114,
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "signals": 1,
+          "symbols": 10
+        },
+        {
+          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+          "navigation_score": 112,
+          "score": 112,
+          "navigation_tags": [
+            "api_contract",
+            "config"
+          ],
+          "roles": [
+            "api_contract",
+            "config"
+          ],
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "navigation_score": 112,
+          "score": 112,
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "signals": 1,
+          "symbols": 9
+        },
+        {
+          "path": "src/main/resources/onboarding.wsdl",
+          "navigation_score": 102,
+          "score": 102,
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "signals": 1,
+          "symbols": 4
+        },
         {
           "path": "src/main/java/com/acme/onboarding/Customer.java",
+          "navigation_score": 66,
           "score": 66,
+          "navigation_tags": [
+            "source"
+          ],
           "roles": [
             "source"
           ],
           "signals": 0,
           "symbols": 7
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingcontroller-java",
-      "name": "com/acme/onboarding/OnboardingController.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 32,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 32
-      },
-      "signals": {},
-      "top_files": [
+        },
         {
           "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "navigation_score": 58,
           "score": 58,
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "signals": 0,
+          "symbols": 3
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "navigation_score": 58,
+          "score": 58,
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "signals": 0,
+          "symbols": 3
+        },
+        {
+          "path": "src/main/resources/application.yml",
+          "navigation_score": 53,
+          "score": 53,
+          "navigation_tags": [
+            "config"
+          ],
+          "roles": [
+            "config"
+          ],
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+          "navigation_score": 48,
+          "score": 48,
+          "navigation_tags": [
+            "source"
+          ],
           "roles": [
             "source"
           ],
           "signals": 0,
           "symbols": 3
         }
-      ]
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "api_contract": 2,
+        "config": 3,
+        "soap_contract": 3,
+        "source": 17
+      },
+      "navigation_signals": {
+        "api_contract_candidate": 2,
+        "soap_contract_candidate": 3
+      }
     },
     {
-      "id": "com-acme-onboarding-onboardingeventpublisher-java",
-      "name": "com/acme/onboarding/OnboardingEventPublisher.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 19,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 19
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-riskscoringservice-java",
-      "name": "com/acme/onboarding/RiskScoringService.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 18,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 18
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-kycclient-java",
-      "name": "com/acme/onboarding/KycClient.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 16,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 16
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/KycClient.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingrequest-java",
-      "name": "com/acme/onboarding/OnboardingRequest.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 15,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 15
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-customerrepository-java",
-      "name": "com/acme/onboarding/CustomerRepository.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 10,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 10
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "src-test-java-com",
-      "name": "src/test/java/com",
+      "id": "src-test",
+      "name": "src/test",
       "files": 1,
       "source_files": 1,
       "lines": 8,
@@ -264,7 +234,12 @@
       "top_files": [
         {
           "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+          "navigation_score": 74,
           "score": 74,
+          "navigation_tags": [
+            "source",
+            "test"
+          ],
           "roles": [
             "source",
             "test"
@@ -272,326 +247,29 @@
           "signals": 0,
           "symbols": 1
         }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingresponse-java",
-      "name": "com/acme/onboarding/OnboardingResponse.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 8,
-      "roles": {
-        "source": 1
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "source": 1,
+        "test": 1
       },
-      "languages": {
-        "Java": 8
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-          "score": 48,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 3
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-customerstatus-java",
-      "name": "com/acme/onboarding/CustomerStatus.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 8,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 8
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-customernotfoundexception-java",
-      "name": "com/acme/onboarding/CustomerNotFoundException.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 8,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 8
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
-          "score": 44,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 1
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-duplicatecustomerexception-java",
-      "name": "com/acme/onboarding/DuplicateCustomerException.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 8,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 8
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-          "score": 44,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 1
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-kycrequest-java",
-      "name": "com/acme/onboarding/KycRequest.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 6,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 6
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-kycresult-java",
-      "name": "com/acme/onboarding/KycResult.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 4,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 4
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/KycResult.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingresult-java",
-      "name": "com/acme/onboarding/OnboardingResult.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 4,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 4
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingstartedevent-java",
-      "name": "com/acme/onboarding/OnboardingStartedEvent.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 4,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 4
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "com-acme-onboarding-onboardingstatusresponse-java",
-      "name": "com/acme/onboarding/OnboardingStatusResponse.java",
-      "files": 1,
-      "source_files": 1,
-      "lines": 4,
-      "roles": {
-        "source": 1
-      },
-      "languages": {
-        "Java": 4
-      },
-      "signals": {},
-      "top_files": [
-        {
-          "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-          "score": 46,
-          "roles": [
-            "source"
-          ],
-          "signals": 0,
-          "symbols": 2
-        }
-      ]
-    },
-    {
-      "id": "src-main",
-      "name": "src/main",
-      "files": 6,
-      "source_files": 0,
-      "lines": 323,
-      "roles": {
-        "api_contract": 2,
-        "config": 3,
-        "soap_contract": 3
-      },
-      "languages": {
-        "YAML": 188,
-        "WSDL": 135
-      },
-      "signals": {
-        "api_contract_candidate": 2,
-        "soap_contract_candidate": 3
-      },
-      "top_files": [
-        {
-          "path": "src/main/resources/openapi.yaml",
-          "score": 147,
-          "roles": [
-            "api_contract",
-            "config"
-          ],
-          "signals": 1,
-          "symbols": 0
-        },
-        {
-          "path": "src/main/resources/wsdl/customer-verification.wsdl",
-          "score": 114,
-          "roles": [
-            "soap_contract"
-          ],
-          "signals": 1,
-          "symbols": 10
-        },
-        {
-          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
-          "score": 112,
-          "roles": [
-            "api_contract",
-            "config"
-          ],
-          "signals": 1,
-          "symbols": 0
-        },
-        {
-          "path": "src/main/resources/wsdl/kyc-status.wsdl",
-          "score": 112,
-          "roles": [
-            "soap_contract"
-          ],
-          "signals": 1,
-          "symbols": 9
-        },
-        {
-          "path": "src/main/resources/onboarding.wsdl",
-          "score": 102,
-          "roles": [
-            "soap_contract"
-          ],
-          "signals": 1,
-          "symbols": 4
-        },
-        {
-          "path": "src/main/resources/application.yml",
-          "score": 53,
-          "roles": [
-            "config"
-          ],
-          "signals": 0,
-          "symbols": 0
-        }
-      ]
+      "navigation_signals": {}
     },
     {
       "id": "docs",
       "name": "docs",
-      "files": 6,
+      "files": 5,
       "source_files": 0,
-      "lines": 254,
+      "lines": 233,
       "roles": {
-        "documentation": 6,
-        "example": 3,
-        "soap_contract": 2,
         "api_contract": 1,
-        "config": 1
+        "config": 1,
+        "documentation": 5,
+        "soap_contract": 1,
+        "example": 2
       },
       "languages": {
-        "XML": 21,
         "YAML": 78,
         "WSDL": 29,
         "Markdown": 126
@@ -603,19 +281,14 @@
       },
       "top_files": [
         {
-          "path": "docs/examples/customer-verification-soap.xml",
-          "score": 184,
-          "roles": [
-            "documentation",
-            "example",
-            "soap_contract"
-          ],
-          "signals": 0,
-          "symbols": 0
-        },
-        {
           "path": "docs/openapi.yml",
+          "navigation_score": 181,
           "score": 181,
+          "navigation_tags": [
+            "api_contract",
+            "config",
+            "documentation"
+          ],
           "roles": [
             "api_contract",
             "config",
@@ -626,7 +299,12 @@
         },
         {
           "path": "docs/soap-kyc.wsdl",
+          "navigation_score": 136,
           "score": 136,
+          "navigation_tags": [
+            "documentation",
+            "soap_contract"
+          ],
           "roles": [
             "documentation",
             "soap_contract"
@@ -636,7 +314,12 @@
         },
         {
           "path": "docs/api-examples.md",
+          "navigation_score": 118,
           "score": 118,
+          "navigation_tags": [
+            "documentation",
+            "example"
+          ],
           "roles": [
             "documentation",
             "example"
@@ -646,7 +329,12 @@
         },
         {
           "path": "docs/business-examples.md",
+          "navigation_score": 118,
           "score": 118,
+          "navigation_tags": [
+            "documentation",
+            "example"
+          ],
           "roles": [
             "documentation",
             "example"
@@ -656,14 +344,75 @@
         },
         {
           "path": "docs/business-flows.md",
+          "navigation_score": 53,
           "score": 53,
+          "navigation_tags": [
+            "documentation"
+          ],
           "roles": [
             "documentation"
           ],
           "signals": 1,
           "symbols": 0
         }
-      ]
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "api_contract": 1,
+        "config": 1,
+        "documentation": 5,
+        "soap_contract": 1,
+        "example": 2
+      },
+      "navigation_signals": {
+        "api_contract_candidate": 1,
+        "soap_contract_candidate": 1,
+        "documentation_candidate": 3
+      }
+    },
+    {
+      "id": "docs-examples",
+      "name": "docs/examples",
+      "files": 1,
+      "source_files": 0,
+      "lines": 21,
+      "roles": {
+        "documentation": 1,
+        "example": 1,
+        "soap_contract": 1
+      },
+      "languages": {
+        "XML": 21
+      },
+      "signals": {},
+      "top_files": [
+        {
+          "path": "docs/examples/customer-verification-soap.xml",
+          "navigation_score": 184,
+          "score": 184,
+          "navigation_tags": [
+            "documentation",
+            "example",
+            "soap_contract"
+          ],
+          "roles": [
+            "documentation",
+            "example",
+            "soap_contract"
+          ],
+          "signals": 0,
+          "symbols": 0
+        }
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "documentation": 1,
+        "example": 1,
+        "soap_contract": 1
+      },
+      "navigation_signals": {}
     },
     {
       "id": "pom-xml",
@@ -681,14 +430,24 @@
       "top_files": [
         {
           "path": "pom.xml",
+          "navigation_score": 45,
           "score": 45,
+          "navigation_tags": [
+            "build"
+          ],
           "roles": [
             "build"
           ],
           "signals": 0,
           "symbols": 0
         }
-      ]
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "build": 1
+      },
+      "navigation_signals": {}
     },
     {
       "id": "readme-md",
@@ -708,14 +467,26 @@
       "top_files": [
         {
           "path": "README.md",
+          "navigation_score": 78,
           "score": 78,
+          "navigation_tags": [
+            "documentation"
+          ],
           "roles": [
             "documentation"
           ],
           "signals": 1,
           "symbols": 0
         }
-      ]
+      ],
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "navigation_tags": {
+        "documentation": 1
+      },
+      "navigation_signals": {
+        "documentation_candidate": 1
+      }
     }
   ],
   "files": [
@@ -725,7 +496,12 @@
       "extension": ".xml",
       "lines": 21,
       "bytes": 753,
-      "module": "docs",
+      "module": "docs/examples",
+      "navigation_tags": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "example",
@@ -736,6 +512,7 @@
       "symbols": [],
       "signals": [],
       "imports": [],
+      "navigation_score": 184,
       "score": 184
     },
     {
@@ -745,6 +522,11 @@
       "lines": 78,
       "bytes": 2346,
       "module": "docs",
+      "navigation_tags": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
       "roles": [
         "api_contract",
         "config",
@@ -763,6 +545,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 181,
       "score": 181
     },
     {
@@ -772,6 +555,10 @@
       "lines": 77,
       "bytes": 2311,
       "module": "src/main",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -789,6 +576,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 147,
       "score": 147
     },
     {
@@ -798,6 +586,10 @@
       "lines": 29,
       "bytes": 1115,
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "soap_contract"
@@ -840,6 +632,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 136,
       "score": 136
     },
     {
@@ -849,6 +642,10 @@
       "lines": 53,
       "bytes": 1029,
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -866,6 +663,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 118,
       "score": 118
     },
     {
@@ -875,6 +673,10 @@
       "lines": 22,
       "bytes": 428,
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -892,6 +694,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 118,
       "score": 118
     },
     {
@@ -901,6 +704,9 @@
       "lines": 54,
       "bytes": 2161,
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -978,6 +784,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 114,
       "score": 114
     },
     {
@@ -987,6 +794,10 @@
       "lines": 103,
       "bytes": 2793,
       "module": "src/main",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -1004,6 +815,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 112,
       "score": 112
     },
     {
@@ -1013,6 +825,9 @@
       "lines": 43,
       "bytes": 1767,
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -1084,6 +899,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 112,
       "score": 112
     },
     {
@@ -1093,6 +909,9 @@
       "lines": 38,
       "bytes": 1674,
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -1134,6 +953,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 102,
       "score": 102
     },
     {
@@ -1143,6 +963,9 @@
       "lines": 4,
       "bytes": 366,
       "module": "README.md",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -1159,6 +982,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 78,
       "score": 78
     },
     {
@@ -1167,7 +991,11 @@
       "extension": ".java",
       "lines": 8,
       "bytes": 201,
-      "module": "src/test/java/com",
+      "module": "src/test",
+      "navigation_tags": [
+        "source",
+        "test"
+      ],
       "roles": [
         "source",
         "test"
@@ -1186,6 +1014,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 74,
       "score": 74
     },
     {
@@ -1194,7 +1023,10 @@
       "extension": ".java",
       "lines": 43,
       "bytes": 1357,
-      "module": "com/acme/onboarding/Customer.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1249,6 +1081,7 @@
         "java.time.Instant",
         "com.acme.onboarding"
       ],
+      "navigation_score": 66,
       "score": 66
     },
     {
@@ -1257,7 +1090,10 @@
       "extension": ".java",
       "lines": 32,
       "bytes": 1260,
-      "module": "com/acme/onboarding/OnboardingController.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1295,6 +1131,7 @@
         "org.springframework.web.bind.annotation.RestController",
         "com.acme.onboarding"
       ],
+      "navigation_score": 58,
       "score": 58
     },
     {
@@ -1303,7 +1140,10 @@
       "extension": ".java",
       "lines": 46,
       "bytes": 2120,
-      "module": "com/acme/onboarding/OnboardingService.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1336,6 +1176,7 @@
         "org.springframework.transaction.annotation.Transactional",
         "com.acme.onboarding"
       ],
+      "navigation_score": 58,
       "score": 58
     },
     {
@@ -1345,6 +1186,9 @@
       "lines": 51,
       "bytes": 1175,
       "module": "docs",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -1361,6 +1205,7 @@
         }
       ],
       "imports": [],
+      "navigation_score": 53,
       "score": 53
     },
     {
@@ -1370,6 +1215,9 @@
       "lines": 8,
       "bytes": 129,
       "module": "src/main",
+      "navigation_tags": [
+        "config"
+      ],
       "roles": [
         "config"
       ],
@@ -1378,6 +1226,7 @@
       "symbols": [],
       "signals": [],
       "imports": [],
+      "navigation_score": 53,
       "score": 53
     },
     {
@@ -1386,7 +1235,10 @@
       "extension": ".java",
       "lines": 8,
       "bytes": 340,
-      "module": "com/acme/onboarding/OnboardingResponse.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1416,6 +1268,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 48,
       "score": 48
     },
     {
@@ -1424,7 +1277,10 @@
       "extension": ".java",
       "lines": 10,
       "bytes": 293,
-      "module": "com/acme/onboarding/CustomerRepository.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1450,6 +1306,7 @@
         "org.springframework.data.jpa.repository.JpaRepository",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1458,7 +1315,10 @@
       "extension": ".java",
       "lines": 8,
       "bytes": 104,
-      "module": "com/acme/onboarding/CustomerStatus.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1482,6 +1342,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1490,7 +1351,10 @@
       "extension": ".java",
       "lines": 16,
       "bytes": 547,
-      "module": "com/acme/onboarding/KycClient.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1517,6 +1381,7 @@
         "org.springframework.web.client.RestTemplate",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1525,7 +1390,10 @@
       "extension": ".java",
       "lines": 6,
       "bytes": 143,
-      "module": "com/acme/onboarding/KycRequest.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1550,6 +1418,7 @@
         "java.time.LocalDate",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1558,7 +1427,10 @@
       "extension": ".java",
       "lines": 4,
       "bytes": 93,
-      "module": "com/acme/onboarding/KycResult.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1582,6 +1454,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1590,7 +1463,10 @@
       "extension": ".java",
       "lines": 19,
       "bytes": 679,
-      "module": "com/acme/onboarding/OnboardingEventPublisher.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1616,6 +1492,7 @@
         "org.springframework.stereotype.Component",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1624,7 +1501,10 @@
       "extension": ".java",
       "lines": 15,
       "bytes": 393,
-      "module": "com/acme/onboarding/OnboardingRequest.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1652,6 +1532,7 @@
         "java.time.LocalDate",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1660,7 +1541,10 @@
       "extension": ".java",
       "lines": 4,
       "bytes": 142,
-      "module": "com/acme/onboarding/OnboardingResult.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1684,6 +1568,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1692,7 +1577,10 @@
       "extension": ".java",
       "lines": 4,
       "bytes": 104,
-      "module": "com/acme/onboarding/OnboardingStartedEvent.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1716,6 +1604,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1724,7 +1613,10 @@
       "extension": ".java",
       "lines": 4,
       "bytes": 135,
-      "module": "com/acme/onboarding/OnboardingStatusResponse.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1748,6 +1640,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1756,7 +1649,10 @@
       "extension": ".java",
       "lines": 18,
       "bytes": 432,
-      "module": "com/acme/onboarding/RiskScoringService.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1781,6 +1677,7 @@
         "org.springframework.stereotype.Service",
         "com.acme.onboarding"
       ],
+      "navigation_score": 46,
       "score": 46
     },
     {
@@ -1790,6 +1687,9 @@
       "lines": 12,
       "bytes": 580,
       "module": "pom.xml",
+      "navigation_tags": [
+        "build"
+      ],
       "roles": [
         "build"
       ],
@@ -1798,6 +1698,7 @@
       "symbols": [],
       "signals": [],
       "imports": [],
+      "navigation_score": 45,
       "score": 45
     },
     {
@@ -1806,7 +1707,10 @@
       "extension": ".java",
       "lines": 8,
       "bytes": 214,
-      "module": "com/acme/onboarding/CustomerNotFoundException.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1824,6 +1728,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 44,
       "score": 44
     },
     {
@@ -1832,7 +1737,10 @@
       "extension": ".java",
       "lines": 8,
       "bytes": 211,
-      "module": "com/acme/onboarding/DuplicateCustomerException.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
@@ -1850,6 +1758,7 @@
       "imports": [
         "com.acme.onboarding"
       ],
+      "navigation_score": 44,
       "score": 44
     }
   ],
@@ -2347,12 +2256,18 @@
     {
       "id": "capsule-2c9b285fdc",
       "path": "docs/examples/customer-verification-soap.xml",
-      "module": "docs",
+      "module": "docs/examples",
+      "navigation_tags": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "example",
         "soap_contract"
       ],
+      "navigation_score": 184,
       "score": 184,
       "language": "XML",
       "lines": 21,
@@ -2365,11 +2280,17 @@
       "id": "capsule-c68bc23190",
       "path": "docs/openapi.yml",
       "module": "docs",
+      "navigation_tags": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
       "roles": [
         "api_contract",
         "config",
         "documentation"
       ],
+      "navigation_score": 181,
       "score": 181,
       "language": "YAML",
       "lines": 78,
@@ -2390,10 +2311,15 @@
       "id": "capsule-ea0d1d7c98",
       "path": "src/main/resources/openapi.yaml",
       "module": "src/main",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
       ],
+      "navigation_score": 147,
       "score": 147,
       "language": "YAML",
       "lines": 77,
@@ -2414,10 +2340,15 @@
       "id": "capsule-23494bfda4",
       "path": "docs/soap-kyc.wsdl",
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "soap_contract"
       ],
+      "navigation_score": 136,
       "score": 136,
       "language": "WSDL",
       "lines": 29,
@@ -2463,10 +2394,15 @@
       "id": "capsule-ba8229dd4a",
       "path": "docs/api-examples.md",
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
       ],
+      "navigation_score": 118,
       "score": 118,
       "language": "Markdown",
       "lines": 53,
@@ -2487,10 +2423,15 @@
       "id": "capsule-67f8aabbb2",
       "path": "docs/business-examples.md",
       "module": "docs",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
       ],
+      "navigation_score": 118,
       "score": 118,
       "language": "Markdown",
       "lines": 22,
@@ -2511,9 +2452,13 @@
       "id": "capsule-e5ac8136f2",
       "path": "src/main/resources/wsdl/customer-verification.wsdl",
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
+      "navigation_score": 114,
       "score": 114,
       "language": "WSDL",
       "lines": 54,
@@ -2595,10 +2540,15 @@
       "id": "capsule-0a2d68b0f2",
       "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
       "module": "src/main",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
       ],
+      "navigation_score": 112,
       "score": 112,
       "language": "YAML",
       "lines": 103,
@@ -2619,9 +2569,13 @@
       "id": "capsule-a8098adc30",
       "path": "src/main/resources/wsdl/kyc-status.wsdl",
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
+      "navigation_score": 112,
       "score": 112,
       "language": "WSDL",
       "lines": 43,
@@ -2697,9 +2651,13 @@
       "id": "capsule-ca299b8a4a",
       "path": "src/main/resources/onboarding.wsdl",
       "module": "src/main",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
+      "navigation_score": 102,
       "score": 102,
       "language": "WSDL",
       "lines": 38,
@@ -2745,9 +2703,13 @@
       "id": "capsule-8ec9a00bfd",
       "path": "README.md",
       "module": "README.md",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
+      "navigation_score": 78,
       "score": 78,
       "language": "Markdown",
       "lines": 4,
@@ -2767,11 +2729,16 @@
     {
       "id": "capsule-22e8a39a39",
       "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
-      "module": "src/test/java/com",
+      "module": "src/test",
+      "navigation_tags": [
+        "source",
+        "test"
+      ],
       "roles": [
         "source",
         "test"
       ],
+      "navigation_score": 74,
       "score": 74,
       "language": "Java",
       "lines": 8,
@@ -2790,10 +2757,14 @@
     {
       "id": "capsule-84718e9be2",
       "path": "src/main/java/com/acme/onboarding/Customer.java",
-      "module": "com/acme/onboarding/Customer.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 66,
       "score": 66,
       "language": "Java",
       "lines": 43,
@@ -2848,10 +2819,14 @@
     {
       "id": "capsule-41c63fee29",
       "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
-      "module": "com/acme/onboarding/OnboardingController.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 58,
       "score": 58,
       "language": "Java",
       "lines": 32,
@@ -2882,10 +2857,14 @@
     {
       "id": "capsule-c6b6af442a",
       "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-      "module": "com/acme/onboarding/OnboardingService.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 58,
       "score": 58,
       "language": "Java",
       "lines": 46,
@@ -2917,9 +2896,13 @@
       "id": "capsule-f48aa16412",
       "path": "docs/business-flows.md",
       "module": "docs",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
+      "navigation_score": 53,
       "score": 53,
       "language": "Markdown",
       "lines": 51,
@@ -2940,9 +2923,13 @@
       "id": "capsule-a6d8b8556f",
       "path": "src/main/resources/application.yml",
       "module": "src/main",
+      "navigation_tags": [
+        "config"
+      ],
       "roles": [
         "config"
       ],
+      "navigation_score": 53,
       "score": 53,
       "language": "YAML",
       "lines": 8,
@@ -2954,10 +2941,14 @@
     {
       "id": "capsule-97b4f08161",
       "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
-      "module": "com/acme/onboarding/OnboardingResponse.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 48,
       "score": 48,
       "language": "Java",
       "lines": 8,
@@ -2988,10 +2979,14 @@
     {
       "id": "capsule-6ba2a0e4d1",
       "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
-      "module": "com/acme/onboarding/CustomerRepository.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 10,
@@ -3016,10 +3011,14 @@
     {
       "id": "capsule-f4107616a1",
       "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
-      "module": "com/acme/onboarding/CustomerStatus.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 8,
@@ -3044,10 +3043,14 @@
     {
       "id": "capsule-4588abec11",
       "path": "src/main/java/com/acme/onboarding/KycClient.java",
-      "module": "com/acme/onboarding/KycClient.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 16,
@@ -3072,10 +3075,14 @@
     {
       "id": "capsule-89f5b81050",
       "path": "src/main/java/com/acme/onboarding/KycRequest.java",
-      "module": "com/acme/onboarding/KycRequest.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 6,
@@ -3100,10 +3107,14 @@
     {
       "id": "capsule-e0a71fd63b",
       "path": "src/main/java/com/acme/onboarding/KycResult.java",
-      "module": "com/acme/onboarding/KycResult.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 4,
@@ -3128,10 +3139,14 @@
     {
       "id": "capsule-8e2cca1912",
       "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-      "module": "com/acme/onboarding/OnboardingEventPublisher.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 19,
@@ -3156,10 +3171,14 @@
     {
       "id": "capsule-4355f22d24",
       "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
-      "module": "com/acme/onboarding/OnboardingRequest.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 15,
@@ -3184,10 +3203,14 @@
     {
       "id": "capsule-cec1548a9b",
       "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
-      "module": "com/acme/onboarding/OnboardingResult.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 4,
@@ -3212,10 +3235,14 @@
     {
       "id": "capsule-13de1119f1",
       "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
-      "module": "com/acme/onboarding/OnboardingStartedEvent.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 4,
@@ -3240,10 +3267,14 @@
     {
       "id": "capsule-c7aea02f08",
       "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
-      "module": "com/acme/onboarding/OnboardingStatusResponse.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 4,
@@ -3268,10 +3299,14 @@
     {
       "id": "capsule-6bfb7f612c",
       "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
-      "module": "com/acme/onboarding/RiskScoringService.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 46,
       "score": 46,
       "language": "Java",
       "lines": 18,
@@ -3297,9 +3332,13 @@
       "id": "capsule-442292b8a7",
       "path": "pom.xml",
       "module": "pom.xml",
+      "navigation_tags": [
+        "build"
+      ],
       "roles": [
         "build"
       ],
+      "navigation_score": 45,
       "score": 45,
       "language": "XML",
       "lines": 12,
@@ -3311,10 +3350,14 @@
     {
       "id": "capsule-40457a8fe7",
       "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
-      "module": "com/acme/onboarding/CustomerNotFoundException.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 44,
       "score": 44,
       "language": "Java",
       "lines": 8,
@@ -3333,10 +3376,14 @@
     {
       "id": "capsule-d150ec4382",
       "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
-      "module": "com/acme/onboarding/DuplicateCustomerException.java",
+      "module": "src/main",
+      "navigation_tags": [
+        "source"
+      ],
       "roles": [
         "source"
       ],
+      "navigation_score": 44,
       "score": 44,
       "language": "Java",
       "lines": 8,
@@ -3353,22 +3400,34 @@
       "truncated": false
     }
   ],
-  "important_docs": [
+  "artifact_navigation_candidates": [
     {
       "path": "docs/examples/customer-verification-soap.xml",
       "language": "XML",
+      "navigation_tags": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "example",
         "soap_contract"
       ],
       "signals": [],
+      "navigation_score": 439,
       "score": 439,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 21
     },
     {
       "path": "docs/openapi.yml",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
       "roles": [
         "api_contract",
         "config",
@@ -3383,12 +3442,18 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 391,
       "score": 391,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 78
     },
     {
       "path": "docs/soap-kyc.wsdl",
       "language": "WSDL",
+      "navigation_tags": [
+        "documentation",
+        "soap_contract"
+      ],
       "roles": [
         "documentation",
         "soap_contract"
@@ -3402,12 +3467,18 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 346,
       "score": 346,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 29
     },
     {
       "path": "src/main/resources/openapi.yaml",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -3421,12 +3492,17 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 312,
       "score": 312,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 77
     },
     {
       "path": "src/main/resources/wsdl/customer-verification.wsdl",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -3439,12 +3515,18 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 279,
       "score": 279,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 54
     },
     {
       "path": "docs/api-examples.md",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -3458,12 +3540,18 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 278,
       "score": 278,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 53
     },
     {
       "path": "docs/business-examples.md",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
       "roles": [
         "documentation",
         "example"
@@ -3477,12 +3565,18 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 278,
       "score": 278,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 22
     },
     {
       "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
       "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
       "roles": [
         "api_contract",
         "config"
@@ -3496,12 +3590,17 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 277,
       "score": 277,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 103
     },
     {
       "path": "src/main/resources/wsdl/kyc-status.wsdl",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -3514,12 +3613,17 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 277,
       "score": 277,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 43
     },
     {
       "path": "src/main/resources/onboarding.wsdl",
       "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
       "roles": [
         "soap_contract"
       ],
@@ -3532,12 +3636,17 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 267,
       "score": 267,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 38
     },
     {
       "path": "README.md",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -3550,12 +3659,17 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 158,
       "score": 158,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 4
     },
     {
       "path": "docs/business-flows.md",
       "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
       "roles": [
         "documentation"
       ],
@@ -3568,45 +3682,407 @@
           "confidence": "navigation"
         }
       ],
+      "navigation_score": 133,
       "score": 133,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 51
     },
     {
       "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
       "language": "Java",
+      "navigation_tags": [
+        "source",
+        "test"
+      ],
       "roles": [
         "source",
         "test"
       ],
       "signals": [],
+      "navigation_score": 74,
       "score": 74,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 8
     },
     {
       "path": "src/main/resources/application.yml",
       "language": "YAML",
+      "navigation_tags": [
+        "config"
+      ],
       "roles": [
         "config"
       ],
       "signals": [],
+      "navigation_score": 53,
       "score": 53,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 8
     },
     {
       "path": "pom.xml",
       "language": "XML",
+      "navigation_tags": [
+        "build"
+      ],
       "roles": [
         "build"
       ],
       "signals": [],
+      "navigation_score": 45,
       "score": 45,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 12
+    }
+  ],
+  "important_docs": [
+    {
+      "path": "docs/examples/customer-verification-soap.xml",
+      "language": "XML",
+      "navigation_tags": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
+      "roles": [
+        "documentation",
+        "example",
+        "soap_contract"
+      ],
+      "signals": [],
+      "navigation_score": 439,
+      "score": 439,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 21
+    },
+    {
+      "path": "docs/openapi.yml",
+      "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
+      "roles": [
+        "api_contract",
+        "config",
+        "documentation"
+      ],
+      "signals": [
+        {
+          "type": "api_contract_candidate",
+          "label": "OpenAPI/Swagger artifact candidate",
+          "path": "docs/openapi.yml",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 391,
+      "score": 391,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 78
+    },
+    {
+      "path": "docs/soap-kyc.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "documentation",
+        "soap_contract"
+      ],
+      "roles": [
+        "documentation",
+        "soap_contract"
+      ],
+      "signals": [
+        {
+          "type": "soap_contract_candidate",
+          "label": "SOAP/WSDL/XSD artifact candidate",
+          "path": "docs/soap-kyc.wsdl",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 346,
+      "score": 346,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 29
+    },
+    {
+      "path": "src/main/resources/openapi.yaml",
+      "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
+      "roles": [
+        "api_contract",
+        "config"
+      ],
+      "signals": [
+        {
+          "type": "api_contract_candidate",
+          "label": "OpenAPI/Swagger artifact candidate",
+          "path": "src/main/resources/openapi.yaml",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 312,
+      "score": 312,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 77
+    },
+    {
+      "path": "src/main/resources/wsdl/customer-verification.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
+      "roles": [
+        "soap_contract"
+      ],
+      "signals": [
+        {
+          "type": "soap_contract_candidate",
+          "label": "SOAP/WSDL/XSD artifact candidate",
+          "path": "src/main/resources/wsdl/customer-verification.wsdl",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 279,
+      "score": 279,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 54
+    },
+    {
+      "path": "docs/api-examples.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
+      "roles": [
+        "documentation",
+        "example"
+      ],
+      "signals": [
+        {
+          "type": "documentation_candidate",
+          "label": "Documentation artifact candidate",
+          "path": "docs/api-examples.md",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 278,
+      "score": 278,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 53
+    },
+    {
+      "path": "docs/business-examples.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "documentation",
+        "example"
+      ],
+      "roles": [
+        "documentation",
+        "example"
+      ],
+      "signals": [
+        {
+          "type": "documentation_candidate",
+          "label": "Documentation artifact candidate",
+          "path": "docs/business-examples.md",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 278,
+      "score": 278,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 22
+    },
+    {
+      "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "language": "YAML",
+      "navigation_tags": [
+        "api_contract",
+        "config"
+      ],
+      "roles": [
+        "api_contract",
+        "config"
+      ],
+      "signals": [
+        {
+          "type": "api_contract_candidate",
+          "label": "OpenAPI/Swagger artifact candidate",
+          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 277,
+      "score": 277,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 103
+    },
+    {
+      "path": "src/main/resources/wsdl/kyc-status.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
+      "roles": [
+        "soap_contract"
+      ],
+      "signals": [
+        {
+          "type": "soap_contract_candidate",
+          "label": "SOAP/WSDL/XSD artifact candidate",
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 277,
+      "score": 277,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 43
+    },
+    {
+      "path": "src/main/resources/onboarding.wsdl",
+      "language": "WSDL",
+      "navigation_tags": [
+        "soap_contract"
+      ],
+      "roles": [
+        "soap_contract"
+      ],
+      "signals": [
+        {
+          "type": "soap_contract_candidate",
+          "label": "SOAP/WSDL/XSD artifact candidate",
+          "path": "src/main/resources/onboarding.wsdl",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 267,
+      "score": 267,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 38
+    },
+    {
+      "path": "README.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
+      "roles": [
+        "documentation"
+      ],
+      "signals": [
+        {
+          "type": "documentation_candidate",
+          "label": "Documentation artifact candidate",
+          "path": "README.md",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 158,
+      "score": 158,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 4
+    },
+    {
+      "path": "docs/business-flows.md",
+      "language": "Markdown",
+      "navigation_tags": [
+        "documentation"
+      ],
+      "roles": [
+        "documentation"
+      ],
+      "signals": [
+        {
+          "type": "documentation_candidate",
+          "label": "Documentation artifact candidate",
+          "path": "docs/business-flows.md",
+          "line": 1,
+          "confidence": "navigation"
+        }
+      ],
+      "navigation_score": 133,
+      "score": 133,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 51
+    },
+    {
+      "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+      "language": "Java",
+      "navigation_tags": [
+        "source",
+        "test"
+      ],
+      "roles": [
+        "source",
+        "test"
+      ],
+      "signals": [],
+      "navigation_score": 74,
+      "score": 74,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 8
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "language": "YAML",
+      "navigation_tags": [
+        "config"
+      ],
+      "roles": [
+        "config"
+      ],
+      "signals": [],
+      "navigation_score": 53,
+      "score": 53,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+      "lines": 8
+    },
+    {
+      "path": "pom.xml",
+      "language": "XML",
+      "navigation_tags": [
+        "build"
+      ],
+      "roles": [
+        "build"
+      ],
+      "signals": [],
+      "navigation_score": 45,
+      "score": 45,
+      "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
       "lines": 12
     }
   ],
   "skipped_files": [],
+  "navigation_policy": {
+    "semantic_authority": false,
+    "score_meaning": "Non-authoritative navigation ranking for LLM attention only.",
+    "tag_meaning": "Syntax and path-derived navigation tags only; not business facts, final interfaces, flows, entrypoints or quality findings.",
+    "artifact_candidate_meaning": "Candidate files for LLM inspection, not proof that a contract/example/behavior exists."
+  },
   "extraction_policy": {
     "mode": "llm_first",
     "signals_are_authoritative": false,
+    "navigation_scores_are_authoritative": false,
+    "navigation_tags_are_authoritative": false,
+    "artifact_candidates_are_authoritative": false,
     "implementation_language": "TypeScript",
     "description": "The CLI creates a broad code map, documentation candidates and context capsules. Codex/LLM performs semantic extraction of business logic, contracts, examples, requests, responses and flows."
   }

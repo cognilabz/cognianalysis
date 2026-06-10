@@ -127,44 +127,43 @@
       }
     ],
     "target_architecture": {
-      "summary": "Keep the current modular service shape, but move volatile business decisions and integration configuration into explicit policies/configured clients before considering a broader platform or service split.",
-      "target_style": "modular_monolith",
+      "summary": "Keep the compact layered service shape, but move onboarding status policy and HTTP client configuration into explicit components so business rules, threshold configuration and KYC integration behavior can be tested independently.",
+      "target_style": "modular_service",
       "tech_stack_options": [
         {
-          "name": "Hardened Spring Boot modular service",
-          "fit": "Best fit for the compact repository because REST, validation and JPA dependencies are already Spring-based.",
+          "name": "Configuration-driven Spring service",
+          "fit": "Best fit for the demo because the current source already uses Spring-style controller, service and configuration files.",
           "tradeoffs": [
-            "Lowest migration effort",
-            "Keeps deployment simple",
-            "Does not independently scale KYC/risk/eventing components"
+            "Low migration effort",
+            "Keeps current REST/OpenAPI contract",
+            "Still requires explicit contract and boundary tests"
           ],
           "evidence": [
             {
-              "path": "pom.xml",
-              "line": 7
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 12
             },
             {
-              "path": "pom.xml",
-              "line": 9
+              "path": "src/main/resources/application.yml",
+              "line": 7
             }
           ]
         },
         {
-          "name": "Split KYC/risk/eventing services",
-          "fit": "Potential future option only if independent scaling or ownership boundaries emerge; current evidence does not justify the added operational complexity.",
+          "name": "Contract-first service boundary",
+          "fit": "Useful if the OpenAPI and WSDL contracts become governance artifacts in CI.",
           "tradeoffs": [
-            "Clearer deployable boundaries",
-            "Higher CI/CD and observability burden",
-            "Requires stronger contract and event governance"
+            "Improves drift detection",
+            "Adds build/test complexity"
           ],
           "evidence": [
             {
-              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
-              "line": 27
+              "path": "src/main/resources/openapi.yaml",
+              "line": 1
             },
             {
-              "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
-              "line": 16
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 1
             }
           ]
         }
@@ -172,7 +171,7 @@
       "migration_steps": [
         {
           "order": 1,
-          "description": "Inject the configured risk threshold and add boundary tests for scores 70 and 71.",
+          "description": "Inject risk.threshold into the onboarding decision instead of comparing against a literal.",
           "risk": "low",
           "evidence": [
             {
@@ -187,7 +186,7 @@
         },
         {
           "order": 2,
-          "description": "Inject and configure the KYC HTTP client with timeout/retry policy.",
+          "description": "Inject the KYC HTTP client with explicit timeout and retry configuration.",
           "risk": "low",
           "evidence": [
             {
@@ -199,25 +198,10 @@
               "line": 13
             }
           ]
-        },
-        {
-          "order": 3,
-          "description": "Add CI contract validation for OpenAPI/WSDL examples before larger technology migration work.",
-          "risk": "medium",
-          "evidence": [
-            {
-              "path": "src/main/resources/openapi.yaml",
-              "line": 1
-            },
-            {
-              "path": "src/main/resources/wsdl/kyc-status.wsdl",
-              "line": 1
-            }
-          ]
         }
       ],
       "open_questions": [
-        "Whether KYC, risk scoring or event publishing need separate runtime ownership is not proven by this compact repository."
+        "Confirm whether the configured risk.threshold is the intended business threshold."
       ]
     },
     "observations": [

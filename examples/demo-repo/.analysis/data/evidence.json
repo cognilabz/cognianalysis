@@ -84,24 +84,6 @@
     "snippet": "<version>1.0.0</version>"
   },
   {
-    "path": "pom.xml",
-    "line": 6,
-    "valid": true,
-    "snippet": "<dependencies>"
-  },
-  {
-    "path": "pom.xml",
-    "line": 7,
-    "valid": true,
-    "snippet": "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>"
-  },
-  {
-    "path": "pom.xml",
-    "line": 9,
-    "valid": true,
-    "snippet": "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>"
-  },
-  {
     "path": "README.md",
     "line": 1,
     "valid": true,
@@ -470,6 +452,12 @@
   },
   {
     "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+    "line": 33,
+    "valid": true,
+    "snippet": "customer.activate(riskScore, kyc.reference());"
+  },
+  {
+    "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
     "line": 35,
     "valid": true,
     "snippet": "Customer saved = customerRepository.save(customer);"
@@ -671,6 +659,12 @@
     "line": 1,
     "valid": true,
     "snippet": "<definitions name=\"KycStatusService\""
+  },
+  {
+    "path": "src/main/resources/wsdl/kyc-status.wsdl",
+    "line": 4,
+    "valid": true,
+    "snippet": "xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\""
   },
   {
     "path": "src/main/resources/wsdl/kyc-status.wsdl",

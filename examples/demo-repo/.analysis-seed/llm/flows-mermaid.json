@@ -321,5 +321,45 @@
       "confidence": "high",
       "open_questions": []
     }
-  ]
+  ],
+  "documentation": {
+    "mermaid_flows": [
+      {
+        "title": "Customer onboarding sequence",
+        "flow_id": "flow-customer-onboarding",
+        "diagram_type": "sequenceDiagram",
+        "source": "sequenceDiagram\n  Client->>OnboardingController: POST /customers/onboard\n  OnboardingController->>OnboardingService: startOnboarding(request)\n  OnboardingService->>KycClient: verifyIdentity(...)\n  OnboardingService->>CustomerRepository: save(customer)\n  OnboardingService->>OnboardingEventPublisher: publishOnboardingStarted(...)",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "title": "Onboarding status decision",
+        "flow_id": "flow-onboarding-status-decision",
+        "diagram_type": "flowchart TD",
+        "source": "flowchart TD\n  Start[Risk and KYC result] --> Decision{KYC approved and risk <= 70?}\n  Decision -->|yes| Active[ACTIVE]\n  Decision -->|no| Review[MANUAL_REVIEW]",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 26
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 33
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -38,12 +38,14 @@ export interface CodeMapFile {
   bytes: number;
   module: string;
   roles: string[];
+  navigation_tags?: string[];
   symbol_count: number;
   signal_count: number;
   symbols: Json[];
   signals: Json[];
   imports: string[];
   score: number;
+  navigation_score?: number;
 }
 
 export interface CodeMap {
@@ -55,7 +57,9 @@ export interface CodeMap {
   glossary_terms: string[];
   capsules: Json[];
   important_docs: Json[];
+  artifact_navigation_candidates?: Json[];
   skipped_files?: Json[];
+  navigation_policy?: Json;
   extraction_policy: Json;
 }
 

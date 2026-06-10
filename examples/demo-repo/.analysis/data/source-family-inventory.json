@@ -1,0 +1,502 @@
+{
+  "artifact_kind": "navigation_partition_inventory",
+  "mode": "deterministic_inventory_only",
+  "semantic_authority": false,
+  "deterministic_scope": "filesystem/module partitioning, path/syntax-derived navigation tags, seed-file ranking and project-boundary manifests only",
+  "artifact_name_note": "The legacy filename source-family-inventory.json is kept for workflow compatibility. Its contents are mechanical navigation partitions, not semantic source families.",
+  "forbidden_use": [
+    "Do not treat partition names as semantic source-family names.",
+    "Do not choose detail-review priorities from navigation rank alone.",
+    "Do not use partition counts as evidence that business behavior is understood.",
+    "Do not report seed files as proof of routes, interfaces, flows, quality or architecture."
+  ],
+  "llm_required_action": "The LLM must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.",
+  "summary": "This is a mechanical inventory partition for navigation. Tags, ranks and boundaries are not semantic proof. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.",
+  "total_inventory_partitions": 6,
+  "inventory_partitions": [
+    {
+      "name": "src/main",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 23,
+      "source_files": 17,
+      "navigation_tags": {
+        "api_contract": 2,
+        "config": 3,
+        "soap_contract": 3,
+        "source": 17
+      },
+      "roles": {
+        "api_contract": 2,
+        "config": 3,
+        "soap_contract": 3,
+        "source": 17
+      },
+      "navigation_signals": {
+        "api_contract_candidate": 2,
+        "soap_contract_candidate": 3
+      },
+      "signals": {
+        "api_contract_candidate": 2,
+        "soap_contract_candidate": 3
+      },
+      "seed_files": [
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "navigation_tags": [
+            "api_contract",
+            "config"
+          ],
+          "roles": [
+            "api_contract",
+            "config"
+          ],
+          "navigation_score": 147,
+          "rank_score": 147,
+          "score": 147,
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/wsdl/customer-verification.wsdl",
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "navigation_score": 114,
+          "rank_score": 114,
+          "score": 114,
+          "signals": 1,
+          "symbols": 10
+        },
+        {
+          "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+          "navigation_tags": [
+            "api_contract",
+            "config"
+          ],
+          "roles": [
+            "api_contract",
+            "config"
+          ],
+          "navigation_score": 112,
+          "rank_score": 112,
+          "score": 112,
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/resources/wsdl/kyc-status.wsdl",
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "navigation_score": 112,
+          "rank_score": 112,
+          "score": 112,
+          "signals": 1,
+          "symbols": 9
+        },
+        {
+          "path": "src/main/resources/onboarding.wsdl",
+          "navigation_tags": [
+            "soap_contract"
+          ],
+          "roles": [
+            "soap_contract"
+          ],
+          "navigation_score": 102,
+          "rank_score": 102,
+          "score": 102,
+          "signals": 1,
+          "symbols": 4
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/Customer.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 66,
+          "rank_score": 66,
+          "score": 66,
+          "signals": 0,
+          "symbols": 7
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 58,
+          "rank_score": 58,
+          "score": 58,
+          "signals": 0,
+          "symbols": 3
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 58,
+          "rank_score": 58,
+          "score": 58,
+          "signals": 0,
+          "symbols": 3
+        },
+        {
+          "path": "src/main/resources/application.yml",
+          "navigation_tags": [
+            "config"
+          ],
+          "roles": [
+            "config"
+          ],
+          "navigation_score": 53,
+          "rank_score": 53,
+          "score": 53,
+          "signals": 0,
+          "symbols": 0
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 48,
+          "rank_score": 48,
+          "score": 48,
+          "signals": 0,
+          "symbols": 3
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 46,
+          "rank_score": 46,
+          "score": 46,
+          "signals": 0,
+          "symbols": 2
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+          "navigation_tags": [
+            "source"
+          ],
+          "roles": [
+            "source"
+          ],
+          "navigation_score": 46,
+          "rank_score": 46,
+          "score": 46,
+          "signals": 0,
+          "symbols": 2
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 5,
+      "source_files": 0,
+      "navigation_tags": {
+        "api_contract": 1,
+        "config": 1,
+        "documentation": 5,
+        "soap_contract": 1,
+        "example": 2
+      },
+      "roles": {
+        "api_contract": 1,
+        "config": 1,
+        "documentation": 5,
+        "soap_contract": 1,
+        "example": 2
+      },
+      "navigation_signals": {
+        "api_contract_candidate": 1,
+        "soap_contract_candidate": 1,
+        "documentation_candidate": 3
+      },
+      "signals": {
+        "api_contract_candidate": 1,
+        "soap_contract_candidate": 1,
+        "documentation_candidate": 3
+      },
+      "seed_files": [
+        {
+          "path": "docs/openapi.yml",
+          "navigation_tags": [
+            "api_contract",
+            "config",
+            "documentation"
+          ],
+          "roles": [
+            "api_contract",
+            "config",
+            "documentation"
+          ],
+          "navigation_score": 181,
+          "rank_score": 181,
+          "score": 181,
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "docs/soap-kyc.wsdl",
+          "navigation_tags": [
+            "documentation",
+            "soap_contract"
+          ],
+          "roles": [
+            "documentation",
+            "soap_contract"
+          ],
+          "navigation_score": 136,
+          "rank_score": 136,
+          "score": 136,
+          "signals": 1,
+          "symbols": 4
+        },
+        {
+          "path": "docs/api-examples.md",
+          "navigation_tags": [
+            "documentation",
+            "example"
+          ],
+          "roles": [
+            "documentation",
+            "example"
+          ],
+          "navigation_score": 118,
+          "rank_score": 118,
+          "score": 118,
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "docs/business-examples.md",
+          "navigation_tags": [
+            "documentation",
+            "example"
+          ],
+          "roles": [
+            "documentation",
+            "example"
+          ],
+          "navigation_score": 118,
+          "rank_score": 118,
+          "score": 118,
+          "signals": 1,
+          "symbols": 0
+        },
+        {
+          "path": "docs/business-flows.md",
+          "navigation_tags": [
+            "documentation"
+          ],
+          "roles": [
+            "documentation"
+          ],
+          "navigation_score": 53,
+          "rank_score": 53,
+          "score": 53,
+          "signals": 1,
+          "symbols": 0
+        }
+      ]
+    },
+    {
+      "name": "docs/examples",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 1,
+      "source_files": 0,
+      "navigation_tags": {
+        "documentation": 1,
+        "example": 1,
+        "soap_contract": 1
+      },
+      "roles": {
+        "documentation": 1,
+        "example": 1,
+        "soap_contract": 1
+      },
+      "navigation_signals": {},
+      "signals": {},
+      "seed_files": [
+        {
+          "path": "docs/examples/customer-verification-soap.xml",
+          "navigation_tags": [
+            "documentation",
+            "example",
+            "soap_contract"
+          ],
+          "roles": [
+            "documentation",
+            "example",
+            "soap_contract"
+          ],
+          "navigation_score": 184,
+          "rank_score": 184,
+          "score": 184,
+          "signals": 0,
+          "symbols": 0
+        }
+      ]
+    },
+    {
+      "name": "pom.xml",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 1,
+      "source_files": 0,
+      "navigation_tags": {
+        "build": 1
+      },
+      "roles": {
+        "build": 1
+      },
+      "navigation_signals": {},
+      "signals": {},
+      "seed_files": [
+        {
+          "path": "pom.xml",
+          "navigation_tags": [
+            "build"
+          ],
+          "roles": [
+            "build"
+          ],
+          "navigation_score": 45,
+          "rank_score": 45,
+          "score": 45,
+          "signals": 0,
+          "symbols": 0
+        }
+      ]
+    },
+    {
+      "name": "README.md",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 1,
+      "source_files": 0,
+      "navigation_tags": {
+        "documentation": 1
+      },
+      "roles": {
+        "documentation": 1
+      },
+      "navigation_signals": {
+        "documentation_candidate": 1
+      },
+      "signals": {
+        "documentation_candidate": 1
+      },
+      "seed_files": [
+        {
+          "path": "README.md",
+          "navigation_tags": [
+            "documentation"
+          ],
+          "roles": [
+            "documentation"
+          ],
+          "navigation_score": 78,
+          "rank_score": 78,
+          "score": 78,
+          "signals": 1,
+          "symbols": 0
+        }
+      ]
+    },
+    {
+      "name": "src/test",
+      "partition_kind": "navigation_partition",
+      "semantic_authority": false,
+      "semantic_family_name": null,
+      "llm_detail_plan_authority": false,
+      "seed_file_meaning": "Seed files are starting points for LLM inspection only; they are not proof of behavior, priority or completeness.",
+      "boundary_source": "path_partition",
+      "boundary_evidence": [],
+      "files": 1,
+      "source_files": 1,
+      "navigation_tags": {
+        "source": 1,
+        "test": 1
+      },
+      "roles": {
+        "source": 1,
+        "test": 1
+      },
+      "navigation_signals": {},
+      "signals": {},
+      "seed_files": [
+        {
+          "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+          "navigation_tags": [
+            "source",
+            "test"
+          ],
+          "roles": [
+            "source",
+            "test"
+          ],
+          "navigation_score": 74,
+          "rank_score": 74,
+          "score": 74,
+          "signals": 0,
+          "symbols": 1
+        }
+      ]
+    }
+  ]
+}

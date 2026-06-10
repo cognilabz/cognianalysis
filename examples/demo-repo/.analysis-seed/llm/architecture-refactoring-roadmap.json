@@ -126,6 +126,84 @@
         ]
       }
     ],
+    "target_architecture": {
+      "summary": "Keep the compact layered service shape, but move onboarding status policy and HTTP client configuration into explicit components so business rules, threshold configuration and KYC integration behavior can be tested independently.",
+      "target_style": "modular_service",
+      "tech_stack_options": [
+        {
+          "name": "Configuration-driven Spring service",
+          "fit": "Best fit for the demo because the current source already uses Spring-style controller, service and configuration files.",
+          "tradeoffs": [
+            "Low migration effort",
+            "Keeps current REST/OpenAPI contract",
+            "Still requires explicit contract and boundary tests"
+          ],
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 12
+            },
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "Contract-first service boundary",
+          "fit": "Useful if the OpenAPI and WSDL contracts become governance artifacts in CI.",
+          "tradeoffs": [
+            "Improves drift detection",
+            "Adds build/test complexity"
+          ],
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 1
+            },
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 1
+            }
+          ]
+        }
+      ],
+      "migration_steps": [
+        {
+          "order": 1,
+          "description": "Inject risk.threshold into the onboarding decision instead of comparing against a literal.",
+          "risk": "low",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "description": "Inject the KYC HTTP client with explicit timeout and retry configuration.",
+          "risk": "low",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 9
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "open_questions": [
+        "Confirm whether the configured risk.threshold is the intended business threshold."
+      ]
+    },
     "observations": [
       {
         "title": "Business decision sits in application service",

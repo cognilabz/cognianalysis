@@ -1,0 +1,151 @@
+{
+  "pipeline_kind": "llm_driven_overview_detail_final_report",
+  "semantic_authority": "llm",
+  "deterministic_authority": "artifact_contracts_only",
+  "summary": "The CLI prepares context, materializes tasks from the LLM plan, validates artifact contracts/evidence and renders HTML. The LLM authors semantic extraction, detail-review priorities and the final decision document.",
+  "invariants": [
+    "Whole-repository extraction building blocks are authored before detail-agent planning.",
+    "The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.",
+    "Focused detail-review tasks are mechanically materialized from the LLM-authored plan.",
+    "Final analysis_document is authored only after pre-final LLM building blocks and planned detail reviews exist.",
+    "Semantic readiness is decided by analysis_document.report_quality_review.verdict, not by deterministic keyword or menu checks."
+  ],
+  "stages": [
+    {
+      "id": "deterministic_context_preparation",
+      "controller": "cli",
+      "semantic_authority": false,
+      "purpose": "Create navigation and renderer-contract context for the LLM.",
+      "outputs": [
+        ".analysis/data/source-inventory.json",
+        ".analysis/data/analysis-goal-contract.json",
+        ".analysis/data/code-map.json",
+        ".analysis/data/navigation-artifact-candidates.json",
+        ".analysis/data/source-family-inventory.json",
+        ".analysis/data/report-component-library.json",
+        ".analysis/source-capsules.json",
+        ".analysis/llm_instructions.md"
+      ]
+    },
+    {
+      "id": "llm_whole_repository_building_blocks",
+      "controller": "llm",
+      "semantic_authority": true,
+      "purpose": "Author whole-repository extraction building blocks before final report synthesis.",
+      "tasks": [
+        {
+          "title": "Core Assessment and Decision Summary",
+          "task_file": "llm_tasks/01-core-assessment.md",
+          "expected_output": "llm/core-assessment.json"
+        },
+        {
+          "title": "Business Capabilities and Business Logic",
+          "task_file": "llm_tasks/02-business-capabilities-logic.md",
+          "expected_output": "llm/business-capabilities-logic.json"
+        },
+        {
+          "title": "Interface and Contract Extraction",
+          "task_file": "llm_tasks/03-interface-contract-extraction.md",
+          "expected_output": "llm/interfaces-contracts.json"
+        },
+        {
+          "title": "Request and Response Examples",
+          "task_file": "llm_tasks/04-request-response-examples.md",
+          "expected_output": "llm/request-response-examples.json"
+        },
+        {
+          "title": "OpenAPI, Swagger, SOAP, WSDL, XSD and GraphQL",
+          "task_file": "llm_tasks/05-openapi-soap-graphql.md",
+          "expected_output": "llm/openapi-soap-graphql.json"
+        },
+        {
+          "title": "Flows, Scenarios and Mermaid Diagrams",
+          "task_file": "llm_tasks/06-flows-mermaid.md",
+          "expected_output": "llm/flows-mermaid.json"
+        },
+        {
+          "title": "Domain, Data, Integrations and Side Effects",
+          "task_file": "llm_tasks/07-domain-data-integrations.md",
+          "expected_output": "llm/domain-data-integrations.json"
+        },
+        {
+          "title": "Process, Quality and Readiness Assessment",
+          "task_file": "llm_tasks/08-process-quality-readiness.md",
+          "expected_output": "llm/process-quality-readiness.json"
+        },
+        {
+          "title": "Architecture, Refactoring and Modernization Roadmap",
+          "task_file": "llm_tasks/09-architecture-refactoring-roadmap.md",
+          "expected_output": "llm/architecture-refactoring-roadmap.json"
+        },
+        {
+          "title": "Report Completeness and Gap Review",
+          "task_file": "llm_tasks/10-report-completeness-review.md",
+          "expected_output": "llm/report-completeness-review.json"
+        }
+      ]
+    },
+    {
+      "id": "llm_detail_agent_plan",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "llm_whole_repository_building_blocks"
+      ],
+      "purpose": "Choose focused detail-review areas after the whole-repository picture exists.",
+      "task_file": "llm_tasks/11-detail-agent-plan.md",
+      "expected_output": "llm/detail-agent-plan.json"
+    },
+    {
+      "id": "deterministic_detail_task_materialization",
+      "controller": "cli",
+      "semantic_authority": false,
+      "depends_on": [
+        "llm_detail_agent_plan"
+      ],
+      "purpose": "Materialize executable detail task files from the LLM-authored plan without choosing semantic priorities.",
+      "outputs": [
+        ".analysis/detail_tasks/*.md",
+        ".analysis/detail-task-manifest.json"
+      ]
+    },
+    {
+      "id": "llm_detail_reviews",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "deterministic_detail_task_materialization"
+      ],
+      "purpose": "Execute the planned source-family/detail reviews and write structured review JSON.",
+      "outputs": [
+        ".analysis/detail_reviews/*.json"
+      ]
+    },
+    {
+      "id": "llm_final_analysis_document",
+      "controller": "llm",
+      "semantic_authority": true,
+      "depends_on": [
+        "llm_whole_repository_building_blocks",
+        "llm_detail_reviews"
+      ],
+      "purpose": "Author the visible management-ready report through the component library after all building blocks and detail reviews are available.",
+      "task_file": "llm_tasks/12-analysis-document.md",
+      "expected_output": "llm/analysis-document.json"
+    },
+    {
+      "id": "deterministic_finalization_and_rendering",
+      "controller": "cli",
+      "semantic_authority": false,
+      "depends_on": [
+        "llm_final_analysis_document"
+      ],
+      "purpose": "Aggregate outputs, validate evidence and renderer contracts, and render the static HTML report.",
+      "outputs": [
+        ".analysis/data/bundle.json",
+        ".analysis/report/index.html",
+        ".analysis/report/analysis-data.json"
+      ]
+    }
+  ]
+}

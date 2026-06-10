@@ -10,6 +10,71 @@
       "tests",
       "configuration"
     ],
+    "repository_wide_view": {
+      "summary": "The demo repository is a compact onboarding system whose source, contracts, tests, examples and configuration describe one customer onboarding boundary end to end.",
+      "source_families": [
+        {
+          "name": "Java onboarding runtime",
+          "purpose": "Handles REST requests, onboarding orchestration, KYC integration, risk scoring, persistence and event publication.",
+          "business_use": "Turns a customer onboarding request into an ACTIVE or MANUAL_REVIEW customer status.",
+          "entry_points": [
+            "OnboardingController"
+          ],
+          "exits_or_integrations": [
+            "KycClient",
+            "CustomerRepository",
+            "EventPublisher"
+          ],
+          "confidence": "high",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "Contracts and examples",
+          "purpose": "Documents REST and SOAP surfaces plus human-readable example behavior.",
+          "business_use": "Provides request/response context for onboarding clients and integration reviewers.",
+          "entry_points": [
+            "openapi.yaml",
+            "kyc.wsdl"
+          ],
+          "exits_or_integrations": [
+            "External KYC contract"
+          ],
+          "confidence": "medium",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 1
+            },
+            {
+              "path": "docs/soap-kyc.wsdl",
+              "line": 1
+            }
+          ]
+        }
+      ],
+      "open_questions": [
+        "Production authentication, authorization and deployment ownership are not proven by this demo repository."
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        },
+        {
+          "path": "docs/api-examples.md",
+          "line": 1
+        }
+      ]
+    },
     "key_capabilities": [
       "Start customer onboarding",
       "Read onboarding status",
@@ -23,6 +88,178 @@
       "KYC provider REST call",
       "GetKycStatus SOAP operation"
     ],
+    "functional_view": {
+      "summary": "The service lets a client start customer onboarding, checks whether the e-mail is already known, verifies identity through KYC, calculates risk, stores the resulting customer status and lets callers read that status later.",
+      "actors": [
+        "API client",
+        "KYC provider",
+        "Operations/manual review"
+      ],
+      "capabilities": [
+        "Start onboarding",
+        "Reject duplicate customers",
+        "Activate low-risk KYC-approved customers",
+        "Route rejected or high-risk customers to manual review",
+        "Read onboarding status"
+      ],
+      "user_or_system_flows": [
+        {
+          "name": "Customer onboarding",
+          "description": "A POST request is delegated from the controller to the service, checked for duplicate e-mail, sent to KYC, scored, converted into ACTIVE or MANUAL_REVIEW status, persisted and emitted as an onboarding-started event.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "Status lookup",
+          "description": "A GET request reads the current customer status through the service and repository.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 27
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+          "line": 21
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 30
+        }
+      ]
+    },
+    "technical_view": {
+      "summary": "The demo is a Spring-style layered service with REST controller endpoints, a service orchestration layer, repository persistence, an outbound REST KYC client, event publication and OpenAPI/SOAP contract examples.",
+      "apis": [
+        "POST /customers/onboard",
+        "GET /customers/{customerId}/status",
+        "KYC provider REST call"
+      ],
+      "architecture": [
+        "Controller delegates to OnboardingService",
+        "OnboardingService orchestrates repository, KYC, risk scoring and event publishing",
+        "OpenAPI defines REST schemas and examples"
+      ],
+      "data_and_integrations": [
+        "CustomerRepository persistence",
+        "External KYC REST endpoint",
+        "customer.onboarding.started event"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 14
+        },
+        {
+          "path": "src/main/java/com/acme/onboarding/KycClient.java",
+          "line": 13
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 6
+        }
+      ]
+    },
+    "decision_basis": {
+      "decision_summary": "The repository is clear enough to support an onboarding-service understanding report, but readiness decisions should account for the duplicated risk threshold and placeholder tests.",
+      "recommended_actions": [
+        {
+          "title": "Centralize the risk threshold",
+          "rationale": "The service hard-codes 70 while configuration also exposes risk.threshold.",
+          "priority": "high",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "title": "Add executable tests for the named onboarding scenarios",
+          "rationale": "The demo names relevant scenario tests but does not assert behavior.",
+          "priority": "medium",
+          "evidence": [
+            {
+              "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+              "line": 3
+            }
+          ]
+        }
+      ],
+      "tradeoffs": [
+        {
+          "topic": "Automated documentation confidence",
+          "options": [
+            "Use current code/contracts for a decision-grade demo report",
+            "Wait for business-owner confirmation before claiming production policy"
+          ],
+          "recommendation": "Use the report for technical and process decisions, while keeping authentication and owner policy as open questions.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 12
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "status": "partially_ready",
+        "rationale": "Core behavior is visible from code and contracts, but testing and production governance are intentionally light in the demo.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 3
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        }
+      ]
+    },
+    "tool_positioning": {
+      "summary": "This pack complements static code scanners by producing an LLM-authored business and architecture narrative from source-backed evidence, while preserving uncertainty as open questions.",
+      "automation_level": "mostly_automated",
+      "strengths_vs_traditional_tools": [
+        "Connects REST contracts, service logic, KYC integration, persistence and event side effects into one human-readable flow",
+        "Keeps file:line evidence attached to management and technical statements"
+      ],
+      "boundaries": [
+        "The report cannot prove business-owner intent that is absent from code, tests, contracts or docs",
+        "The demo does not include authentication or deployment evidence"
+      ],
+      "evidence": [
+        {
+          "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+          "line": 23
+        },
+        {
+          "path": "src/main/resources/openapi.yaml",
+          "line": 1
+        }
+      ]
+    },
     "top_risks": [
       {
         "title": "Risk threshold is duplicated",

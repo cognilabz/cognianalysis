@@ -1,0 +1,393 @@
+{
+  "source_family_detail_review": {
+    "source_family": "src/main",
+    "review_status": "complete",
+    "summary": "The src/main family contains the executable onboarding service, REST API boundary, outbound KYC integration, persistence orchestration, event publication and source contracts used by the final report.",
+    "business_view": {
+      "purpose": "Accept customer onboarding requests, verify identity, score risk, decide ACTIVE versus MANUAL_REVIEW, persist the customer and expose status lookup.",
+      "capabilities": [
+        {
+          "name": "Start customer onboarding",
+          "description": "The REST controller accepts onboarding requests and delegates the business decision to OnboardingService.",
+          "actors": [
+            "API client",
+            "Onboarding service"
+          ],
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "Read onboarding status",
+          "description": "The REST controller exposes a status endpoint that returns the current customer status from the service.",
+          "actors": [
+            "API client",
+            "Onboarding service"
+          ],
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 27
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "user_or_system_flows": [
+        {
+          "name": "REST onboarding to persisted status and event",
+          "description": "A POST request enters the controller, is checked for duplicate e-mail, verified against KYC, risk-scored, assigned a status, saved and published as an onboarding event.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 24
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 35
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 36
+            }
+          ]
+        }
+      ]
+    },
+    "technical_view": {
+      "architecture_role": "Primary executable service family with REST contracts, application orchestration, outbound KYC call, repository persistence, event publication and OpenAPI/SOAP contract files.",
+      "entry_points": [
+        {
+          "name": "Start onboarding",
+          "protocol": "REST",
+          "path": "POST /customers/onboard",
+          "description": "HTTP entrypoint for onboarding requests.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 21
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "Status lookup",
+          "protocol": "REST",
+          "path": "GET /customers/{customerId}/status",
+          "description": "HTTP entrypoint for current onboarding status.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 27
+            },
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 38
+            }
+          ]
+        }
+      ],
+      "exits_or_integrations": [
+        {
+          "name": "KYC verification",
+          "protocol": "REST",
+          "description": "The service posts first name, last name and birth date to the configured KYC provider URL shape.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 11
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/KycClient.java",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "KYC status SOAP contract",
+          "protocol": "SOAP",
+          "description": "The WSDL defines GetKycStatus request/response messages and SOAP action metadata.",
+          "evidence": [
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 29
+            },
+            {
+              "path": "src/main/resources/wsdl/kyc-status.wsdl",
+              "line": 37
+            }
+          ]
+        }
+      ],
+      "data_and_state": [
+        {
+          "name": "Customer status",
+          "kind": "state",
+          "description": "Risk/KYC outcomes are mapped to ACTIVE or MANUAL_REVIEW.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "name": "Customer persistence",
+          "kind": "store",
+          "description": "The decided Customer state is saved before the result is returned.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 35
+            }
+          ]
+        }
+      ]
+    },
+    "flows": [
+      {
+        "title": "Onboarding execution flow",
+        "summary": "The executable path runs from REST request through duplicate check, KYC call, risk score, status decision, persistence and event publication.",
+        "mermaid": {
+          "diagram_type": "sequenceDiagram",
+          "source": "sequenceDiagram\n  participant Client\n  participant API as OnboardingController\n  participant Service as OnboardingService\n  participant KYC as KycClient\n  participant DB as CustomerRepository\n  participant Events as OnboardingEventPublisher\n  Client->>API: POST /customers/onboard\n  API->>Service: startOnboarding(request)\n  Service->>DB: existsByEmail(email)\n  Service->>KYC: verifyIdentity(...)\n  Service->>Service: score and decide status\n  Service->>DB: save(customer)\n  Service->>Events: publishOnboardingStarted(...)\n  API-->>Client: 202 response",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 23
+            }
+          ]
+        },
+        "steps": [
+          {
+            "order": 1,
+            "actor": "API",
+            "description": "Controller accepts the onboarding request.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+                "line": 21
+              }
+            ]
+          },
+          {
+            "order": 2,
+            "actor": "Service",
+            "description": "Service verifies duplicate e-mail, calls KYC and calculates risk.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 24
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 27
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 28
+              }
+            ]
+          },
+          {
+            "order": 3,
+            "actor": "Service",
+            "description": "Service chooses manual review when KYC fails or risk is above threshold; otherwise it activates the customer.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 30
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 33
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 35
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 36
+          }
+        ]
+      }
+    ],
+    "quality_and_process": {
+      "findings": [
+        {
+          "title": "Configuration-driven threshold is not wired into service logic",
+          "category": "quality",
+          "severity": "medium",
+          "description": "Application configuration declares risk.threshold, while OnboardingService compares against a literal 70.",
+          "recommendation": "Inject the threshold from configuration and test both ACTIVE and MANUAL_REVIEW boundaries.",
+          "evidence": [
+            {
+              "path": "src/main/resources/application.yml",
+              "line": 7
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            }
+          ]
+        }
+      ],
+      "test_readiness": "partial",
+      "process_improvements": [
+        {
+          "title": "Add contract/runtime parity tests",
+          "description": "The OpenAPI examples and controller/service behavior are aligned enough for generated tests, but no executable contract test is present in this source family.",
+          "evidence": [
+            {
+              "path": "src/main/resources/openapi.yaml",
+              "line": 16
+            },
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+              "line": 22
+            }
+          ]
+        }
+      ]
+    },
+    "refactoring_and_target_architecture": {
+      "recommendations": [
+        {
+          "title": "Extract onboarding decision policy",
+          "benefit": "Makes KYC/risk decision rules testable and configuration-driven.",
+          "risk": "low",
+          "effort": "S",
+          "target_state": "A small policy component receives KYC result, risk score and threshold and returns the target CustomerStatus.",
+          "evidence": [
+            {
+              "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+              "line": 30
+            }
+          ]
+        }
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Should risk.threshold from application.yml be the authoritative production threshold?",
+        "why_it_matters": "The source has both a configured threshold and a literal service threshold.",
+        "owner": "business",
+        "evidence": [
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          },
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 23
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Focused review of src/main service code and source contracts used by the final demo report.",
+    "inspected_files": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "REST entrypoint and status endpoint behavior.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Main onboarding orchestration and decision logic.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycClient.java",
+        "reason": "Outbound KYC integration.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 13
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "reason": "REST contract and request/response examples.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "SOAP KYC status contract.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/application.yml",
+        "reason": "Configuration threshold used in readiness and refactoring findings.",
+        "evidence": [
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": [
+      {
+        "question": "Confirm whether configured risk.threshold should replace the literal service threshold.",
+        "evidence": [
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 7
+          }
+        ]
+      }
+    ]
+  }
+}
