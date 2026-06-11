@@ -391,10 +391,10 @@ export function baselineProofStatus(root: string, expectedSourceCommit: string |
   };
 }
 
-function validateGoldenResultArtifact(parsed: any, expected: any, expectedFile: string, expectedSourceCommit: string | null, aggregateSourceCommit: string): string[] {
+function validateGoldenResultArtifact(root: string, parsed: any, expected: any, expectedFile: string, expectedSourceCommit: string | null, aggregateSourceCommit: string): string[] {
   const errors: string[] = [];
   const metrics = parsed?.metrics || {};
-  errors.push(...validateGoldenMetricDerivation(parsed, expected));
+  errors.push(...validateGoldenMetricDerivation(root, parsed, expected));
   if (parsed?.schemaVersion !== '1.0') errors.push('schemaVersion must be 1.0');
   if (parsed?.generated_by !== GOLDEN_VERIFIER_ID) errors.push(`generated_by must be ${GOLDEN_VERIFIER_ID}`);
   if (!expectedSourceCommit) errors.push('current source commit is unavailable for golden freshness validation');
@@ -416,7 +416,7 @@ function validateGoldenResultArtifact(parsed: any, expected: any, expectedFile: 
   return errors;
 }
 
-function validateGoldenMetricDerivation(parsed: any, expected: any): string[] {
+function validateGoldenMetricDerivation(root: string, parsed: any, expected: any): string[] {
   const errors: string[] = [];
   const metrics = parsed?.metrics || {};
   const derivation = parsed?.metric_derivation || parsed?.metricDerivation || {};
@@ -489,6 +489,26 @@ function validateGoldenMetricDerivation(parsed: any, expected: any): string[] {
   const componentCoverageComplete = derivation.component_coverage_complete;
   if (typeof reportLintComplete !== 'boolean') errors.push('metric_derivation.report_lint_complete must be boolean');
   if (typeof componentCoverageComplete !== 'boolean') errors.push('metric_derivation.component_coverage_complete must be boolean');
+  const repo = String(expected?.repo || parsed?.repo || '').trim();
+  const suiteAnalysis = repo ? Path.join(root, repo, '.analysis') : '';
+  const bundleFile = suiteAnalysis ? Path.join(suiteAnalysis, 'data', 'bundle.json') : '';
+  const reportLintFile = suiteAnalysis ? Path.join(suiteAnalysis, 'data', 'analysis-document-report-lint.json') : '';
+  const bundle = bundleFile && FS.existsSync(bundleFile) ? readJsonObject(bundleFile) : null;
+  const reportLint = reportLintFile && FS.existsSync(reportLintFile) ? readJsonObject(reportLintFile) : null;
+  if (!repo) errors.push('golden suite repo is required for readiness derivation binding');
+  if (!bundle) errors.push('golden suite bundle.json is required for readiness derivation binding');
+  if (!reportLint) errors.push('golden suite analysis-document-report-lint.json is required for report completeness binding');
+  if (bundle) {
+    const bundleReadinessState = String(bundle.final_llm_readiness?.state || '').trim();
+    if (!bundleReadinessState) errors.push('golden suite bundle final_llm_readiness.state is required');
+    else if (readinessState && readinessState !== bundleReadinessState) errors.push('metric_derivation.final_llm_readiness_state must match suite bundle final_llm_readiness.state');
+    if (bundle.analysis_document_component_coverage?.complete !== true && bundle.analysis_document_component_coverage?.complete !== false) errors.push('golden suite bundle analysis_document_component_coverage.complete is required');
+    else if (typeof componentCoverageComplete === 'boolean' && componentCoverageComplete !== bundle.analysis_document_component_coverage.complete) errors.push('metric_derivation.component_coverage_complete must match suite bundle analysis_document_component_coverage.complete');
+  }
+  if (reportLint) {
+    if (reportLint.complete !== true && reportLint.complete !== false) errors.push('golden suite report-lint complete is required');
+    else if (typeof reportLintComplete === 'boolean' && reportLintComplete !== reportLint.complete) errors.push('metric_derivation.report_lint_complete must match suite analysis-document-report-lint.json complete');
+  }
 
   if (expectedFacts.length > 0) {
     const factRecall = foundRows.length / expectedFacts.length;
@@ -529,7 +549,7 @@ export function goldenProofStatus(root: string, analysis: string, expectedSource
       ...(!String(parsed.repo || '').trim() ? ['expected repo is required'] : []),
       ...(!Array.isArray(parsed.facts) || parsed.facts.length === 0 ? ['expected facts are required'] : []),
       ...(!parsed.minimums || typeof parsed.minimums !== 'object' ? ['expected minimums are required'] : []),
-            ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(result, parsed, expected_file, expectedSourceCommit, String(aggregate?.source_commit || '')))
+        ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(root, result, parsed, expected_file, expectedSourceCommit, String(aggregate?.source_commit || '')))
     ];
     const aggregateRow = asList(aggregate?.results).find((item: any) => item?.expected_file === expected_file);
     if (!aggregateRow) validation_errors.push('missing matching aggregate result row');

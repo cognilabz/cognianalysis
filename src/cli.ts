@@ -696,8 +696,8 @@ function cmdEval(args: string[]): number {
   console.log('Cognianalysis eval');
   console.log(`Repo: ${repo}`);
   console.log(`Analysis: ${analysis}`);
-  const bundle = FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
   const marketProof = printMarketProofStatus(analysis);
+  const bundle = FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
   const productReadiness = computeProductReadiness(repo, analysis, bundle, marketProof);
   console.log('Original product readiness:');
   for (const line of productReadinessBrief(productReadiness)) console.log(line);

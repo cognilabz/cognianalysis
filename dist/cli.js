@@ -706,8 +706,8 @@ function cmdEval(args) {
     console.log('Cognianalysis eval');
     console.log(`Repo: ${repo}`);
     console.log(`Analysis: ${analysis}`);
-    const bundle = utils_1.FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
     const marketProof = printMarketProofStatus(analysis);
+    const bundle = utils_1.FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
     const productReadiness = (0, productReadiness_1.computeProductReadiness)(repo, analysis, bundle, marketProof);
     console.log('Original product readiness:');
     for (const line of (0, productReadiness_1.productReadinessBrief)(productReadiness))

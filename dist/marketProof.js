@@ -451,10 +451,10 @@ function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)
         failures
     };
 }
-function validateGoldenResultArtifact(parsed, expected, expectedFile, expectedSourceCommit, aggregateSourceCommit) {
+function validateGoldenResultArtifact(root, parsed, expected, expectedFile, expectedSourceCommit, aggregateSourceCommit) {
     const errors = [];
     const metrics = parsed?.metrics || {};
-    errors.push(...validateGoldenMetricDerivation(parsed, expected));
+    errors.push(...validateGoldenMetricDerivation(root, parsed, expected));
     if (parsed?.schemaVersion !== '1.0')
         errors.push('schemaVersion must be 1.0');
     if (parsed?.generated_by !== exports.GOLDEN_VERIFIER_ID)
@@ -489,7 +489,7 @@ function validateGoldenResultArtifact(parsed, expected, expectedFile, expectedSo
         errors.push('failures must be empty');
     return errors;
 }
-function validateGoldenMetricDerivation(parsed, expected) {
+function validateGoldenMetricDerivation(root, parsed, expected) {
     const errors = [];
     const metrics = parsed?.metrics || {};
     const derivation = parsed?.metric_derivation || parsed?.metricDerivation || {};
@@ -580,6 +580,35 @@ function validateGoldenMetricDerivation(parsed, expected) {
         errors.push('metric_derivation.report_lint_complete must be boolean');
     if (typeof componentCoverageComplete !== 'boolean')
         errors.push('metric_derivation.component_coverage_complete must be boolean');
+    const repo = String(expected?.repo || parsed?.repo || '').trim();
+    const suiteAnalysis = repo ? utils_1.Path.join(root, repo, '.analysis') : '';
+    const bundleFile = suiteAnalysis ? utils_1.Path.join(suiteAnalysis, 'data', 'bundle.json') : '';
+    const reportLintFile = suiteAnalysis ? utils_1.Path.join(suiteAnalysis, 'data', 'analysis-document-report-lint.json') : '';
+    const bundle = bundleFile && utils_1.FS.existsSync(bundleFile) ? readJsonObject(bundleFile) : null;
+    const reportLint = reportLintFile && utils_1.FS.existsSync(reportLintFile) ? readJsonObject(reportLintFile) : null;
+    if (!repo)
+        errors.push('golden suite repo is required for readiness derivation binding');
+    if (!bundle)
+        errors.push('golden suite bundle.json is required for readiness derivation binding');
+    if (!reportLint)
+        errors.push('golden suite analysis-document-report-lint.json is required for report completeness binding');
+    if (bundle) {
+        const bundleReadinessState = String(bundle.final_llm_readiness?.state || '').trim();
+        if (!bundleReadinessState)
+            errors.push('golden suite bundle final_llm_readiness.state is required');
+        else if (readinessState && readinessState !== bundleReadinessState)
+            errors.push('metric_derivation.final_llm_readiness_state must match suite bundle final_llm_readiness.state');
+        if (bundle.analysis_document_component_coverage?.complete !== true && bundle.analysis_document_component_coverage?.complete !== false)
+            errors.push('golden suite bundle analysis_document_component_coverage.complete is required');
+        else if (typeof componentCoverageComplete === 'boolean' && componentCoverageComplete !== bundle.analysis_document_component_coverage.complete)
+            errors.push('metric_derivation.component_coverage_complete must match suite bundle analysis_document_component_coverage.complete');
+    }
+    if (reportLint) {
+        if (reportLint.complete !== true && reportLint.complete !== false)
+            errors.push('golden suite report-lint complete is required');
+        else if (typeof reportLintComplete === 'boolean' && reportLintComplete !== reportLint.complete)
+            errors.push('metric_derivation.report_lint_complete must match suite analysis-document-report-lint.json complete');
+    }
     if (expectedFacts.length > 0) {
         const factRecall = foundRows.length / expectedFacts.length;
         if (!numbersEqual(metrics.fact_recall, factRecall))
@@ -624,7 +653,7 @@ function goldenProofStatus(root, analysis, expectedSourceCommit = (0, utils_1.gi
             ...(!String(parsed.repo || '').trim() ? ['expected repo is required'] : []),
             ...(!Array.isArray(parsed.facts) || parsed.facts.length === 0 ? ['expected facts are required'] : []),
             ...(!parsed.minimums || typeof parsed.minimums !== 'object' ? ['expected minimums are required'] : []),
-            ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(result, parsed, expected_file, expectedSourceCommit, String(aggregate?.source_commit || '')))
+            ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(root, result, parsed, expected_file, expectedSourceCommit, String(aggregate?.source_commit || '')))
         ];
         const aggregateRow = asList(aggregate?.results).find((item) => item?.expected_file === expected_file);
         if (!aggregateRow)

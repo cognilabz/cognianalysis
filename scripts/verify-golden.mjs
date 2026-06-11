@@ -173,6 +173,16 @@ function scoreExpected(expectedPath) {
   const outPath = join(resultRoot, expected.repo, '.analysis', 'data', 'golden-benchmark.json');
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(result, null, 2) + '\n');
+  if (process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1') {
+    for (const name of ['bundle.json', 'analysis-document-report-lint.json']) {
+      const sourceArtifact = join(analysis, 'data', name);
+      const targetArtifact = join(resultRoot, expected.repo, '.analysis', 'data', name);
+      if (existsSync(sourceArtifact) && sourceArtifact !== targetArtifact) {
+        mkdirSync(dirname(targetArtifact), { recursive: true });
+        cpSync(sourceArtifact, targetArtifact);
+      }
+    }
+  }
   return result;
 }
 

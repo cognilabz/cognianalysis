@@ -87,6 +87,16 @@ function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit', o
       resultArtifact.metric_derivation.report_lint_complete = true;
       resultArtifact.metric_derivation.component_coverage_complete = true;
     }
+    if (options.includeBundle !== false) {
+      writeJson(join(root, repo, '.analysis', 'data', 'bundle.json'), {
+        final_llm_readiness: { state: options.bundleReadinessState || 'ready' },
+        analysis_document_report_lint: { complete: options.bundleReportLintComplete !== false },
+        analysis_document_component_coverage: { complete: options.bundleComponentCoverageComplete !== false }
+      });
+      writeJson(join(root, repo, '.analysis', 'data', 'analysis-document-report-lint.json'), {
+        complete: options.reportLintComplete !== false
+      });
+    }
   }
   writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), resultArtifact);
   return {
@@ -417,6 +427,43 @@ function missingIds(result) {
     assert.equal(status.goldenProofReady, false, 'golden suites with forged readiness/completeness metrics but no derivation proof must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('final_llm_readiness_state is required')), 'strict failures must reject missing decision readiness derivation');
     assert(status.strictFailures.some(item => item.includes('report_lint_complete must be boolean')), 'strict failures must reject missing report completeness derivation');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-golden-bundle-binding-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const categories = ['rest_openapi_service', 'soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith'];
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) {
+      results.push(writePerfectGoldenSuite(root, i, 'current-commit', {
+        includeProofRows: true,
+        bundleReadinessState: i === 1 ? 'partial' : 'ready'
+      }));
+    }
+    writeJson(join(root, 'benchmarks', 'golden', 'manifest.json'), {
+      schemaVersion: '1.0',
+      minimum_representative_suites: 5,
+      required_categories: categories,
+      suites: results.map((result, index) => ({
+        expected_file: result.expected_file,
+        repo: result.repo,
+        category: categories[index],
+        rationale: 'Representative category fixture.'
+      }))
+    });
+    writePerfectGoldenAggregate(root, results);
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'golden readiness derivation must be bound to suite bundle artifacts');
+    assert(status.strictFailures.some(item => item.includes('final_llm_readiness_state must match suite bundle')), 'strict failures must reject readiness derivation that contradicts bundle.json');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
