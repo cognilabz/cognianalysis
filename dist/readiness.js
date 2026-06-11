@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.finalLlmReadinessGaps = finalLlmReadinessGaps;
 exports.finalLlmReadinessFailures = finalLlmReadinessFailures;
 exports.computeFinalLlmReadiness = computeFinalLlmReadiness;
-function finalLlmReadinessFailures(bundle) {
+function finalLlmReadinessGaps(bundle) {
     const prerequisiteCoverage = bundle.analysis_document_prerequisite_coverage || {};
     const synthesis = bundle.analysis_document_detail_review_synthesis || {};
     const skillSynthesis = bundle.analysis_document_skill_workbench_synthesis || {};
@@ -25,73 +26,76 @@ function finalLlmReadinessFailures(bundle) {
     const goalTraceAlignment = bundle.analysis_goal_trace_alignment || {};
     const pipelineContract = bundle.analysis_pipeline_contract || {};
     const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
-    const failures = [];
+    const gaps = [];
     if (bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact !== true || bundle.llm_analysis_strategy?.strategy_present !== true)
-        failures.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
+        gaps.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
     if (bundle.report_mode?.llm_authored !== true)
-        failures.push('visible report is not Codex-authored');
+        gaps.push('visible report is not Codex-authored');
     if (prerequisiteCoverage.complete !== true)
-        failures.push(`final synthesis prerequisites incomplete: ${(prerequisiteCoverage.missing_outputs || []).join(', ') || 'unknown'}`);
+        gaps.push(`final synthesis prerequisites incomplete: ${(prerequisiteCoverage.missing_outputs || []).join(', ') || 'unknown'}`);
     if (bundle.report_mode?.final_after_detail_reviews !== true)
-        failures.push('final report missing synthesis_stage=final_after_detail_reviews');
+        gaps.push('final report missing synthesis_stage=final_after_detail_reviews');
     if (componentCoverage.complete !== true)
-        failures.push(`analysis document component contract incomplete: ${(componentCoverage.missing || []).join(', ') || 'unknown'}`);
+        gaps.push(`analysis document component contract incomplete: ${(componentCoverage.missing || []).join(', ') || 'unknown'}`);
     if (reportLint.complete !== true)
-        failures.push(`analysis document report lint incomplete: ${(reportLint.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`analysis document report lint incomplete: ${(reportLint.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (executiveDecisionLayer.complete !== true)
-        failures.push(`executive decision layer incomplete: ${(executiveDecisionLayer.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`executive decision layer incomplete: ${(executiveDecisionLayer.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (consistencyReview.complete !== true)
-        failures.push(`Codex-authored consistency review incomplete: ${(consistencyReview.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`Codex-authored consistency review incomplete: ${(consistencyReview.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (consistencyReview.complete === true && Number(consistencyReview.contradictions_found || 0) > 0)
-        failures.push(`Codex-authored consistency review found unresolved contradictions: ${consistencyReview.contradictions_found}`);
+        gaps.push(`Codex-authored consistency review found unresolved contradictions: ${consistencyReview.contradictions_found}`);
     if (evidenceStrength.complete !== true)
-        failures.push(`analysis document evidence strength incomplete: ${(evidenceStrength.missing_confidence || []).concat(evidenceStrength.unsupported_major_claims || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`analysis document evidence strength incomplete: ${(evidenceStrength.missing_confidence || []).concat(evidenceStrength.unsupported_major_claims || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (semanticLineage.complete !== true)
-        failures.push(`analysis document semantic lineage incomplete: ${(semanticLineage.incomplete_claims || []).map((item) => item.claim_id || item).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`analysis document semantic lineage incomplete: ${(semanticLineage.incomplete_claims || []).map((item) => item.claim_id || item).slice(0, 8).join(', ') || 'unknown'}`);
     if (openQuestions.complete !== true)
-        failures.push(`analysis document open questions incomplete: ${(openQuestions.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`analysis document open questions incomplete: ${(openQuestions.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (openQuestions.complete === true && Number(openQuestions.blocking_count || 0) > 0)
-        failures.push(`blocking open questions remain: ${openQuestions.blocking_count}`);
+        gaps.push(`blocking open questions remain: ${openQuestions.blocking_count}`);
     if (externalFindings.complete !== true)
-        failures.push(`external findings ingestion incomplete: ${(externalFindings.invalid_findings || []).map((item) => item.id || item).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`external findings ingestion incomplete: ${(externalFindings.invalid_findings || []).map((item) => item.id || item).slice(0, 8).join(', ') || 'unknown'}`);
     if (runProvenance.complete !== true)
-        failures.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
     if (dependencyGraph.complete !== true)
-        failures.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (staleness.stale === true)
-        failures.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
+        gaps.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
     if (requirementsTraceContract.complete !== true)
-        failures.push(`Codex-authored requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
+        gaps.push(`Codex-authored requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (goalTraceAlignment.complete !== true)
-        failures.push(`Codex-authored goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);
+        gaps.push(`Codex-authored goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (qualityReview.complete !== true)
-        failures.push(`Codex-authored report quality review artifact incomplete: ${(qualityReview.missing || []).join(', ') || qualityReview.verdict || 'unknown'}`);
+        gaps.push(`Codex-authored report quality review artifact incomplete: ${(qualityReview.missing || []).join(', ') || qualityReview.verdict || 'unknown'}`);
     if (qualityReview.complete === true && qualityReview.verdict_is_decision_ready !== true)
-        failures.push(`Codex-authored report quality review verdict is not decision_ready: ${qualityReview.verdict || 'unknown'}`);
+        gaps.push(`Codex-authored report quality review verdict is not decision_ready: ${qualityReview.verdict || 'unknown'}`);
     if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact !== true)
-        failures.push('missing required pre-final Codex-authored detail-agent plan artifact: llm/detail-agent-plan.json');
+        gaps.push('missing required pre-final Codex-authored detail-agent plan artifact: llm/detail-agent-plan.json');
     if (bundle.report_mode?.final_synthesis_ready !== true)
-        failures.push('final Codex-authored report is not synthesized after completed detail reviews');
+        gaps.push('final Codex-authored report is not synthesized after completed detail reviews');
     if (pipelineContract.complete !== true)
-        failures.push(`Codex-authored analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
+        gaps.push(`Codex-authored analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (skillCatalogContract.complete !== true)
-        failures.push(`Codex-authored analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
+        gaps.push(`Codex-authored analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (sourceTierCoverage.complete !== true)
-        failures.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
+        gaps.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
     if (skillWorkbenchCoverage.complete !== true)
-        failures.push(`Codex-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
+        gaps.push(`Codex-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
     if (skillSynthesis.complete !== true)
-        failures.push(`skill-workbench synthesis ${skillSynthesis.status || 'not complete'}`);
+        gaps.push(`skill-workbench synthesis ${skillSynthesis.status || 'not complete'}`);
     if (detailCoverage.complete !== true)
-        failures.push(`source-family detail review coverage ${detailCoverage.status || 'not complete'}: ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed, ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
+        gaps.push(`source-family detail review coverage ${detailCoverage.status || 'not complete'}: ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed, ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
     if (synthesis.complete !== true)
-        failures.push(`detail-review synthesis ${synthesis.status || 'not complete'}`);
-    return failures;
+        gaps.push(`detail-review synthesis ${synthesis.status || 'not complete'}`);
+    return gaps;
+}
+function finalLlmReadinessFailures(bundle) {
+    return finalLlmReadinessGaps(bundle);
 }
 function computeFinalLlmReadiness(bundle) {
-    const failures = finalLlmReadinessFailures(bundle);
+    const readinessGaps = finalLlmReadinessGaps(bundle);
     return {
-        state: failures.length ? 'partial' : 'ready',
+        state: readinessGaps.length ? 'partial' : 'ready',
         semantic_verdict_authority: 'codex_llm',
         llm_execution_model: {
             executor: 'codex_in_session',
@@ -105,6 +109,8 @@ function computeFinalLlmReadiness(bundle) {
         final_verdict_source: 'analysis_document.report_quality_review.verdict',
         final_verdict: bundle.analysis_document_quality_review?.verdict || '',
         deterministic_contract_scope: 'prerequisite artifacts, explicit Codex-authored goal-trace references, Tier 1 source-file analysis coverage, Codex-planned skill workbench execution, detail-review integration, renderer contract, evidence/index contracts, semantic lineage, run provenance, artifact dependency freshness, external finding shape, open-question structure, and Codex-authored verdict/rationale presence only',
-        failures
+        failures: readinessGaps,
+        readiness_gaps: readinessGaps,
+        gap_count: readinessGaps.length
     };
 }
