@@ -92,6 +92,27 @@ function missingIds(result) {
 
 {
   const bundle = baseBundle();
+  bundle.product_artifact_model = { model: 'expanded_debug_harness', complete: true };
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('thin_artifact_model'), 'non-thin artifact model must not satisfy thin_artifact_model');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.simplified_harness_contract = { complete: false, missing: ['single_product_entrypoint'] };
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('simplified_harness_contract'), 'incomplete simplified harness contract must not satisfy simplification readiness');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.parallel_orchestration_contract = { complete: false, missing: ['artifact_cache_keys_available'] };
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('parallel_orchestration'), 'incomplete orchestration contract must not satisfy parallel_orchestration readiness');
+}
+
+{
+  const bundle = baseBundle();
   bundle.documentation = {};
   bundle.interfaces = [{ id: 'http-api', evidence: [ev] }];
   const result = readiness(bundle);
@@ -125,6 +146,28 @@ function missingIds(result) {
   bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'quality');
   const result = readiness(bundle);
   assert(missingIds(result).includes('quality_security_view'), 'quality evidence without explicit security coverage must not satisfy quality_security_view');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.quality = { flows: [{ category: 'flow', title: 'Authentication flow', evidence: [ev] }] };
+  bundle.findings = [{ category: 'maintainability', title: 'Authorization middleware is shared', evidence: [ev] }];
+  bundle.analysis_document.sections = [
+    { id: 'quality', blocks: [{ type: 'statement_list', items: [{ category: 'flow', title: 'Authentication flow', evidence: [ev] }] }] }
+  ];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('quality_security_view'), 'auth feature evidence without security/risk framing must not satisfy quality_security_view');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.quality = { security_assessment: { category: 'security', status: 'no_findings', title: 'No reviewed-slice security findings', evidence: [ev] } };
+  bundle.findings = [];
+  bundle.analysis_document.sections = [
+    { id: 'quality', blocks: [{ type: 'statement_list', items: [{ category: 'security', status: 'no_findings', title: 'No reviewed-slice security findings', evidence: [ev] }] }] }
+  ];
+  const result = readiness(bundle);
+  assert(!missingIds(result).includes('quality_security_view'), 'explicit security no-finding statement must satisfy quality_security_view');
 }
 
 {

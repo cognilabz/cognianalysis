@@ -122,9 +122,12 @@ assert(evalOutput.includes('Original product readiness:'), 'eval must expose ori
 assert(evalOutput.includes('Verdict: PARTIALLY_READY'), 'eval must not claim full product readiness for the single demo suite');
 assert(evalOutput.includes('Core ideas covered:'), 'eval must answer whether original ideas are covered');
 assert(evalOutput.includes('Core features implemented: partly'), 'eval must answer whether original features are implemented');
-assert(evalOutput.includes('Perfectly simplified: no'), 'eval must answer whether the product is perfectly simplified');
+assert(evalOutput.includes('Perfectly simplified: yes'), 'eval must recognize the generated thin harness/orchestration contracts');
 assert(evalOutput.includes('PRODUCT-MISSING multi_repo_benchmark'), 'eval must surface missing multi-repo golden proof');
-assert(evalOutput.includes('PRODUCT-MISSING thin_artifact_model'), 'eval must surface missing simplified artifact model proof');
+assert(evalOutput.includes('PRODUCT-MISSING baseline_comparison'), 'eval must surface missing external baseline proof');
+assert(!evalOutput.includes('PRODUCT-MISSING thin_artifact_model'), 'eval must not keep claiming the generated thin artifact model is missing');
+assert(!evalOutput.includes('PRODUCT-MISSING simplified_harness_contract'), 'eval must not keep claiming the generated simplified harness contract is missing');
+assert(!evalOutput.includes('PRODUCT-MISSING parallel_orchestration'), 'eval must not keep claiming generated orchestration proof is missing');
 const evalStrict = run(['eval', demo, '--strict'], { capture: true, expectFailure: true });
 const evalStrictOutput = `${evalStrict.stdout || ''}\n${evalStrict.stderr || ''}`;
 assert(evalStrictOutput.includes('Original product readiness:'), 'eval --strict failure must still print product readiness');
@@ -317,6 +320,13 @@ assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_f
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
+assert(bundle.product_artifact_model?.complete === true, `Demo thin artifact model incomplete: ${(bundle.product_artifact_model?.missing || []).join(', ')}`);
+assert(bundle.product_artifact_model?.model === 'thin_llm_first_harness', 'Demo product artifact model must be the thin LLM-first harness');
+assert(bundle.simplified_harness_contract?.complete === true, `Demo simplified harness contract incomplete: ${(bundle.simplified_harness_contract?.missing || []).join(', ')}`);
+assert(bundle.simplified_harness_contract?.public_loop?.join(',') === 'analyze,status,open,eval', 'Demo simplified harness must expose the small product loop');
+assert(bundle.parallel_orchestration_contract?.complete === true, `Demo parallel orchestration contract incomplete: ${(bundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
+assert(bundle.parallel_orchestration_contract?.execution_model === 'harness_parallel_workers_over_generated_workpacks', 'Demo orchestration contract must keep LLM execution harness-owned');
+assert(bundle.parallel_orchestration_contract?.batch_model?.task_count > 0, 'Demo orchestration contract must expose source-tier batch tasks');
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }

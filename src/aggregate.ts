@@ -202,6 +202,9 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.artifact_dependency_graph = computeArtifactDependencyGraph(analysisDir, bundle.analysis_run);
   bundle.product_analysis_request_freshness = computeProductAnalysisRequestFreshness(analysisDir);
   bundle.semantic_authority = computeSemanticAuthority(bundle);
+  bundle.product_artifact_model = computeProductArtifactModel(bundle);
+  bundle.simplified_harness_contract = computeSimplifiedHarnessContract(bundle);
+  bundle.parallel_orchestration_contract = computeParallelOrchestrationContract(bundle);
   bundle.final_llm_readiness = computeFinalLlmReadiness(bundle);
   bundle.target_coverage = computeTargetCoverage(bundle);
   bundle.target_artifact_contract_coverage = bundle.target_coverage;
@@ -231,6 +234,9 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
   writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
   writeJson(Path.join(dataDir, 'product-analysis-request-freshness.json'), bundle.product_analysis_request_freshness);
+  writeJson(Path.join(dataDir, 'product-artifact-model.json'), bundle.product_artifact_model);
+  writeJson(Path.join(dataDir, 'simplified-harness-contract.json'), bundle.simplified_harness_contract);
+  writeJson(Path.join(dataDir, 'parallel-orchestration-contract.json'), bundle.parallel_orchestration_contract);
   writeJson(Path.join(dataDir, 'analysis-staleness.json'), bundle.analysis_staleness);
   writeJson(Path.join(dataDir, 'bundle.json'), bundle);
   writeJson(Path.join(dataDir, 'evidence.json'), bundle.evidence_index);
@@ -304,6 +310,160 @@ function computeReportArtifacts(analysisDir: string): any {
     analysis_data_json: FS.existsSync(dataPath),
     generated_at: persisted.generated_at || '',
     renderer: 'src/report.ts'
+  };
+}
+
+function commandSet(value: any): Set<string> {
+  return new Set(asList(value).map((item: any) => String(item || '').trim()).filter(Boolean));
+}
+
+function missingCommands(actual: Set<string>, expected: string[]): string[] {
+  return expected.filter(command => !actual.has(command));
+}
+
+function computeProductArtifactModel(bundle: any): any {
+  const publicCommands = commandSet(bundle.tooling?.public_cli_commands);
+  const requiredPublicCommands = ['analyze', 'status', 'open', 'eval'];
+  const requiredArtifacts = [
+    'data/product-analysis-request.json',
+    'TASK.md',
+    'llm/analysis-strategy.json',
+    'source_tiers/*.json',
+    'skill_reviews/*.json',
+    'llm/detail-agent-plan.json',
+    'detail_reviews/*.json',
+    'llm/analysis-document.json',
+    'data/bundle.json',
+    'report/index.html'
+  ];
+  const missing = [
+    ...missingCommands(publicCommands, requiredPublicCommands).map(command => `missing public command ${command}`),
+    ...(bundle.report_component_library?.library_kind === 'analysis_document_component_library' ? [] : ['missing report component library']),
+    ...(bundle.analysis_goal_contract?.contract_kind ? [] : ['missing original goal contract']),
+    ...(bundle.analysis_pipeline?.pipeline_kind ? [] : ['missing analysis pipeline artifact']),
+    ...(bundle.semantic_authority?.semantic_decider ? [] : ['missing semantic authority contract'])
+  ];
+  return {
+    contract_kind: 'product_artifact_model',
+    model: 'thin_llm_first_harness',
+    complete: missing.length === 0,
+    deterministic_contract_scope: 'Verifies the user-facing artifact model is thin: product request, one task guide, LLM-authored facts/reviews/report, deterministic bundle/evidence/report outputs and dev-only internals. It does not judge semantic report quality.',
+    public_commands: requiredPublicCommands,
+    hidden_or_dev_scoped_commands: asList(bundle.tooling?.internal_cli_commands),
+    compatibility_aliases: asList(bundle.tooling?.compatibility_cli_commands),
+    required_artifact_families: requiredArtifacts,
+    visible_report_source: 'analysis_document.sections',
+    semantic_authority: bundle.semantic_authority?.semantic_decider || 'llm',
+    missing,
+    summary: missing.length
+      ? `Thin artifact model is incomplete: ${missing.slice(0, 6).join(', ')}.`
+      : 'Thin LLM-first artifact model is present: users operate analyze/status/open/eval while detailed workflow artifacts stay under the harness workspace.'
+  };
+}
+
+function computeSimplifiedHarnessContract(bundle: any): any {
+  const publicCommands = commandSet(bundle.tooling?.public_cli_commands);
+  const internalCommands = asList(bundle.tooling?.internal_cli_commands).map((item: any) => String(item || ''));
+  const compatibilityCommands = asList(bundle.tooling?.compatibility_cli_commands).map((item: any) => String(item || ''));
+  const requiredPublicCommands = ['analyze', 'status', 'open', 'eval'];
+  const checks = [
+    {
+      id: 'single_product_entrypoint',
+      ready: publicCommands.has('analyze') && bundle.product_analysis_request?.entrypoint === 'analyze',
+      evidence: `entrypoint=${bundle.product_analysis_request?.entrypoint || 'missing'}`
+    },
+    {
+      id: 'small_public_surface',
+      ready: requiredPublicCommands.every(command => publicCommands.has(command)) && publicCommands.size === requiredPublicCommands.length,
+      evidence: `public=${[...publicCommands].join(',') || 'missing'}`
+    },
+    {
+      id: 'dev_namespace_for_internal_flow',
+      ready: internalCommands.length > 0 && internalCommands.every(command => command.startsWith('dev ')),
+      evidence: `internal=${internalCommands.length}`
+    },
+    {
+      id: 'compatibility_aliases_separated',
+      ready: compatibilityCommands.length > 0 && compatibilityCommands.some(command => command === 'run'),
+      evidence: `aliases=${compatibilityCommands.length}`
+    },
+    {
+      id: 'single_harness_task_guide',
+      ready: asList(bundle.tasks).length > 0 && bundle.analysis_pipeline_contract?.complete === true,
+      evidence: `tasks=${asList(bundle.tasks).length}, pipeline=${bundle.analysis_pipeline_contract?.complete === true}`
+    },
+    {
+      id: 'deterministic_layer_not_semantic_authority',
+      ready: bundle.semantic_authority?.semantic_decider === 'codex_llm',
+      evidence: `semantic_decider=${bundle.semantic_authority?.semantic_decider || 'missing'}`
+    }
+  ];
+  const missing = checks.filter(check => !check.ready).map(check => check.id);
+  return {
+    contract_kind: 'simplified_harness_contract',
+    complete: missing.length === 0,
+    deterministic_contract_scope: 'Checks the product surface and workflow shape only: one public entrypoint, small public command set, dev-scoped internals, compatibility aliases kept separate and LLM semantic authority explicit.',
+    checks,
+    missing,
+    public_loop: ['analyze', 'status', 'open', 'eval'],
+    harness_work_area: '.analysis',
+    summary: missing.length
+      ? `Simplified harness contract is incomplete: ${missing.join(', ')}.`
+      : 'Simplified harness contract is proven for the generated workspace.'
+  };
+}
+
+function computeParallelOrchestrationContract(bundle: any): any {
+  const internalCommands = commandSet(bundle.tooling?.internal_cli_commands);
+  const manifest = bundle.source_tier_task_manifest || {};
+  const backlog = bundle.source_tier_backlog || {};
+  const graph = bundle.artifact_dependency_graph || {};
+  const provenance = bundle.analysis_run_provenance || {};
+  const checks = [
+    {
+      id: 'tier_batches_exist',
+      ready: Number(manifest.task_count || 0) > 0 && Number(manifest.batch_size || 0) > 0,
+      evidence: `tasks=${Number(manifest.task_count || 0)}, batch_size=${Number(manifest.batch_size || 0)}`
+    },
+    {
+      id: 'next_batch_commands_available',
+      ready: internalCommands.has('dev tier-status') && internalCommands.has('dev tier-next') && internalCommands.has('dev tier-context'),
+      evidence: 'dev tier-status/dev tier-next/dev tier-context'
+    },
+    {
+      id: 'backlog_contract_available',
+      ready: backlog.contract_kind === 'source_tier_execution_backlog' && typeof backlog.incomplete_tasks === 'number',
+      evidence: `backlog=${backlog.contract_kind || 'missing'}`
+    },
+    {
+      id: 'artifact_cache_keys_available',
+      ready: graph.complete === true && asList(graph.nodes).some((node: any) => String(node?.content_hash || '').trim()),
+      evidence: `graph=${graph.complete === true}, nodes=${asList(graph.nodes).length}`
+    },
+    {
+      id: 'run_provenance_available',
+      ready: provenance.complete === true && asList(provenance.generated_from_matrix).length > 0,
+      evidence: `provenance=${provenance.complete === true}, artifacts=${asList(provenance.generated_from_matrix).length}`
+    }
+  ];
+  const missing = checks.filter(check => !check.ready).map(check => check.id);
+  return {
+    contract_kind: 'parallel_orchestration_contract',
+    complete: missing.length === 0,
+    deterministic_contract_scope: 'Verifies that Cognianalysis can split Tier 1 work into independent batches, prepare next-work contexts with a limit, track backlog, and use artifact hashes/provenance as cache/freshness keys. LLM execution remains harness-owned.',
+    execution_model: 'harness_parallel_workers_over_generated_workpacks',
+    caching_model: 'artifact content hashes plus generated_from provenance and product request freshness',
+    batch_model: {
+      task_count: Number(manifest.task_count || 0),
+      batch_size: Number(manifest.batch_size || 0),
+      incomplete_tasks: Number(backlog.incomplete_tasks || 0),
+      complete_tasks: Number(backlog.complete_tasks || 0)
+    },
+    checks,
+    missing,
+    summary: missing.length
+      ? `Parallel/caching orchestration contract is incomplete: ${missing.join(', ')}.`
+      : 'Parallel/caching orchestration contract is available through Tier 1 batch workpacks, backlog selection and artifact hash/provenance cache keys.'
   };
 }
 

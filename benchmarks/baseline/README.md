@@ -20,8 +20,15 @@ Each file should include:
     "evidence_precision": 0.0,
     "unsupported_claim_rate": 0.0,
     "decision_usefulness": 0.0
+  },
+  "provenance": {
+    "generated_by": "tool or human reviewer name",
+    "artifact": "relative/path/to/baseline-output.md"
+  },
+  "comparison": {
+    "target": "benchmarks/golden/demo-repo.expected.json"
   }
 }
 ```
 
-Run `npm run verify:baseline` after adding baseline artifacts. The command fails until required baseline kinds are present and passing.
+Run `npm run verify:baseline` after adding baseline artifacts. The command fails until required baseline kinds are present, passing and shaped with required metrics, provenance and comparison target fields.

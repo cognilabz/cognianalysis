@@ -103,34 +103,37 @@ function hasProcessEvidence(bundle) {
         return false;
     return hasEvidence(process);
 }
-function evidenceTextMatches(value, needles) {
+function textFields(value, fields) {
+    return fields.map(field => String(value?.[field] || '').toLowerCase()).join(' ');
+}
+function hasExplicitSecurityEvidence(value) {
     if (!value)
         return false;
     if (Array.isArray(value))
-        return value.some(item => evidenceTextMatches(item, needles));
+        return value.some(item => hasExplicitSecurityEvidence(item));
     if (typeof value !== 'object')
         return false;
-    const text = [
-        value.id,
-        value.category,
-        value.kind,
-        value.title,
-        value.summary,
-        value.description,
-        value.intent,
-        value.recommendation
-    ].map(item => String(item || '').toLowerCase()).join(' ');
-    const selfMatches = hasDirectEvidence(value) && needles.some(needle => text.includes(needle));
-    return selfMatches || Object.keys(value).some(key => !isNonSupportEvidenceKey(key) && evidenceTextMatches(value[key], needles));
+    if (hasDirectEvidence(value)) {
+        const classifierText = textFields(value, ['category', 'kind', 'type', 'area', 'dimension', 'intent']);
+        const statementText = textFields(value, ['title', 'summary', 'description', 'reason', 'recommendation', 'status', 'verdict']);
+        const allText = `${classifierText} ${statementText}`;
+        const securityClass = /\b(security|vulnerability|vulnerabilities|vulnerable|cve|sast)\b/.test(classifierText);
+        const securityRiskStatement = /\b(security|vulnerability|vulnerabilities|vulnerable|cve|injection|xss|csrf|secret|secrets|credential|credentials)\b/.test(allText);
+        const authRiskStatement = /\b(authentication|authorization|authn|authz)\b/.test(allText)
+            && /\b(risk|gap|missing|weak|bypass|exposure|vulnerability|vulnerable|security|unauthorized|finding|findings)\b/.test(allText);
+        if (securityClass || securityRiskStatement || authRiskStatement)
+            return true;
+    }
+    return Object.keys(value).some(key => !isNonSupportEvidenceKey(key) && hasExplicitSecurityEvidence(value[key]));
 }
 function isNonSupportEvidenceKey(key) {
     return key === 'evidence' || key === 'evidence_refs' || UNCERTAINTY_EVIDENCE_KEYS.has(key);
 }
 function hasExplicitSecurityCoverage(bundle) {
     return traceCoveredWithEvidence(bundle, 'security', ['covered', 'partial'])
-        || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab', 'authentication', 'authorization'])
-        || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab', 'authentication', 'authorization'])
-        || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab', 'authentication', 'authorization']);
+        || hasExplicitSecurityEvidence(bundle?.quality)
+        || hasExplicitSecurityEvidence(bundle?.findings)
+        || hasExplicitSecurityEvidence(bundle?.analysis_document?.sections);
 }
 function hasQualityEvidence(bundle) {
     return traceCoveredWithEvidence(bundle, 'code', ['covered', 'partial'])
