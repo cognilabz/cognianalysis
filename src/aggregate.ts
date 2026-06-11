@@ -423,6 +423,65 @@ function computeSimplifiedHarnessContract(bundle: any): any {
   };
 }
 
+function artifactHashSet(bundle: any): Set<string> {
+  return new Set(asList(bundle.artifact_dependency_graph?.nodes)
+    .map((node: any) => String(node?.content_hash || '').trim())
+    .filter(Boolean));
+}
+
+function validateParallelExecutionProof(bundle: any): any {
+  const proof = bundle.parallel_execution_proof || {};
+  const hashes = artifactHashSet(bundle);
+  const tasks = asList(proof.worker_tasks || proof.tasks);
+  const missing = [
+    ...(proof.schemaVersion === '1.0' ? [] : ['schemaVersion']),
+    ...(proof.complete === true ? [] : ['complete']),
+    ...(String(proof.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['analysis_run_id']),
+    ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
+    ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
+    ...(Number(proof.worker_count || 0) >= 2 ? [] : ['worker_count']),
+    ...(tasks.length >= 2 ? [] : ['worker_tasks']),
+    ...(tasks.every((task: any) => String(task?.worker_id || '').trim() && String(task?.task_id || '').trim()) ? [] : ['worker_task_identity']),
+    ...(tasks.every((task: any) => Number(task?.duration_ms || 0) > 0 || (String(task?.started_at || '').trim() && String(task?.ended_at || '').trim())) ? [] : ['worker_task_timing'])
+  ];
+  const taskHashes = tasks.map((task: any) => String(task?.artifact_hash || task?.output_hash || '').trim()).filter(Boolean);
+  if (!taskHashes.length || taskHashes.some((hash: string) => !hashes.has(hash))) missing.push('worker_task_artifact_hashes');
+  return {
+    valid: missing.length === 0,
+    missing,
+    worker_count: Number(proof.worker_count || 0),
+    worker_tasks: tasks.length,
+    artifact_hashes_checked: taskHashes.length
+  };
+}
+
+function validateCacheReuseProof(bundle: any): any {
+  const proof = bundle.cache_reuse_proof || {};
+  const hashes = artifactHashSet(bundle);
+  const entries = asList(proof.cache_entries || proof.entries || proof.cache_keys);
+  const hitEntries = entries.filter((entry: any) => entry?.hit === true || entry?.cache_hit === true);
+  const missing = [
+    ...(proof.schemaVersion === '1.0' ? [] : ['schemaVersion']),
+    ...(proof.complete === true ? [] : ['complete']),
+    ...(String(proof.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['analysis_run_id']),
+    ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
+    ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
+    ...(Number(proof.cache_hits || 0) > 0 ? [] : ['cache_hits']),
+    ...(hitEntries.length > 0 ? [] : ['cache_hit_entries']),
+    ...(bundle.product_analysis_request_freshness?.complete === true ? [] : ['product_request_freshness'])
+  ];
+  const entryHashes = hitEntries.map((entry: any) => String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim()).filter(Boolean);
+  if (!entryHashes.length || entryHashes.some((hash: string) => !hashes.has(hash))) missing.push('cache_entry_artifact_hashes');
+  if (hitEntries.some((entry: any) => !String(entry?.cache_key || entry?.key || '').trim())) missing.push('cache_entry_keys');
+  return {
+    valid: missing.length === 0,
+    missing,
+    cache_hits: Number(proof.cache_hits || 0),
+    hit_entries: hitEntries.length,
+    artifact_hashes_checked: entryHashes.length
+  };
+}
+
 function computeParallelOrchestrationContract(bundle: any): any {
   const internalCommands = commandSet(bundle.tooling?.internal_cli_commands);
   const manifest = bundle.source_tier_task_manifest || {};
@@ -431,6 +490,8 @@ function computeParallelOrchestrationContract(bundle: any): any {
   const provenance = bundle.analysis_run_provenance || {};
   const parallelProof = bundle.parallel_execution_proof || {};
   const cacheProof = bundle.cache_reuse_proof || {};
+  const parallelProofValidation = validateParallelExecutionProof(bundle);
+  const cacheProofValidation = validateCacheReuseProof(bundle);
   const scaffoldChecks = [
     {
       id: 'tier_batches_exist',
@@ -461,13 +522,13 @@ function computeParallelOrchestrationContract(bundle: any): any {
   const proofChecks = [
     {
       id: 'parallel_execution_proof',
-      ready: parallelProof.complete === true && Number(parallelProof.worker_count || 0) >= 2,
-      evidence: `complete=${parallelProof.complete === true}, workers=${Number(parallelProof.worker_count || 0)}`
+      ready: parallelProofValidation.valid,
+      evidence: `valid=${parallelProofValidation.valid}, workers=${Number(parallelProof.worker_count || 0)}, missing=${parallelProofValidation.missing.join('|') || 'none'}`
     },
     {
       id: 'cache_reuse_proof',
-      ready: cacheProof.complete === true && Number(cacheProof.cache_hits || 0) > 0,
-      evidence: `complete=${cacheProof.complete === true}, cache_hits=${Number(cacheProof.cache_hits || 0)}`
+      ready: cacheProofValidation.valid,
+      evidence: `valid=${cacheProofValidation.valid}, cache_hits=${Number(cacheProof.cache_hits || 0)}, missing=${cacheProofValidation.missing.join('|') || 'none'}`
     }
   ];
   const checks = [...scaffoldChecks, ...proofChecks];
@@ -488,6 +549,8 @@ function computeParallelOrchestrationContract(bundle: any): any {
     },
     checks,
     scaffold_missing: scaffoldMissing,
+    parallel_execution_proof_validation: parallelProofValidation,
+    cache_reuse_proof_validation: cacheProofValidation,
     missing,
     summary: missing.length
       ? `Parallel/caching orchestration proof is incomplete: ${missing.join(', ')}.`
@@ -650,6 +713,14 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
     kind: 'llm_detail_review',
     depends_on: ['detail_agent_plan']
   }));
+  const optionalProofNodes: any[] = [
+    FS.existsSync(Path.join(analysisDir, 'data', 'parallel-execution-proof.json'))
+      ? { id: 'parallel_execution_proof', path: 'data/parallel-execution-proof.json', kind: 'orchestration_proof', depends_on: ['analysis_document'] }
+      : null,
+    FS.existsSync(Path.join(analysisDir, 'data', 'cache-reuse-proof.json'))
+      ? { id: 'cache_reuse_proof', path: 'data/cache-reuse-proof.json', kind: 'orchestration_proof', depends_on: ['parallel_execution_proof'] }
+      : null
+  ].filter(Boolean);
   const nodes = [
     { id: 'code_map', path: 'data/code-map.json', kind: 'deterministic_context', depends_on: [] },
     { id: 'source_inventory', path: 'data/source-inventory.json', kind: 'deterministic_context', depends_on: ['code_map'] },
@@ -661,7 +732,8 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
     { id: 'detail_agent_plan', path: 'llm/detail-agent-plan.json', kind: 'llm_detail_plan', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...productRequestDependency] },
     { id: 'detail_task_manifest', path: 'detail-task-manifest.json', kind: 'deterministic_task_materialization', depends_on: ['detail_agent_plan'] },
     ...detailReviewNodes,
-    { id: 'analysis_document', path: 'llm/analysis-document.json', kind: 'llm_final_report', depends_on: ['analysis_strategy', 'detail_agent_plan', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...detailReviewNodes.map(node => node.id), ...productRequestDependency] }
+    { id: 'analysis_document', path: 'llm/analysis-document.json', kind: 'llm_final_report', depends_on: ['analysis_strategy', 'detail_agent_plan', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...detailReviewNodes.map(node => node.id), ...productRequestDependency] },
+    ...optionalProofNodes
   ];
   const nodesById = new Map(nodes.map(node => [node.id, node]));
   const rows = nodes.map(node => nodeFreshness(analysisDir, node, nodesById));

@@ -330,6 +330,55 @@ assert(bundle.parallel_orchestration_contract?.missing?.includes('parallel_execu
 assert(bundle.parallel_orchestration_contract?.missing?.includes('cache_reuse_proof'), 'Demo parallel orchestration contract must require cache reuse proof');
 assert(bundle.parallel_orchestration_contract?.execution_model === 'harness_parallel_workers_over_generated_workpacks', 'Demo orchestration contract must keep LLM execution harness-owned');
 assert(bundle.parallel_orchestration_contract?.batch_model?.task_count > 0, 'Demo orchestration contract must expose source-tier batch tasks');
+writeFileSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: bundle.analysis_run.analysis_run_id,
+  source_commit: bundle.analysis_run.source_commit,
+  worker_count: 2
+}, null, 2) + '\n', 'utf8');
+writeFileSync(join(demo, '.analysis', 'data', 'cache-reuse-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: bundle.analysis_run.analysis_run_id,
+  source_commit: bundle.analysis_run.source_commit,
+  cache_hits: 1
+}, null, 2) + '\n', 'utf8');
+run(['dev', 'aggregate', demo], { capture: true });
+let fakeProofBundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+assert(fakeProofBundle.parallel_orchestration_contract?.complete === false, 'Self-attested proof files without worker/cache evidence must not complete orchestration');
+assert(fakeProofBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_tasks'), 'Parallel proof validation must require worker task evidence');
+assert(fakeProofBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_hit_entries'), 'Cache proof validation must require cache hit entries');
+const proofHash = fakeProofBundle.artifact_dependency_graph?.nodes?.find(node => node.content_hash)?.content_hash || '';
+writeFileSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: 'run-stale',
+  source_commit: 'stale-commit',
+  generated_from: ['source-tier-task-manifest.json'],
+  worker_count: 2,
+  worker_tasks: [
+    { worker_id: 'w1', task_id: 'source-tier-0001', duration_ms: 10, artifact_hash: proofHash },
+    { worker_id: 'w2', task_id: 'source-tier-0002', duration_ms: 11, artifact_hash: proofHash }
+  ]
+}, null, 2) + '\n', 'utf8');
+writeFileSync(join(demo, '.analysis', 'data', 'cache-reuse-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: 'run-stale',
+  source_commit: 'stale-commit',
+  generated_from: ['artifact-dependency-graph.json'],
+  cache_hits: 1,
+  cache_entries: [{ cache_key: 'demo-key', hit: true, artifact_hash: proofHash }]
+}, null, 2) + '\n', 'utf8');
+run(['dev', 'aggregate', demo], { capture: true });
+fakeProofBundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+assert(fakeProofBundle.parallel_orchestration_contract?.complete === false, 'Stale proof files must not complete orchestration');
+assert(fakeProofBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('analysis_run_id'), 'Parallel proof validation must reject stale run ids');
+assert(fakeProofBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('source_commit'), 'Cache proof validation must reject stale commits');
+rmSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), { force: true });
+rmSync(join(demo, '.analysis', 'data', 'cache-reuse-proof.json'), { force: true });
+run(['dev', 'aggregate', demo], { capture: true });
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }
