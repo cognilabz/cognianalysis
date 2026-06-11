@@ -151,6 +151,26 @@ function missingIds(result) {
 {
   const bundle = baseBundle();
   bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Functional View')
+    .concat(trace('Functional View', 'open', []));
+  bundle.analysis_document.sections = [{ id: 'functional', blocks: [{ type: 'flow', open_questions: [{ question: 'Which route?', evidence: [ev] }] }] }];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('functional_reverse_engineering'), 'open-question evidence inside a flow block must not satisfy functional_reverse_engineering');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Functional View')
+    .concat(trace('Functional View', 'open', []));
+  bundle.analysis_document.sections = [{ id: 'functional', blocks: [{ type: 'flow', steps: [{ order: 1, description: 'Supported flow step', evidence: [ev] }] }] }];
+  const result = readiness(bundle);
+  assert(!missingIds(result).includes('functional_reverse_engineering'), 'normal nested flow step evidence must satisfy functional_reverse_engineering');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
     .filter(item => item.label !== 'Reverse Engineering & Documentation')
     .concat(trace('Reverse Engineering & Documentation', 'open', []));
   const result = readiness(bundle);

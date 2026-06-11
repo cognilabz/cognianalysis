@@ -12,6 +12,20 @@ const TRACE_MATCHERS = {
     technical: { refs: ['required_views.technical_view'], labels: ['technical view'] },
     security: { refs: [], labels: ['security', 'security assessment', 'security coverage'] }
 };
+const UNCERTAINTY_EVIDENCE_KEYS = new Set([
+    'open_questions',
+    'open_question',
+    'uncertainty',
+    'uncertainties',
+    'limitations',
+    'accepted_limitations',
+    'accepted_limit',
+    'evidence_gap',
+    'evidence_gaps',
+    'missing_evidence',
+    'proof_gap',
+    'proof_gaps'
+]);
 function asList(value) {
     if (value === null || value === undefined)
         return [];
@@ -61,7 +75,7 @@ function hasEvidence(value) {
         return false;
     if (hasDirectEvidence(value))
         return true;
-    return Object.keys(value).some(key => key !== 'evidence' && key !== 'evidence_refs' && hasEvidence(value[key]));
+    return Object.keys(value).some(key => !isNonSupportEvidenceKey(key) && hasEvidence(value[key]));
 }
 function traceCoveredWithEvidence(bundle, needle, statuses = ['covered']) {
     const row = traceRow(bundle, needle);
@@ -107,7 +121,10 @@ function evidenceTextMatches(value, needles) {
         value.recommendation
     ].map(item => String(item || '').toLowerCase()).join(' ');
     const selfMatches = hasDirectEvidence(value) && needles.some(needle => text.includes(needle));
-    return selfMatches || Object.keys(value).some(key => evidenceTextMatches(value[key], needles));
+    return selfMatches || Object.keys(value).some(key => !isNonSupportEvidenceKey(key) && evidenceTextMatches(value[key], needles));
+}
+function isNonSupportEvidenceKey(key) {
+    return key === 'evidence' || key === 'evidence_refs' || UNCERTAINTY_EVIDENCE_KEYS.has(key);
 }
 function hasExplicitSecurityCoverage(bundle) {
     return traceCoveredWithEvidence(bundle, 'security', ['covered', 'partial'])
