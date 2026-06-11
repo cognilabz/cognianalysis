@@ -521,7 +521,7 @@ function computeProductAnalysisRequestFreshness(analysisDir) {
     const staleOutputs = shouldCheckRequiredOutputs
         ? requiredOutputs.filter(relativePath => {
             const info = artifactInfo(analysisDir, relativePath);
-            return !info.exists || info.mtime_ms < request.mtime_ms;
+            return !info.exists || (marker.stale === true ? info.mtime_ms <= request.mtime_ms : info.mtime_ms < request.mtime_ms);
         })
         : [];
     return {

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -1051,6 +1051,19 @@ try {
   const changedRequestOutput = `${changedRequest.stdout || ''}\n${changedRequest.stderr || ''}`;
   assert(!changedRequestOutput.includes('Product mode complete.'), 'Analyze must not complete an old ready report after the product request changes');
   assert(changedRequestOutput.includes('product analysis request changed'), 'Changed product request must make downstream LLM artifacts freshness-blocked');
+  const equalMtimeRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-equal-mtime-refresh-'));
+  const equalMtimeRepo = join(equalMtimeRoot, 'demo-repo');
+  cpSync(demo, equalMtimeRepo, { recursive: true });
+  run(['analyze', equalMtimeRepo, '--mode', 'deep-dive', '--flow', 'onboarding'], { capture: true, expectFailure: true });
+  const equalRequestPath = join(equalMtimeRepo, '.analysis', 'data', 'product-analysis-request.json');
+  const equalRequestMtime = new Date('2030-01-01T00:00:00Z');
+  utimesSync(equalRequestPath, equalRequestMtime, equalRequestMtime);
+  for (const relativePath of ['analysis-strategy.json', 'detail-agent-plan.json', 'analysis-document.json']) {
+    utimesSync(join(equalMtimeRepo, '.analysis', 'llm', relativePath), equalRequestMtime, equalRequestMtime);
+  }
+  const equalMtimeAudit = run(['dev', 'audit-report', equalMtimeRepo], { capture: true, expectFailure: true });
+  const equalMtimeOutput = `${equalMtimeAudit.stdout || ''}\n${equalMtimeAudit.stderr || ''}`;
+  assert(equalMtimeOutput.includes('product analysis request changed'), 'Stale request marker must require LLM artifacts newer than the request, not equal-time artifacts');
   const legacyRequestRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-legacy-request-refresh-'));
   const legacyRequestRepo = join(legacyRequestRoot, 'demo-repo');
   cpSync(demo, legacyRequestRepo, { recursive: true });
@@ -1060,6 +1073,15 @@ try {
   const legacyRequestOutput = `${legacyRequest.stdout || ''}\n${legacyRequest.stderr || ''}`;
   assert(!legacyRequestOutput.includes('Product mode complete.'), 'Analyze must not complete a legacy ready workspace when adding the first product request');
   assert(legacyRequestOutput.includes('product analysis request changed'), 'First product request on legacy ready workspaces must freshness-block old LLM artifacts');
+  const plainAnalyzeRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-plain-analyze-preserve-'));
+  const plainAnalyzeRepo = join(plainAnalyzeRoot, 'demo-repo');
+  cpSync(demo, plainAnalyzeRepo, { recursive: true });
+  const plainBefore = JSON.parse(readFileSync(join(plainAnalyzeRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  const plainAnalyze = run(['analyze', plainAnalyzeRepo], { capture: true });
+  const plainAnalyzeOutput = `${plainAnalyze.stdout || ''}\n${plainAnalyze.stderr || ''}`;
+  const plainAfter = JSON.parse(readFileSync(join(plainAnalyzeRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  assert(plainAnalyzeOutput.includes('Product mode complete.'), 'Plain analyze must continue an existing product request without freshness-blocking it');
+  assert(plainAfter.request_hash === plainBefore.request_hash && plainAfter.goal === plainBefore.goal && plainAfter.mode === plainBefore.mode, 'Plain analyze must preserve the existing product request instead of resetting to defaults');
   const scopeChangeRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-scope-change-'));
   const scopeChangeRepo = join(scopeChangeRoot, 'demo-repo');
   cpSync(demo, scopeChangeRepo, { recursive: true });
@@ -1085,6 +1107,16 @@ try {
   const repeatedOversizedScope = run(['analyze', oversizedScopeRepo, '--scope', 'representative', '--scope-files', '400', '--no-seed', '--no-html'], { capture: true });
   const repeatedOversizedScopeOutput = `${repeatedOversizedScope.stdout || ''}\n${repeatedOversizedScope.stderr || ''}`;
   assert(!repeatedOversizedScopeOutput.includes('requested scope differs'), 'Analyze must not rebuild repeatedly when requested scope-files exceeds repo size');
+  const plainRepresentativeRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-plain-representative-preserve-'));
+  const plainRepresentativeRepo = join(plainRepresentativeRoot, 'demo-repo');
+  cpSync(demo, plainRepresentativeRepo, { recursive: true });
+  rmSync(join(plainRepresentativeRepo, '.analysis'), { recursive: true, force: true });
+  run(['analyze', plainRepresentativeRepo, '--scope', 'representative', '--scope-files', '5', '--no-seed', '--no-html'], { capture: true });
+  const plainRepresentative = run(['analyze', plainRepresentativeRepo, '--no-seed', '--no-html'], { capture: true });
+  const plainRepresentativeOutput = `${plainRepresentative.stdout || ''}\n${plainRepresentative.stderr || ''}`;
+  const preservedRepresentativeScope = JSON.parse(readFileSync(join(plainRepresentativeRepo, '.analysis', 'data', 'analysis-scope.json'), 'utf8'));
+  assert(!plainRepresentativeOutput.includes('requested scope differs'), 'Plain analyze must preserve an existing representative request instead of rebuilding to complete');
+  assert(preservedRepresentativeScope.mode === 'representative' && preservedRepresentativeScope.selected_files === 5, 'Plain analyze must keep the prior representative analysis scope');
   assert(analyzePendingOutput.includes('00-analysis-strategy.md'), 'Analyze pending output must describe the LLM analysis strategy step');
   assert(analyzePendingOutput.includes('skill_workbench_tasks'), 'Analyze pending output must describe LLM-planned skill workbench materialization');
   assert(analyzePendingOutput.includes('capability_templates'), 'Analyze pending output must describe optional capability templates');

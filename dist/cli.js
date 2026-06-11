@@ -15,6 +15,7 @@ const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive']);
 const PRODUCT_REQUEST_LLM_OUTPUTS = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
+const PRODUCT_REQUEST_OPTION_FLAGS = ['--mode', '--goal', '--flow', '--module', '--api', '--risk', '--decision', '--scope', '--scope-files'];
 const OPTION_VALUE_FLAGS = new Set([
     '--analysis',
     '--capsules',
@@ -493,6 +494,9 @@ function productAnalysisRequest(args) {
                 : 'concise decision report with broad system understanding and explicit deep-dive backlog'
     };
 }
+function hasProductRequestOption(args) {
+    return PRODUCT_REQUEST_OPTION_FLAGS.some(flag => args.includes(flag));
+}
 function analysisScopeChanged(analysis, request) {
     const codeMapPath = utils_1.Path.join(analysis, 'data', 'code-map.json');
     const scopePath = utils_1.Path.join(analysis, 'data', 'analysis-scope.json');
@@ -514,9 +518,11 @@ function analysisScopeChanged(analysis, request) {
     return false;
 }
 function writeProductAnalysisRequest(repo, analysis, args) {
-    const request = productAnalysisRequest(args);
     const requestPath = utils_1.Path.join(analysis, 'data', 'product-analysis-request.json');
     const previous = (0, utils_1.loadJson)(requestPath, null);
+    if (previous && !hasProductRequestOption(args))
+        return previous;
+    const request = productAnalysisRequest(args);
     const stableRequest = ({ generated_at: _generatedAt, repo: _repo, request_hash: _hash, ...rest }) => rest;
     const previousHash = previous ? (0, utils_1.sha1Short)(JSON.stringify(stableRequest(previous)), 16) : '';
     const currentHash = (0, utils_1.sha1Short)(JSON.stringify(stableRequest(request)), 16);
