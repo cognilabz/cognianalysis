@@ -30,15 +30,27 @@ function chips(values: any): string {
   return values.slice(0, 28).map((v: any) => chip(v)).join('');
 }
 
+let evidenceRenderCounter = 0;
+
+function evidenceLabel(ev: any): string {
+  return `${ev?.path || ''}:${ev?.line || 1}`;
+}
+
 function evidenceHtml(items: any): string {
   if (!Array.isArray(items) || !items.length) return '';
   const body = items.slice(0, 16).map((ev: any) => {
     const ok = ev && ev.valid !== false;
-    const label = `${ev?.path || ''}:${ev?.line || 1}`;
-    return `<div class="evidence-item ${ok ? 'ok' : 'bad'}"><div class="path">${escapeHtml(label)}</div>${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}${ev?.snippet ? `<pre>${escapeHtml(ev.snippet)}</pre>` : ''}</div>`;
+    const label = evidenceLabel(ev);
+    const id = `evidence-${++evidenceRenderCounter}`;
+    return `<div class="evidence-item ${ok ? 'ok' : 'bad'}" id="${id}"><div class="path">${escapeHtml(label)}</div>${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}${ev?.snippet ? `<pre>${escapeHtml(ev.snippet)}</pre>` : ''}</div>`;
   }).join('');
+  const links = items.slice(0, 8).map((ev: any, index: number) => {
+    const target = `evidence-${evidenceRenderCounter - Math.min(items.length, 16) + index + 1}`;
+    return `<a class="evidence-link" href="#${target}" data-evidence-target="${target}">${escapeHtml(evidenceLabel(ev))}</a>`;
+  }).join('');
+  const quick = `<div class="evidence-quick"><span>Evidence</span>${links}${items.length > 8 ? `<span class="small muted">+${items.length - 8}</span>` : ''}</div>`;
   const more = items.length > 16 ? `<div class="small muted">+${items.length - 16} additional evidence references</div>` : '';
-  return `<details class="evidence"><summary>Show evidence (${items.length})</summary><div class="evidence-list">${body}${more}</div></details>`;
+  return `${quick}<details class="evidence"><summary>Details (${items.length})</summary><div class="evidence-list">${body}${more}</div></details>`;
 }
 
 function metric(label: string, value: any, detail = ''): string {
@@ -82,6 +94,14 @@ function hasEvidence(items: any): boolean {
   return Array.isArray(items) && items.length > 0;
 }
 
+function evidenceOf(item: any): any[] {
+  if (!item) return [];
+  if (Array.isArray(item)) return item;
+  if (Array.isArray(item.evidence)) return item.evidence;
+  if (Array.isArray(item.evidence_refs)) return item.evidence_refs;
+  return [];
+}
+
 function statementHasDisplayContent(x: any): boolean {
   return [
     x?.title,
@@ -98,7 +118,7 @@ function statementHasDisplayContent(x: any): boolean {
     x?.severity,
     x?.confidence,
     x?.owner
-  ].some(textLike) || hasEvidence(x?.evidence);
+  ].some(textLike) || hasEvidence(evidenceOf(x));
 }
 
 function statementList(items: any[]): string {
@@ -106,14 +126,14 @@ function statementList(items: any[]): string {
   return listItems(displayItems, (x: any) => {
     const title = firstText(x.title, x.name, x.criterion, x.verdict, x.id) || 'Statement';
     const text = firstText(x.description, x.summary, x.rationale, x.recommendation, x.gap, x.reason);
-    return `<div class="statement"><strong>${escapeHtml(title)}</strong>${x.confidence ? ` ${confidenceChip(x.confidence)}` : ''}${x.severity ? ` ${riskChip(x.severity)}` : ''}${x.owner ? ` ${chip(x.owner)}` : ''}${text ? `<p>${escapeHtml(text)}</p>` : ''}${evidenceHtml(x.evidence)}</div>`;
+    return `<div class="statement"><strong>${escapeHtml(title)}</strong>${x.confidence ? ` ${confidenceChip(x.confidence)}` : ''}${x.severity ? ` ${riskChip(x.severity)}` : ''}${x.owner ? ` ${chip(x.owner)}` : ''}${text ? `<p>${escapeHtml(text)}</p>` : ''}${evidenceHtml(evidenceOf(x))}</div>`;
   });
 }
 
 function mermaidBlock(source: any, evidence?: any): string {
   const text = typeof source === 'string' ? source : firstText(source?.source, source?.mermaid);
   if (!text) return '';
-  return `<div class="mermaid-box" data-mermaid-box><div class="mermaid-output muted small">Rendering Mermaid diagram...</div><details><summary>Mermaid source</summary><pre class="mermaid-source">${escapeHtml(text)}</pre></details>${evidenceHtml(evidence || source?.evidence)}</div>`;
+  return `<div class="mermaid-box" data-mermaid-box><div class="mermaid-output muted small">Rendering Mermaid diagram...</div><details><summary>Mermaid source</summary><pre class="mermaid-source">${escapeHtml(text)}</pre></details>${evidenceHtml(evidence || evidenceOf(source))}</div>`;
 }
 
 function sectionTasks(bundle: any): string {
@@ -163,7 +183,7 @@ function tableHeader(labels: string[]): string {
 
 function renderDocMetricGrid(block: any): string {
   const metrics = listItems(block.metrics || [], (m: any) => metric(m.label || labelFor(block, 'metric', 'Metric'), m.value ?? '', m.detail || ''));
-  return `${metrics ? `<div class="metrics compact">${metrics}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${metrics ? `<div class="metrics compact">${metrics}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderSourceFamilyMap(block: any): string {
@@ -171,9 +191,9 @@ function renderSourceFamilyMap(block: any): string {
     <div class="family-head"><h3>${escapeHtml(f.name || labelFor(block, 'family', 'Source family'))}</h3>${f.confidence ? confidenceChip(f.confidence) : chip(f.evidence_level || labelFor(block, 'family_status', 'source family'))}</div>
     ${paragraphs([f.role, f.business_use, f.technical_shape].filter(Boolean))}
     <div>${f.confidence && f.evidence_level ? chip(f.evidence_level) : ''}</div>
-    ${evidenceHtml(f.evidence)}
+    ${evidenceHtml(evidenceOf(f))}
   </article>`);
-  return `${families ? `<div class="family-grid">${families}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${families ? `<div class="family-grid">${families}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderBoundaryMap(block: any): string {
@@ -185,14 +205,14 @@ function renderBoundaryMap(block: any): string {
     exitBody ? card(labelFor(block, 'exits', 'System Exit / Integrations'), exitBody, 'prose-card') : '',
     stateBody ? card(labelFor(block, 'state', 'State / Data Boundary'), stateBody, 'prose-card') : ''
   ].filter(Boolean).join('');
-  return `${cards ? `<div class="grid three">${cards}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${cards ? `<div class="grid three">${cards}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderDocFlow(block: any): string {
   const source = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, block.source);
-  return `${paragraphs(firstText(block.summary, block.description))}${source ? mermaidBlock(source, block.mermaid?.evidence || block.evidence) : ''}
-  ${block.steps?.length ? `<div class="doc-steps">${listItems(block.steps, (s: any) => `<div class="step"><span>${escapeHtml(s.order || '')}</span><div><strong>${escapeHtml(s.actor || s.kind || 'step')}</strong><p>${escapeHtml(s.description || '')}</p>${evidenceHtml(s.evidence)}</div></div>`)}</div>` : ''}
-  ${evidenceHtml(block.evidence)}`;
+  return `${paragraphs(firstText(block.summary, block.description))}${source ? mermaidBlock(source, evidenceOf(block.mermaid).length ? evidenceOf(block.mermaid) : evidenceOf(block)) : ''}
+  ${block.steps?.length ? `<div class="doc-steps">${listItems(block.steps, (s: any) => `<div class="step"><span>${escapeHtml(s.order || '')}</span><div><strong>${escapeHtml(s.actor || s.kind || 'step')}</strong><p>${escapeHtml(s.description || '')}</p>${evidenceHtml(evidenceOf(s))}</div></div>`)}</div>` : ''}
+  ${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderFourLevelAssessment(block: any): string {
@@ -200,9 +220,9 @@ function renderFourLevelAssessment(block: any): string {
     <div class="family-head"><h3>${escapeHtml(String(l.level || labelFor(block, 'level', 'level')).replace(/_/g, ' '))}</h3>${statusChip(l.status)}</div>
     ${paragraphs(l.summary)}
     ${l.next_steps?.length ? `<h4>${escapeHtml(labelFor(block, 'next_steps', 'Next steps'))}</h4>${chips(l.next_steps)}` : ''}
-    ${evidenceHtml(l.evidence)}
+    ${evidenceHtml(evidenceOf(l))}
   </article>`);
-  return `${levels ? `<div class="level-grid">${levels}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${levels ? `<div class="level-grid">${levels}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderDecisionMatrix(block: any): string {
@@ -210,23 +230,23 @@ function renderDecisionMatrix(block: any): string {
     <td><strong>${escapeHtml(r.decision || labelFor(block, 'decision', 'Decision'))}</strong><div>${r.confidence ? confidenceChip(r.confidence) : ''}</div></td>
     <td>${chips(r.options || [])}</td>
     <td>${escapeHtml(r.recommendation || '')}</td>
-    <td>${r.risk ? riskChip(r.risk) : ''}${evidenceHtml(r.evidence)}</td>
+    <td>${r.risk ? riskChip(r.risk) : ''}${evidenceHtml(evidenceOf(r))}</td>
   </tr>`).join('');
   return `${rows ? `<div class="table-wrap"><table>${tableHeader([
     labelFor(block, 'decision', 'Decision'),
     labelFor(block, 'options', 'Options'),
     labelFor(block, 'recommendation', 'Recommendation'),
     labelFor(block, 'risk', 'Risk / Evidence')
-  ])}<tbody>${rows}</tbody></table></div>` : ''}${evidenceHtml(block.evidence)}`;
+  ])}<tbody>${rows}</tbody></table></div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderRoadmap(block: any): string {
   const items = listItems(block.items || [], (r: any) => `<article class="roadmap-item search-card" data-search="${escapeHtml(`${r.title || ''} ${r.phase || ''} ${r.benefit || ''}`)}">
     <div class="family-head"><h3>${escapeHtml(r.title || labelFor(block, 'item', 'Roadmap item'))}</h3><div>${r.phase ? chip(r.phase) : ''}${r.effort ? chip(r.effort) : ''}${r.risk ? riskChip(r.risk) : ''}</div></div>
     ${paragraphs([r.benefit, r.description].filter(Boolean))}
-    ${evidenceHtml(r.evidence)}
+    ${evidenceHtml(evidenceOf(r))}
   </article>`);
-  return `${items ? `<div class="roadmap">${items}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${items ? `<div class="roadmap">${items}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderAgentPlan(block: any): string {
@@ -249,16 +269,23 @@ function renderAgentPlan(block: any): string {
     labelFor(block, 'expected_outputs', 'Expected Outputs'),
     labelFor(block, 'task_output', 'Task / Output'),
     labelFor(block, 'seed_files', 'Seed Files')
-  ])}<tbody>${rows}</tbody></table></div>` : ''}${evidenceHtml(block.evidence)}`;
+  ])}<tbody>${rows}</tbody></table></div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderTechnicalDrilldown(block: any): string {
   const refs = listItems(block.references || [], (r: any) => `<a class="jump-card search-card" href="${escapeHtml(r.target || '#technical')}" data-search="${escapeHtml(`${r.label || ''} ${r.description || ''}`)}"><strong>${escapeHtml(r.label || labelFor(block, 'reference', 'Drilldown'))}</strong><p>${escapeHtml(r.description || '')}</p></a>`);
-  return `${refs ? `<div class="grid three">${refs}</div>` : ''}${evidenceHtml(block.evidence)}`;
+  return `${refs ? `<div class="grid three">${refs}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderOpenQuestions(block: any): string {
-  return statementList((block.items || []).map((q: any) => ({ title: q.question || q.title || labelFor(block, 'question', 'Open question'), description: q.why_it_matters || q.description, owner: q.owner, evidence: q.evidence }))) + evidenceHtml(block.evidence);
+  return statementList((block.items || []).map((q: any) => ({
+    title: q.question || q.title || labelFor(block, 'question', 'Open question'),
+    description: q.reason || q.why_it_matters || q.description || q.evidence_gap,
+    owner: q.owner || q.impact,
+    severity: q.blocking ? 'blocking' : q.priority,
+    confidence: q.status,
+    evidence: q.evidence
+  }))) + evidenceHtml(evidenceOf(block));
 }
 
 function renderDocBlock(block: any): string {
@@ -275,9 +302,9 @@ function renderDocBlock(block: any): string {
     case 'agent_plan': body = renderAgentPlan(block); break;
     case 'technical_drilldown': body = renderTechnicalDrilldown(block); break;
     case 'open_questions': body = renderOpenQuestions(block); break;
-    case 'statement_list': body = statementList(block.items || []) + evidenceHtml(block.evidence); break;
+    case 'statement_list': body = statementList(block.items || []) + evidenceHtml(evidenceOf(block)); break;
     case 'narrative':
-    default: body = paragraphs(block.text || block.paragraphs || block.summary || block.description || block.business_need || block.business_use || block.technical_drilldown) + evidenceHtml(block.evidence); break;
+    default: body = paragraphs(block.text || block.paragraphs || block.summary || block.description || block.business_need || block.business_use || block.technical_drilldown) + evidenceHtml(evidenceOf(block)); break;
   }
   if (!title && !body) return '';
   return `<div class="doc-block ${escapeHtml(block.type || 'narrative')}">${title}${body}</div>`;
@@ -297,7 +324,7 @@ function analysisDocumentSections(bundle: any): [string, string, string][] {
       <p class="doc-section-kicker">${escapeHtml(section.level || 'analysis')}</p>
       ${section.intent ? `<p class="section-intent">${escapeHtml(section.intent)}</p>` : ''}
       ${(section.blocks || []).map((block: any) => renderDocBlock(block)).join('')}
-      ${evidenceHtml(section.evidence)}
+      ${evidenceHtml(evidenceOf(section))}
     </article>`;
     sections.push([id, label, body]);
   }
@@ -326,6 +353,7 @@ function pendingAnalysisDocumentSections(bundle: any): [string, string, string][
 }
 
 export function buildHtml(bundle: any, title: string): string {
+  evidenceRenderCounter = 0;
   const authoredSections = analysisDocumentSections(bundle);
   const doc = bundle.analysis_document || {};
   const hasAuthoredReport = authoredSections.length > 0;
@@ -367,7 +395,7 @@ export function buildHtml(bundle: any, title: string): string {
 const CSS = `
 :root{--bg:#f4f7fb;--panel:#ffffff;--panel2:#f8fbff;--text:#142033;--muted:#64748b;--line:#dbe5f2;--accent:#3157ff;--accent2:#eaf0ff;--good:#087443;--bad:#b42318;--warn:#a15c07;--shadow:0 18px 42px rgba(35,54,86,.10)}
 .dark{--bg:#07111f;--panel:#0d1b2d;--panel2:#0a1626;--text:#eaf1ff;--muted:#9fb0c7;--line:#203249;--accent:#91a7ff;--accent2:#152544;--good:#55d296;--bad:#ff8b7f;--warn:#ffc46b;--shadow:none}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2)}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}.evidence-quick>span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.evidence-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--accent2);color:var(--accent);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:800}.evidence-link:hover{filter:brightness(.96)}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2);scroll-margin-top:22px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.evidence-item.evidence-highlight{box-shadow:0 0 0 3px var(--accent2)}.evidence-item:target{box-shadow:0 0 0 3px var(--accent2)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
 `;
 
 const JS = `
@@ -393,6 +421,19 @@ const JS = `
       el.classList.toggle('hide', !!q && !txt.includes(q));
     });
   });}
+  document.addEventListener('click', event=>{
+    const link=event.target && event.target.closest ? event.target.closest('[data-evidence-target]') : null;
+    if(!link) return;
+    const target=document.getElementById(link.dataset.evidenceTarget || '');
+    if(!target) return;
+    event.preventDefault();
+    const details=target.closest('details');
+    if(details) details.open=true;
+    document.querySelectorAll('.evidence-highlight').forEach(el=>el.classList.remove('evidence-highlight'));
+    target.classList.add('evidence-highlight');
+    target.scrollIntoView({block:'center',behavior:'smooth'});
+    history.replaceState(null,'','#'+target.id);
+  });
   const theme=document.getElementById('theme');
   if(theme) theme.addEventListener('click',()=>document.documentElement.classList.toggle('dark'));
   async function renderMermaid(){

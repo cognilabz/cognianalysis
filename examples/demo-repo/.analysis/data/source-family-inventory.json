@@ -10,8 +10,8 @@
     "Do not use partition counts as evidence that business behavior is understood.",
     "Do not report seed files as proof of routes, interfaces, flows, quality or architecture."
   ],
-  "llm_required_action": "The LLM must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.",
-  "summary": "This is a mechanical inventory partition for navigation. Tags, ranks and path partitions are not semantic proof and do not parse imports, symbols, frameworks, contracts or examples. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.",
+  "llm_required_action": "Codex must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.",
+  "summary": "This is a mechanical inventory partition for navigation. Tags, ranks and path partitions are not semantic proof and do not parse imports, symbols, frameworks, contracts or examples. Codex must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.",
   "total_inventory_partitions": 6,
   "inventory_partitions": [
     {

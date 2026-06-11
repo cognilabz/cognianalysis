@@ -1,0 +1,217 @@
+{
+  "contract_kind": "artifact_dependency_graph",
+  "analysis_run_id": "run-716f2e2b60302e97",
+  "deterministic_contract_scope": "Artifact existence and dependency/freshness metadata only; mtime stale nodes are advisory because seeded harnesses may copy authored artifacts out of authoring order. Semantic readiness remains Codex-authored and synthesis contracts decide final report currency.",
+  "complete": true,
+  "node_count": 12,
+  "missing_nodes": [],
+  "stale_nodes": [
+    "detail_agent_plan",
+    "analysis_document"
+  ],
+  "advisory_stale_nodes": [
+    "detail_agent_plan",
+    "analysis_document"
+  ],
+  "nodes": [
+    {
+      "id": "code_map",
+      "path": "data/code-map.json",
+      "kind": "deterministic_context",
+      "exists": true,
+      "mtime_ms": 1781154794856.5889,
+      "content_hash": "f88822301434b759",
+      "depends_on": [],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "source_inventory",
+      "path": "data/source-inventory.json",
+      "kind": "deterministic_context",
+      "exists": true,
+      "mtime_ms": 1781154794856.7083,
+      "content_hash": "9b7727933967ca1e",
+      "depends_on": [
+        "code_map"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "analysis_strategy",
+      "path": "llm/analysis-strategy.json",
+      "kind": "llm_strategy",
+      "exists": true,
+      "mtime_ms": 1781154794863.5747,
+      "content_hash": "0886fd139e5e73ec",
+      "depends_on": [
+        "code_map",
+        "source_inventory"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "source_tier_1",
+      "path": "source_tiers/source-tier-0001.json",
+      "kind": "llm_source_file_tier_review",
+      "exists": true,
+      "mtime_ms": 1781154794867.176,
+      "content_hash": "d28eb265ff66fcf3",
+      "depends_on": [
+        "analysis_strategy"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "skill_workbench_manifest",
+      "path": "skill-workbench-task-manifest.json",
+      "kind": "deterministic_task_materialization",
+      "exists": true,
+      "mtime_ms": 1781154798100.416,
+      "content_hash": "1dee0872568e5e22",
+      "depends_on": [
+        "analysis_strategy",
+        "source_tier_1"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "skill_review_1",
+      "path": "skill_reviews/flow-mermaid-analysis.json",
+      "kind": "llm_skill_workbench_review",
+      "exists": true,
+      "mtime_ms": 1781154794867.5437,
+      "content_hash": "59bcb30d1556710b",
+      "depends_on": [
+        "analysis_strategy",
+        "source_tier_1"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "skill_review_2",
+      "path": "skill_reviews/interface-contract-analysis.json",
+      "kind": "llm_skill_workbench_review",
+      "exists": true,
+      "mtime_ms": 1781154794867.7842,
+      "content_hash": "b878aeb1e6f8a2a5",
+      "depends_on": [
+        "analysis_strategy",
+        "source_tier_1"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "skill_review_3",
+      "path": "skill_reviews/whole-repository-understanding.json",
+      "kind": "llm_skill_workbench_review",
+      "exists": true,
+      "mtime_ms": 1781154794868.6943,
+      "content_hash": "2a5053d374ffaa02",
+      "depends_on": [
+        "analysis_strategy",
+        "source_tier_1"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "detail_agent_plan",
+      "path": "llm/detail-agent-plan.json",
+      "kind": "llm_detail_plan",
+      "exists": true,
+      "mtime_ms": 1781154794864.6702,
+      "content_hash": "ad02bf373accd8bb",
+      "depends_on": [
+        "analysis_strategy",
+        "source_tier_1",
+        "skill_review_1",
+        "skill_review_2",
+        "skill_review_3"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [
+        "source_tier_1",
+        "skill_review_1",
+        "skill_review_2",
+        "skill_review_3"
+      ],
+      "fresh": false
+    },
+    {
+      "id": "detail_task_manifest",
+      "path": "detail-task-manifest.json",
+      "kind": "deterministic_task_materialization",
+      "exists": true,
+      "mtime_ms": 1781154798131.3538,
+      "content_hash": "1dd7e2f4e4128079",
+      "depends_on": [
+        "detail_agent_plan"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "detail_review_1",
+      "path": "detail_reviews/detail-src-main.json",
+      "kind": "llm_detail_review",
+      "exists": true,
+      "mtime_ms": 1781154794866.726,
+      "content_hash": "50701023727640ce",
+      "depends_on": [
+        "detail_agent_plan"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [],
+      "fresh": true
+    },
+    {
+      "id": "analysis_document",
+      "path": "llm/analysis-document.json",
+      "kind": "llm_final_report",
+      "exists": true,
+      "mtime_ms": 1781154794863.1013,
+      "content_hash": "65bf4c943495f910",
+      "depends_on": [
+        "analysis_strategy",
+        "detail_agent_plan",
+        "source_tier_1",
+        "skill_review_1",
+        "skill_review_2",
+        "skill_review_3",
+        "detail_review_1"
+      ],
+      "missing_parents": [],
+      "stale_from_parents": [
+        "analysis_strategy",
+        "detail_agent_plan",
+        "source_tier_1",
+        "skill_review_1",
+        "skill_review_2",
+        "skill_review_3",
+        "detail_review_1"
+      ],
+      "fresh": false
+    }
+  ],
+  "rerun_recommendations": [
+    "Re-author llm/detail-agent-plan.json, then materialize/execute detail tasks and final report.",
+    "Re-author llm/analysis-document.json and rerun finalize/audit."
+  ],
+  "summary": "Artifact dependency graph is complete with 2 advisory mtime stale nodes; final report currency is governed by synthesis contracts."
+}

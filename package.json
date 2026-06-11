@@ -13,6 +13,8 @@
     "resources",
     "schemas",
     "docs",
+    "benchmarks",
+    "scripts",
     "README.md",
     "LICENSE",
     "src",
@@ -28,7 +30,10 @@
     "prepare-demo": "node dist/cli.js prepare examples/demo-repo",
     "demo-report": "node dist/cli.js render examples/demo-repo",
     "audit-demo": "node dist/cli.js audit-report examples/demo-repo",
-    "verify:demo": "npm run build && node scripts/verify-demo.mjs"
+    "verify:demo": "npm run build && node scripts/verify-demo.mjs",
+    "verify:llm-boundary": "npm run build && node scripts/verify-llm-boundary.mjs",
+    "verify:golden": "npm run build && node scripts/verify-golden.mjs",
+    "verify:baseline": "npm run build && node scripts/verify-baseline.mjs"
   },
   "engines": {
     "node": ">=18"

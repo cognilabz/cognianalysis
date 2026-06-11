@@ -1,8 +1,8 @@
 {
   "mode": "optional_llm_capability_templates",
-  "semantic_authority": "llm",
+  "semantic_authority": "codex_llm",
   "deterministic_authority": "template_catalog_shape_only",
-  "summary": "These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the LLM strategy explicitly uses their outputs.",
+  "summary": "These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the Codex-authored LLM strategy explicitly uses their outputs.",
   "templates": [
     {
       "id": "core_assessment",

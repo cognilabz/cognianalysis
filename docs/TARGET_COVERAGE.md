@@ -7,7 +7,7 @@ The target rows are not semantic coverage and are not CLI-scored. They preserve 
 1. **Target context** — stable capability IDs, descriptions and expected-output hints for LLM authoring.
 2. **LLM semantic judgment** — the final `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 
-Whole-codebase source inventory accounting is a separate structural gate: every included file from `.analysis/data/source-inventory.json` must be evidence-backed or explicitly inspected by the agent harness/LLM. Files that are only deferred remain incomplete and do not count as finished analysis. Source capsules and code-map ranking do not count as semantic coverage by themselves.
+Whole-codebase source inventory accounting is a separate structural gate: every included file from `.analysis/data/source-inventory.json` must be evidence-backed or explicitly inspected by Codex, as the active in-session LLM. Files that are only deferred remain incomplete and do not count as finished analysis. Source capsules and code-map ranking do not count as semantic coverage by themselves.
 
 Tiered whole-codebase analysis is the semantic base layer: every included file must receive a Tier 1 LLM-authored file card in `.analysis/source_tiers/*.json`; selected areas are then promoted to Tier 2-4 module/source-family synthesis, behavior/contract/flow analysis, quality/process findings and refactoring decisions.
 

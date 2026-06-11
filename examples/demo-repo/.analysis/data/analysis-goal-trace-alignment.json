@@ -1,6 +1,6 @@
 {
   "contract_kind": "llm_authored_goal_trace_references",
-  "semantic_verdict_authority": "llm",
+  "semantic_verdict_authority": "codex_llm",
   "status_source": "analysis_document.requirements_trace[].status and analysis_document.report_quality_review.verdict",
   "deterministic_contract_scope": "explicit goal-contract reference syntax only; no semantic matching, keyword matching, coverage scoring or report-quality judgment",
   "complete": true,
@@ -19,8 +19,8 @@
       "group": "required_output_shape",
       "type": "output_shape",
       "id": "visible_report_authority",
-      "label": "Visible report authored by the LLM",
-      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by the LLM."
+      "label": "Visible report authored by Codex",
+      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by Codex."
     },
     {
       "ref": "required_output_shape.style_system",
@@ -28,7 +28,7 @@
       "type": "output_shape",
       "id": "style_system",
       "label": "Stable component/style library",
-      "intent": "The visual system is stable while report wording, ordering and emphasis remain LLM-authored."
+      "intent": "The visual system is stable while report wording, ordering and emphasis remain Codex-authored."
     },
     {
       "ref": "required_output_shape.source_basis",
@@ -173,8 +173,8 @@
       "group": "required_output_shape",
       "type": "output_shape",
       "id": "visible_report_authority",
-      "label": "Visible report authored by the LLM",
-      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by the LLM."
+      "label": "Visible report authored by Codex",
+      "intent": "The visible human report structure and narrative come from analysis_document.sections authored by Codex."
     },
     {
       "ref": "required_output_shape.style_system",
@@ -182,7 +182,7 @@
       "type": "output_shape",
       "id": "style_system",
       "label": "Stable component/style library",
-      "intent": "The visual system is stable while report wording, ordering and emphasis remain LLM-authored."
+      "intent": "The visual system is stable while report wording, ordering and emphasis remain Codex-authored."
     },
     {
       "ref": "required_output_shape.source_basis",
@@ -436,5 +436,5 @@
     }
   ],
   "rows_without_goal_refs": [],
-  "summary": "Every original goal-contract item is explicitly referenced by at least one LLM-authored requirements_trace row. The LLM-authored row statuses and report_quality_review remain the semantic verdict."
+  "summary": "Every original goal-contract item is explicitly referenced by at least one Codex-authored LLM requirements_trace row. The authored row statuses and report_quality_review remain the semantic verdict."
 }

@@ -1,6 +1,6 @@
 {
   "contract_kind": "llm_strategy_skill_workbench_execution",
-  "semantic_verdict_authority": "llm",
+  "semantic_verdict_authority": "codex_llm",
   "deterministic_contract_scope": "planned skill ids from analysis_strategy, materialized task ids and executed skill_reviews ids only; no semantic scoring of skill-review quality",
   "complete": true,
   "status": "complete",

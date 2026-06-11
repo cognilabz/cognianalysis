@@ -1,7 +1,7 @@
 {
   "mode": "llm_strategy_skill_workbenches",
   "version": "skill-workbench-v1",
-  "semantic_authority": "llm",
+  "semantic_authority": "codex_llm",
   "deterministic_authority": "task_materialization_from_analysis_strategy_only",
   "planning_source": "llm/analysis-strategy.json",
   "summary": "These skill workbench tasks were mechanically materialized from analysis_strategy.skill_application_plan[]. Execute them before detail-agent planning and final report synthesis.",

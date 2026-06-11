@@ -1,5 +1,5 @@
 import { CodeMap } from './types';
-import { FS, Path, asList, cleanId, ensureDir, getLine, loadJson, mergeDict, writeJson } from './utils';
+import { FS, Path, asList, cleanId, ensureDir, getLine, gitCommit, loadJson, mergeDict, sha1Short, utcNow, writeJson } from './utils';
 import { computeTargetCoverage, TARGET_CAPABILITIES } from './targetCoverage';
 import { reportComponentLibraryArtifact, supportedReportComponentTypes } from './reportComponents';
 import { analysisPipelineArtifact, computeAnalysisPipelineContract } from './analysisPipeline';
@@ -10,10 +10,16 @@ import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
 import { sourceTierBacklogArtifact, sourceTierModelArtifact } from './sourceTiers';
 import { SKILL_WORKBENCH_VERSION } from './skillWorkbenches';
 
+function isCodexLlmAuthority(value: any): boolean {
+  const normalized = String(value || '').toLowerCase();
+  return normalized === 'codex_llm' || normalized === 'llm';
+}
+
 export function prepareAnalysis(repo: string, analysisDir: string, codeMap: CodeMap): void {
   const dataDir = Path.join(analysisDir, 'data');
   ensureDir(dataDir);
   writeJson(Path.join(dataDir, 'repo-profile.json'), codeMap.profile);
+  writeJson(Path.join(dataDir, 'analysis-scope.json'), normalizeAnalysisScope(codeMap.analysis_scope, codeMap));
   writeJson(Path.join(dataDir, 'code-map.json'), codeMap);
   writeJson(Path.join(dataDir, 'source-inventory.json'), {
     included_files: (codeMap.files || []).map((f: any) => ({
@@ -37,6 +43,7 @@ export function prepareAnalysis(repo: string, analysisDir: string, codeMap: Code
   writeJson(Path.join(dataDir, 'source-tier-model.json'), sourceTierModelArtifact());
   writeJson(Path.join(dataDir, 'report-component-library.json'), reportComponentLibraryArtifact());
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), analysisSkillCatalogArtifact());
+  writeJson(Path.join(dataDir, 'analysis-run.json'), analysisRunSeed(repo, analysisDir, codeMap.profile));
   writeJson(Path.join(dataDir, 'target-coverage.json'), TARGET_CAPABILITIES);
 }
 
@@ -44,6 +51,10 @@ export function aggregate(repo: string, analysisDir: string): any {
   const dataDir = Path.join(analysisDir, 'data');
   const codeMap = loadJson<any>(Path.join(dataDir, 'code-map.json'), {});
   const profile = codeMap.profile || { repo_name: Path.basename(repo), root: repo };
+  const analysisScope = normalizeAnalysisScope(
+    loadJson<any>(Path.join(dataDir, 'analysis-scope.json'), codeMap.analysis_scope || defaultAnalysisScope(codeMap)),
+    codeMap
+  );
   const llm = loadLlmOutputs(Path.join(analysisDir, 'llm'));
   const llmOutputPresence = llm.__output_presence || {};
   delete llm.__output_presence;
@@ -57,6 +68,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   const skillWorkbenchTaskManifest = loadJson<any>(Path.join(analysisDir, 'skill-workbench-task-manifest.json'), { tasks: [] });
   const sourceTierTaskManifest = loadJson<any>(Path.join(analysisDir, 'source-tier-task-manifest.json'), { tasks: [] });
   const capabilityTemplateManifest = loadJson<any>(Path.join(analysisDir, 'capability-template-manifest.json'), { templates: [] });
+  const analysisRun = analysisRunSeed(repo, analysisDir, profile);
 
   const assessment = llm.assessment || null;
   const capabilities = asList(llm.capabilities);
@@ -83,8 +95,8 @@ export function aggregate(repo: string, analysisDir: string): any {
 
   const hasLlmAuthoredOutput = hasLlmAuthoredOutputPresence(llmOutputPresence, sourceTier.reviews, detail.reviews);
   const status = hasLlmAuthoredOutput
-    ? { state: 'llm_extracted', message: 'LLM-authored analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
-    : { state: 'awaiting_llm_extraction', message: 'Agent harness/LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by the LLM from source.' };
+    ? { state: 'llm_extracted', message: 'Codex-authored LLM analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
+    : { state: 'awaiting_llm_extraction', message: 'Codex-authored LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by Codex from source.' };
 
   const taskManifest = loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [], capability_templates: [] });
   const manifestTasks = asList(taskManifest.tasks);
@@ -111,6 +123,8 @@ export function aggregate(repo: string, analysisDir: string): any {
     tool_positioning_references: toolPositioningReferencesArtifact(),
     report_component_library: reportComponentLibraryArtifact(),
     analysis_skill_catalog: analysisSkillCatalogArtifact(),
+    analysis_run: analysisRun,
+    analysis_scope: analysisScope,
     source_tier_model: sourceTierModelArtifact(),
     source_tier_task_manifest: validateNested(repo, sourceTierTaskManifest),
     analysis_pipeline: analysisPipeline,
@@ -144,6 +158,7 @@ export function aggregate(repo: string, analysisDir: string): any {
     source_file_tier_reviews: validateItems(repo, sourceTier.reviews),
     skill_workbench_reviews: validateItems(repo, skillWorkbench.reviews),
     source_family_detail_reviews: validateItems(repo, detail.reviews),
+    external_findings: validateItems(repo, loadExternalFindings(analysisDir)),
     analysis_coverage: analysisCoverage,
     tasks,
     tooling: computeToolingCapabilities(),
@@ -152,7 +167,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.llm_output_presence = llmOutputPresence;
 
   let evidence: any[] = [];
-  for (const key of ['capabilities','interfaces','flows','business_logic','integrations','side_effects','findings','refactoring','modernization']) evidence = evidence.concat(collectEvidence(bundle[key] || []));
+  for (const key of ['capabilities','interfaces','flows','business_logic','integrations','side_effects','findings','refactoring','modernization','external_findings']) evidence = evidence.concat(collectEvidence(bundle[key] || []));
   for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis_strategy','detail_agent_plan','analysis_document','source_file_tier_reviews','skill_workbench_reviews','source_family_detail_reviews','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
   bundle.evidence_index = dedupeEvidence(evidence);
   bundle.source_tier_coverage = computeSourceTierCoverage(codeMap, bundle.source_file_tier_reviews, bundle.source_tier_task_manifest);
@@ -164,6 +179,14 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.analysis_goal_trace_alignment = computeAnalysisGoalTraceAlignment(bundle.analysis_goal_contract, bundle.analysis_document);
   bundle.analysis_document_component_coverage = computeAnalysisDocumentComponentCoverage(bundle.analysis_document, bundle.profile, bundle.modules);
   bundle.analysis_document_quality_review = computeAnalysisDocumentQualityReview(bundle.analysis_document);
+  bundle.analysis_document_report_lint = computeAnalysisDocumentReportLint(bundle.analysis_document);
+  bundle.analysis_document_executive_decision_layer = computeAnalysisDocumentExecutiveDecisionLayer(bundle.analysis_document);
+  bundle.analysis_document_consistency_review = computeAnalysisDocumentConsistencyReview(bundle.analysis_document);
+  bundle.analysis_document_evidence_strength = computeAnalysisDocumentEvidenceStrength(bundle.analysis_document);
+  bundle.analysis_document_semantic_lineage = computeAnalysisDocumentSemanticLineage(bundle.analysis_document, bundle);
+  bundle.analysis_document_open_questions = computeAnalysisDocumentOpenQuestions(bundle.analysis_document);
+  bundle.external_findings_contract = computeExternalFindingsContract(bundle.external_findings);
+  bundle.analysis_staleness = computeAnalysisStaleness(repo, bundle.profile);
   bundle.llm_artifacts = computeLlmArtifactStatus(analysisDir, bundle.tasks);
   bundle.analysis_document_prerequisite_coverage = computeAnalysisDocumentPrerequisiteCoverage(bundle.llm_artifacts);
   bundle.skill_workbench_coverage = computeSkillWorkbenchCoverage(bundle.llm_skill_workbench_plan, bundle.skill_workbench_reviews, bundle.skill_workbench_task_manifest, bundle.source_tier_coverage);
@@ -173,6 +196,8 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.report_mode = computeReportMode(bundle.analysis_document, bundle.source_family_detail_review_coverage, bundle.analysis_document_detail_review_synthesis, bundle.analysis_document_skill_workbench_synthesis, bundle.analysis_document_prerequisite_coverage, bundle.analysis_document_quality_review, bundle.analysis_goal_trace_alignment);
   bundle.analysis_pipeline_contract = computeAnalysisPipelineContract(bundle);
   bundle.analysis_skill_catalog_contract = computeAnalysisSkillCatalogContract(bundle.analysis_skill_catalog);
+  bundle.analysis_run_provenance = computeAnalysisRunProvenance(analysisDir, bundle.analysis_run);
+  bundle.artifact_dependency_graph = computeArtifactDependencyGraph(analysisDir, bundle.analysis_run);
   bundle.semantic_authority = computeSemanticAuthority(bundle);
   bundle.final_llm_readiness = computeFinalLlmReadiness(bundle);
   bundle.target_coverage = computeTargetCoverage(bundle);
@@ -180,9 +205,11 @@ export function aggregate(repo: string, analysisDir: string): any {
 
   ensureDir(dataDir);
   writeJson(Path.join(dataDir, 'analysis-goal-contract.json'), bundle.analysis_goal_contract);
+  writeJson(Path.join(dataDir, 'analysis-scope.json'), bundle.analysis_scope);
   writeJson(Path.join(dataDir, 'tool-positioning-references.json'), bundle.tool_positioning_references);
   writeJson(Path.join(dataDir, 'report-component-library.json'), bundle.report_component_library);
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), bundle.analysis_skill_catalog);
+  writeJson(Path.join(dataDir, 'analysis-run.json'), bundle.analysis_run);
   writeJson(Path.join(dataDir, 'capability-template-manifest.json'), bundle.capability_template_manifest);
   writeJson(Path.join(dataDir, 'source-tier-model.json'), bundle.source_tier_model);
   writeJson(Path.join(dataDir, 'source-tier-coverage.json'), bundle.source_tier_coverage);
@@ -191,12 +218,50 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
   writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
   writeJson(Path.join(dataDir, 'analysis-goal-trace-alignment.json'), bundle.analysis_goal_trace_alignment);
+  writeJson(Path.join(dataDir, 'analysis-document-report-lint.json'), bundle.analysis_document_report_lint);
+  writeJson(Path.join(dataDir, 'analysis-document-executive-decision-layer.json'), bundle.analysis_document_executive_decision_layer);
+  writeJson(Path.join(dataDir, 'analysis-document-consistency-review.json'), bundle.analysis_document_consistency_review);
+  writeJson(Path.join(dataDir, 'analysis-document-evidence-strength.json'), bundle.analysis_document_evidence_strength);
+  writeJson(Path.join(dataDir, 'analysis-document-semantic-lineage.json'), bundle.analysis_document_semantic_lineage);
+  writeJson(Path.join(dataDir, 'analysis-document-open-questions.json'), bundle.analysis_document_open_questions);
+  writeJson(Path.join(dataDir, 'external-findings.json'), bundle.external_findings_contract);
+  writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
+  writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
+  writeJson(Path.join(dataDir, 'analysis-staleness.json'), bundle.analysis_staleness);
   writeJson(Path.join(dataDir, 'bundle.json'), bundle);
   writeJson(Path.join(dataDir, 'evidence.json'), bundle.evidence_index);
   writeJson(Path.join(dataDir, 'source-inventory-accounting.json'), bundle.source_inventory_accounting);
   writeJson(Path.join(dataDir, 'target-coverage.json'), bundle.target_coverage);
   writeJson(Path.join(dataDir, 'target-artifact-contract-coverage.json'), bundle.target_artifact_contract_coverage);
   return bundle;
+}
+
+function defaultAnalysisScope(codeMap: any): any {
+  return {
+    mode: codeMap.profile?.analysis_scope_mode || 'complete',
+    selected_files: (codeMap.files || []).length,
+    deferred_files: Number(codeMap.profile?.scope_deferred_files || 0),
+    confidence_impact: Number(codeMap.profile?.scope_deferred_files || 0) > 0 ? 'visible_scope_limit' : 'low',
+    summary: Number(codeMap.profile?.scope_deferred_files || 0) > 0
+      ? 'Scope was reconstructed from the code map profile; deferred count should be disclosed.'
+      : 'Complete source inventory scope reconstructed from the code map.'
+  };
+}
+
+function normalizeAnalysisScope(scope: any, codeMap: any): any {
+  const fallback = defaultAnalysisScope(codeMap);
+  const selected = Number(scope?.selected_files);
+  const deferred = Number(scope?.deferred_files);
+  const mode = String(scope?.mode || '').trim();
+  return {
+    ...fallback,
+    ...(scope && typeof scope === 'object' && !Array.isArray(scope) ? scope : {}),
+    mode: mode || fallback.mode,
+    selected_files: Number.isFinite(selected) && selected > 0 ? selected : fallback.selected_files,
+    deferred_files: Number.isFinite(deferred) && deferred >= 0 ? deferred : fallback.deferred_files,
+    confidence_impact: String(scope?.confidence_impact || '').trim() || fallback.confidence_impact,
+    summary: String(scope?.summary || '').trim() || fallback.summary
+  };
 }
 
 export function loadBundle(analysisDir: string): any {
@@ -210,9 +275,10 @@ export function loadBundle(analysisDir: string): any {
 
 function computeToolingCapabilities(): any {
   return {
-    cli_commands: ['prepare', 'finalize', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'portfolio', 'mcp'],
+    cli_commands: ['init', 'run', 'resume', 'status', 'repair', 'open', 'doctor', 'prepare', 'finalize', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'portfolio', 'mcp'],
     portfolio_mode_available: true,
     harness_portability_available: true,
+    product_mode_available: true,
     report_renderer_available: true,
     summary: 'Deterministic CLI capabilities available in this Cognianalysis build.'
   };
@@ -232,6 +298,219 @@ function computeReportArtifacts(analysisDir: string): any {
     analysis_data_json: FS.existsSync(dataPath),
     generated_at: persisted.generated_at || '',
     renderer: 'src/report.ts'
+  };
+}
+
+function artifactContentHash(file: string): string {
+  try {
+    return sha1Short(FS.readFileSync(file, 'utf8'), 16);
+  } catch {
+    return '';
+  }
+}
+
+function artifactInfo(analysisDir: string, relativePath: string): any {
+  const full = Path.join(analysisDir, relativePath);
+  const exists = FS.existsSync(full);
+  const stat = exists ? FS.statSync(full) : null;
+  return {
+    path: relativePath,
+    exists,
+    size_bytes: stat?.size || 0,
+    mtime_ms: stat?.mtimeMs || 0,
+    content_hash: exists ? artifactContentHash(full) : ''
+  };
+}
+
+function listJsonArtifacts(analysisDir: string, relativeDir: string): string[] {
+  const dir = Path.join(analysisDir, relativeDir);
+  if (!FS.existsSync(dir)) return [];
+  return FS.readdirSync(dir)
+    .filter((name: string) => name.endsWith('.json'))
+    .sort()
+    .map((name: string) => `${relativeDir}/${name}`.replace(/\\/g, '/'));
+}
+
+function analysisRunSeed(repo: string, analysisDir: string, profile: any): any {
+  const existing = loadJson<any>(Path.join(analysisDir, 'data', 'analysis-run.json'), {});
+  const sourceCommit = profile?.commit || gitCommit(repo) || null;
+  const preparedAt = existing.prepared_at || profile?.analyzed_at || utcNow();
+  const scopeMode = profile?.analysis_scope_mode || 'complete';
+  const analysisRunId = existing.analysis_run_id || `run-${sha1Short(`${Path.resolve(repo)}|${sourceCommit || 'no-commit'}|${preparedAt}|${scopeMode}`, 16)}`;
+  return {
+    contract_kind: 'analysis_run_identity',
+    analysis_run_id: analysisRunId,
+    prepared_at: preparedAt,
+    source_commit: sourceCommit,
+    repo_root: Path.resolve(repo),
+    analysis_dir: Path.resolve(analysisDir),
+    scope_mode: scopeMode,
+    deterministic_contract_scope: 'Run identity and artifact provenance anchor only; semantic analysis remains Codex-authored.'
+  };
+}
+
+function declaredRunId(data: any): string {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return '';
+  const candidates = [
+    data.analysis_run_id,
+    data.analysis_strategy?.analysis_run_id,
+    data.source_file_tier_review?.analysis_run_id,
+    data.skill_workbench_review?.analysis_run_id,
+    data.detail_agent_plan?.analysis_run_id,
+    data.source_family_detail_review?.analysis_run_id,
+    data.analysis_document?.analysis_run_id
+  ];
+  return String(candidates.find(value => typeof value === 'string' && value.trim()) || '').trim();
+}
+
+function provenanceRow(analysisDir: string, analysisRun: any, relativePath: string, parents: string[] = []): any {
+  const info = artifactInfo(analysisDir, relativePath);
+  const parsed = info.exists ? loadJson<any>(Path.join(analysisDir, relativePath), {}) : {};
+  const declared = declaredRunId(parsed);
+  return {
+    ...info,
+    artifact_id: cleanId(relativePath.replace(/\.json$/, '')),
+    analysis_run_id: analysisRun.analysis_run_id,
+    declared_analysis_run_id: declared || null,
+    run_match: !declared || declared === analysisRun.analysis_run_id,
+    source_commit: analysisRun.source_commit || null,
+    generated_from: parents
+  };
+}
+
+function computeAnalysisRunProvenance(analysisDir: string, analysisRun: any): any {
+  const rows: any[] = [
+    provenanceRow(analysisDir, analysisRun, 'data/code-map.json'),
+    provenanceRow(analysisDir, analysisRun, 'llm/analysis-strategy.json', ['data/code-map.json', 'data/source-inventory.json']),
+    ...listJsonArtifacts(analysisDir, 'source_tiers').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/analysis-strategy.json', 'source-tier-task-manifest.json'])),
+    ...listJsonArtifacts(analysisDir, 'skill_reviews').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/analysis-strategy.json', 'skill-workbench-task-manifest.json', 'source_tiers/*.json'])),
+    provenanceRow(analysisDir, analysisRun, 'llm/detail-agent-plan.json', ['llm/analysis-strategy.json', 'skill_reviews/*.json', 'source_tiers/*.json']),
+    ...listJsonArtifacts(analysisDir, 'detail_reviews').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/detail-agent-plan.json', 'detail-task-manifest.json'])),
+    provenanceRow(analysisDir, analysisRun, 'llm/analysis-document.json', ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'source_tiers/*.json', 'skill_reviews/*.json', 'detail_reviews/*.json'])
+  ];
+  const existingRows = rows.filter(row => row.exists);
+  const mismatches = existingRows.filter(row => row.run_match !== true);
+  const missingRequired = rows
+    .filter(row => ['data/code-map.json', 'llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'].includes(row.path))
+    .filter(row => !row.exists)
+    .map(row => row.path);
+  return {
+    contract_kind: 'analysis_run_provenance',
+    analysis_run_id: analysisRun.analysis_run_id,
+    source_commit: analysisRun.source_commit || null,
+    deterministic_contract_scope: 'Records artifact IDs, content hashes, generated_from parents and optional declared analysis_run_id matches. It does not judge semantic quality.',
+    complete: missingRequired.length === 0 && mismatches.length === 0,
+    artifact_count: existingRows.length,
+    generated_from_matrix: existingRows,
+    missing_required_artifacts: missingRequired,
+    mismatched_run_artifacts: mismatches.map(row => ({ path: row.path, declared_analysis_run_id: row.declared_analysis_run_id, expected_analysis_run_id: row.analysis_run_id })),
+    summary: mismatches.length
+      ? `Analysis run provenance found ${mismatches.length} artifact run-id mismatch${mismatches.length === 1 ? '' : 'es'}.`
+      : `Analysis run provenance is anchored to ${analysisRun.analysis_run_id}.`
+  };
+}
+
+function nodeFreshness(analysisDir: string, node: any, nodesById: Map<string, any>): any {
+  const info = artifactInfo(analysisDir, node.path);
+  const parents = asList(node.depends_on).map((id: string) => nodesById.get(id)).filter(Boolean);
+  const missingParents = parents.filter((parent: any) => !artifactInfo(analysisDir, parent.path).exists).map((parent: any) => parent.id);
+  const staleParents = parents.filter((parent: any) => {
+    const parentInfo = artifactInfo(analysisDir, parent.path);
+    return info.exists && parentInfo.exists && parentInfo.mtime_ms > info.mtime_ms;
+  }).map((parent: any) => parent.id);
+  return {
+    id: node.id,
+    path: node.path,
+    kind: node.kind,
+    exists: info.exists,
+    mtime_ms: info.mtime_ms,
+    content_hash: info.content_hash,
+    depends_on: asList(node.depends_on),
+    missing_parents: missingParents,
+    stale_from_parents: staleParents,
+    fresh: info.exists && missingParents.length === 0 && staleParents.length === 0
+  };
+}
+
+function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): any {
+  const sourceTierNodes = listJsonArtifacts(analysisDir, 'source_tiers').map((path, index) => ({
+    id: `source_tier_${index + 1}`,
+    path,
+    kind: 'llm_source_file_tier_review',
+    depends_on: ['analysis_strategy']
+  }));
+  const skillReviewNodes = listJsonArtifacts(analysisDir, 'skill_reviews').map((path, index) => ({
+    id: `skill_review_${index + 1}`,
+    path,
+    kind: 'llm_skill_workbench_review',
+    depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id)]
+  }));
+  const detailReviewNodes = listJsonArtifacts(analysisDir, 'detail_reviews').map((path, index) => ({
+    id: `detail_review_${index + 1}`,
+    path,
+    kind: 'llm_detail_review',
+    depends_on: ['detail_agent_plan']
+  }));
+  const nodes = [
+    { id: 'code_map', path: 'data/code-map.json', kind: 'deterministic_context', depends_on: [] },
+    { id: 'source_inventory', path: 'data/source-inventory.json', kind: 'deterministic_context', depends_on: ['code_map'] },
+    { id: 'analysis_strategy', path: 'llm/analysis-strategy.json', kind: 'llm_strategy', depends_on: ['code_map', 'source_inventory'] },
+    ...sourceTierNodes,
+    { id: 'skill_workbench_manifest', path: 'skill-workbench-task-manifest.json', kind: 'deterministic_task_materialization', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id)] },
+    ...skillReviewNodes,
+    { id: 'detail_agent_plan', path: 'llm/detail-agent-plan.json', kind: 'llm_detail_plan', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id)] },
+    { id: 'detail_task_manifest', path: 'detail-task-manifest.json', kind: 'deterministic_task_materialization', depends_on: ['detail_agent_plan'] },
+    ...detailReviewNodes,
+    { id: 'analysis_document', path: 'llm/analysis-document.json', kind: 'llm_final_report', depends_on: ['analysis_strategy', 'detail_agent_plan', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...detailReviewNodes.map(node => node.id)] }
+  ];
+  const nodesById = new Map(nodes.map(node => [node.id, node]));
+  const rows = nodes.map(node => nodeFreshness(analysisDir, node, nodesById));
+  const missing = rows.filter(row => !row.exists).map(row => row.id);
+  const stale = rows.filter(row => row.exists && row.stale_from_parents.length > 0).map(row => row.id);
+  return {
+    contract_kind: 'artifact_dependency_graph',
+    analysis_run_id: analysisRun.analysis_run_id,
+    deterministic_contract_scope: 'Artifact existence and dependency/freshness metadata only; mtime stale nodes are advisory because seeded harnesses may copy authored artifacts out of authoring order. Semantic readiness remains Codex-authored and synthesis contracts decide final report currency.',
+    complete: missing.length === 0,
+    node_count: rows.length,
+    missing_nodes: missing,
+    stale_nodes: stale,
+    advisory_stale_nodes: stale,
+    nodes: rows,
+    rerun_recommendations: stale.concat(missing).map(id => {
+      if (id === 'analysis_strategy') return 'Re-author llm/analysis-strategy.json, then rerun downstream source tiers, skill workbenches, detail plan and final report.';
+      if (id.startsWith('source_tier')) return 'Re-author stale or missing source_tiers/*.json, then rerun skill workbenches, detail plan and final report.';
+      if (id.startsWith('skill_review')) return 'Re-author stale or missing skill_reviews/*.json, then rerun detail plan and final report.';
+      if (id === 'detail_agent_plan') return 'Re-author llm/detail-agent-plan.json, then materialize/execute detail tasks and final report.';
+      if (id.startsWith('detail_review')) return 'Re-author stale or missing detail_reviews/*.json, then rerun final report.';
+      if (id === 'analysis_document') return 'Re-author llm/analysis-document.json and rerun finalize/audit.';
+      return `Refresh artifact node ${id}.`;
+    }),
+    summary: missing.length
+      ? `Artifact graph is missing required nodes: ${missing.slice(0, 8).join(', ')}.`
+      : stale.length
+        ? `Artifact dependency graph is complete with ${stale.length} advisory mtime stale node${stale.length === 1 ? '' : 's'}; final report currency is governed by synthesis contracts.`
+        : 'Artifact dependency graph is complete for required analysis artifacts.'
+  };
+}
+
+function computeAnalysisStaleness(repo: string, profile: any): any {
+  const analysisCommit = profile?.commit || null;
+  const currentCommit = gitCommit(repo);
+  const comparable = !!analysisCommit && !!currentCommit;
+  const stale = comparable && analysisCommit !== currentCommit;
+  return {
+    contract_kind: 'analysis_staleness',
+    deterministic_contract_scope: 'Compares the commit captured when the analysis code map was prepared with the current repository commit. Uncommitted working-tree drift is not included in this deterministic check.',
+    analysis_commit: analysisCommit,
+    current_commit: currentCommit,
+    comparable,
+    stale,
+    summary: !comparable
+      ? 'Analysis staleness cannot be determined because a git commit was unavailable.'
+      : stale
+        ? 'Repository commit changed after analysis preparation; decision readiness should be refreshed.'
+        : 'Repository commit matches the prepared analysis commit.'
   };
 }
 
@@ -265,9 +544,9 @@ function normalizeCapabilityTemplateManifest(manifest: any, templates: any[]): a
   if (manifest?.mode === 'optional_llm_capability_templates') return { ...manifest, templates };
   return {
     mode: 'optional_llm_capability_templates',
-    semantic_authority: 'llm',
+    semantic_authority: 'codex_llm',
     deterministic_authority: 'template_catalog_shape_only',
-    summary: 'Generic capability templates are optional and do not block final readiness unless the LLM strategy explicitly uses their outputs.',
+    summary: 'Generic capability templates are optional and do not block final readiness unless the Codex-authored LLM strategy explicitly uses their outputs.',
     templates
   };
 }
@@ -310,7 +589,7 @@ function computeLlmArtifactStatus(analysisDir: string, tasks: any[]): any {
   const missing = artifacts.filter((row: any) => !row.exists || !row.valid_json || !row.has_content);
   return {
     contract_kind: 'required_llm_workflow_artifact_status',
-    deterministic_contract_scope: 'required LLM workflow artifacts only; optional capability template outputs do not block final readiness unless the LLM final report depends on them',
+    deterministic_contract_scope: 'required Codex LLM workflow artifacts only; optional capability template outputs do not block final readiness unless the Codex-authored final report depends on them',
     complete: artifacts.length > 0 && missing.length === 0,
     total_count: artifacts.length,
     ready_count: artifacts.length - missing.length,
@@ -345,7 +624,7 @@ function computeAnalysisDocumentPrerequisiteCoverage(llmArtifacts: any): any {
     missing,
     summary: missing.length
       ? `Required final analysis document workflow prerequisites are incomplete: ${missing.map((row: any) => row.expected_output).join(', ')}.`
-      : 'All required pre-final LLM workflow artifacts are present before the final analysis document. Optional capability-template outputs are incorporated only when the LLM chose to use them.'
+      : 'All required pre-final Codex LLM workflow artifacts are present before the final analysis document. Optional capability-template outputs are incorporated only when Codex chose to use them.'
   };
 }
 
@@ -365,7 +644,7 @@ function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
     const status = String(item?.status || '').toLowerCase();
     const statusKnown = ['covered', 'partial', 'open'].includes(status);
     const sectionRefs = asList(item?.covered_by_sections).filter(Boolean);
-    const evidence = asList(item?.evidence);
+    const evidence = evidenceRefs(item);
     const openQuestions = asList(item?.open_questions);
     const hasSupport = evidence.length > 0 || openQuestions.length > 0 || status === 'open';
     const structured = requirement.length > 0 && statusKnown && sectionRefs.length > 0 && hasSupport;
@@ -391,8 +670,8 @@ function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
     .map(r => r.id);
   return {
     contract_kind: 'llm_authored_requirements_trace',
-    semantic_verdict_authority: 'llm',
-    contract_summary: 'Checks that the LLM authored a structured analysis_document.requirements_trace with named requirements, LLM statuses, section links and evidence or open questions. This is not a deterministic checklist of original requirements and not a judgment that the repository is fully understood.',
+    semantic_verdict_authority: 'codex_llm',
+    contract_summary: 'Checks that Codex authored a structured LLM analysis_document.requirements_trace with named requirements, statuses, section links and evidence or open questions. This is not a deterministic checklist of original requirements and not a judgment that the repository is fully understood.',
     complete: trace.length > 0 && structuralMissing.length === 0,
     trace_count: rows.length,
     authored_trace_count: rows.length,
@@ -431,12 +710,12 @@ function collectGoalContractRefs(goal: any): any[] {
       intent: 'The output is a structured decision document, not only raw extraction data.'
     },
     visible_report_authority: {
-      label: 'Visible report authored by the LLM',
-      intent: 'The visible human report structure and narrative come from analysis_document.sections authored by the LLM.'
+      label: 'Visible report authored by Codex',
+      intent: 'The visible human report structure and narrative come from analysis_document.sections authored by Codex.'
     },
     style_system: {
       label: 'Stable component/style library',
-      intent: 'The visual system is stable while report wording, ordering and emphasis remain LLM-authored.'
+      intent: 'The visual system is stable while report wording, ordering and emphasis remain Codex-authored.'
     },
     source_basis: {
       label: 'Source-code evidence basis',
@@ -500,7 +779,7 @@ function computeAnalysisGoalTraceAlignment(goal: any, doc: any): any {
   const complete = expectedRefs.length > 0 && trace.length > 0 && missing.length === 0 && unknown.length === 0;
   return {
     contract_kind: 'llm_authored_goal_trace_references',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     status_source: 'analysis_document.requirements_trace[].status and analysis_document.report_quality_review.verdict',
     deterministic_contract_scope: 'explicit goal-contract reference syntax only; no semantic matching, keyword matching, coverage scoring or report-quality judgment',
     complete,
@@ -512,8 +791,8 @@ function computeAnalysisGoalTraceAlignment(goal: any, doc: any): any {
     trace_rows: rows,
     rows_without_goal_refs: rows.filter(row => !row.goal_contract_refs.length).map(row => row.id),
     summary: complete
-      ? 'Every original goal-contract item is explicitly referenced by at least one LLM-authored requirements_trace row. The LLM-authored row statuses and report_quality_review remain the semantic verdict.'
-      : 'The LLM-authored requirements_trace does not explicitly reference every original goal-contract item yet. This is a reference-shape gap, not a deterministic semantic judgment.'
+      ? 'Every original goal-contract item is explicitly referenced by at least one Codex-authored LLM requirements_trace row. The authored row statuses and report_quality_review remain the semantic verdict.'
+      : 'The Codex-authored LLM requirements_trace does not explicitly reference every original goal-contract item yet. This is a reference-shape gap, not a deterministic semantic judgment.'
   };
 }
 
@@ -577,8 +856,13 @@ function hasEvidenceReference(value: any): boolean {
   return asList(value).length > 0;
 }
 
+function evidenceRefs(item: any): any[] {
+  const direct = asList(item?.evidence);
+  return direct.length ? direct : asList(item?.evidence_refs);
+}
+
 function statementHasRenderableContent(item: any): boolean {
-  return hasRenderableValue(item) || hasEvidenceReference(item?.evidence);
+  return hasRenderableValue(item) || evidenceRefs(item).length > 0;
 }
 
 function blockRef(section: any, index: number, type: string): string {
@@ -587,13 +871,13 @@ function blockRef(section: any, index: number, type: string): string {
 
 function blockHasRenderableContent(block: any): boolean {
   const type = String(block?.type || 'narrative').toLowerCase();
-  if (hasEvidenceReference(block?.evidence)) return true;
+  if (evidenceRefs(block).length > 0) return true;
 
   switch (type) {
     case 'metric_grid':
       return asList(block?.metrics).some((metric: any) => hasRenderableValue(metric));
     case 'source_family_map':
-      return asList(block?.families).some((family: any) => hasRenderableValue(family) || hasEvidenceReference(family?.evidence));
+      return asList(block?.families).some((family: any) => hasRenderableValue(family) || evidenceRefs(family).length > 0);
     case 'boundary_map':
       return ['entries', 'exits', 'state'].some(key => asList(block?.[key]).some(statementHasRenderableContent));
     case 'flow':
@@ -601,21 +885,21 @@ function blockHasRenderableContent(block: any): boolean {
         || hasRenderableValue(block?.description)
         || hasRenderableValue(block?.source)
         || hasRenderableValue(block?.mermaid)
-        || asList(block?.steps).some((step: any) => hasRenderableValue(step) || hasEvidenceReference(step?.evidence));
+        || asList(block?.steps).some((step: any) => hasRenderableValue(step) || evidenceRefs(step).length > 0);
     case 'four_level_assessment':
-      return asList(block?.levels).some((level: any) => hasRenderableValue(level) || hasEvidenceReference(level?.evidence));
+      return asList(block?.levels).some((level: any) => hasRenderableValue(level) || evidenceRefs(level).length > 0);
     case 'decision_matrix':
-      return asList(block?.rows).some((row: any) => hasRenderableValue(row) || hasEvidenceReference(row?.evidence));
+      return asList(block?.rows).some((row: any) => hasRenderableValue(row) || evidenceRefs(row).length > 0);
     case 'roadmap':
-      return asList(block?.items).some((item: any) => hasRenderableValue(item) || hasEvidenceReference(item?.evidence));
+      return asList(block?.items).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
     case 'agent_plan':
       return hasRenderableValue(block?.summary)
         || hasRenderableValue(block?.description)
-        || asList(block?.tasks || block?.detail_agent_tasks).some((task: any) => hasRenderableValue(task) || hasEvidenceReference(task?.evidence));
+        || asList(block?.tasks || block?.detail_agent_tasks).some((task: any) => hasRenderableValue(task) || evidenceRefs(task).length > 0);
     case 'technical_drilldown':
-      return asList(block?.references).some((reference: any) => hasRenderableValue(reference) || hasEvidenceReference(reference?.evidence));
+      return asList(block?.references).some((reference: any) => hasRenderableValue(reference) || evidenceRefs(reference).length > 0);
     case 'open_questions':
-      return asList(block?.items).some((item: any) => hasRenderableValue(item) || hasEvidenceReference(item?.evidence));
+      return asList(block?.items).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
     case 'statement_list':
       return asList(block?.items).some(statementHasRenderableContent);
     case 'narrative':
@@ -654,7 +938,7 @@ function computeAnalysisDocumentComponentCoverage(doc: any, profile: any, module
   const required = [
     {
       id: 'authored_sections',
-      label: 'LLM-authored report sections exist',
+      label: 'Codex-authored report sections exist',
       present: sections.length > 0
     },
     {
@@ -686,8 +970,8 @@ function computeAnalysisDocumentComponentCoverage(doc: any, profile: any, module
     block_types: blockTypes,
     supported_block_types: [...supportedBlockTypes],
     component_library_kind: 'analysis_document_component_library',
-    semantic_verdict_authority: 'llm',
-    contract_summary: 'Checks only whether LLM-authored report sections can be rendered by the stable component library. This is not a judgment of report quality or semantic completeness.',
+    semantic_verdict_authority: 'codex_llm',
+    contract_summary: 'Checks only whether Codex-authored LLM report sections can be rendered by the stable component library. This is not a judgment of report quality or semantic completeness.',
     unsupported_block_types: unsupportedBlockTypes,
     blocks_without_supported_type: blocksWithoutSupportedType,
     blocks_without_renderable_content: blocksWithoutRenderableContent,
@@ -697,7 +981,7 @@ function computeAnalysisDocumentComponentCoverage(doc: any, profile: any, module
     missing: missing.map(r => r.id),
     summary: missing.length
       ? `Final analysis document does not satisfy the renderer component contract: ${missing.map(r => r.label).join(', ')}.`
-      : 'Final analysis document uses the supported component contract. Semantic report quality is judged by the LLM-authored requirements trace and report_quality_review.'
+      : 'Final analysis document uses the supported component contract. Semantic report quality is judged by the Codex-authored LLM requirements trace and report_quality_review.'
   };
 }
 
@@ -709,17 +993,17 @@ function computeAnalysisSkillCatalogContract(catalog: any): any {
   const malformed = skills
     .filter((skill: any) => !String(skill?.id || '').trim() || !String(skill?.purpose || '').trim() || !asList(skill?.stage_ids).length || !asList(skill?.expected_outputs).length)
     .map((skill: any, index: number) => String(skill?.id || `skill_${index + 1}`));
-  const semanticAuthorityOk = catalog?.semantic_authority === 'llm';
+  const semanticAuthorityOk = isCodexLlmAuthority(catalog?.semantic_authority);
   const deterministicAuthorityOk = catalog?.deterministic_authority === 'catalog_presence_and_shape_only';
   const missing = [
-    ...(!semanticAuthorityOk ? ['semantic_authority_llm'] : []),
+    ...(!semanticAuthorityOk ? ['semantic_authority_codex_llm'] : []),
     ...(!deterministicAuthorityOk ? ['deterministic_authority_shape_only'] : []),
     ...missingRequired.map(id => `required_skill:${id}`),
     ...malformed.map(id => `malformed_skill:${id}`)
   ];
   return {
     contract_kind: 'llm_analysis_skill_catalog_contract',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     deterministic_contract_scope: 'catalog presence and shape only',
     complete: missing.length === 0,
     missing,
@@ -728,7 +1012,544 @@ function computeAnalysisSkillCatalogContract(catalog: any): any {
     skill_ids: skills.map((skill: any) => skill.id).filter(Boolean),
     summary: missing.length
       ? `Analysis skill catalog contract is incomplete: ${missing.slice(0, 8).join(', ')}.`
-      : 'Analysis skill catalog contract is complete. The LLM controls skill selection and semantic application per repository.'
+      : 'Analysis skill catalog contract is complete. Codex controls skill selection and semantic application per repository.'
+  };
+}
+
+const REPORT_QUALITY_REVIEW_CHECKS = [
+  { id: 'repo_specific_information_architecture', label: 'Repository-specific information architecture' },
+  { id: 'management_ready_decision_basis', label: 'Management-ready decision basis' },
+  { id: 'whole_repo_first_understanding', label: 'Whole-repository understanding before deep dives' },
+  { id: 'e2e_relationships_explained', label: 'E2E relationships and collaboration explained' },
+  { id: 'functional_view_explained', label: 'Functional view explains what the system does' },
+  { id: 'technical_view_explained', label: 'Technical view explains APIs, interfaces and architecture' },
+  { id: 'four_level_model_covered', label: 'Four analysis levels are covered' },
+  { id: 'improvements_and_refactoring_covered', label: 'Improvements, optimization and refactoring are covered' },
+  { id: 'tool_positioning_covered', label: 'Tool/consulting alternative positioning is covered' },
+  { id: 'evidence_and_uncertainty_visible', label: 'Evidence, confidence and uncertainty are visible' }
+];
+
+function hasReportSupport(item: any): boolean {
+  return evidenceRefs(item).length > 0
+    || asList(item?.open_questions).length > 0
+    || asList(item?.uncertainty || item?.uncertainties).length > 0
+    || asList(item?.limitations || item?.accepted_limitations).length > 0;
+}
+
+function hasTextField(item: any, fields: string[]): boolean {
+  return fields.some(field => typeof item?.[field] === 'string' && item[field].trim().length > 0);
+}
+
+function evidenceCount(item: any): number {
+  return evidenceRefs(item).length;
+}
+
+function evidenceStrength(count: number): string {
+  if (count >= 3) return 'strong';
+  if (count >= 2) return 'moderate';
+  if (count >= 1) return 'weak';
+  return 'unsupported';
+}
+
+function majorReportClaimItems(doc: any): any[] {
+  const out: any[] = [];
+  for (const section of asList(doc?.sections)) {
+    for (const block of asList(section?.blocks)) {
+      const type = String(block?.type || '').toLowerCase();
+      const pushItems = (items: any[], kind: string, labelFields: string[]): void => {
+        items.forEach((item: any, index: number) => {
+          const ref = lintRef(section, block, index, kind);
+          out.push({
+            ref,
+            claim_id: cleanId(item?.claim_id || item?.id || item?.title || item?.name || item?.decision || item?.recommendation || ref),
+            kind,
+            label: labelFields.map(field => item?.[field]).find(value => typeof value === 'string' && value.trim()) || `${kind} ${index + 1}`,
+            report_section_id: section?.id || section?.title || '',
+            block_type: type,
+            semantic_lineage: item?.semantic_lineage || item?.lineage || item?.provenance || null,
+            confidence: String(item?.confidence || '').trim(),
+            evidence_count: evidenceCount(item),
+            evidence: evidenceRefs(item),
+            has_support: hasReportSupport(item),
+            has_uncertainty: asList(item?.open_questions).length > 0 || asList(item?.uncertainty || item?.uncertainties).length > 0
+          });
+        });
+      };
+      if (type === 'statement_list') pushItems(asList(block?.items), 'finding', ['title', 'name', 'criterion']);
+      if (type === 'roadmap') pushItems(asList(block?.items), 'recommendation', ['title', 'name']);
+      if (type === 'decision_matrix') pushItems(asList(block?.rows), 'decision', ['decision', 'recommendation']);
+      if (type === 'source_family_map') pushItems(asList(block?.families), 'source_family', ['name', 'title']);
+    }
+  }
+  return out.map(item => ({
+    ...item,
+    evidence_strength: evidenceStrength(item.evidence_count)
+  }));
+}
+
+function evidenceKey(ev: any): string {
+  return `${String(ev?.path || '')}:${Number(ev?.line || 1)}`;
+}
+
+function artifactEvidenceRows(artifact: any, artifactPath: string): any[] {
+  const rows: any[] = [];
+  function walk(value: any): void {
+    if (Array.isArray(value)) { value.forEach(walk); return; }
+    if (!value || typeof value !== 'object') return;
+    const evs = evidenceRefs(value);
+    for (const ev of evs) {
+      if (!ev?.path) continue;
+      rows.push({
+        artifact: artifactPath,
+        evidence_key: evidenceKey(ev),
+        path: ev.path,
+        line: Number(ev.line || 1)
+      });
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== 'evidence' && key !== 'evidence_refs') walk(child);
+    }
+  }
+  walk(artifact);
+  return rows;
+}
+
+function supportingArtifactPathsForEvidence(bundle: any, evidence: any[]): string[] {
+  const wanted = new Set(asList(evidence).map(evidenceKey));
+  const wantedPaths = new Set(asList(evidence).map((ev: any) => String(ev?.path || '')).filter(Boolean));
+  if (!wanted.size && !wantedPaths.size) return [];
+  const artifacts: any[] = [
+    ...asList(bundle.source_file_tier_reviews).map((artifact: any) => ({ artifact, path: `source_tiers/${artifact.task_id || 'source-tier'}.json` })),
+    ...asList(bundle.skill_workbench_reviews).map((artifact: any) => ({ artifact, path: `skill_reviews/${skillReviewId(artifact)}.json` })),
+    ...asList(bundle.source_family_detail_reviews).map((artifact: any) => ({ artifact, path: `detail_reviews/${cleanId(detailReviewFamilyId(artifact) || 'detail-review')}.json` }))
+  ];
+  const matched = new Set<string>();
+  for (const row of artifacts) {
+    if (artifactEvidenceRows(row.artifact, row.path).some(ev => wanted.has(ev.evidence_key) || wantedPaths.has(String(ev.path || '')))) matched.add(row.path);
+  }
+  return [...matched].sort();
+}
+
+function normalizeLineage(value: any): any {
+  const lineage = Array.isArray(value) ? value[0] : value;
+  if (!lineage || typeof lineage !== 'object') return {};
+  return lineage;
+}
+
+function computeAnalysisDocumentSemanticLineage(doc: any, bundle: any): any {
+  const items = majorReportClaimItems(doc);
+  const docLineageRows = new Map<string, any>();
+  for (const row of asList(doc?.semantic_lineage || doc?.semantic_lineage_claims)) {
+    const id = cleanId(row?.claim_id || row?.ref || row?.claim || row?.label || '');
+    if (id) docLineageRows.set(id, row);
+  }
+  const rows = items.map(item => {
+    const explicit = normalizeLineage(item.semantic_lineage) || {};
+    const docLevel = docLineageRows.get(cleanId(item.claim_id)) || docLineageRows.get(cleanId(item.ref)) || {};
+    const authored = Object.keys(explicit).length ? explicit : docLevel;
+    const authoredEvidence = evidenceRefs(authored);
+    const evidence = authoredEvidence.length ? authoredEvidence : item.evidence;
+    const supporting = asList(authored.supporting_artifacts || authored.supporting_reviews || authored.supporting_sources);
+    const inferredSupporting = supporting.length ? supporting.map(String) : supportingArtifactPathsForEvidence(bundle, evidence);
+    const originArtifact = String(authored.origin_artifact || authored.origin_review || authored.origin || '').trim()
+      || inferredSupporting.find(path => path.startsWith('detail_reviews/'))
+      || inferredSupporting.find(path => path.startsWith('skill_reviews/'))
+      || inferredSupporting.find(path => path.startsWith('source_tiers/'))
+      || '';
+    const missing = [
+      ...(!item.claim_id ? ['claim_id'] : []),
+      ...(!item.report_section_id ? ['report_section_id'] : []),
+      ...(!originArtifact ? ['origin_artifact'] : []),
+      ...(!inferredSupporting.length ? ['supporting_artifacts'] : []),
+      ...(!asList(evidence).length ? ['evidence'] : [])
+    ];
+    return {
+      claim_id: item.claim_id,
+      claim_ref: item.ref,
+      claim_kind: item.kind,
+      label: item.label,
+      report_section_id: item.report_section_id,
+      origin_artifact: originArtifact,
+      supporting_artifacts: inferredSupporting,
+      evidence,
+      explicit_lineage_authored: Object.keys(authored).length > 0,
+      deterministic_support_mode: Object.keys(authored).length > 0 ? 'llm_authored_lineage_shape' : 'evidence_overlap_backstop',
+      missing
+    };
+  });
+  const incomplete = rows.filter(row => row.missing.length > 0);
+  return {
+    contract_kind: 'analysis_document_semantic_lineage',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'Major LLM-authored report claims must trace to report section, upstream review/source-tier artifacts and file:line evidence. Path overlap is used only as a provenance backstop, not semantic matching.',
+    complete: !!doc && rows.length > 0 && incomplete.length === 0,
+    claim_count: rows.length,
+    complete_claim_count: rows.length - incomplete.length,
+    incomplete_claims: incomplete.map(row => ({ claim_id: row.claim_id, missing: row.missing })),
+    lineage: rows,
+    summary: incomplete.length
+      ? `Semantic lineage is incomplete for ${incomplete.length} major claim${incomplete.length === 1 ? '' : 's'}.`
+      : 'Every major visible finding, recommendation, decision and source-family claim has semantic lineage to upstream artifacts and evidence.'
+  };
+}
+
+function computeAnalysisDocumentEvidenceStrength(doc: any): any {
+  const items = majorReportClaimItems(doc);
+  const missingConfidence = items
+    .filter(item => !item.confidence && !item.has_uncertainty)
+    .map(item => item.ref);
+  const unsupported = items
+    .filter(item => !item.has_support)
+    .map(item => item.ref);
+  const weak = items
+    .filter(item => item.evidence_strength === 'weak')
+    .map(item => item.ref);
+  const counts = items.reduce((acc: any, item: any) => {
+    acc[item.evidence_strength] = (acc[item.evidence_strength] || 0) + 1;
+    return acc;
+  }, {});
+  const complete = !!doc && missingConfidence.length === 0 && unsupported.length === 0;
+  return {
+    contract_kind: 'analysis_document_evidence_strength',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'Major visible claim items must carry support and confidence or explicit uncertainty. Evidence strength is a deterministic signal based on evidence-reference count, not semantic truth.',
+    complete,
+    item_count: items.length,
+    strength_counts: counts,
+    missing_confidence: missingConfidence,
+    unsupported_major_claims: unsupported,
+    weak_evidence_items: weak,
+    items,
+    summary: complete
+      ? 'Major visible findings, recommendations, decisions and source-family claims have support plus confidence or uncertainty.'
+      : `Major claim evidence/confidence gaps: ${missingConfidence.concat(unsupported).slice(0, 8).join(', ')}.`
+  };
+}
+
+function normalizeBlocking(value: any): boolean | null {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', 'yes', 'blocking', 'blocker'].includes(normalized)) return true;
+    if (['false', 'no', 'non_blocking', 'non-blocking'].includes(normalized)) return false;
+  }
+  return null;
+}
+
+function openQuestionText(item: any): string {
+  return [
+    item?.question,
+    item?.title,
+    item?.description,
+    item?.summary,
+    item?.reason,
+    item?.why_it_matters
+  ].find(value => typeof value === 'string' && value.trim()) || '';
+}
+
+function visibleOpenQuestionRows(doc: any): any[] {
+  const rows: any[] = [];
+  for (const section of asList(doc?.sections)) {
+    for (const block of asList(section?.blocks)) {
+      if (String(block?.type || '').toLowerCase() !== 'open_questions') continue;
+      asList(block?.items).forEach((item: any, index: number) => {
+        rows.push({
+          id: cleanId(item?.id || item?.question_id || item?.question || item?.title || `visible-open-question-${index + 1}`),
+          question: openQuestionText(item),
+          ref: lintRef(section, block, index, 'open_question')
+        });
+      });
+    }
+  }
+  return rows;
+}
+
+function computeAnalysisDocumentOpenQuestions(doc: any): any {
+  const hasTopLevel = !!doc && Array.isArray(doc.open_questions);
+  const questions = hasTopLevel ? asList(doc.open_questions) : [];
+  const rows = questions.map((item: any, index: number) => {
+    const id = cleanId(item?.id || item?.question_id || item?.question || item?.title || `open-question-${index + 1}`);
+    const question = String(item?.question || item?.title || '').trim();
+    const reason = String(item?.reason || item?.why_it_matters || item?.description || item?.summary || '').trim();
+    const impact = String(item?.impact || item?.decision_impact || item?.area || '').trim();
+    const blocking = normalizeBlocking(item?.blocking);
+    const evidence = evidenceRefs(item);
+    const evidenceGap = String(item?.evidence_gap || item?.missing_evidence || item?.proof_gap || '').trim();
+    const missing = [
+      ...(!id ? ['id'] : []),
+      ...(!question ? ['question'] : []),
+      ...(!reason ? ['reason'] : []),
+      ...(!impact ? ['impact'] : []),
+      ...(blocking === null ? ['blocking'] : []),
+      ...(!evidence.length && !evidenceGap ? ['evidence_or_evidence_gap'] : [])
+    ];
+    return {
+      id,
+      question,
+      reason,
+      impact,
+      blocking: blocking === true,
+      blocking_known: blocking !== null,
+      evidence,
+      evidence_gap: evidenceGap,
+      missing
+    };
+  });
+  const visible = visibleOpenQuestionRows(doc);
+  const visibleIds = new Set(visible.map(row => row.id));
+  const visibleQuestions = new Set(visible.map(row => row.question.trim().toLowerCase()).filter(Boolean));
+  const missingVisible = rows
+    .filter(row => !visibleIds.has(row.id) && !visibleQuestions.has(row.question.trim().toLowerCase()))
+    .map(row => row.id);
+  const malformed = rows.filter(row => row.missing.length).map(row => ({ id: row.id, missing: row.missing }));
+  const complete = !!doc && hasTopLevel && malformed.length === 0 && (rows.length === 0 || missingVisible.length === 0);
+  const blockingCount = rows.filter(row => row.blocking).length;
+  return {
+    contract_kind: 'analysis_document_open_questions',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'Requires top-level LLM-authored analysis_document.open_questions as structured uncertainty. Non-empty top-level questions must also be visible through an LLM-authored open_questions report block. The CLI does not infer unknowns from prose.',
+    complete,
+    top_level_present: hasTopLevel,
+    question_count: rows.length,
+    blocking_count: blockingCount,
+    decision_ready_safe: complete && blockingCount === 0,
+    visible_open_question_count: visible.length,
+    visible_open_questions: visible,
+    missing_visible_open_questions: missingVisible,
+    malformed_questions: malformed,
+    questions: rows,
+    missing: [
+      ...(!hasTopLevel ? ['analysis_document.open_questions'] : []),
+      ...(malformed.length ? ['structured_question_fields'] : []),
+      ...(missingVisible.length ? ['visible_open_questions_block'] : [])
+    ],
+    summary: !hasTopLevel
+      ? 'analysis_document.open_questions is missing; uncertainty is not a first-class artifact.'
+      : rows.length === 0
+        ? 'The LLM explicitly reported no open questions.'
+        : blockingCount
+          ? `${blockingCount} blocking open question${blockingCount === 1 ? '' : 's'} remain and must prevent decision-ready status.`
+          : `${rows.length} non-blocking open question${rows.length === 1 ? '' : 's'} are structured and visible.`
+  };
+}
+
+function computeAnalysisDocumentConsistencyReview(doc: any): any {
+  const review = doc?.analysis_document_consistency_review || doc?.consistency_review || {};
+  const contradictions = asList(review?.contradictions || review?.contradiction_items);
+  const rawCount = review?.contradictions_found;
+  const numericCount = typeof rawCount === 'number' ? rawCount : rawCount !== undefined && rawCount !== null && rawCount !== '' ? Number(rawCount) : contradictions.length;
+  const contradictionsFound = Number.isFinite(numericCount) ? Math.max(0, numericCount) : contradictions.length;
+  const reviewer = String(review?.reviewer || '').toLowerCase();
+  const reviewerOk = isCodexLlmAuthority(reviewer);
+  const hasSummary = typeof review?.summary === 'string' && review.summary.trim().length > 0;
+  const hasExplicitCount = Number.isFinite(contradictionsFound);
+  const unresolved = contradictions.filter((item: any) => {
+    const status = String(item?.status || item?.resolution_status || '').toLowerCase();
+    return !['resolved', 'accepted', 'not_a_contradiction'].includes(status);
+  });
+  const complete = !!doc && reviewerOk && hasSummary && hasExplicitCount && (contradictionsFound === 0 || contradictions.length > 0);
+  return {
+    contract_kind: 'analysis_document_consistency_review',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'Requires an LLM-authored consistency review and contradiction count. The CLI does not semantically discover contradictions.',
+    complete,
+    reviewer: review?.reviewer || '',
+    reviewer_ok: reviewerOk,
+    summary_present: hasSummary,
+    contradictions_found: contradictionsFound,
+    decision_ready_safe: complete && contradictionsFound === 0,
+    unresolved_contradictions: unresolved,
+    contradictions,
+    missing: [
+      ...(!reviewerOk ? ['reviewer_codex_llm'] : []),
+      ...(!hasSummary ? ['summary'] : []),
+      ...(!hasExplicitCount ? ['contradictions_found'] : []),
+      ...(contradictionsFound > 0 && !contradictions.length ? ['contradiction_details'] : [])
+    ],
+    summary: review?.summary || ''
+  };
+}
+
+const REQUIRED_EXECUTIVE_DECISION_FIELDS = [
+  'keep_system',
+  'modernize_system',
+  'replace_system',
+  'cost',
+  'biggest_risks',
+  'next_actions'
+];
+
+function computeAnalysisDocumentExecutiveDecisionLayer(doc: any): any {
+  const basis = doc?.executive_decision_basis || {};
+  const sections = asList(doc?.sections);
+  const executiveSections = sections.filter((section: any) => {
+    const level = String(section?.level || '').toLowerCase();
+    const role = String(section?.role || section?.section_role || '').toLowerCase();
+    return level === 'executive' || role === 'executive_decision' || section?.decision_layer === true;
+  });
+  const questions = basis?.decision_questions && typeof basis.decision_questions === 'object' && !Array.isArray(basis.decision_questions)
+    ? basis.decision_questions
+    : {};
+  const missingDecisionFields = REQUIRED_EXECUTIVE_DECISION_FIELDS.filter(field => !hasRenderableValue((questions as any)[field]));
+  const hasTopLevelBasis = hasTextField(basis, ['summary'])
+    && hasTextField(basis, ['recommendation'])
+    && hasTextField(basis, ['confidence'])
+    && hasReportSupport(basis);
+  const hasVisibleExecutive = executiveSections.some((section: any) => asList(section?.blocks).length > 0);
+  const complete = !!doc && hasTopLevelBasis && hasVisibleExecutive && missingDecisionFields.length === 0;
+  return {
+    contract_kind: 'analysis_document_executive_decision_layer',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'Requires a top-level executive_decision_basis, visible executive/decision section and explicit decision-question answers. The LLM remains responsible for semantic usefulness.',
+    complete,
+    top_level_basis_present: hasTopLevelBasis,
+    visible_executive_section_present: hasVisibleExecutive,
+    executive_sections: executiveSections.map((section: any) => section.id || section.title).filter(Boolean),
+    required_decision_fields: REQUIRED_EXECUTIVE_DECISION_FIELDS,
+    missing_decision_fields: missingDecisionFields,
+    decision_questions: questions,
+    missing: [
+      ...(!hasTopLevelBasis ? ['executive_decision_basis'] : []),
+      ...(!hasVisibleExecutive ? ['visible_executive_section'] : []),
+      ...missingDecisionFields.map(field => `decision_questions.${field}`)
+    ],
+    summary: complete
+      ? 'The final report contains a visible executive decision layer before technical drilldown.'
+      : 'The final report is missing executive decision answers or a visible executive/decision section.'
+  };
+}
+
+function lintRef(section: any, block: any, index: number, kind: string): string {
+  const sectionId = section?.id || section?.title || 'section';
+  const blockType = block?.type || 'block';
+  return `${sectionId}:${blockType}:${kind}[${index}]`;
+}
+
+function computeAnalysisDocumentReportLint(doc: any): any {
+  const sections = asList(doc?.sections);
+  const review = doc?.report_quality_review || {};
+  const checks = review?.checks || {};
+  const missingQualityChecks = REPORT_QUALITY_REVIEW_CHECKS
+    .filter(check => checks?.[check.id] === undefined || checks?.[check.id] === null)
+    .map(check => check.id);
+  const customQualityJudgmentPresent = asList(review.criteria).concat(asList(review.findings)).some((item: any) =>
+    hasTextField(item, ['name', 'title', 'criterion', 'verdict', 'summary', 'reason'])
+      && (hasReportSupport(item) || hasReportSupport(review))
+  );
+  const qualityDimensionContractOk = missingQualityChecks.length === 0 || customQualityJudgmentPresent;
+  const qualityChecksWithoutEvidence = REPORT_QUALITY_REVIEW_CHECKS
+    .filter(check => checks?.[check.id] !== undefined && checks?.[check.id] !== null)
+    .filter(check => !hasEvidenceReference(checks?.[`${check.id}_evidence`]) && evidenceRefs(review).length === 0 && !asList(review.open_questions).length)
+    .map(check => check.id);
+  const claimSupportGaps: string[] = [];
+  const roadmapActionGaps: string[] = [];
+  const decisionRowGaps: string[] = [];
+  const mermaidSupportGaps: string[] = [];
+  const openQuestionGaps: string[] = [];
+  const interfaceBoundaryGaps: string[] = [];
+
+  sections.forEach((section: any) => {
+    asList(section?.blocks).forEach((block: any) => {
+      const type = String(block?.type || 'narrative').toLowerCase();
+      const checkSupportedItems = (items: any[], kind: string): void => {
+        items.forEach((item: any, index: number) => {
+          if (!hasReportSupport(item)) claimSupportGaps.push(lintRef(section, block, index, kind));
+        });
+      };
+
+      if (type === 'statement_list') checkSupportedItems(asList(block?.items), 'item');
+      if (type === 'source_family_map') checkSupportedItems(asList(block?.families), 'family');
+      if (type === 'four_level_assessment') checkSupportedItems(asList(block?.levels), 'level');
+      if (type === 'flow') checkSupportedItems(asList(block?.steps), 'step');
+      if (type === 'boundary_map') {
+        for (const key of ['entries', 'exits', 'state']) {
+          asList(block?.[key]).forEach((item: any, index: number) => {
+            const ref = lintRef(section, block, index, key);
+            if (!hasReportSupport(item)) claimSupportGaps.push(ref);
+            if (!hasTextField(item, ['protocol', 'technology', 'kind', 'type']) || !hasTextField(item, ['description', 'summary', 'role'])) interfaceBoundaryGaps.push(ref);
+          });
+        }
+      }
+      if (type === 'roadmap') {
+        asList(block?.items).forEach((item: any, index: number) => {
+          const ref = lintRef(section, block, index, 'item');
+          if (!hasReportSupport(item)) claimSupportGaps.push(ref);
+          const hasActionShape = hasTextField(item, ['title'])
+            && hasTextField(item, ['benefit', 'description', 'summary'])
+            && hasTextField(item, ['effort'])
+            && hasTextField(item, ['risk'])
+            && (hasTextField(item, ['phase', 'next_action', 'recommendation']) || asList(item?.next_steps).length > 0);
+          if (!hasActionShape) roadmapActionGaps.push(ref);
+        });
+      }
+      if (type === 'decision_matrix') {
+        asList(block?.rows).forEach((row: any, index: number) => {
+          const ref = lintRef(section, block, index, 'row');
+          if (!hasReportSupport(row)) claimSupportGaps.push(ref);
+          const hasDecisionShape = hasTextField(row, ['decision'])
+            && hasTextField(row, ['recommendation'])
+            && hasTextField(row, ['risk'])
+            && (hasTextField(row, ['confidence']) || asList(row?.options).length > 0);
+          if (!hasDecisionShape) decisionRowGaps.push(ref);
+        });
+      }
+
+      const mermaid = block?.mermaid || block?.source;
+      if (mermaid) {
+        const hasMermaidSupport = hasReportSupport(block)
+          || (typeof mermaid === 'object' && hasReportSupport(mermaid))
+          || asList(block?.steps).every((step: any) => hasReportSupport(step));
+        if (!hasMermaidSupport) mermaidSupportGaps.push(blockRef(section, 0, type));
+      }
+      if (type === 'open_questions') {
+        asList(block?.items).forEach((item: any, index: number) => {
+          const hasQuestionShape = hasTextField(item, ['question', 'title'])
+            && hasTextField(item, ['reason', 'why_it_matters', 'description', 'summary'])
+            && hasTextField(item, ['impact', 'decision_impact', 'area'])
+            && normalizeBlocking(item?.blocking) !== null
+            && (evidenceRefs(item).length > 0 || hasTextField(item, ['evidence_gap', 'missing_evidence', 'proof_gap']));
+          if (!hasQuestionShape) openQuestionGaps.push(lintRef(section, block, index, 'item'));
+        });
+      }
+    });
+  });
+
+  const missing = [
+    ...(!doc ? ['analysis_document'] : []),
+    ...(!sections.length ? ['analysis_document.sections'] : []),
+    ...(!qualityDimensionContractOk ? ['report_quality_review.quality_dimensions'] : []),
+    ...(qualityChecksWithoutEvidence.length ? ['report_quality_review.check_evidence'] : []),
+    ...(claimSupportGaps.length ? ['evidence_or_uncertainty_support'] : []),
+    ...(roadmapActionGaps.length ? ['roadmap_action_fields'] : []),
+    ...(decisionRowGaps.length ? ['decision_row_fields'] : []),
+    ...(mermaidSupportGaps.length ? ['mermaid_evidence_support'] : []),
+    ...(openQuestionGaps.length ? ['open_question_fields'] : []),
+    ...(interfaceBoundaryGaps.length ? ['interface_boundary_fields'] : [])
+  ];
+
+  return {
+    contract_kind: 'analysis_document_market_quality_lint',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_contract_scope: 'LLM-authored report shape and support fields only; no semantic matching, keyword scoring or usefulness judgment',
+    complete: missing.length === 0,
+    section_count: sections.length,
+    required_quality_checks: REPORT_QUALITY_REVIEW_CHECKS,
+    missing_quality_checks: missingQualityChecks,
+    custom_quality_judgment_present: customQualityJudgmentPresent,
+    quality_dimension_contract_mode: missingQualityChecks.length === 0 ? 'canonical_checks' : customQualityJudgmentPresent ? 'custom_llm_criteria' : 'incomplete',
+    quality_checks_without_evidence: qualityChecksWithoutEvidence,
+    unsupported_claims: claimSupportGaps,
+    unsupported_claim_count: claimSupportGaps.length,
+    claim_support_gaps: claimSupportGaps,
+    roadmap_action_gaps: roadmapActionGaps,
+    decision_row_gaps: decisionRowGaps,
+    mermaid_support_gaps: mermaidSupportGaps,
+    open_question_gaps: openQuestionGaps,
+    interface_boundary_gaps: interfaceBoundaryGaps,
+    missing,
+    summary: missing.length
+      ? `Analysis document report lint has structural gaps: ${missing.slice(0, 8).join(', ')}.`
+      : 'Analysis document satisfies the deterministic report lint. Semantic usefulness remains the LLM-authored report_quality_review verdict.'
   };
 }
 
@@ -756,7 +1577,7 @@ function computeAnalysisDocumentQualityReview(doc: any): any {
       item?.summary,
       item?.description
     ].find(value => typeof value === 'string' && value.trim());
-    const support = asList(item?.evidence).length > 0 || asList(item?.open_questions).length > 0 || asList(item?.follow_up || item?.follow_ups).length > 0;
+    const support = evidenceRefs(item).length > 0 || asList(item?.open_questions).length > 0 || asList(item?.follow_up || item?.follow_ups).length > 0;
     return {
       id,
       requirement_ref: ref,
@@ -764,55 +1585,14 @@ function computeAnalysisDocumentQualityReview(doc: any): any {
       status: String(item?.status || '').toLowerCase(),
       rationale_present: !!rationaleText,
       support_present: support,
-      evidence: asList(item?.evidence),
+      evidence: evidenceRefs(item),
       open_questions: asList(item?.open_questions),
       follow_up: asList(item?.follow_up || item?.follow_ups)
     };
   });
   const rationaleIds = new Set(partialRationales.filter(item => item.rationale_present && item.support_present).map(item => item.id));
   const partialRowsWithoutRationale = partialTraceRows.filter(row => !rationaleIds.has(row.id));
-  const suggested = [
-    {
-      id: 'repo_specific_information_architecture',
-      label: 'Repository-specific information architecture'
-    },
-    {
-      id: 'management_ready_decision_basis',
-      label: 'Management-ready decision basis'
-    },
-    {
-      id: 'whole_repo_first_understanding',
-      label: 'Whole-repository understanding before deep dives'
-    },
-    {
-      id: 'e2e_relationships_explained',
-      label: 'E2E relationships and collaboration explained'
-    },
-    {
-      id: 'functional_view_explained',
-      label: 'Functional view explains what the system does'
-    },
-    {
-      id: 'technical_view_explained',
-      label: 'Technical view explains APIs, interfaces and architecture'
-    },
-    {
-      id: 'four_level_model_covered',
-      label: 'Four analysis levels are covered'
-    },
-    {
-      id: 'improvements_and_refactoring_covered',
-      label: 'Improvements, optimization and refactoring are covered'
-    },
-    {
-      id: 'tool_positioning_covered',
-      label: 'Tool/consulting alternative positioning is covered'
-    },
-    {
-      id: 'evidence_and_uncertainty_visible',
-      label: 'Evidence, confidence and uncertainty are visible'
-    }
-  ];
+  const suggested = REPORT_QUALITY_REVIEW_CHECKS;
   const authoredChecks = Object.entries(checks || {})
     .filter(([key]) => !key.endsWith('_evidence'))
     .map(([key, value]) => ({
@@ -820,11 +1600,11 @@ function computeAnalysisDocumentQualityReview(doc: any): any {
       label: suggested.find(item => item.id === key)?.label || String(key).replace(/_/g, ' '),
       verdict: value,
       present: value !== undefined && value !== null,
-      evidence: asList((checks as any)[`${key}_evidence`] || review.evidence)
+      evidence: asList((checks as any)[`${key}_evidence`] || (checks as any)[`${key}_evidence_refs`] || review.evidence || review.evidence_refs)
     }));
   const reviewer = String(review.reviewer || '').toLowerCase();
   const verdict = String(review.verdict || '').toLowerCase();
-  const reviewerOk = reviewer === 'llm';
+  const reviewerOk = isCodexLlmAuthority(reviewer);
   const verdictKnown = ['decision_ready', 'partial', 'not_ready'].includes(verdict);
   const hasSummary = typeof review.summary === 'string' && review.summary.trim().length > 0;
   const hasStructuredJudgment = authoredChecks.length > 0 || asList(review.criteria).length > 0 || asList(review.findings).length > 0;
@@ -849,14 +1629,14 @@ function computeAnalysisDocumentQualityReview(doc: any): any {
     criteria: asList(review.criteria),
     findings: asList(review.findings),
     missing: [
-      ...(!reviewerOk ? ['reviewer_llm'] : []),
+      ...(!reviewerOk ? ['reviewer_codex_llm'] : []),
       ...(!verdictKnown ? ['known_verdict'] : []),
       ...(!hasSummary ? ['summary'] : []),
       ...(!hasStructuredJudgment ? ['structured_judgment'] : []),
       ...(!partialRequirementRationaleOk ? ['partial_requirement_rationale'] : [])
     ],
     summary: review.summary || '',
-    evidence: asList(review.evidence),
+    evidence: evidenceRefs(review),
     open_questions: asList(review.open_questions)
   };
 }
@@ -872,7 +1652,17 @@ function computeSemanticAuthority(bundle: any): any {
   const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
   const skillWorkbenchCoverage = bundle.skill_workbench_coverage || {};
   return {
-    semantic_decider: 'llm',
+    semantic_decider: 'codex_llm',
+    llm_execution_model: {
+      executor: 'codex_in_session',
+      execution_surface: 'current_codex_session',
+      direct_llm_api_allowed: false,
+      api_credentials_required: false,
+      external_service_state_tracked: false,
+      runtime_contract: 'codex_authors_required_artifacts_in_session',
+      readiness_verdict_source: 'analysis_document.report_quality_review.verdict',
+      incomplete_evidence_handling: 'codex_authors_uncertainty_open_questions_or_partial_readiness'
+    },
     final_verdict_source: 'analysis_document.report_quality_review.verdict',
     final_verdict: quality.verdict || '',
     requirements_trace_source: 'analysis_document.requirements_trace',
@@ -880,6 +1670,15 @@ function computeSemanticAuthority(bundle: any): any {
     goal_trace_reference_source: 'analysis_document.requirements_trace[].goal_contract_refs',
     goal_trace_reference_contract_complete: goalTrace.complete === true,
     report_quality_review_structured: quality.complete === true,
+    consistency_review_complete: bundle.analysis_document_consistency_review?.complete === true,
+    executive_decision_layer_complete: bundle.analysis_document_executive_decision_layer?.complete === true,
+    evidence_strength_complete: bundle.analysis_document_evidence_strength?.complete === true,
+    semantic_lineage_complete: bundle.analysis_document_semantic_lineage?.complete === true,
+    open_questions_complete: bundle.analysis_document_open_questions?.complete === true,
+    analysis_run_provenance_complete: bundle.analysis_run_provenance?.complete === true,
+    artifact_dependency_graph_complete: bundle.artifact_dependency_graph?.complete === true,
+    external_findings_ingestion_complete: bundle.external_findings_contract?.complete === true,
+    blocking_open_questions: bundle.analysis_document_open_questions?.blocking_count || 0,
     cli_semantic_quality_judge: false,
     human_report_source: reportMode.visible_report_source || '',
     llm_authored_artifacts: {
@@ -905,6 +1704,11 @@ function computeSemanticAuthority(bundle: any): any {
       'pre_final_artifact_order',
       'detail_review_execution_and_integration',
       'renderer_component_contract',
+      'report_lint_support_contract',
+      'semantic_lineage_artifact_evidence_contract',
+      'analysis_run_provenance_hash_and_parent_contract',
+      'artifact_dependency_freshness_contract',
+      'external_findings_shape_and_evidence_contract',
       'mermaid_render_contract',
       'static_html_artifact_materialization'
     ],
@@ -926,7 +1730,7 @@ function computeSemanticAuthority(bundle: any): any {
       'analysis-goal-trace-alignment.json'
     ],
     renderer_contract_complete: componentContract.complete === true,
-    summary: 'Semantic completeness, documentation quality and decision readiness are authored by the LLM through requirements_trace and report_quality_review. The CLI validates deterministic contracts only.'
+    summary: 'Semantic completeness, documentation quality and decision readiness are authored by Codex through requirements_trace and report_quality_review. The CLI validates deterministic contracts only and does not model Codex execution as an external provider state.'
   };
 }
 
@@ -955,7 +1759,7 @@ function extractLlmAnalysisStrategy(strategyDoc: any, hasStrategyArtifact: boole
     uses_pre_analysis_strategy_artifact: hasStrategyArtifact,
     strategy_present: strategyPresent,
     deterministic_contract_scope: 'artifact presence and strategy shape only; no semantic scoring of the chosen plan',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     missing,
     candidate_source_slice_count: candidateSlices.length,
     skill_application_count: skillPlan.length,
@@ -986,7 +1790,7 @@ function extractLlmSkillWorkbenchPlan(strategyDoc: any, manifest: any, hasStrate
   const noSkillDecision = directStrategy?.no_skill_workbenches_needed === true || asList(directStrategy?.skill_workbench_not_planned || directStrategy?.not_planned).length > 0;
   return {
     contract_kind: 'llm_strategy_skill_workbench_plan',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     deterministic_contract_scope: 'analysis_strategy.skill_application_plan shape, materialized task manifest presence and exact planned review id reconciliation only',
     planning_source: hasStrategyArtifact ? 'llm/analysis-strategy.json' : 'missing_llm_analysis_strategy',
     uses_analysis_strategy_artifact: hasStrategyArtifact,
@@ -1172,7 +1976,7 @@ function computeSkillWorkbenchCoverage(plan: any, reviews: any[], manifest: any,
               : 'partial';
   return {
     contract_kind: 'llm_strategy_skill_workbench_execution',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     deterministic_contract_scope: 'planned skill ids from analysis_strategy, materialized task ids and executed skill_reviews ids only; no semantic scoring of skill-review quality',
     complete,
     status,
@@ -1352,7 +2156,7 @@ function computeReportMode(doc: any, detailCoverage: any, synthesis: any, skillS
     message: finalSynthesisReady
       ? 'The visible human report is rendered from LLM-authored analysis_document.sections after pre-final extraction artifacts, planned skill workbenches, planned detail reviews and LLM report-quality review were completed.'
       : hasAuthoredSections
-      ? 'The visible human report exists, but final readiness waits for required workflow artifacts, synthesis_stage=final_after_detail_reviews, an LLM report-quality review with verdict=decision_ready, explicit LLM goal-trace references, planned skill-workbench synthesis, a pre-final LLM detail-agent plan, planned detail-review execution and synthesis.'
+      ? 'The visible human report exists, but final readiness waits for required workflow artifacts, synthesis_stage=final_after_detail_reviews, a Codex-authored report-quality review with verdict=decision_ready, explicit Codex-authored goal-trace references, planned skill-workbench synthesis, a pre-final Codex-authored detail-agent plan, planned detail-review execution and synthesis.'
       : 'The visible human report is not complete until an LLM-authored analysis_document with sections is provided.'
   };
 }
@@ -1451,6 +2255,78 @@ function loadSourceTierOutputs(sourceTierDir: string): any {
   return { reviews };
 }
 
+function loadExternalFindings(analysisDir: string): any[] {
+  const findingsDir = Path.join(analysisDir, 'external_findings');
+  if (!FS.existsSync(findingsDir)) return [];
+  const rows: any[] = [];
+  for (const file of FS.readdirSync(findingsDir).filter((name: string) => name.endsWith('.json')).sort()) {
+    const data = loadJson<any>(Path.join(findingsDir, file), {});
+    if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+    const sourceTool = String(data.source_tool || data.tool || data.name || Path.basename(file, '.json')).trim();
+    const authority = String(data.authority || data.source_authority || 'external_tool').trim();
+    for (const item of asList(data.findings || data.issues || data.results)) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      rows.push({
+        ...item,
+        source_tool: item.source_tool || sourceTool,
+        authority: item.authority || authority,
+        ingestion_file: `external_findings/${file}`
+      });
+    }
+  }
+  return rows;
+}
+
+function computeExternalFindingsContract(findings: any[]): any {
+  const rows = asList(findings).map((item: any, index: number) => {
+    const id = String(item?.id || item?.rule_id || item?.fingerprint || `external-finding-${index + 1}`).trim();
+    const sourceTool = String(item?.source_tool || '').trim();
+    const authority = String(item?.authority || '').trim();
+    const type = String(item?.type || item?.category || item?.kind || '').trim();
+    const severity = String(item?.severity || item?.level || '').trim();
+    const message = String(item?.message || item?.summary || item?.description || '').trim();
+    const evidence = evidenceRefs(item);
+    const missing = [
+      ...(!id ? ['id'] : []),
+      ...(!sourceTool ? ['source_tool'] : []),
+      ...(!authority ? ['authority'] : []),
+      ...(!type ? ['type'] : []),
+      ...(!severity ? ['severity'] : []),
+      ...(!message ? ['message'] : []),
+      ...(!evidence.length ? ['evidence'] : []),
+      ...(evidence.some((ev: any) => ev?.valid === false) ? ['valid_evidence'] : [])
+    ];
+    return {
+      id,
+      source_tool: sourceTool,
+      authority,
+      type,
+      severity,
+      message,
+      ingestion_file: item?.ingestion_file || '',
+      evidence,
+      missing
+    };
+  });
+  const invalid = rows.filter(row => row.missing.length > 0);
+  return {
+    contract_kind: 'external_findings_ingestion',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_authority: 'external_finding_shape_and_evidence_only',
+    deterministic_contract_scope: 'External scanner/tool findings are ingested as evidence inputs. The CLI validates shape and file:line evidence only; source tools retain scanner authority and Codex synthesizes decision impact.',
+    complete: invalid.length === 0,
+    finding_count: rows.length,
+    invalid_count: invalid.length,
+    findings: rows,
+    invalid_findings: invalid.map(row => ({ id: row.id, missing: row.missing })),
+    summary: rows.length
+      ? invalid.length
+        ? `External finding ingestion has ${invalid.length} invalid finding${invalid.length === 1 ? '' : 's'}.`
+        : `${rows.length} external finding${rows.length === 1 ? '' : 's'} ingested as non-authoritative Cognianalysis evidence inputs.`
+      : 'No external scanner findings were provided. The ingestion contract is ready and remains optional.'
+  };
+}
+
 function mergeCoverage(base: any, additions: any[]): any {
   const out = { ...(base || {}) };
   out.inspected_files = [...asList(out.inspected_files)];
@@ -1473,7 +2349,7 @@ function validateNested(repo: string, value: any): any {
   if (!value || typeof value !== 'object') return value;
   const out: any = {};
   for (const [key, v] of Object.entries(value)) {
-    if (key === 'evidence' && Array.isArray(v)) out[key] = v.map(ev => validateEvidence(repo, ev));
+    if ((key === 'evidence' || key === 'evidence_refs') && Array.isArray(v)) out[key] = v.map(ev => validateEvidence(repo, ev));
     else out[key] = validateNested(repo, v);
   }
   return out;
@@ -1498,7 +2374,8 @@ function collectEvidence(value: any): any[] {
     if (Array.isArray(v)) { for (const x of v) walk(x); return; }
     if (!v || typeof v !== 'object') return;
     if (Array.isArray(v.evidence)) out.push(...v.evidence);
-    for (const [k, child] of Object.entries(v)) if (k !== 'evidence') walk(child);
+    if (Array.isArray(v.evidence_refs)) out.push(...v.evidence_refs);
+    for (const [k, child] of Object.entries(v)) if (k !== 'evidence' && k !== 'evidence_refs') walk(child);
   }
   walk(value);
   return out;
@@ -1588,7 +2465,7 @@ function computeSourceCoverage(codeMap: any, evidenceIndex: any[], analysisCover
   const contractComplete = incomplete.length === 0 && invalidCoverageItems.length === 0;
   return {
     contract_kind: 'source_inventory_accounting',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     accounting_status_meaning: 'Whether each included source file has validated evidence or appears in LLM analysis_coverage.inspected_files. Deferred files are visible but are not completed analysis and do not count as accounted.',
     deterministic_contract_scope: 'included inventory path reconciliation and structured analysis_coverage path/reason validation only',
     status: contractComplete ? 'complete' : 'partial',
@@ -1633,13 +2510,13 @@ function computeSourceTierCoverage(codeMap: any, sourceFileTierReviews: any[], m
   const cards = new Map<string, any>();
   const invalid: any[] = [];
   const duplicates: any[] = [];
-  const blockedTasks: any[] = [];
+  const nonCompleteReviewStatusTasks: any[] = [];
 
   for (const review of asList(sourceFileTierReviews)) {
     const taskId = String(review?.task_id || '').trim();
     if (taskId) executedTaskIds.add(taskId);
     const status = String(review?.review_status || '').toLowerCase();
-    if (status && status !== 'complete') blockedTasks.push({ task_id: taskId, status });
+    if (status && status !== 'complete') nonCompleteReviewStatusTasks.push({ task_id: taskId, status });
     for (const card of asList(review?.files)) {
       if (!card || typeof card !== 'object' || Array.isArray(card)) {
         invalid.push({ task_id: taskId, reason: 'file card must be an object' });
@@ -1678,10 +2555,10 @@ function computeSourceTierCoverage(codeMap: any, sourceFileTierReviews: any[], m
     : [];
   const total = files.length;
   const covered = total - missingFiles.length;
-  const complete = total > 0 && missingFiles.length === 0 && invalid.length === 0 && duplicates.length === 0 && blockedTasks.length === 0 && missingTaskOutputs.length === 0;
+  const complete = total > 0 && missingFiles.length === 0 && invalid.length === 0 && duplicates.length === 0 && nonCompleteReviewStatusTasks.length === 0 && missingTaskOutputs.length === 0;
   return {
     contract_kind: 'tiered_whole_codebase_file_analysis',
-    semantic_verdict_authority: 'llm',
+    semantic_verdict_authority: 'codex_llm',
     deterministic_contract_scope: 'exact source-inventory path reconciliation, required Tier 1 card fields, valid evidence presence, planned task execution and duplicate detection only',
     tier_model: sourceTierModelArtifact(),
     status: complete ? 'complete' : 'partial',
@@ -1692,7 +2569,7 @@ function computeSourceTierCoverage(codeMap: any, sourceFileTierReviews: any[], m
     missing_tier1_files: missingFiles.length,
     invalid_file_cards: invalid.length,
     duplicate_file_cards: duplicates.length,
-    blocked_tasks: blockedTasks.length,
+    non_complete_review_status_tasks: nonCompleteReviewStatusTasks.length,
     planned_task_count: plannedTaskIds.size,
     executed_task_count: executedTaskIds.size,
     missing_task_outputs: missingTaskOutputs,
@@ -1700,7 +2577,7 @@ function computeSourceTierCoverage(codeMap: any, sourceFileTierReviews: any[], m
     missing_file_examples: missingFiles.slice(0, 200),
     invalid_file_card_examples: invalid.slice(0, 80),
     duplicate_file_card_examples: duplicates.slice(0, 80),
-    blocked_task_examples: blockedTasks.slice(0, 80),
+    non_complete_review_status_examples: nonCompleteReviewStatusTasks.slice(0, 80),
     summary: complete
       ? 'Every included source-inventory file has a valid LLM-authored Tier 1 file card.'
       : 'Tier 1 whole-codebase file-card coverage is incomplete. Final readiness must remain partial until every included file has a valid LLM-authored file card.'
@@ -1718,6 +2595,6 @@ function pendingAnalysisCoverage(): any {
     summary: 'Pending whole-codebase coverage accounting.',
     inspected_files: [],
     deferred_files: [],
-    open_questions: ['The agent harness/LLM has not yet recorded which files from the source inventory were semantically inspected and which Tier 1 file cards still need to be authored.']
+    open_questions: ['Codex has not yet recorded which files from the source inventory were semantically inspected and which Tier 1 file cards still need to be authored.']
   };
 }

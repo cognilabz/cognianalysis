@@ -1,0 +1,63 @@
+{
+  "contract_kind": "analysis_document_market_quality_lint",
+  "semantic_verdict_authority": "codex_llm",
+  "deterministic_contract_scope": "LLM-authored report shape and support fields only; no semantic matching, keyword scoring or usefulness judgment",
+  "complete": true,
+  "section_count": 6,
+  "required_quality_checks": [
+    {
+      "id": "repo_specific_information_architecture",
+      "label": "Repository-specific information architecture"
+    },
+    {
+      "id": "management_ready_decision_basis",
+      "label": "Management-ready decision basis"
+    },
+    {
+      "id": "whole_repo_first_understanding",
+      "label": "Whole-repository understanding before deep dives"
+    },
+    {
+      "id": "e2e_relationships_explained",
+      "label": "E2E relationships and collaboration explained"
+    },
+    {
+      "id": "functional_view_explained",
+      "label": "Functional view explains what the system does"
+    },
+    {
+      "id": "technical_view_explained",
+      "label": "Technical view explains APIs, interfaces and architecture"
+    },
+    {
+      "id": "four_level_model_covered",
+      "label": "Four analysis levels are covered"
+    },
+    {
+      "id": "improvements_and_refactoring_covered",
+      "label": "Improvements, optimization and refactoring are covered"
+    },
+    {
+      "id": "tool_positioning_covered",
+      "label": "Tool/consulting alternative positioning is covered"
+    },
+    {
+      "id": "evidence_and_uncertainty_visible",
+      "label": "Evidence, confidence and uncertainty are visible"
+    }
+  ],
+  "missing_quality_checks": [],
+  "custom_quality_judgment_present": false,
+  "quality_dimension_contract_mode": "canonical_checks",
+  "quality_checks_without_evidence": [],
+  "unsupported_claims": [],
+  "unsupported_claim_count": 0,
+  "claim_support_gaps": [],
+  "roadmap_action_gaps": [],
+  "decision_row_gaps": [],
+  "mermaid_support_gaps": [],
+  "open_question_gaps": [],
+  "interface_boundary_gaps": [],
+  "missing": [],
+  "summary": "Analysis document satisfies the deterministic report lint. Semantic usefulness remains the LLM-authored report_quality_review verdict."
+}

@@ -19,6 +19,9 @@ This task exists because whole-repository documentation is not complete when mos
 - Every file listed below must appear exactly once in `source_file_tier_review.files[]`.
 - Every card needs at least one exact evidence reference to the same file.
 - Do not use `analysis_coverage.deferred_files` as a substitute for a file card.
+- Set `source_file_tier_review.review_status` to `complete`. Codex is executing the LLM work directly; this is not an API call. Put uncertainty in the card text or `open_questions`.
+- Tier 1 has no external service state because Codex is the in-session LLM executor. Thin or truncated evidence must be represented as uncertainty.
+- Do not write or rely on any LLM unavailable state. If evidence is insufficient, use `confidence` and `open_questions`; if the final report is not good enough later, Codex says so in `report_quality_review`.
 
 ## Files For This Batch
 
@@ -358,7 +361,7 @@ Expected shape:
   "source_file_tier_review": {
     "task_id": "source-tier-0001",
     "tier_model_version": "source-tier-v1",
-    "review_status": "complete, partial or blocked",
+    "review_status": "complete",
     "files": [
       {
         "path": "relative/path/File.ext",

@@ -2,8 +2,8 @@
   "profile": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T18:06:14Z",
-    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
+    "analyzed_at": "2026-06-11T05:13:14Z",
+    "commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -21,7 +21,10 @@
     "source_files": 18,
     "total_files": 32,
     "total_lines": 854,
-    "skipped_files": 0
+    "skipped_files": 0,
+    "analysis_scope_mode": "complete",
+    "scope_total_files_before_scope": 32,
+    "scope_deferred_files": 0
   },
   "modules": [
     {
@@ -2683,6 +2686,14 @@
     "deterministic_build_tool_detection": false,
     "deterministic_contract_detection": false,
     "implementation_language": "TypeScript",
-    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. The agent harness/LLM parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
+    "description": "The CLI creates source inventory, file-format metadata, path partitions and raw context capsules only. Codex, as the active in-session LLM, parses imports, symbols, dependencies, frameworks, business logic, contracts, examples, requests, responses and flows from source evidence."
+  },
+  "analysis_scope": {
+    "mode": "complete",
+    "selected_files": 32,
+    "total_files_before_scope": 32,
+    "deferred_files": 0,
+    "confidence_impact": "low",
+    "summary": "Complete source inventory scope."
   }
 }

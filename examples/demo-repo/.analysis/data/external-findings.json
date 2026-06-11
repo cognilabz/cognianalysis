@@ -1,0 +1,12 @@
+{
+  "contract_kind": "external_findings_ingestion",
+  "semantic_verdict_authority": "codex_llm",
+  "deterministic_authority": "external_finding_shape_and_evidence_only",
+  "deterministic_contract_scope": "External scanner/tool findings are ingested as evidence inputs. The CLI validates shape and file:line evidence only; source tools retain scanner authority and Codex synthesizes decision impact.",
+  "complete": true,
+  "finding_count": 0,
+  "invalid_count": 0,
+  "findings": [],
+  "invalid_findings": [],
+  "summary": "No external scanner findings were provided. The ingestion contract is ready and remains optional."
+}

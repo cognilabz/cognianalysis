@@ -8,14 +8,14 @@ exports.REPORT_COMPONENT_LIBRARY = [
         id: 'narrative',
         label: 'Narrative',
         purpose: 'Human-readable paragraphs for management/business meaning and technical explanation.',
-        expected_fields: ['type', 'title?', 'labels?', 'text|paragraphs|summary|description', 'business_need?', 'business_use?', 'technical_drilldown?', 'evidence?'],
+        expected_fields: ['type', 'title?', 'labels?', 'text|paragraphs|summary|description', 'business_need?', 'business_use?', 'technical_drilldown?', 'evidence?|evidence_refs?'],
         guidance: 'Use for authored prose that explains business need, business use, system meaning or technical drilldown. Do not use it as a dumping ground for class/function lists.'
     },
     {
         id: 'statement_list',
         label: 'Statement List',
         purpose: 'Evidence-backed claims, findings, risks, recommendations or decisions.',
-        expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title|name|criterion|verdict|id', 'items[].description|summary|reason|recommendation', 'items[].evidence?'],
+        expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title|name|criterion|verdict|id', 'items[].description|summary|reason|recommendation', 'items[].confidence?', 'items[].evidence?|items[].evidence_refs?'],
         guidance: 'Use when each statement should stand alone with confidence, severity or evidence.'
     },
     {
@@ -29,7 +29,7 @@ exports.REPORT_COMPONENT_LIBRARY = [
         id: 'source_family_map',
         label: 'Source Family Map',
         purpose: 'Whole-repository family/module responsibilities before deep drilldown.',
-        expected_fields: ['type', 'title?', 'labels?', 'families[]', 'families[].name', 'families[].role|business_use|technical_shape', 'families[].confidence?', 'families[].evidence?'],
+        expected_fields: ['type', 'title?', 'labels?', 'families[]', 'families[].name', 'families[].role|business_use|technical_shape', 'families[].confidence', 'families[].evidence?'],
         guidance: 'Use for LLM-authored source-family understanding. Deterministic inventory partitions remain navigation aids only.'
     },
     {
@@ -57,14 +57,14 @@ exports.REPORT_COMPONENT_LIBRARY = [
         id: 'decision_matrix',
         label: 'Decision Matrix',
         purpose: 'Options, trade-offs, recommendations, confidence and risks.',
-        expected_fields: ['type', 'title?', 'labels.decision?', 'labels.options?', 'labels.recommendation?', 'labels.risk?', 'rows[]', 'rows[].decision', 'rows[].options?', 'rows[].recommendation?', 'rows[].risk?', 'rows[].confidence?', 'rows[].evidence?'],
+        expected_fields: ['type', 'title?', 'labels.decision?', 'labels.options?', 'labels.recommendation?', 'labels.risk?', 'rows[]', 'rows[].decision', 'rows[].options?', 'rows[].recommendation?', 'rows[].risk?', 'rows[].confidence', 'rows[].evidence?'],
         guidance: 'Use when the report needs to become a decision basis rather than only documentation. Set labels when the repository-specific decision vocabulary should drive table wording.'
     },
     {
         id: 'roadmap',
         label: 'Roadmap',
         purpose: 'Modernization, refactoring, process or quality improvement path.',
-        expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title', 'items[].phase?', 'items[].benefit?', 'items[].description?', 'items[].effort?', 'items[].risk?', 'items[].evidence?'],
+        expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title', 'items[].phase?', 'items[].benefit?', 'items[].description?', 'items[].effort?', 'items[].risk?', 'items[].confidence?', 'items[].evidence?'],
         guidance: 'Use for target architecture or migration/optimization recommendations.'
     },
     {
@@ -85,8 +85,8 @@ exports.REPORT_COMPONENT_LIBRARY = [
         id: 'open_questions',
         label: 'Open Questions',
         purpose: 'Missing proof, owner questions and follow-up analysis.',
-        expected_fields: ['type', 'title?', 'labels.question?', 'items[]', 'items[].question|title', 'items[].why_it_matters|description?', 'items[].owner?', 'items[].evidence?'],
-        guidance: 'Use when code evidence cannot support a stronger claim.'
+        expected_fields: ['type', 'title?', 'labels.question?', 'items[]', 'items[].id', 'items[].question|title', 'items[].reason|why_it_matters|description', 'items[].impact', 'items[].blocking', 'items[].evidence?|items[].evidence_refs?|items[].evidence_gap?'],
+        guidance: 'Use when code evidence cannot support a stronger claim. Mirror any top-level analysis_document.open_questions entries here when unresolved uncertainty should be visible to report readers.'
     }
 ];
 function supportedReportComponentTypes() {

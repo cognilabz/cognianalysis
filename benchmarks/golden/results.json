@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "golden-suite",
+  "generated_at": "2026-06-11T05:12:48.792Z",
+  "total_repos": 1,
+  "passed_repos": 1,
+  "failed_repos": 0,
+  "minimum_market_proof_repos": 5,
+  "market_proof_ready": false,
+  "verdict": "pass",
+  "results": [
+    {
+      "benchmark": "demo-repo",
+      "repo": "examples/demo-repo",
+      "expected_file": "benchmarks/golden/demo-repo.expected.json",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_readiness": 1,
+        "report_completeness": 1,
+        "invalid_evidence": 0
+      },
+      "failures": []
+    }
+  ]
+}

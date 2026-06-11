@@ -28,6 +28,9 @@ export interface RepoProfile {
   total_files: number;
   total_lines: number;
   skipped_files?: number;
+  analysis_scope_mode?: string;
+  scope_total_files_before_scope?: number;
+  scope_deferred_files?: number;
 }
 
 export interface CodeMapFile {
@@ -58,6 +61,7 @@ export interface CodeMap {
   capsules: Json[];
   important_docs: Json[];
   artifact_navigation_candidates?: Json[];
+  analysis_scope?: Json;
   skipped_files?: Json[];
   navigation_policy?: Json;
   extraction_policy: Json;

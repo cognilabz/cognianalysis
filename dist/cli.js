@@ -18,11 +18,83 @@ function analysisPath(repo, value) {
         return utils_1.Path.resolve(value);
     return utils_1.Path.join(repo, '.analysis');
 }
+const SCOPE_MODES = new Set(['complete', 'critical-path', 'representative']);
+function analysisScopeMode(args) {
+    const mode = String((0, utils_1.argValue)(args, '--scope', 'complete') || 'complete').trim().toLowerCase();
+    if (!SCOPE_MODES.has(mode))
+        throw new Error(`Unknown --scope ${mode}. Expected complete, critical-path or representative.`);
+    return mode;
+}
+function scopedCodeMap(codeMap, args) {
+    const mode = analysisScopeMode(args);
+    const files = Array.isArray(codeMap.files) ? codeMap.files : [];
+    if (mode === 'complete') {
+        codeMap.analysis_scope = {
+            mode,
+            selected_files: files.length,
+            total_files_before_scope: files.length,
+            deferred_files: 0,
+            confidence_impact: 'low',
+            summary: 'Complete source inventory scope.'
+        };
+        codeMap.profile = { ...(codeMap.profile || {}), analysis_scope_mode: mode, scope_total_files_before_scope: files.length, scope_deferred_files: 0 };
+        return codeMap;
+    }
+    const fallbackLimit = mode === 'critical-path' ? 1200 : 400;
+    const limit = Math.max(1, (0, utils_1.numericArg)(args, '--scope-files', fallbackLimit));
+    const sorted = [...files].sort((a, b) => {
+        const scoreA = Number(a.navigation_score ?? a.score ?? 0);
+        const scoreB = Number(b.navigation_score ?? b.score ?? 0);
+        if (scoreA !== scoreB)
+            return scoreB - scoreA;
+        return String(a.path || '').localeCompare(String(b.path || ''));
+    });
+    const selected = sorted.slice(0, limit);
+    const selectedPaths = new Set(selected.map((file) => file.path));
+    const deferred = sorted.slice(limit).map((file) => ({
+        path: file.path,
+        reason: `Deferred by --scope ${mode}; rerun with --scope complete for full Tier 1 coverage.`
+    }));
+    const totalLines = selected.reduce((sum, file) => sum + Number(file.lines || 0), 0);
+    return {
+        ...codeMap,
+        files: selected,
+        capsules: (codeMap.capsules || []).filter((capsule) => !capsule.path || selectedPaths.has(capsule.path)),
+        artifact_navigation_candidates: (codeMap.artifact_navigation_candidates || []).filter((item) => !item.path || selectedPaths.has(item.path)),
+        important_docs: (codeMap.important_docs || []).filter((item) => !item.path || selectedPaths.has(item.path)),
+        profile: {
+            ...(codeMap.profile || {}),
+            source_files: selected.length,
+            total_files: selected.length,
+            total_lines: totalLines,
+            analysis_scope_mode: mode,
+            scope_total_files_before_scope: files.length,
+            scope_deferred_files: Math.max(0, files.length - selected.length)
+        },
+        analysis_scope: {
+            mode,
+            selected_files: selected.length,
+            total_files_before_scope: files.length,
+            deferred_files: Math.max(0, files.length - selected.length),
+            deferred_file_examples: deferred.slice(0, 50),
+            selection_rule: `top ${selected.length} files by deterministic navigation_score/score`,
+            confidence_impact: mode === 'critical-path' ? 'medium' : 'high',
+            summary: `Analysis scope is ${mode}; ${selected.length}/${files.length} files are in the Tier 1 source inventory for this run.`
+        }
+    };
+}
 function usage() {
     console.log(`Cognianalysis v${VERSION} · LLM-first source-code analysis
 
 Usage:
-  ${CLI_NAME} prepare [repo] [--analysis .analysis] [--capsules 44]
+  ${CLI_NAME} init [repo] [--analysis .analysis] [--capsules 44]
+  ${CLI_NAME} run [repo] [--analysis .analysis] [--allow-partial] [--scope complete|critical-path|representative] [--scope-files N]
+  ${CLI_NAME} resume [repo] [--analysis .analysis]
+  ${CLI_NAME} status [repo] [--analysis .analysis]
+  ${CLI_NAME} repair [repo] [--analysis .analysis]
+  ${CLI_NAME} open [repo] [--analysis .analysis]
+  ${CLI_NAME} doctor [repo] [--analysis .analysis] [--market-proof] [--strict]
+  ${CLI_NAME} prepare [repo] [--analysis .analysis] [--capsules 44] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} analyze [repo] [--analysis .analysis] [--no-html]
   ${CLI_NAME} finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
   ${CLI_NAME} finish [repo]   # alias for finalize
@@ -43,7 +115,261 @@ Usage:
 `);
 }
 function stagedLlmWorkflowMessage() {
-    return `Next step for an agent harness: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} finalize . --allow-partial to materialize LLM-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the LLM strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+    return `Next step for Codex, as the active in-session LLM: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+}
+const REQUIRED_WORKFLOW_ARTIFACTS = [
+    { label: 'analysis strategy', path: 'llm/analysis-strategy.json' },
+    { label: 'detail-agent plan', path: 'llm/detail-agent-plan.json' },
+    { label: 'final analysis document', path: 'llm/analysis-document.json' }
+];
+function workflowArtifactStatuses(analysis) {
+    return REQUIRED_WORKFLOW_ARTIFACTS.map(row => {
+        const full = utils_1.Path.join(analysis, row.path);
+        const status = {
+            ...row,
+            exists: utils_1.FS.existsSync(full),
+            valid_json: false,
+            has_content: false,
+            ready: false
+        };
+        if (!status.exists)
+            return status;
+        try {
+            const parsed = JSON.parse(utils_1.FS.readFileSync(full, 'utf8'));
+            status.valid_json = true;
+            status.has_content = parsed !== null && (Array.isArray(parsed)
+                ? parsed.length > 0
+                : typeof parsed === 'object'
+                    ? Object.keys(parsed).length > 0
+                    : String(parsed).trim().length > 0);
+            status.ready = status.valid_json && status.has_content;
+        }
+        catch (err) {
+            status.error = err?.message || String(err);
+        }
+        return status;
+    });
+}
+function traceStatus(bundle, requirement) {
+    if (!bundle)
+        return '';
+    const needle = requirement.toLowerCase();
+    const row = (bundle.analysis_document_requirements_trace_contract?.requirements || [])
+        .find((item) => String(item.label || '').toLowerCase().includes(needle));
+    return String(row?.status || '');
+}
+function hasReportBlock(bundle, type) {
+    return (bundle.analysis_document?.sections || [])
+        .some((section) => (section.blocks || []).some((block) => String(block.type || '').toLowerCase() === type));
+}
+function productStatusRows(analysis, bundle, statuses) {
+    const indexed = utils_1.FS.existsSync(utils_1.Path.join(analysis, 'data', 'code-map.json'));
+    const scopeDeclared = !!bundle?.analysis_scope?.mode;
+    const notStale = !!bundle && bundle.analysis_staleness?.stale !== true;
+    const strategyReady = bundle?.llm_analysis_strategy?.strategy_present === true;
+    const repositoryCoverageReady = bundle?.source_tier_coverage?.complete === true;
+    const functionalReady = traceStatus(bundle, 'functional') === 'covered' && hasReportBlock(bundle, 'flow');
+    const technicalReady = traceStatus(bundle, 'technical') === 'covered' && hasReportBlock(bundle, 'boundary_map');
+    const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered' && hasReportBlock(bundle, 'roadmap');
+    const executiveReady = bundle?.analysis_document_executive_decision_layer?.complete === true;
+    const consistencyReady = bundle?.analysis_document_consistency_review?.complete === true
+        && Number(bundle?.analysis_document_consistency_review?.contradictions_found || 0) === 0;
+    const lineageReady = bundle?.analysis_document_semantic_lineage?.complete === true;
+    const provenanceReady = bundle?.analysis_run_provenance?.complete === true
+        && bundle?.artifact_dependency_graph?.complete === true
+        && bundle?.external_findings_contract?.complete === true;
+    const openQuestionsReady = bundle?.analysis_document_open_questions?.complete === true
+        && Number(bundle?.analysis_document_open_questions?.blocking_count || 0) === 0;
+    const finalReady = bundle?.final_llm_readiness?.state === 'ready';
+    return [
+        { id: 'indexed', label: 'Repository indexed', ready: indexed },
+        { id: 'scope', label: `Analysis scope declared${bundle?.analysis_scope?.mode ? ` (${bundle.analysis_scope.mode})` : ''}`, ready: scopeDeclared },
+        { id: 'freshness', label: 'Analysis matches current commit', ready: notStale },
+        { id: 'task_guide', label: 'Task guide available', ready: utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md')) },
+        { id: 'strategy', label: 'Analysis strategy complete', ready: strategyReady },
+        { id: 'coverage', label: 'Repository coverage complete', ready: repositoryCoverageReady },
+        { id: 'functional', label: 'Functional model complete', ready: functionalReady },
+        { id: 'technical', label: 'Technical model complete', ready: technicalReady },
+        { id: 'refactoring', label: 'Refactoring assessment complete', ready: refactoringReady },
+        { id: 'executive', label: 'Executive decision layer complete', ready: executiveReady },
+        { id: 'consistency', label: 'Consistency review complete', ready: consistencyReady },
+        { id: 'lineage', label: 'Semantic lineage complete', ready: lineageReady },
+        { id: 'provenance', label: 'Run provenance and dependency graph complete', ready: provenanceReady },
+        { id: 'open_questions', label: 'Open questions structured', ready: openQuestionsReady },
+        { id: 'final', label: 'Decision report ready', ready: finalReady }
+    ];
+}
+function nextProductAction(repo, analysis, bundle, statuses) {
+    if (!utils_1.FS.existsSync(analysis) || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'data', 'code-map.json')))
+        return `Run ${CLI_NAME} run ${repo}`;
+    if (bundle?.analysis_staleness?.stale === true)
+        return `Repository changed after analysis; rerun ${CLI_NAME} run ${repo} to refresh the decision report.`;
+    if (!utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md')))
+        return `Run ${CLI_NAME} repair ${repo} to rebuild the task guide.`;
+    const missingWorkflow = statuses.find(row => !row.ready);
+    if (missingWorkflow?.path === 'llm/analysis-strategy.json')
+        return 'Open .analysis/TASK.md and complete "Analysis Strategy".';
+    if (bundle?.source_tier_coverage?.complete !== true)
+        return `Run ${CLI_NAME} tier-next ${repo} --limit 1, complete the next Tier 1 workpack, then rerun status.`;
+    if (missingWorkflow?.path === 'llm/detail-agent-plan.json')
+        return 'Open .analysis/TASK.md and complete "Detail Agent Plan".';
+    if (missingWorkflow?.path === 'llm/analysis-document.json')
+        return 'Open .analysis/TASK.md and complete "Final Analysis Document".';
+    if (bundle?.analysis_document_executive_decision_layer?.complete !== true)
+        return 'Update the final report with a visible executive decision section and executive_decision_basis.';
+    if (bundle?.analysis_document_consistency_review?.complete !== true)
+        return 'Add analysis_document.consistency_review and resolve or explicitly surface contradictions.';
+    if (bundle?.analysis_document_semantic_lineage?.complete !== true)
+        return 'Add or refresh semantic lineage so major report claims trace to upstream reviews and source evidence.';
+    if (bundle?.analysis_run_provenance?.complete !== true)
+        return 'Refresh analysis run provenance so required artifacts share one run identity and generated-from matrix.';
+    if (bundle?.artifact_dependency_graph?.complete !== true)
+        return 'Refresh stale or missing artifacts from the dependency graph before final readiness.';
+    if (bundle?.external_findings_contract?.complete !== true)
+        return 'Fix invalid external_findings/*.json entries or remove malformed scanner inputs.';
+    if (bundle?.analysis_document_open_questions?.complete !== true)
+        return 'Add top-level analysis_document.open_questions and visible open_questions blocks for any unresolved uncertainty.';
+    if (Number(bundle?.analysis_document_open_questions?.blocking_count || 0) > 0)
+        return 'Resolve or explicitly downgrade readiness for blocking open questions.';
+    const failures = bundle?.final_llm_readiness?.failures || [];
+    if (failures.length)
+        return `Fix readiness issue: ${failures[0]}`;
+    return `Run ${CLI_NAME} open ${repo}`;
+}
+function estimatedRemainingEffort(bundle, rows, statuses) {
+    if (!bundle)
+        return '1 setup pass';
+    const missingRows = rows.filter(row => !row.ready).length;
+    const missingArtifacts = statuses.filter(row => !row.ready).length;
+    const tierBacklog = bundle.source_tier_backlog || {};
+    const tierPasses = Number(tierBacklog.incomplete_tasks || tierBacklog.missing_tasks || 0);
+    const passes = Math.max(0, missingArtifacts) + Math.min(tierPasses, 5) + Math.max(0, missingRows - missingArtifacts - 2);
+    return passes <= 0 ? '0 LLM passes' : `${passes} LLM pass${passes === 1 ? '' : 'es'}`;
+}
+function printRepositoryStatus(repo, analysis, bundle, statuses) {
+    const rows = productStatusRows(analysis, bundle, statuses);
+    console.log('Repository Analysis Status');
+    for (const row of rows)
+        console.log(`${row.ready ? '✓' : '✗'} ${row.label}`);
+    const action = nextProductAction(repo, analysis, bundle, statuses);
+    console.log('Next action:');
+    console.log(action);
+    console.log(`Estimated remaining effort: ${estimatedRemainingEffort(bundle, rows, statuses)}`);
+    if (bundle?.final_llm_readiness?.state)
+        console.log(`Readiness: ${bundle.final_llm_readiness.state} · verdict=${bundle.final_llm_readiness.final_verdict || 'unknown'}`);
+    if (bundle?.analysis_scope?.mode && bundle.analysis_scope.mode !== 'complete') {
+        console.log(`Scope warning: ${bundle.analysis_scope.summary || bundle.analysis_scope.mode} Confidence impact: ${bundle.analysis_scope.confidence_impact || 'unknown'}.`);
+    }
+    if (bundle?.analysis_staleness?.stale === true)
+        console.log(`Stale warning: ${bundle.analysis_staleness.summary}`);
+    return { rows, action };
+}
+function jsonProblems(analysis) {
+    const roots = ['llm', 'source_tiers', 'skill_reviews', 'detail_reviews']
+        .map(name => utils_1.Path.join(analysis, name))
+        .filter(dir => utils_1.FS.existsSync(dir));
+    const files = roots.flatMap(dir => listFilesRecursive(dir, file => file.endsWith('.json')));
+    const problems = [];
+    for (const file of files) {
+        try {
+            JSON.parse(utils_1.FS.readFileSync(file, 'utf8'));
+        }
+        catch (err) {
+            problems.push({ path: utils_1.Path.relative(analysis, file).replace(/\\/g, '/'), error: err?.message || String(err) });
+        }
+    }
+    return problems;
+}
+function reportPathForAnalysis(analysis) {
+    const artifacts = (0, utils_1.loadJson)(utils_1.Path.join(analysis, 'data', 'report-artifacts.json'), {});
+    return artifacts.index_html_path || utils_1.Path.join(analysis, 'report', 'index.html');
+}
+function packageRoot() {
+    return utils_1.Path.resolve(__dirname, '..');
+}
+function listFilesRecursive(dir, predicate) {
+    const out = [];
+    if (!utils_1.FS.existsSync(dir))
+        return out;
+    for (const entry of utils_1.FS.readdirSync(dir, { withFileTypes: true })) {
+        const full = utils_1.Path.join(dir, entry.name);
+        if (entry.isDirectory())
+            out.push(...listFilesRecursive(full, predicate));
+        else if (entry.isFile() && predicate(full))
+            out.push(full);
+    }
+    return out.sort();
+}
+function marketProofStatus(analysis) {
+    const root = packageRoot();
+    const benchmarkDoc = utils_1.Path.join(root, 'docs', 'BENCHMARK.md');
+    const goldenDir = utils_1.Path.join(root, 'benchmarks', 'golden');
+    const goldenExpected = listFilesRecursive(goldenDir, file => file.endsWith('.expected.json'));
+    const goldenScript = utils_1.Path.join(root, 'scripts', 'verify-golden.mjs');
+    const goldenAggregate = (0, utils_1.loadJson)(utils_1.Path.join(goldenDir, 'results.json'), null);
+    const result = (0, utils_1.loadJson)(utils_1.Path.join(analysis, 'data', 'golden-benchmark.json'), null);
+    const baselineScript = utils_1.Path.join(root, 'scripts', 'verify-baseline.mjs');
+    const baselineAggregate = (0, utils_1.loadJson)(utils_1.Path.join(root, 'benchmarks', 'baseline', 'results.json'), null);
+    const passedGoldenRepos = Number(goldenAggregate?.passed_repos || (result?.verdict === 'pass' ? 1 : 0));
+    const totalGoldenRepos = Number(goldenAggregate?.total_repos || goldenExpected.length);
+    const strictFailures = [
+        ...(!utils_1.FS.existsSync(benchmarkDoc) ? ['missing benchmark protocol doc'] : []),
+        ...(!utils_1.FS.existsSync(goldenScript) ? ['missing golden verifier'] : []),
+        ...(goldenExpected.length < 5 ? [`need at least 5 golden repos, found ${goldenExpected.length}`] : []),
+        ...(passedGoldenRepos < 5 ? [`need at least 5 passing golden repos, found ${passedGoldenRepos}`] : []),
+        ...(!utils_1.FS.existsSync(baselineScript) ? ['missing baseline verifier'] : []),
+        ...(baselineAggregate?.verdict !== 'pass' ? ['missing passing baseline comparison'] : [])
+    ];
+    return {
+        benchmarkDoc,
+        goldenDir,
+        goldenExpected,
+        goldenScript,
+        goldenAggregate,
+        result,
+        baselineScript,
+        baselineAggregate,
+        totalGoldenRepos,
+        passedGoldenRepos,
+        strictReady: strictFailures.length === 0,
+        strictFailures
+    };
+}
+function printMarketProofStatus(analysis) {
+    const status = marketProofStatus(analysis);
+    console.log('Market proof:');
+    console.log(`- Benchmark protocol doc: ${utils_1.FS.existsSync(status.benchmarkDoc) ? 'present' : 'missing'} · ${status.benchmarkDoc}`);
+    console.log(`- Golden expected suites: ${status.goldenExpected.length} · ${status.goldenDir}`);
+    console.log(`- Golden verifier: ${utils_1.FS.existsSync(status.goldenScript) ? 'present' : 'missing'} · ${status.goldenScript}`);
+    console.log(`- Golden aggregate: ${status.goldenAggregate?.verdict || 'missing'} · passed=${status.passedGoldenRepos}/${status.totalGoldenRepos}`);
+    if (!status.result) {
+        console.log('- Golden result: missing · run npm run verify:golden');
+    }
+    else {
+        const metrics = status.result.metrics || {};
+        console.log(`- Current repo golden result: ${status.result.verdict || 'unknown'} · ${utils_1.Path.join(analysis, 'data', 'golden-benchmark.json')}`);
+        console.log(`- Fact recall: ${metrics.fact_recall ?? 'unknown'} · Evidence precision: ${metrics.evidence_precision ?? 'unknown'} · Unsupported claim rate: ${metrics.unsupported_claim_rate ?? 'unknown'} · Decision readiness: ${metrics.decision_readiness ?? 'unknown'}`);
+    }
+    console.log(`- Baseline verifier: ${utils_1.FS.existsSync(status.baselineScript) ? 'present' : 'missing'} · ${status.baselineScript}`);
+    console.log(`- Baseline aggregate: ${status.baselineAggregate?.verdict || 'missing'} · ${utils_1.Path.join(packageRoot(), 'benchmarks', 'baseline', 'results.json')}`);
+    console.log(`- Strict market proof: ${status.strictReady ? 'ready' : 'not_ready'}`);
+    for (const failure of status.strictFailures)
+        console.log(`  STRICT-MISSING ${failure}`);
+    console.log('- Market claim boundary: benchmark proof scaffold exists; broader multi-repo/baseline proof is still required before market-superiority claims.');
+    return status;
+}
+function printProductNextStep(analysis, statuses) {
+    const missing = statuses.filter(row => !row.ready);
+    console.log(`Task guide: ${utils_1.Path.join(analysis, 'TASK.md')}`);
+    if (!missing.length) {
+        console.log(`Next action: run ${CLI_NAME} finalize . and ${CLI_NAME} audit-report .`);
+        return;
+    }
+    console.log('Next action: complete the required LLM workflow artifacts below, then rerun product mode.');
+    for (const row of missing) {
+        const reason = !row.exists ? 'missing' : !row.valid_json ? 'invalid_json' : 'empty';
+        console.log(`MISSING ${row.path} (${row.label}, ${reason})`);
+    }
 }
 function repoArg(args, fallback = '.') {
     const first = args.find(a => !a.startsWith('--'));
@@ -52,11 +378,11 @@ function repoArg(args, fallback = '.') {
 function cmdPrepare(args) {
     const repo = repoArg(args);
     const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
-    const codeMap = (0, repoMap_1.buildRepoMap)(repo, {
+    const codeMap = scopedCodeMap((0, repoMap_1.buildRepoMap)(repo, {
         maxFileSize: (0, utils_1.numericArg)(args, '--max-file-size', 1250000),
         capsuleLimit: (0, utils_1.numericArg)(args, '--capsules', 44),
         capsuleChars: (0, utils_1.numericArg)(args, '--capsule-chars', 10000)
-    });
+    }), args);
     (0, aggregate_1.prepareAnalysis)(repo, analysis, codeMap);
     const tasks = (0, tasks_1.writeLlmTasks)(analysis, codeMap);
     const seedDir = utils_1.Path.join(repo, '.analysis-seed', 'llm');
@@ -80,7 +406,7 @@ function cmdPrepare(args) {
     console.log(`Source capsules: ${utils_1.Path.join(analysis, 'source-capsules.json')}`);
     console.log(`Required LLM workflow task files: ${utils_1.Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
     console.log(`Optional capability templates: ${utils_1.Path.join(analysis, 'capability_templates')}`);
-    console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; the agent harness/LLM extracts those from source.');
+    console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; Codex, as the active in-session LLM, extracts those from source.');
     console.log(stagedLlmWorkflowMessage());
     return 0;
 }
@@ -105,6 +431,193 @@ function cmdAnalyze(args) {
         console.log(`Report: ${(0, report_1.renderReport)(analysis, undefined, (0, utils_1.argValue)(args, '--title'))}`);
     console.log(`Status: ${bundle.status?.state}`);
     console.log(stagedLlmWorkflowMessage());
+    return 0;
+}
+function cmdRun(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    const needsPrepare = !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'llm_tasks')) || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md'));
+    if (needsPrepare) {
+        const rc = cmdPrepare(args);
+        if (rc !== 0)
+            return rc;
+    }
+    const statuses = workflowArtifactStatuses(analysis);
+    const missing = statuses.filter(row => !row.ready);
+    if (missing.length) {
+        (0, aggregate_1.aggregate)(repo, analysis);
+        console.log(`Cognianalysis product mode: waiting for Codex-authored workflow artifacts.`);
+        printProductNextStep(analysis, statuses);
+        return 0;
+    }
+    const rc = cmdFinalize(args);
+    if (rc === 0)
+        console.log(`Product mode complete. Report: ${reportPathForAnalysis(analysis)}`);
+    return rc;
+}
+function cmdResume(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    if (!utils_1.FS.existsSync(analysis)) {
+        console.log('No existing analysis workspace found; starting a new product-mode run.');
+        return cmdRun(args);
+    }
+    const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+    const statuses = workflowArtifactStatuses(analysis);
+    const rows = productStatusRows(analysis, bundle, statuses);
+    console.log('Detected existing analysis.');
+    for (const row of rows) {
+        if (row.ready)
+            console.log(`Skipping: ✓ ${row.label}`);
+    }
+    const next = rows.find(row => !row.ready);
+    if (next)
+        console.log(`Continuing: → ${next.label}`);
+    else
+        console.log('Continuing: final report is ready; refreshing render/audit artifacts.');
+    return cmdRun(args);
+}
+function cmdOpen(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    if (!utils_1.FS.existsSync(analysis)) {
+        console.log(`No analysis workspace found at ${analysis}`);
+        console.log(`Run ${CLI_NAME} run ${repo}`);
+        return 1;
+    }
+    let report = reportPathForAnalysis(analysis);
+    if (!utils_1.FS.existsSync(report) && utils_1.FS.existsSync(utils_1.Path.join(analysis, 'llm', 'analysis-document.json'))) {
+        const refreshed = renderReportAndRefreshBundle(repo, analysis, (0, utils_1.argValue)(args, '--out') ? utils_1.Path.resolve((0, utils_1.argValue)(args, '--out')) : undefined, (0, utils_1.argValue)(args, '--title'));
+        report = refreshed.report;
+    }
+    if (!utils_1.FS.existsSync(report)) {
+        console.log(`No rendered report found at ${report}`);
+        console.log(`Run ${CLI_NAME} run ${repo}`);
+        return 1;
+    }
+    console.log(`Report: ${report}`);
+    console.log(`Open in browser: file://${report}`);
+    return 0;
+}
+function cmdStatus(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    if (!utils_1.FS.existsSync(analysis)) {
+        printRepositoryStatus(repo, analysis, null, []);
+        return 0;
+    }
+    const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+    const statuses = workflowArtifactStatuses(analysis);
+    printRepositoryStatus(repo, analysis, bundle, statuses);
+    return bundle.final_llm_readiness?.state === 'ready' ? 0 : 1;
+}
+function cmdRepair(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    const needsPrepare = !utils_1.FS.existsSync(analysis)
+        || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'data', 'code-map.json'))
+        || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'llm_tasks'))
+        || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md'))
+        || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'source-tier-task-manifest.json'));
+    if (needsPrepare) {
+        console.log('Repair: rebuilding repository index, task guide and manifests.');
+        const rc = cmdPrepare(args);
+        if (rc !== 0)
+            return rc;
+    }
+    const problems = jsonProblems(analysis);
+    const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+    const statuses = workflowArtifactStatuses(analysis);
+    const missingArtifacts = statuses.filter(row => !row.ready).map(row => ({
+        path: row.path,
+        label: row.label,
+        reason: !row.exists ? 'missing' : !row.valid_json ? 'invalid_json' : 'empty',
+        error: row.error || ''
+    }));
+    const staleOrIncomplete = [
+        ...(bundle.analysis_document_skill_workbench_synthesis?.status && bundle.analysis_document_skill_workbench_synthesis.status !== 'current' && bundle.analysis_document_skill_workbench_synthesis.status !== 'no_executed_skill_workbenches'
+            ? [{ area: 'skill workbench synthesis', status: bundle.analysis_document_skill_workbench_synthesis.status }]
+            : []),
+        ...(bundle.analysis_document_detail_review_synthesis?.status && bundle.analysis_document_detail_review_synthesis.status !== 'current' && bundle.analysis_document_detail_review_synthesis.status !== 'no_executed_detail_reviews'
+            ? [{ area: 'detail review synthesis', status: bundle.analysis_document_detail_review_synthesis.status }]
+            : []),
+        ...(bundle.source_tier_backlog?.complete === false
+            ? [{ area: 'Tier 1 file-card backlog', status: `${bundle.source_tier_backlog.complete_tasks || 0}/${bundle.source_tier_backlog.total_tasks || 0} complete` }]
+            : [])
+    ];
+    const report = {
+        schemaVersion: '1.0',
+        generated_at: new Date().toISOString(),
+        repaired_scaffolding: needsPrepare,
+        json_problems: problems,
+        missing_or_invalid_workflow_artifacts: missingArtifacts,
+        stale_or_incomplete_outputs: staleOrIncomplete,
+        next_action: nextProductAction(repo, analysis, bundle, statuses)
+    };
+    (0, utils_1.writeJson)(utils_1.Path.join(analysis, 'data', 'repair-report.json'), report);
+    console.log(`Repair report: ${utils_1.Path.join(analysis, 'data', 'repair-report.json')}`);
+    console.log(`Broken JSON: ${problems.length}`);
+    for (const problem of problems.slice(0, 20))
+        console.log(`BROKEN ${problem.path}: ${problem.error}`);
+    console.log(`Missing or invalid workflow artifacts: ${missingArtifacts.length}`);
+    for (const item of missingArtifacts.slice(0, 10))
+        console.log(`MISSING ${item.path} (${item.reason})`);
+    console.log(`Stale or incomplete outputs: ${staleOrIncomplete.length}`);
+    for (const item of staleOrIncomplete.slice(0, 10))
+        console.log(`REPAIR-NEXT ${item.area}: ${item.status}`);
+    printRepositoryStatus(repo, analysis, bundle, statuses);
+    return problems.length ? 1 : 0;
+}
+function cmdDoctor(args) {
+    const repo = repoArg(args);
+    const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
+    console.log(`Cognianalysis doctor`);
+    console.log(`Repo: ${repo}`);
+    console.log(`Analysis: ${analysis}`);
+    if (!utils_1.FS.existsSync(analysis)) {
+        console.log('Workspace: missing');
+        console.log(`Next action: ${CLI_NAME} run ${repo}`);
+        return 0;
+    }
+    console.log(`Workspace: present`);
+    console.log(`Task guide: ${utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md')) ? 'present' : 'missing'} · ${utils_1.Path.join(analysis, 'TASK.md')}`);
+    const statuses = workflowArtifactStatuses(analysis);
+    for (const row of statuses) {
+        const state = row.ready ? 'ready' : row.exists ? (row.valid_json ? 'empty' : 'invalid_json') : 'missing';
+        console.log(`Artifact: ${row.path} · ${state}`);
+    }
+    const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+    const invalid = (bundle.evidence_index || []).filter((e) => e.valid === false);
+    const readiness = (0, readiness_1.computeFinalLlmReadiness)(bundle);
+    const lint = bundle.analysis_document_report_lint || {};
+    const executive = bundle.analysis_document_executive_decision_layer || {};
+    const consistency = bundle.analysis_document_consistency_review || {};
+    const evidenceStrength = bundle.analysis_document_evidence_strength || {};
+    const semanticLineage = bundle.analysis_document_semantic_lineage || {};
+    const openQuestions = bundle.analysis_document_open_questions || {};
+    const externalFindings = bundle.external_findings_contract || {};
+    const runProvenance = bundle.analysis_run_provenance || {};
+    const dependencyGraph = bundle.artifact_dependency_graph || {};
+    const staleness = bundle.analysis_staleness || {};
+    console.log(`Status: ${bundle.status?.state || 'unknown'}`);
+    console.log(`Analysis scope: ${bundle.analysis_scope?.mode || 'unknown'} · selected=${bundle.analysis_scope?.selected_files ?? 'unknown'} · deferred=${bundle.analysis_scope?.deferred_files ?? 'unknown'}`);
+    console.log(`Analysis freshness: ${staleness.stale ? 'stale' : 'current'} · analysis=${staleness.analysis_commit || 'unknown'} · current=${staleness.current_commit || 'unknown'}`);
+    console.log(`Report lint: ${lint.complete ? 'passed' : 'partial'} · ${(lint.missing || []).slice(0, 8).join(', ') || 'no structural gaps'}`);
+    console.log(`Executive decision layer: ${executive.complete ? 'complete' : 'partial'} · ${(executive.missing || []).slice(0, 8).join(', ') || 'ready'}`);
+    console.log(`Consistency review: ${consistency.complete ? 'complete' : 'partial'} · contradictions=${consistency.contradictions_found ?? 'unknown'}`);
+    console.log(`Evidence strength: ${evidenceStrength.complete ? 'complete' : 'partial'} · weak=${(evidenceStrength.weak_evidence_items || []).length || 0} · missing-confidence=${(evidenceStrength.missing_confidence || []).length || 0}`);
+    console.log(`Semantic lineage: ${semanticLineage.complete ? 'complete' : 'partial'} · claims=${semanticLineage.complete_claim_count || 0}/${semanticLineage.claim_count || 0}`);
+    console.log(`Analysis run provenance: ${runProvenance.complete ? 'complete' : 'partial'} · run=${runProvenance.analysis_run_id || 'unknown'} · artifacts=${runProvenance.artifact_count || 0}`);
+    console.log(`Artifact dependency graph: ${dependencyGraph.complete ? 'complete' : 'partial'} · nodes=${dependencyGraph.node_count || 0} · stale=${(dependencyGraph.stale_nodes || []).length || 0}`);
+    console.log(`External findings: ${externalFindings.complete ? 'ready' : 'partial'} · findings=${externalFindings.finding_count || 0} · invalid=${externalFindings.invalid_count || 0}`);
+    console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
+    console.log(`Evidence invalid: ${invalid.length}`);
+    console.log(`Final Codex-authored analysis readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
+    if ((0, utils_1.hasFlag)(args, '--market-proof')) {
+        const marketProof = printMarketProofStatus(analysis);
+        if ((0, utils_1.hasFlag)(args, '--strict') && marketProof.strictReady !== true)
+            return 1;
+    }
     return 0;
 }
 function cmdAggregate(args) {
@@ -144,7 +657,7 @@ function cmdCoverage(args) {
     for (const row of rows) {
         console.log(`${String(row.design_status || 'context').padEnd(8)} ${String(row.output_status || 'not_scored').padEnd(11)} ${row.title}`);
     }
-    console.log(`\n${rows.length} target capabilities are registered as LLM trace context. Target rows are not presence-scored by the CLI; semantic quality and completeness are controlled by the LLM-authored requirements trace and report_quality_review.`);
+    console.log(`\n${rows.length} target capabilities are registered as Codex-authored trace context. Target rows are not presence-scored by the CLI; semantic quality and completeness are controlled by the Codex-authored requirements trace and report_quality_review.`);
     console.log(`Tier 1 file-card coverage: ${tier.tier1_file_cards || 0}/${tier.total_files || 0} files · ${tier.missing_tier1_files || 0} missing · ${tier.invalid_file_cards || 0} invalid · ${tier.coverage_percent || 0}%`);
     console.log(`Tier 1 task backlog: ${backlog.complete_tasks || 0}/${backlog.total_tasks || 0} tasks complete · ${backlog.incomplete_tasks || 0} incomplete · ${backlog.missing_tasks || 0} missing outputs`);
     console.log(`Source inventory accounting: ${sc.accounted_files ?? sc.covered_files ?? 0}/${sc.total_files || 0} files accounted · ${sc.unaccounted_files ?? sc.uncovered_files ?? 0} unaccounted · ${sc.invalid_coverage_items || 0} invalid coverage items · ${sc.inventory_accounting_percent ?? sc.coverage_percent ?? 0}%`);
@@ -172,7 +685,7 @@ function cmdTierStatus(args) {
     const backlog = (0, sourceTiers_1.sourceTierBacklogArtifact)(analysis);
     (0, utils_1.writeJson)(utils_1.Path.join(analysis, 'data', 'source-tier-backlog.json'), backlog);
     console.log(`Tier 1 execution backlog: ${backlog.complete ? 'complete' : 'partial'}`);
-    console.log(`Tasks: ${backlog.complete_tasks}/${backlog.total_tasks} complete · ${backlog.incomplete_tasks} incomplete · ${backlog.missing_tasks} missing · ${backlog.partial_tasks} partial · ${backlog.invalid_tasks} invalid · ${backlog.invalid_file_card_tasks || 0} invalid file-card batches · ${backlog.blocked_tasks} blocked`);
+    console.log(`Tasks: ${backlog.complete_tasks}/${backlog.total_tasks} complete · ${backlog.incomplete_tasks} incomplete · ${backlog.missing_tasks} missing · ${backlog.partial_tasks} partial · ${backlog.invalid_tasks} invalid · ${backlog.invalid_file_card_tasks || 0} invalid file-card batches · ${backlog.non_complete_review_status_tasks || 0} non-complete review statuses`);
     console.log(`File cards in task outputs: ${backlog.authored_file_cards_in_task_outputs}/${backlog.total_task_files}`);
     console.log(`Backlog artifact: ${utils_1.Path.join(analysis, 'data', 'source-tier-backlog.json')}`);
     for (const row of (backlog.next_tasks || []).slice(0, limit)) {
@@ -236,6 +749,16 @@ function cmdAuditReport(args) {
     const sourceTierBacklog = bundle.source_tier_backlog || {};
     const skillWorkbenchCoverage = bundle.skill_workbench_coverage || {};
     const componentCoverage = bundle.analysis_document_component_coverage || {};
+    const reportLint = bundle.analysis_document_report_lint || {};
+    const executiveDecisionLayer = bundle.analysis_document_executive_decision_layer || {};
+    const consistencyReview = bundle.analysis_document_consistency_review || {};
+    const evidenceStrength = bundle.analysis_document_evidence_strength || {};
+    const semanticLineage = bundle.analysis_document_semantic_lineage || {};
+    const openQuestions = bundle.analysis_document_open_questions || {};
+    const externalFindings = bundle.external_findings_contract || {};
+    const runProvenance = bundle.analysis_run_provenance || {};
+    const dependencyGraph = bundle.artifact_dependency_graph || {};
+    const staleness = bundle.analysis_staleness || {};
     const qualityReview = bundle.analysis_document_quality_review || {};
     const requirementsTraceContract = bundle.analysis_document_requirements_trace_contract || bundle.analysis_document_goal_coverage || {};
     const goalTraceAlignment = bundle.analysis_goal_trace_alignment || {};
@@ -243,35 +766,59 @@ function cmdAuditReport(args) {
     const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
     const failures = [];
     if (bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact !== true || bundle.llm_analysis_strategy?.strategy_present !== true)
-        failures.push('missing required LLM analysis strategy artifact: llm/analysis-strategy.json');
+        failures.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
     if (bundle.report_mode?.llm_authored !== true)
-        failures.push('visible report is not LLM-authored');
+        failures.push('visible report is not Codex-authored');
     if (prerequisiteCoverage.complete !== true)
         failures.push(`final synthesis prerequisites incomplete: ${(prerequisiteCoverage.missing_outputs || []).join(', ') || 'unknown'}`);
     if (bundle.report_mode?.final_after_detail_reviews !== true)
         failures.push('final report missing synthesis_stage=final_after_detail_reviews');
     if (componentCoverage.complete !== true)
         failures.push(`analysis document component contract incomplete: ${(componentCoverage.missing || []).join(', ') || 'unknown'}`);
+    if (reportLint.complete !== true)
+        failures.push(`analysis document report lint incomplete: ${(reportLint.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (executiveDecisionLayer.complete !== true)
+        failures.push(`executive decision layer incomplete: ${(executiveDecisionLayer.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (consistencyReview.complete !== true)
+        failures.push(`Codex-authored consistency review incomplete: ${(consistencyReview.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (consistencyReview.complete === true && Number(consistencyReview.contradictions_found || 0) > 0)
+        failures.push(`Codex-authored consistency review found unresolved contradictions: ${consistencyReview.contradictions_found}`);
+    if (evidenceStrength.complete !== true)
+        failures.push(`analysis document evidence strength incomplete: ${(evidenceStrength.missing_confidence || []).concat(evidenceStrength.unsupported_major_claims || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (semanticLineage.complete !== true)
+        failures.push(`analysis document semantic lineage incomplete: ${(semanticLineage.incomplete_claims || []).map((item) => item.claim_id || item).slice(0, 8).join(', ') || 'unknown'}`);
+    if (openQuestions.complete !== true)
+        failures.push(`analysis document open questions incomplete: ${(openQuestions.missing || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (openQuestions.complete === true && Number(openQuestions.blocking_count || 0) > 0)
+        failures.push(`blocking open questions remain: ${openQuestions.blocking_count}`);
+    if (externalFindings.complete !== true)
+        failures.push(`external findings ingestion incomplete: ${(externalFindings.invalid_findings || []).map((item) => item.id || item).slice(0, 8).join(', ') || 'unknown'}`);
+    if (runProvenance.complete !== true)
+        failures.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
+    if (dependencyGraph.complete !== true)
+        failures.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (staleness.stale === true)
+        failures.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
     if (requirementsTraceContract.complete !== true)
-        failures.push(`LLM requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
+        failures.push(`Codex-authored requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (goalTraceAlignment.complete !== true)
-        failures.push(`LLM goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);
+        failures.push(`Codex-authored goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (qualityReview.complete !== true)
-        failures.push(`LLM report quality review artifact incomplete: ${(qualityReview.missing || []).join(', ') || qualityReview.verdict || 'unknown'}`);
+        failures.push(`Codex-authored report quality review artifact incomplete: ${(qualityReview.missing || []).join(', ') || qualityReview.verdict || 'unknown'}`);
     if (qualityReview.complete === true && qualityReview.verdict_is_decision_ready !== true)
-        failures.push(`LLM report quality review verdict is not decision_ready: ${qualityReview.verdict || 'unknown'}`);
+        failures.push(`Codex-authored report quality review verdict is not decision_ready: ${qualityReview.verdict || 'unknown'}`);
     if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact !== true)
-        failures.push('missing required pre-final LLM detail-agent plan artifact: llm/detail-agent-plan.json');
+        failures.push('missing required pre-final Codex-authored detail-agent plan artifact: llm/detail-agent-plan.json');
     if (bundle.report_mode?.final_synthesis_ready !== true)
-        failures.push('final LLM report is not synthesized after completed detail reviews');
+        failures.push('final Codex-authored report is not synthesized after completed detail reviews');
     if (pipelineContract.complete !== true)
-        failures.push(`LLM analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
+        failures.push(`Codex-authored analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (skillCatalogContract.complete !== true)
-        failures.push(`LLM analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
+        failures.push(`Codex-authored analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
     if (sourceTierCoverage.complete !== true)
         failures.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
     if (skillWorkbenchCoverage.complete !== true)
-        failures.push(`LLM-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
+        failures.push(`Codex-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
     if (skillSynthesis.complete !== true)
         failures.push(`skill-workbench synthesis ${skillSynthesis.status || 'not complete'}`);
     if (sourceCoverage.complete !== true)
@@ -284,8 +831,10 @@ function cmdAuditReport(args) {
         failures.push(`detail-review synthesis ${synthesis.status || 'not complete'}`);
     console.log(`Report audit: ${failures.length ? 'failed' : 'passed'}`);
     console.log(`Report: ${report}`);
-    console.log(`Mode: ${bundle.report_mode?.state || 'unknown'} · Target capabilities: ${rows.length} LLM trace context rows · Source inventory: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} · Evidence invalid: ${invalid.length}`);
+    console.log(`Mode: ${bundle.report_mode?.state || 'unknown'} · Target capabilities: ${rows.length} Codex-authored trace context rows · Source inventory: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} · Evidence invalid: ${invalid.length}`);
     console.log(`Analysis strategy: ${bundle.llm_analysis_strategy?.strategy_present ? 'structured' : 'missing'} · ${bundle.llm_analysis_strategy?.planning_source || 'missing_llm_analysis_strategy'}`);
+    console.log(`Analysis scope: ${bundle.analysis_scope?.mode || 'unknown'} · selected=${bundle.analysis_scope?.selected_files ?? 'unknown'} · deferred=${bundle.analysis_scope?.deferred_files ?? 'unknown'} · confidence impact=${bundle.analysis_scope?.confidence_impact || 'unknown'}`);
+    console.log(`Analysis freshness: ${staleness.stale ? 'stale' : 'current'} · analysis=${staleness.analysis_commit || 'unknown'} · current=${staleness.current_commit || 'unknown'}`);
     console.log(`Tier 1 file cards: ${sourceTierCoverage.complete ? 'complete' : 'partial'} ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} · ${sourceTierCoverage.missing_tier1_files || 0} missing · ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
     console.log(`Tier 1 task backlog: ${sourceTierBacklog.complete_tasks || 0}/${sourceTierBacklog.total_tasks || 0} complete · ${sourceTierBacklog.incomplete_tasks || 0} incomplete · ${sourceTierBacklog.missing_tasks || 0} missing outputs`);
     console.log(`Detail review execution: ${detailCoverage.status || 'unknown'} ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed · ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
@@ -296,8 +845,17 @@ function cmdAuditReport(args) {
     console.log(`Analysis skill catalog: ${skillCatalogContract.complete ? 'complete' : 'partial'} · ${skillCatalogContract.skill_count || 0}/${skillCatalogContract.required_skill_count || 0} skills`);
     console.log(`Skill workbenches: ${skillWorkbenchCoverage.complete ? 'complete' : 'partial'} · ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed`);
     console.log(`Component contract: ${componentCoverage.complete ? 'complete' : 'partial'} · ${componentCoverage.missing?.length || 0} missing`);
-    console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · LLM statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
-    console.log(`Goal trace references: ${goalTraceAlignment.complete ? 'explicit' : 'partial'} · ${(goalTraceAlignment.referenced_goal_refs || []).length}/${(goalTraceAlignment.expected_goal_refs || []).length} goal refs linked by LLM trace`);
+    console.log(`Report quality lint: ${reportLint.complete ? 'passed' : 'partial'} · ${(reportLint.missing || []).length} gaps`);
+    console.log(`Executive decision layer: ${executiveDecisionLayer.complete ? 'complete' : 'partial'} · ${(executiveDecisionLayer.missing || []).length} gaps`);
+    console.log(`Consistency review: ${consistencyReview.complete ? 'complete' : 'partial'} · contradictions=${consistencyReview.contradictions_found ?? 'unknown'}`);
+    console.log(`Evidence strength: ${evidenceStrength.complete ? 'complete' : 'partial'} · weak=${(evidenceStrength.weak_evidence_items || []).length || 0} · missing-confidence=${(evidenceStrength.missing_confidence || []).length || 0}`);
+    console.log(`Semantic lineage: ${semanticLineage.complete ? 'complete' : 'partial'} · claims=${semanticLineage.complete_claim_count || 0}/${semanticLineage.claim_count || 0}`);
+    console.log(`Analysis run provenance: ${runProvenance.complete ? 'complete' : 'partial'} · run=${runProvenance.analysis_run_id || 'unknown'} · artifacts=${runProvenance.artifact_count || 0}`);
+    console.log(`Artifact dependency graph: ${dependencyGraph.complete ? 'complete' : 'partial'} · nodes=${dependencyGraph.node_count || 0} · stale=${(dependencyGraph.stale_nodes || []).length || 0}`);
+    console.log(`External findings: ${externalFindings.complete ? 'ready' : 'partial'} · findings=${externalFindings.finding_count || 0} · invalid=${externalFindings.invalid_count || 0}`);
+    console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
+    console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · Codex statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
+    console.log(`Goal trace references: ${goalTraceAlignment.complete ? 'explicit' : 'partial'} · ${(goalTraceAlignment.referenced_goal_refs || []).length}/${(goalTraceAlignment.expected_goal_refs || []).length} goal refs linked by Codex-authored trace`);
     console.log(`Report quality review: ${qualityReview.complete ? 'structured' : 'partial'} · ${qualityReview.verdict || 'unknown'}`);
     for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8))
         console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
@@ -325,14 +883,18 @@ function cmdFinalize(args) {
     const uncovered = sourceCoverage.uncovered || [];
     const readiness = (0, readiness_1.computeFinalLlmReadiness)(bundle);
     const readinessFailures = readiness.failures;
+    const openQuestions = bundle.analysis_document_open_questions || {};
     console.log(`Finalized analysis workspace: ${analysis}`);
     console.log(`Status: ${bundle.status?.state}`);
-    console.log(`Target capabilities: ${rows.length} registered as LLM trace context · not CLI-scored`);
+    console.log(`Analysis scope: ${bundle.analysis_scope?.mode || 'unknown'} · selected=${bundle.analysis_scope?.selected_files ?? 'unknown'} · deferred=${bundle.analysis_scope?.deferred_files ?? 'unknown'} · confidence impact=${bundle.analysis_scope?.confidence_impact || 'unknown'}`);
+    console.log(`Analysis freshness: ${bundle.analysis_staleness?.stale ? 'stale' : 'current'} · analysis=${bundle.analysis_staleness?.analysis_commit || 'unknown'} · current=${bundle.analysis_staleness?.current_commit || 'unknown'}`);
+    console.log(`Target capabilities: ${rows.length} registered as Codex-authored trace context · not CLI-scored`);
     console.log(`Tier 1 file-card coverage: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} files · ${sourceTierCoverage.missing_tier1_files || 0} missing · ${sourceTierCoverage.invalid_file_cards || 0} invalid · ${sourceTierCoverage.coverage_percent || 0}%`);
     console.log(`Tier 1 task backlog: ${sourceTierBacklog.complete_tasks || 0}/${sourceTierBacklog.total_tasks || 0} complete · ${sourceTierBacklog.incomplete_tasks || 0} incomplete · ${sourceTierBacklog.missing_tasks || 0} missing outputs`);
     console.log(`Source inventory accounting: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} files accounted · ${sourceCoverage.unaccounted_files ?? sourceCoverage.uncovered_files ?? 0} unaccounted · ${sourceCoverage.invalid_coverage_items || 0} invalid coverage items · ${sourceCoverage.inventory_accounting_percent ?? sourceCoverage.coverage_percent ?? 0}%`);
     console.log(`Evidence: ${(bundle.evidence_index || []).length} total · ${invalid.length} invalid`);
-    console.log(`Final LLM readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
+    console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
+    console.log(`Final Codex-authored analysis readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
     if (report)
         console.log(`Report: ${report}`);
     for (const e of invalid.slice(0, 30))
@@ -344,7 +906,7 @@ function cmdFinalize(args) {
     for (const item of (sourceCoverage.invalid_coverage_item_examples || []).slice(0, 30))
         console.log(`INVALID-COVERAGE ${item.kind || 'coverage'} ${item.path || JSON.stringify(item.item) || ''} ${item.reason || ''}`);
     for (const failure of readinessFailures.slice(0, 20))
-        console.log(`LLM-READINESS ${failure}`);
+        console.log(`CODEX-READINESS ${failure}`);
     if (invalid.length && !(0, utils_1.hasFlag)(args, '--allow-invalid'))
         return 1;
     if (bundle.status?.state === 'llm_extracted' && sourceCoverage.complete !== true && !(0, utils_1.hasFlag)(args, '--allow-partial'))
@@ -392,7 +954,7 @@ function harnessBody(harness, agentsText) {
 
 This file connects ${harness} to the same Cognianalysis workflow used by other agent harnesses.
 
-Use the rules below as the operational contract. The CLI prepares context and validates artifacts; the agent harness/LLM authors the semantic extraction JSON and final report.
+Use the rules below as the operational contract. The CLI prepares context and validates artifacts; Codex, as the active in-session LLM, authors the semantic extraction JSON and final report. Do not use a direct LLM API runner for that work.
 
 ${agentsText.trim()}
 `;
@@ -488,7 +1050,7 @@ function cmdPortfolio(args) {
         }
         const analysis = utils_1.Path.join(out, 'repos', utils_1.Path.basename(repo));
         try {
-            const codeMap = (0, repoMap_1.buildRepoMap)(repo, { capsuleLimit: (0, utils_1.numericArg)(args, '--capsules', 44), maxFileSize: (0, utils_1.numericArg)(args, '--max-file-size', 1250000) });
+            const codeMap = scopedCodeMap((0, repoMap_1.buildRepoMap)(repo, { capsuleLimit: (0, utils_1.numericArg)(args, '--capsules', 44), maxFileSize: (0, utils_1.numericArg)(args, '--max-file-size', 1250000) }), args);
             (0, aggregate_1.prepareAnalysis)(repo, analysis, codeMap);
             (0, tasks_1.writeLlmTasks)(analysis, codeMap);
             const bundle = (0, aggregate_1.aggregate)(repo, analysis);
@@ -526,8 +1088,20 @@ async function main(argv = process.argv.slice(2)) {
             console.log(VERSION);
             return 0;
         }
-        if (command === 'prepare')
+        if (command === 'init' || command === 'prepare')
             return cmdPrepare(args);
+        if (command === 'run')
+            return cmdRun(args);
+        if (command === 'resume')
+            return cmdResume(args);
+        if (command === 'status')
+            return cmdStatus(args);
+        if (command === 'repair')
+            return cmdRepair(args);
+        if (command === 'open')
+            return cmdOpen(args);
+        if (command === 'doctor')
+            return cmdDoctor(args);
         if (command === 'analyze')
             return cmdAnalyze(args);
         if (command === 'finalize' || command === 'finish' || command === 'report')

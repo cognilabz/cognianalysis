@@ -66,14 +66,48 @@ rmSync(join(demo, '.analysis'), { recursive: true, force: true });
 run(['prepare', demo]);
 run(['finalize', demo]);
 run(['audit-report', demo]);
+const runOutput = run(['run', demo], { capture: true }).stdout || '';
+assert(runOutput.includes('Product mode complete.'), 'Product-mode run must finalize a ready analysis workspace');
+const openOutput = run(['open', demo], { capture: true }).stdout || '';
+assert(openOutput.includes('report/index.html'), 'open command must print the rendered report path');
+const statusOutput = run(['status', demo], { capture: true }).stdout || '';
+assert(statusOutput.includes('Repository Analysis Status'), 'status command must expose product-language status');
+assert(statusOutput.includes('Analysis scope declared'), 'status command must include declared analysis scope');
+assert(statusOutput.includes('Analysis matches current commit'), 'status command must include current-commit freshness');
+assert(statusOutput.includes('Executive decision layer complete'), 'status command must include executive decision layer state');
+assert(statusOutput.includes('Consistency review complete'), 'status command must include consistency review state');
+assert(statusOutput.includes('Open questions structured'), 'status command must include structured open-question state');
+assert(statusOutput.includes('Next action:'), 'status command must print a next action');
+const repairOutput = run(['repair', demo], { capture: true }).stdout || '';
+assert(repairOutput.includes('Repair report:'), 'repair command must write a repair report');
+assert(repairOutput.includes('Broken JSON: 0'), 'repair command must report broken JSON count');
+const resumeOutput = run(['resume', demo], { capture: true }).stdout || '';
+assert(resumeOutput.includes('Detected existing analysis.'), 'resume command must detect an existing analysis');
+assert(resumeOutput.includes('Skipping: ✓ Repository indexed'), 'resume command must print completed product stages');
+const doctorOutput = run(['doctor', demo], { capture: true }).stdout || '';
+assert(doctorOutput.includes('Report lint:'), 'doctor command must expose report lint state');
+assert(doctorOutput.includes('Analysis scope:'), 'doctor command must expose scope state');
+assert(doctorOutput.includes('Analysis freshness:'), 'doctor command must expose staleness state');
+assert(doctorOutput.includes('Executive decision layer:'), 'doctor command must expose executive decision layer state');
+assert(doctorOutput.includes('Consistency review:'), 'doctor command must expose consistency review state');
+assert(doctorOutput.includes('Evidence strength:'), 'doctor command must expose evidence-strength state');
+assert(doctorOutput.includes('Open questions:'), 'doctor command must expose open-question state');
+const doctorMarketOutput = run(['doctor', demo, '--market-proof'], { capture: true }).stdout || '';
+assert(doctorMarketOutput.includes('Market proof:'), 'doctor --market-proof must expose benchmark proof state');
+const doctorMarketStrict = run(['doctor', demo, '--market-proof', '--strict'], { capture: true, expectFailure: true });
+const doctorMarketStrictOutput = `${doctorMarketStrict.stdout || ''}\n${doctorMarketStrict.stderr || ''}`;
+assert(doctorMarketStrictOutput.includes('Strict market proof: not_ready'), 'doctor --market-proof --strict must fail until multi-repo/baseline proof exists');
+assert(doctorMarketStrictOutput.includes('STRICT-MISSING'), 'strict market proof must explain missing proof dimensions');
 const auditOutput = run(['audit-report', demo], { capture: true }).stdout || '';
 assert(auditOutput.includes('Source inventory:'), 'Audit output must use source inventory accounting wording');
+assert(auditOutput.includes('Report quality lint: passed'), 'Audit output must expose deterministic report quality lint');
+assert(auditOutput.includes('Open questions: structured'), 'Audit output must expose structured open-question state');
 assert(!auditOutput.includes('Source coverage:'), 'Audit output must not expose source coverage as a visible verdict label');
 const coverageOutput = run(['coverage', demo], { capture: true }).stdout || '';
 assert(coverageOutput.includes('Source inventory accounting:'), 'Coverage output must expose source inventory accounting wording');
 assert(coverageOutput.includes('Tier 1 task backlog:'), 'Coverage output must expose Tier 1 task backlog wording');
 assert(!coverageOutput.includes('Source coverage:'), 'Coverage output must not expose source coverage as a visible verdict label');
-assert(coverageOutput.includes('target capabilities are registered as LLM trace context'), 'Coverage output must describe target rows as unscored LLM trace context');
+assert(coverageOutput.includes('target capabilities are registered as Codex-authored trace context'), 'Coverage output must describe target rows as unscored Codex-authored trace context');
 assert(!coverageOutput.includes('tracked linked'), 'Coverage output must not describe target rows as linked/present artifacts');
 assert(!coverageOutput.includes('covered present'), 'Coverage output must not use covered as the target design status');
 assert(!coverageOutput.includes('target capability rows are present'), 'Coverage output must not sound like a semantic all-present verdict');
@@ -81,6 +115,8 @@ assert(!coverageOutput.includes('target capability rows are present'), 'Coverage
 const bundlePath = join(demo, '.analysis', 'data', 'bundle.json');
 const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
 const demoHtml = readFileSync(join(demo, '.analysis', 'report', 'index.html'), 'utf8');
+assert(demoHtml.includes('class="evidence-quick"'), 'Rendered report must expose visible evidence navigation chips');
+assert(demoHtml.includes('data-evidence-target='), 'Rendered report evidence chips must jump to detailed evidence rows');
 const demoCodeMap = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'code-map.json'), 'utf8'));
 const demoSourceFamilyInventory = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'source-family-inventory.json'), 'utf8'));
 const demoGoalContract = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-goal-contract.json'), 'utf8'));
@@ -89,19 +125,51 @@ const demoComponentLibrary = JSON.parse(readFileSync(join(demo, '.analysis', 'da
 const demoSourceTierModel = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'source-tier-model.json'), 'utf8'));
 const demoSourceTierBacklog = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'source-tier-backlog.json'), 'utf8'));
 const demoSkillCatalog = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-skill-catalog.json'), 'utf8'));
+const demoReportLint = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-report-lint.json'), 'utf8'));
+const demoExecutiveDecisionLayer = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-executive-decision-layer.json'), 'utf8'));
+const demoConsistencyReview = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-consistency-review.json'), 'utf8'));
+const demoEvidenceStrength = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-evidence-strength.json'), 'utf8'));
+const demoSemanticLineage = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-semantic-lineage.json'), 'utf8'));
+const demoOpenQuestions = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-document-open-questions.json'), 'utf8'));
+const demoExternalFindings = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'external-findings.json'), 'utf8'));
+const demoAnalysisRun = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-run.json'), 'utf8'));
+const demoAnalysisRunProvenance = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-run-provenance.json'), 'utf8'));
+const demoArtifactDependencyGraph = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'artifact-dependency-graph.json'), 'utf8'));
+const demoAnalysisScope = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-scope.json'), 'utf8'));
+const demoAnalysisStaleness = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'analysis-staleness.json'), 'utf8'));
+const demoRepairReport = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'repair-report.json'), 'utf8'));
 const demoPipeline = JSON.parse(readFileSync(join(demo, '.analysis', 'analysis-pipeline.json'), 'utf8'));
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const demoTaskManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'task-manifest.json'), 'utf8'));
 const demoCapabilityTemplateManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'capability-template-manifest.json'), 'utf8'));
 const instructions = readFileSync(join(demo, '.analysis', 'llm_instructions.md'), 'utf8');
+const singleTask = readFileSync(join(demo, '.analysis', 'TASK.md'), 'utf8');
 const finalReportTask = readFileSync(join(demo, '.analysis', 'llm_tasks', '12-analysis-document.md'), 'utf8');
 const strategyTask = readFileSync(join(demo, '.analysis', 'llm_tasks', '00-analysis-strategy.md'), 'utf8');
 const rootAgents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
 const resourceAgents = readFileSync(join(root, 'resources', 'AGENTS.md'), 'utf8');
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
 const helpOutput = run(['--help'], { capture: true }).stdout || '';
+assert(helpOutput.includes('run [repo]'), 'CLI help must expose product-mode run');
+assert(helpOutput.includes('resume [repo]'), 'CLI help must expose product-mode resume');
+assert(helpOutput.includes('--scope complete|critical-path|representative'), 'CLI help must expose deliberate scope modes');
+assert(helpOutput.includes('--scope-files N'), 'CLI help must expose non-complete scope sizing');
+assert(helpOutput.includes('status [repo]'), 'CLI help must expose product-mode status');
+assert(helpOutput.includes('repair [repo]'), 'CLI help must expose product-mode repair');
+assert(helpOutput.includes('open [repo]'), 'CLI help must expose product-mode open');
+assert(helpOutput.includes('doctor [repo]'), 'CLI help must expose product-mode doctor');
+assert(helpOutput.includes('init [repo]'), 'CLI help must expose product-mode init alias');
 assert(helpOutput.includes('init-harness'), 'CLI help must expose the generic harness installer');
 assert(helpOutput.includes('init-codex'), 'CLI help must keep the Codex compatibility installer');
+const scopedTarget = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-scope-'));
+const scopedRepo = join(scopedTarget, 'demo-repo');
+cpSync(demo, scopedRepo, { recursive: true });
+rmSync(join(scopedRepo, '.analysis'), { recursive: true, force: true });
+run(['prepare', scopedRepo, '--scope', 'representative', '--scope-files', '5']);
+const scopedAnalysisScope = JSON.parse(readFileSync(join(scopedRepo, '.analysis', 'data', 'analysis-scope.json'), 'utf8'));
+assert(scopedAnalysisScope.mode === 'representative', `Scoped prepare must persist representative mode, got ${scopedAnalysisScope.mode}`);
+assert(scopedAnalysisScope.selected_files === 5, `Scoped prepare must select requested file count, got ${scopedAnalysisScope.selected_files}`);
+assert(scopedAnalysisScope.deferred_files > 0, 'Scoped prepare must expose deferred files');
 const tempHarnessRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-harness-install-'));
 try {
   const harnessTarget = join(tempHarnessRoot, 'target');
@@ -120,7 +188,7 @@ try {
   for (const file of expectedHarnessFiles) {
     assert(existsSync(join(harnessTarget, file)), `init-harness --harness all must write ${file}`);
   }
-  assert(readFileSync(join(harnessTarget, 'CLAUDE.md'), 'utf8').includes('agent harness/LLM performs the semantic extraction'), 'Claude adapter must use harness-neutral extraction wording');
+  assert(readFileSync(join(harnessTarget, 'CLAUDE.md'), 'utf8').includes('Codex, as the active in-session LLM, performs the semantic extraction'), 'Claude adapter must forbid direct API/provider extraction wording');
   assert(readFileSync(join(harnessTarget, '.cursor/rules/cognianalysis/RULE.md'), 'utf8').includes('alwaysApply: true'), 'Cursor adapter must be an always-on project rule');
   assert(readFileSync(join(harnessTarget, '.devin/rules/cognianalysis.md'), 'utf8').includes('trigger: always_on'), 'Windsurf adapter must be an always-on workspace rule');
   assert(readFileSync(join(harnessTarget, '.github/copilot-instructions.md'), 'utf8').includes('Cognianalysis for GitHub Copilot'), 'Copilot adapter must be repository instructions');
@@ -157,7 +225,7 @@ assert(demoWholeRepoRow?.output_details?.some(row => row.key === 'assessment.rep
 const demoTargetRows = bundle.target_artifact_contract_coverage || bundle.target_coverage || [];
 assert(demoTargetRows.length > 0, 'Demo target capability context rows must be present');
 assert(demoTargetRows.every(row => row.coverage_kind === 'goal_contract_context'), 'Every target row must be goal context, not semantic coverage');
-assert(demoTargetRows.every(row => row.semantic_verdict_authority === 'llm'), 'Every target row must assign semantic verdict authority to the LLM');
+assert(demoTargetRows.every(row => row.semantic_verdict_authority === 'codex_llm'), 'Every target row must assign semantic verdict authority to Codex as the in-session LLM');
 assert(demoTargetRows.every(row => row.design_status === 'context'), 'Every target row must use context design status instead of covered/tracked');
 assert(demoTargetRows.every(row => row.output_status === 'not_scored'), 'No target row may be deterministically present/partial/missing scored');
 assert(demoTargetRows.every(row => row.output_status_meaning?.includes('Not scored by the CLI')), 'Every target row must clarify output status is not CLI-scored');
@@ -183,6 +251,10 @@ assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_f
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
+for (const command of ['run', 'resume', 'status', 'repair', 'open', 'doctor', 'init']) {
+  assert(bundle.tooling?.cli_commands?.includes(command), `Demo tooling contract must expose product-mode command: ${command}`);
+}
+assert(bundle.tooling?.product_mode_available === true, 'Demo tooling contract must expose product mode availability');
 assert(bundle.skill_workbench_coverage?.complete === true, `Demo LLM-planned skill workbench coverage incomplete: ${bundle.skill_workbench_coverage?.status || 'unknown'}`);
 assert(bundle.skill_workbench_coverage?.executed_count === 3, 'Demo must execute all three LLM-planned skill workbenches from analysis_strategy.skill_application_plan');
 assert(bundle.analysis_document_skill_workbench_synthesis?.complete === true, `Demo skill-workbench synthesis incomplete: ${bundle.analysis_document_skill_workbench_synthesis?.status || 'unknown'}`);
@@ -195,13 +267,24 @@ for (const [name, text] of [['AGENTS.md', rootAgents], ['resources/AGENTS.md', r
   assert(text.includes('00-analysis-strategy.md') || text.includes('analysis-strategy.json'), `${name} must document the LLM analysis strategy step`);
   assert(text.includes('11-detail-agent-plan.md'), `${name} must document the LLM detail-agent plan step`);
   assert(text.includes('12-analysis-document.md'), `${name} must document final report authoring after detail reviews`);
+  assert(text.includes('cognianalysis resume .') || text.includes('`cognianalysis resume .`'), `${name} must document product-mode resume`);
+  assert(text.includes('--scope complete') && text.includes('critical-path') && text.includes('representative'), `${name} must document deliberate scope modes`);
+  assert(text.includes('analysis-staleness') || text.includes('freshness'), `${name} must document stale-analysis freshness checks`);
+  assert(text.includes('analysis_document.open_questions'), `${name} must document structured open questions`);
+  assert(text.includes('evidence') && (text.includes('path:line') || text.includes('file:line')), `${name} must document visible evidence references`);
 }
 assert(strategyTask.includes('pre_source_tier_pre_overview'), 'Generated strategy task must require the pre-source-tier LLM strategy stage');
 assert(finalReportTask.includes('analysis-strategy.json'), 'Final report task must require reading the LLM analysis strategy');
 assert(demoTaskManifest.tasks?.every(task => typeof task.id === 'string' && task.id.length > 0), 'Demo task manifest must expose stable task ids');
+assert(demoTaskManifest.single_task_file === 'TASK.md', 'Demo task manifest must expose the single product-mode task guide');
 assert(demoTaskManifest.tasks?.length === 3, 'Demo task manifest must contain only required workflow tasks');
 assert(demoTaskManifest.tasks?.every(task => task.task_kind === 'workflow_task' && task.required_for_final === true), 'Required task manifest entries must be workflow gates');
 assert(demoTaskManifest.capability_templates?.length === 10, 'Demo task manifest must expose optional capability templates separately');
+assert(singleTask.includes('Product-Mode Loop'), 'Generated TASK.md must expose the product-mode loop');
+assert(singleTask.includes('cognianalysis run .'), 'Generated TASK.md must make run the normal entrypoint');
+assert(singleTask.includes('cognianalysis resume .'), 'Generated TASK.md must expose resume for interrupted runs');
+assert(singleTask.includes('--scope critical-path --scope-files N'), 'Generated TASK.md must expose scoped large-repo runs');
+assert(singleTask.includes('analysis_document.open_questions'), 'Generated TASK.md must expose the structured open-question contract');
 assert(demoCapabilityTemplateManifest.mode === 'optional_llm_capability_templates', 'Capability template manifest must mark templates as optional');
 assert(demoCapabilityTemplateManifest.templates?.every(template => template.required_for_final === false), 'Capability templates must not be final-readiness gates');
 assert(!existsSync(join(demo, '.analysis', 'llm_tasks', '01-core-assessment.md')), 'Generic capability templates must not be generated as required llm_tasks');
@@ -211,6 +294,10 @@ assert(!readFileSync(join(root, 'src', 'tasks.ts'), 'utf8').includes('schemaForT
 assert(!readFileSync(join(root, 'src', 'tasks.ts'), 'utf8').includes('title.includes'), 'Task routing must not use title.includes string matching');
 assert(packageJson.name === 'cognianalysis', 'Package name must be cognianalysis');
 assert(packageJson.bin?.cognianalysis === 'dist/cli.js', 'Package must expose the cognianalysis CLI');
+assert(packageJson.scripts?.['verify:golden'] === 'npm run build && node scripts/verify-golden.mjs', 'Package must expose the golden benchmark verifier');
+assert(packageJson.scripts?.['verify:baseline'] === 'npm run build && node scripts/verify-baseline.mjs', 'Package must expose the baseline benchmark verifier');
+assert(packageJson.files?.includes('benchmarks'), 'Package must publish benchmark fixtures');
+assert(packageJson.files?.includes('scripts'), 'Package must publish benchmark verification scripts');
 assert(!Object.prototype.hasOwnProperty.call(packageJson.bin || {}, 'cba'), 'Package must not expose the legacy cba CLI alias');
 assert(!packageJson.files?.includes('examples'), 'Package must not publish generated demo .analysis artifacts through the broad examples folder');
 assert(packageJson.files?.includes('examples/demo-repo/.analysis-seed'), 'Package must publish reusable demo seed data');
@@ -256,7 +343,7 @@ assert(bundle.analysis_skill_catalog_contract?.complete === true, `Demo analysis
 assert(bundle.analysis_skill_catalog?.catalog_kind === 'llm_analysis_skill_catalog', 'Demo bundle must expose the LLM analysis skill catalog');
 assert(bundle.semantic_authority?.analysis_skill_catalog_contract_complete === true, 'Demo semantic authority must expose the completed analysis skill catalog contract');
 assert(demoSkillCatalog?.catalog_kind === 'llm_analysis_skill_catalog', 'Demo must write analysis-skill-catalog.json');
-assert(demoSkillCatalog?.semantic_authority === 'llm', 'Demo analysis skill catalog must give semantic authority to the LLM');
+assert(demoSkillCatalog?.semantic_authority === 'codex_llm', 'Demo analysis skill catalog must give semantic authority to Codex as the in-session LLM');
 assert(demoSkillCatalog?.deterministic_authority === 'catalog_presence_and_shape_only', 'Demo analysis skill catalog deterministic authority must be shape-only');
 assert(demoSkillCatalog?.skills?.some(skill => skill.id === 'whole_repository_understanding'), 'Demo analysis skill catalog must include whole-repository understanding');
 assert(demoSkillCatalog?.skills?.some(skill => skill.id === 'final_report_authoring'), 'Demo analysis skill catalog must include final report authoring');
@@ -264,6 +351,43 @@ assert(demoPipeline?.pipeline_kind === 'llm_driven_overview_detail_final_report'
 assert(demoPipeline.stages?.some(stage => stage.id === 'llm_final_analysis_document' && stage.semantic_authority === true), 'Demo pipeline final report stage must be LLM-authoritative');
 assert(demoPipeline.stages?.some(stage => stage.id === 'deterministic_finalization_and_rendering' && stage.semantic_authority === false), 'Demo pipeline finalization stage must be deterministic contract only');
 assert(bundle.analysis_document_quality_review?.complete === true, `Demo LLM report quality review incomplete: ${(bundle.analysis_document_quality_review?.missing || []).join(', ')}`);
+assert(bundle.analysis_document_report_lint?.complete === true, `Demo report lint incomplete: ${(bundle.analysis_document_report_lint?.missing || []).join(', ')}`);
+assert(demoReportLint.complete === true, `Demo report lint artifact incomplete: ${(demoReportLint.missing || []).join(', ')}`);
+assert(demoReportLint.required_quality_checks?.length === 10, 'Report lint must require all ten management/market quality checks');
+assert(demoReportLint.unsupported_claim_count === 0, 'Demo report lint must expose zero unsupported claims');
+assert((demoReportLint.claim_support_gaps || []).length === 0, 'Demo report lint must not find unsupported structured claims');
+assert(bundle.analysis_document_executive_decision_layer?.complete === true, `Demo executive decision layer incomplete: ${(bundle.analysis_document_executive_decision_layer?.missing || []).join(', ')}`);
+assert(demoExecutiveDecisionLayer.complete === true, `Demo executive decision artifact incomplete: ${(demoExecutiveDecisionLayer.missing || []).join(', ')}`);
+assert(demoExecutiveDecisionLayer.visible_executive_section_present === true, 'Demo must expose a visible executive decision section');
+assert(bundle.analysis_document_consistency_review?.complete === true, `Demo consistency review incomplete: ${(bundle.analysis_document_consistency_review?.missing || []).join(', ')}`);
+assert(demoConsistencyReview.contradictions_found === 0, 'Demo consistency review must expose zero contradictions');
+assert(bundle.analysis_document_evidence_strength?.complete === true, `Demo evidence strength incomplete: ${(bundle.analysis_document_evidence_strength?.missing_confidence || []).join(', ')}`);
+assert(demoEvidenceStrength.item_count > 0, 'Demo evidence strength artifact must score major report claims');
+assert((demoEvidenceStrength.missing_confidence || []).length === 0, 'Demo evidence strength must not find missing confidence');
+assert(bundle.analysis_document_semantic_lineage?.complete === true, `Demo semantic lineage incomplete: ${(bundle.analysis_document_semantic_lineage?.incomplete_claims || []).map(item => item.claim_id || item).join(', ')}`);
+assert(demoSemanticLineage.complete === true, `Demo semantic-lineage artifact incomplete: ${(demoSemanticLineage.incomplete_claims || []).map(item => item.claim_id || item).join(', ')}`);
+assert(demoSemanticLineage.claim_count > 0, 'Demo semantic-lineage artifact must trace major visible claims');
+assert(demoSemanticLineage.lineage?.every(row => row.origin_artifact && row.supporting_artifacts?.length && row.evidence?.length), 'Every demo semantic-lineage row must connect claim, upstream artifacts and evidence');
+assert(bundle.semantic_authority?.semantic_lineage_complete === true, 'Semantic authority must expose completed semantic-lineage contract');
+assert(bundle.analysis_run?.analysis_run_id && bundle.analysis_run.analysis_run_id === demoAnalysisRun.analysis_run_id, 'Bundle and analysis-run artifact must share analysis_run_id');
+assert(demoAnalysisRunProvenance.complete === true, `Demo analysis-run provenance incomplete: ${(demoAnalysisRunProvenance.missing_required_artifacts || []).join(', ')}`);
+assert(demoAnalysisRunProvenance.generated_from_matrix?.some(row => row.path === 'llm/analysis-document.json'), 'Analysis-run provenance must include the final analysis document');
+assert(bundle.semantic_authority?.analysis_run_provenance_complete === true, 'Semantic authority must expose completed analysis-run provenance');
+assert(demoArtifactDependencyGraph.complete === true, `Demo artifact dependency graph incomplete: ${(demoArtifactDependencyGraph.missing_nodes || []).join(', ')}`);
+assert(demoArtifactDependencyGraph.nodes?.some(row => row.id === 'analysis_document' && row.depends_on?.includes('detail_agent_plan')), 'Artifact dependency graph must link final report to detail-agent plan');
+assert(bundle.semantic_authority?.artifact_dependency_graph_complete === true, 'Semantic authority must expose completed artifact dependency graph');
+assert(demoExternalFindings.complete === true, `Demo external findings contract incomplete: ${(demoExternalFindings.invalid_findings || []).map(item => item.id || item).join(', ')}`);
+assert(demoExternalFindings.deterministic_authority === 'external_finding_shape_and_evidence_only', 'External findings contract must remain shape/evidence only');
+assert(bundle.semantic_authority?.external_findings_ingestion_complete === true, 'Semantic authority must expose completed external-findings ingestion contract');
+assert(bundle.analysis_document_open_questions?.complete === true, `Demo bundle open-question contract incomplete: ${(bundle.analysis_document_open_questions?.missing || []).join(', ')}`);
+assert(bundle.analysis_document_open_questions?.blocking_count === 0, 'Demo bundle must expose zero blocking open questions');
+assert(bundle.semantic_authority?.open_questions_complete === true, 'Semantic authority must expose the completed open-question contract');
+assert(demoAnalysisScope.mode === 'complete', `Demo default analysis scope must be complete, got ${demoAnalysisScope.mode}`);
+assert(demoAnalysisStaleness.stale === false, 'Demo analysis staleness artifact must report current analysis');
+assert(demoOpenQuestions.complete === true, `Demo open-question artifact incomplete: ${(demoOpenQuestions.missing || []).join(', ')}`);
+assert(demoOpenQuestions.question_count === 0, 'Demo must explicitly report no top-level open questions');
+assert(demoOpenQuestions.blocking_count === 0, 'Demo must not have blocking open questions');
+assert(demoRepairReport.json_problems?.length === 0, 'Demo repair report must show no broken JSON after repair');
 assert(bundle.analysis_document_quality_review?.partial_requirement_rationale_required === true, 'Demo must require LLM rationale for partial/open trace rows when the final verdict is decision_ready');
 assert(bundle.analysis_document_quality_review?.partial_requirement_rationale_ok === true, 'Demo LLM quality review must include accepted-limitation rationale for every partial/open trace row');
 assert((bundle.analysis_document_quality_review?.partial_requirements_without_rationale || []).length === 0, 'Demo must not have partial/open trace rows without LLM-authored rationale');
@@ -274,6 +398,7 @@ assert(bundle.analysis_document_component_coverage?.contract_summary?.includes('
 assert(demoComponentLibrary?.library_kind === 'analysis_document_component_library', 'Demo must write the report component library artifact');
 assert(demoComponentLibrary?.semantic_authority === false, 'Demo report component library must not be semantic authority');
 assert(demoComponentLibrary?.components?.some(component => component.id === 'flow'), 'Demo report component library must include the flow component');
+assert(demoComponentLibrary?.components?.find(component => component.id === 'open_questions')?.expected_fields?.includes('items[].blocking'), 'Open questions component must expose blocking state');
 assert(demoComponentLibrary?.components?.find(component => component.id === 'narrative')?.expected_fields?.includes('business_need?'), 'Narrative component must expose business-need wording fields');
 assert(demoComponentLibrary?.components?.find(component => component.id === 'narrative')?.expected_fields?.includes('technical_drilldown?'), 'Narrative component must expose technical-drilldown wording fields');
 assert(demoComponentLibrary?.purpose?.includes('Blocks may include labels'), 'Demo component library must expose LLM-authored component labels');
@@ -284,11 +409,16 @@ assert(instructions.includes('Report component library'), 'Generated instruction
 assert(instructions.includes('LLM analysis skill catalog'), 'Generated instructions must expose the LLM analysis skill catalog');
 assert(instructions.includes('Original analysis goal contract'), 'Generated instructions must expose the original analysis goal contract');
 assert(finalReportTask.includes('business need, business use'), 'Generated final-report task must require visible business-need/business-use narrative');
+assert(finalReportTask.includes('analysis_document.open_questions'), 'Generated final-report task must require top-level structured open questions');
+assert(finalReportTask.includes('semantic_lineage'), 'Generated final-report task must require semantic lineage for major claims');
+assert(finalReportTask.includes('analysis-run.json'), 'Generated final-report task must mention analysis-run provenance');
+assert(finalReportTask.includes('external_findings'), 'Generated final-report task must mention external finding ingestion');
+assert(finalReportTask.includes('visible `open_questions` block'), 'Generated final-report task must require visible open questions when uncertainty remains');
 assert(finalReportTask.includes('required_output_shape.management_drilldown'), 'Generated final-report task must require management-drilldown goal refs');
 assert(instructions.includes('tool-positioning-references.json'), 'Generated tasks must point the LLM to the tool-positioning reference artifact');
 assert(demoGoalContract?.contract_kind === 'analysis_goal_context', 'Demo must write analysis-goal-contract.json as goal context');
 assert(demoGoalContract?.deterministic_authority === 'goal_context_only', 'Demo goal contract must be deterministic context only');
-assert(demoGoalContract?.semantic_verdict_authority === 'llm', 'Demo goal contract must give semantic verdict authority to the LLM');
+assert(demoGoalContract?.semantic_verdict_authority === 'codex_llm', 'Demo goal contract must give semantic verdict authority to Codex as the in-session LLM');
 assert(demoGoalContract?.required_levels?.length === 4, 'Demo goal contract must preserve the four requested analysis levels');
 assert(demoGoalContract?.required_output_shape?.management_drilldown, 'Demo goal contract must preserve the management/business drilldown output shape');
 assert(demoGoalContract?.llm_trace_guidance?.includes('required_output_shape.<key>'), 'Demo goal contract must tell the LLM to trace required output shape refs');
@@ -297,24 +427,24 @@ assert(bundle.semantic_authority?.non_authoritative_goal_context_artifacts?.incl
 assert(demoToolPositioningReferences?.reference_kind === 'external_tool_positioning_context', 'Demo must write tool-positioning-references.json');
 assert(demoToolPositioningReferences?.semantic_authority === false, 'Tool positioning references must not be semantic authority');
 assert(demoToolPositioningReferences?.deterministic_authority === 'reference_context_only', 'Tool positioning references must remain reference context only');
-assert(demoToolPositioningReferences?.llm_positioning_rubric?.semantic_authority === 'llm', 'Tool positioning rubric must give repository-specific positioning authority to the LLM');
+assert(demoToolPositioningReferences?.llm_positioning_rubric?.semantic_authority === 'codex_llm', 'Tool positioning rubric must give repository-specific positioning authority to Codex as the in-session LLM');
 assert(demoToolPositioningReferences?.llm_positioning_rubric?.required_judgment_dimensions?.includes('what_this_analysis_can_replace'), 'Tool positioning rubric must require replace/complement/handoff judgment dimensions');
 assert(demoToolPositioningReferences?.references?.some(item => item.examples?.includes('Accenture GenWizard')), 'Tool positioning references must include Accenture GenWizard context');
 assert(demoToolPositioningReferences?.references?.every(item => item.semantic_authority !== true && item.public_reference_url && Array.isArray(item.source_support) && item.source_support.length > 0), 'Every tool positioning reference must include official source support without semantic authority');
 assert(demoToolPositioningReferences?.references?.some(item => item.examples?.includes('Accenture GenWizard') && item.source_support?.some(source => source.source_url?.includes('accenture.com'))), 'Accenture GenWizard positioning must include official source support');
-assert(instructions.includes('Preserve the distinction between official reference facts, repository evidence and LLM-authored judgment'), 'Generated LLM instructions must separate reference facts from repository evidence and LLM judgment');
+assert(instructions.includes('Preserve the distinction between official reference facts, repository evidence and Codex-authored LLM judgment'), 'Generated LLM instructions must separate reference facts from repository evidence and Codex-authored LLM judgment');
 assert(finalReportTask.includes('what can be replaced, what is only complemented and the handoff boundaries'), 'Final report task must require repo-specific replace/complement/handoff positioning');
 assert(bundle.tool_positioning_references?.references?.some(item => item.examples?.includes('CAST Imaging')), 'Bundle must expose official tool-positioning references');
 assert(bundle.semantic_authority?.non_authoritative_navigation_artifacts?.includes('tool-positioning-references.json'), 'Semantic authority must list tool-positioning references as non-authoritative context');
 assert(bundle.source_inventory_accounting?.contract_kind === 'source_inventory_accounting', 'Demo source accounting contract must use the primary source_inventory_accounting key');
-assert(bundle.source_inventory_accounting?.semantic_verdict_authority === 'llm', 'Demo source accounting contract must point semantic verdict authority to the LLM');
+assert(bundle.source_inventory_accounting?.semantic_verdict_authority === 'codex_llm', 'Demo source accounting contract must point semantic verdict authority to Codex as the in-session LLM');
 assert(bundle.source_inventory_accounting?.accounting_status_meaning?.includes('Deferred files') && bundle.source_inventory_accounting?.accounting_status_meaning?.includes('do not count'), 'Demo source accounting contract must clarify deferred files are not completed analysis');
 assert(bundle.source_inventory_accounting?.deterministic_contract_scope?.includes('structured analysis_coverage'), 'Demo source accounting must expose structured analysis_coverage path/reason validation scope');
 assert(bundle.source_inventory_accounting?.invalid_coverage_items === 0, 'Demo source accounting must not contain invalid analysis_coverage items');
 assert(bundle.source_inventory_accounting?.ignored_out_of_scope_coverage_items === 0, 'Demo source accounting must not contain ignored out-of-scope coverage items');
 assert(bundle.source_inventory_accounting?.rules?.some(rule => rule.includes('strings, globs and patterns are invalid')), 'Demo source accounting rules must reject weak coverage entries');
 assert(demoSourceTierModel?.model_kind === 'tiered_whole_codebase_analysis', 'Demo must write the tiered whole-codebase analysis model');
-assert(demoSourceTierModel?.semantic_authority === 'llm', 'Source tier model must keep semantic authority with the LLM');
+assert(demoSourceTierModel?.semantic_authority === 'codex_llm', 'Source tier model must keep semantic authority with Codex as the in-session LLM');
 assert(bundle.source_tier_coverage?.contract_kind === 'tiered_whole_codebase_file_analysis', 'Demo must expose Tier 1 source-file coverage');
 assert(bundle.source_tier_coverage?.complete === true, `Demo Tier 1 file-card coverage incomplete: ${bundle.source_tier_coverage?.tier1_file_cards}/${bundle.source_tier_coverage?.total_files}`);
 assert(bundle.source_tier_coverage?.tier1_file_cards === bundle.source_tier_coverage?.total_files, 'Every included demo file must have a Tier 1 file card');
@@ -356,12 +486,12 @@ assert(demoSourceFamilyInventory?.inventory_partitions?.every(partition => parti
 assert(bundle.source_family_inventory?.artifact_kind === 'navigation_partition_inventory', 'Bundle must expose source-family inventory as navigation partition inventory');
 assert(instructions.includes('The legacy filename does not mean the CLI has authored semantic source families'), 'Generated LLM instructions must warn that source-family inventory is not semantic family authoring');
 assert(finalReportTask.includes('rename, merge, split, reject or defer'), 'Final report task must require the LLM to decide how to treat navigation partitions');
-assert(bundle.semantic_authority?.semantic_decider === 'llm', 'Demo semantic authority must name the LLM as semantic decider');
+assert(bundle.semantic_authority?.semantic_decider === 'codex_llm', 'Demo semantic authority must name Codex as the in-session LLM semantic decider');
 assert(bundle.semantic_authority?.cli_semantic_quality_judge === false, 'Demo CLI must not be marked as semantic quality judge');
 assert(bundle.semantic_authority?.final_verdict_source === 'analysis_document.report_quality_review.verdict', 'Demo final verdict source must be the LLM-authored report quality review');
 assert(bundle.semantic_authority?.goal_trace_reference_contract_complete === true, 'Demo semantic authority must expose completed explicit LLM goal-trace references');
 assert(bundle.semantic_authority?.llm_authored_artifacts?.analysis_document === true, 'Demo semantic authority must see the LLM-authored analysis document');
-assert(bundle.final_llm_readiness?.semantic_verdict_authority === 'llm', 'Demo final readiness must name the LLM as semantic verdict authority');
+assert(bundle.final_llm_readiness?.semantic_verdict_authority === 'codex_llm', 'Demo final readiness must name Codex as the in-session LLM verdict authority');
 assert(bundle.final_llm_readiness?.state === 'ready', `Demo final readiness must be ready, got ${bundle.final_llm_readiness?.state}`);
 assert(bundle.final_llm_readiness?.final_verdict_source === 'analysis_document.report_quality_review.verdict', 'Demo final readiness must use the LLM report-quality verdict source');
 assert(!demoHtml.includes('<strong>Semantic authority</strong>'), 'Visible report must not inject deterministic semantic-authority prose outside the LLM-authored document');
@@ -401,7 +531,7 @@ for (const placeholder of forbiddenRendererPlaceholders) {
 assert(bundle.report_artifacts?.index_html === true && bundle.report_artifacts?.analysis_data_json === true, 'Demo report artifacts must be materialized');
 assert(bundle.report_mode?.final_synthesis_ready === true, 'Demo final report must be final-synthesis ready');
 const mcpFinalize = callMcpTool('finalize', { repo: demo });
-assert(mcpFinalize.final_llm_readiness === 'ready', `MCP finalize must expose ready LLM readiness, got ${mcpFinalize.final_llm_readiness}`);
+assert(mcpFinalize.final_llm_readiness === 'ready', `MCP finalize must expose ready Codex-authored analysis readiness, got ${mcpFinalize.final_llm_readiness}`);
 assert(mcpFinalize.skill_workbench_coverage?.complete === true, 'MCP finalize must expose complete skill workbench coverage');
 assert(mcpFinalize.report_quality_review?.verdict === 'decision_ready', 'MCP finalize must expose the LLM report-quality verdict');
 assert(mcpFinalize.analysis_goal_contract?.contract_kind === 'analysis_goal_context', 'MCP finalize must expose the original goal context');
@@ -414,7 +544,7 @@ assert(mcpAudit.report_audit === 'passed', `MCP audit-report must pass, got ${mc
 assert(mcpAudit.analysis_pipeline_contract?.complete === true, 'MCP audit-report must expose complete analysis pipeline contract');
 assert(mcpAudit.skill_workbench_coverage?.complete === true, 'MCP audit-report must expose complete skill workbench coverage');
 assert(mcpAudit.skill_workbench_synthesis?.complete === true, 'MCP audit-report must expose current skill workbench synthesis');
-assert(mcpAudit.final_llm_readiness?.state === 'ready', 'MCP audit-report must expose ready final LLM readiness');
+assert(mcpAudit.final_llm_readiness?.state === 'ready', 'MCP audit-report must expose ready final Codex-authored analysis readiness');
 
 const tempRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-no-plan-'));
 try {
@@ -426,8 +556,8 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('missing required pre-final LLM detail-agent plan artifact'), 'Missing-plan audit did not fail for the required reason');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Missing-plan audit did not block final synthesis readiness');
+  assert(output.includes('missing required pre-final Codex-authored detail-agent plan artifact'), 'Missing-plan audit did not fail for the required reason');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Missing-plan audit did not block final synthesis readiness');
 } finally {
   rmSync(tempRoot, { recursive: true, force: true });
 }
@@ -460,7 +590,7 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM-planned skill workbench execution incomplete'), 'Missing skill-review audit did not fail the LLM-planned skill workbench contract');
+  assert(output.includes('Codex-planned skill workbench execution incomplete'), 'Missing skill-review audit did not fail the Codex-planned skill workbench contract');
   assert(output.includes('Skill workbenches: partial'), 'Missing skill-review audit did not surface partial skill workbench execution');
 } finally {
   rmSync(tempRootMissingSkillReview, { recursive: true, force: true });
@@ -496,8 +626,8 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM report quality review artifact incomplete'), 'Missing quality-review audit did not fail for the required reason');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Missing quality-review audit did not block final synthesis readiness');
+  assert(output.includes('Codex-authored report quality review artifact incomplete'), 'Missing quality-review audit did not fail for the required reason');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Missing quality-review audit did not block final synthesis readiness');
 } finally {
   rmSync(tempRootMissingQuality, { recursive: true, force: true });
 }
@@ -518,12 +648,12 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM report quality review verdict is not decision_ready: partial'), 'Partial LLM quality verdict did not control final readiness');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Partial LLM quality verdict did not block final synthesis readiness');
+  assert(output.includes('Codex-authored report quality review verdict is not decision_ready: partial'), 'Partial Codex-authored quality verdict did not control final readiness');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Partial Codex-authored quality verdict did not block final synthesis readiness');
   const finalizeNegative = run(['finalize', tempDemo], { capture: true, expectFailure: true });
   const finalizeOutput = `${finalizeNegative.stdout || ''}\n${finalizeNegative.stderr || ''}`;
-  assert(finalizeOutput.includes('Final LLM readiness: partial'), 'Finalize did not surface partial LLM readiness');
-  assert(finalizeOutput.includes('LLM report quality review verdict is not decision_ready: partial'), 'Finalize did not honor the LLM quality verdict');
+  assert(finalizeOutput.includes('Final Codex-authored analysis readiness: partial'), 'Finalize did not surface partial Codex-authored analysis readiness');
+  assert(finalizeOutput.includes('Codex-authored report quality review verdict is not decision_ready: partial'), 'Finalize did not honor the Codex-authored quality verdict');
 } finally {
   rmSync(tempRootPartialQuality, { recursive: true, force: true });
 }
@@ -540,9 +670,9 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM report quality review artifact incomplete'), 'Missing partial rationale audit did not fail the LLM report-quality contract');
+  assert(output.includes('Codex-authored report quality review artifact incomplete'), 'Missing partial rationale audit did not fail the Codex-authored report-quality contract');
   assert(output.includes('partial_requirement_rationale'), 'Missing partial rationale audit did not name the missing LLM rationale');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Missing partial rationale audit did not block final synthesis readiness');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Missing partial rationale audit did not block final synthesis readiness');
 } finally {
   rmSync(tempRootMissingPartialRationale, { recursive: true, force: true });
 }
@@ -558,7 +688,7 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM requirements trace contract incomplete'), 'Missing requirements trace audit did not fail the LLM trace contract');
+  assert(output.includes('Codex-authored requirements trace contract incomplete'), 'Missing requirements trace audit did not fail the Codex-authored trace contract');
   assert(!output.includes('target capability context missing/partial'), 'Target capability context must not be the semantic readiness fail-gate');
   assert(output.includes('Requirements trace contract: partial'), 'Missing requirements trace audit did not show a partial trace contract');
 } finally {
@@ -606,8 +736,8 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('source-family detail review coverage missing_detail_review_decision'), 'Missing detail-review decision audit did not fail the LLM planning contract');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
+  assert(output.includes('source-family detail review coverage missing_detail_review_decision'), 'Missing detail-review decision audit did not block the Codex planning contract');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
 } finally {
   rmSync(tempRootMissingDetailDecision, { recursive: true, force: true });
 }
@@ -630,8 +760,8 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('source-family detail review coverage unexpected_detail_reviews'), 'Unexpected detail review audit did not fail the LLM-planned detail review contract');
-  assert(output.includes('final LLM report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
+  assert(output.includes('source-family detail review coverage unexpected_detail_reviews'), 'Unexpected detail review audit did not fail the Codex-planned detail review contract');
+  assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
 } finally {
   rmSync(tempRootUnexpectedDetailReview, { recursive: true, force: true });
 }
@@ -651,7 +781,7 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('LLM goal trace reference contract incomplete'), 'Missing goal refs audit did not fail the explicit LLM goal trace contract');
+  assert(output.includes('Codex-authored goal trace reference contract incomplete'), 'Missing goal refs audit did not fail the explicit Codex-authored goal trace contract');
   assert(output.includes('Goal trace references: partial'), 'Missing goal refs audit did not show partial explicit goal trace references');
 } finally {
   rmSync(tempRootMissingGoalRefs, { recursive: true, force: true });
@@ -673,8 +803,8 @@ try {
 
   const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('analysis document component contract incomplete'), 'Empty LLM report block did not fail the renderer component contract');
-  assert(output.includes('block_render_content_contract'), 'Empty LLM report block failure did not name the render-content contract');
+  assert(output.includes('analysis document component contract incomplete'), 'Empty Codex-authored report block did not block the renderer component contract');
+  assert(output.includes('block_render_content_contract'), 'Empty Codex-authored report block contract output did not name the render-content contract');
 } finally {
   rmSync(tempRootEmptyDocBlock, { recursive: true, force: true });
 }

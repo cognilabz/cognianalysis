@@ -80,9 +80,9 @@ function writeLlmTasks(analysisDir, codeMap) {
     const pipeline = (0, analysisPipeline_1.analysisPipelineArtifact)(taskDefs, templateDefs);
     const capabilityTemplateManifest = {
         mode: 'optional_llm_capability_templates',
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'template_catalog_shape_only',
-        summary: 'These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the LLM strategy explicitly uses their outputs.',
+        summary: 'These generic templates are optional capability/output contracts. They are not executed as a fixed mandatory path and do not block final readiness unless the Codex-authored LLM strategy explicitly uses their outputs.',
         templates: templateDefs
     };
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'analysis-skill-catalog.json'), skillCatalog);
@@ -90,8 +90,80 @@ function writeLlmTasks(analysisDir, codeMap) {
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'analysis-pipeline.json'), pipeline);
     (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'capability-template-manifest.json'), capabilityTemplateManifest);
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'capability-template-manifest.json'), capabilityTemplateManifest);
-    (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first_workflow_tasks', implementation_language: 'TypeScript', pipeline, source_tier_tasks: tierManifest.tasks, capability_templates: templateDefs, tasks: taskDefs });
+    (0, utils_1.writeText)(utils_2.Path.join(analysisDir, 'TASK.md'), singleTaskGuide(profile, tierManifest, taskDefs, templateDefs));
+    (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first_workflow_tasks', implementation_language: 'TypeScript', single_task_file: 'TASK.md', pipeline, source_tier_tasks: tierManifest.tasks, capability_templates: templateDefs, tasks: taskDefs });
     return taskDefs;
+}
+function singleTaskGuide(profile, tierManifest, taskDefs, templateDefs) {
+    return `# Cognianalysis Task
+
+This is the single human-facing workpack for this repository. The detailed task files remain available for harnesses, batching and CI, but this file is the path a user should read first.
+
+## Goal
+
+Produce a Codex-authored LLM, decision-grade source-code analysis report for \`${profile.repo_name || 'this repository'}\`.
+
+The TypeScript CLI prepares context, validates contracts, checks evidence references and renders HTML. Codex is the in-session LLM executor and authors all semantic understanding, report structure, findings, examples, flows, recommendations and readiness verdicts. Do not call a direct LLM API or require API credentials.
+
+The LLM step is not an external service check and cannot be represented as unavailable by the CLI. Codex authors the required artifacts in this session; uncertainty belongs in confidence, limitations, open questions or a Codex-authored partial/not_ready report-quality verdict.
+
+## Product-Mode Loop
+
+1. Run \`cognianalysis run .\` to prepare the workspace or see the next missing artifact. For large repositories, choose scope deliberately: \`--scope complete\`, \`--scope critical-path --scope-files N\` or \`--scope representative --scope-files N\`.
+2. Run \`cognianalysis resume .\` to continue an existing analysis and print completed stages as skipped.
+3. Run \`cognianalysis status .\` whenever you need a product-language progress view, scope/freshness state and next action.
+4. Run \`cognianalysis repair .\` if JSON is malformed, manifests/task guides are missing, outputs are stale, or an interrupted run needs recovery.
+5. Author \`.analysis/llm/analysis-strategy.json\` from \`.analysis/llm_tasks/00-analysis-strategy.md\`.
+6. Execute every \`.analysis/source_tier_tasks/*.md\` task and write Tier 1 file cards to \`.analysis/source_tiers/*.json\`.
+7. Run \`cognianalysis finalize . --allow-partial\` to materialize LLM-planned skill workbench tasks.
+8. Execute every \`.analysis/skill_workbench_tasks/*.md\` task into \`.analysis/skill_reviews/*.json\`.
+9. Author \`.analysis/llm/detail-agent-plan.json\` from \`.analysis/llm_tasks/11-detail-agent-plan.md\`.
+10. Run \`cognianalysis finalize . --allow-partial\` to materialize detail tasks.
+11. Execute every \`.analysis/detail_tasks/*.md\` task into \`.analysis/detail_reviews/*.json\`.
+12. Author \`.analysis/llm/analysis-document.json\` from \`.analysis/llm_tasks/12-analysis-document.md\`.
+13. Run \`cognianalysis run .\`, \`cognianalysis status .\`, then \`cognianalysis audit-report .\`.
+
+## Required Workflow Artifacts
+
+${taskDefs.map(task => `- \`${task.expected_output}\` from \`${task.task_file}\``).join('\n')}
+
+## Whole-Codebase Base
+
+- Tier 1 file-card tasks: ${tierManifest?.task_count || 0}
+- Included files in Tier 1 scope: ${tierManifest?.total_files || 0}
+- Manifest: \`.analysis/source-tier-task-manifest.json\`
+
+Every included file needs a Tier 1 Codex-authored LLM card before a final report can claim whole-codebase readiness. Deferred files are visible follow-up, not completed analysis.
+
+Analysis scope mode: \`${profile.analysis_scope_mode || 'complete'}\`. If this is not \`complete\`, the final report must visibly state the scope, deferred-file count and confidence impact.
+
+## Optional Capability Templates
+
+The files in \`.analysis/capability_templates/*.md\` are reusable output shapes, not mandatory workflow steps:
+
+${templateDefs.map(task => `- \`${task.template_file}\` -> \`${task.suggested_output}\``).join('\n')}
+
+Use a template only when the Codex-authored LLM strategy, a skill workbench review or the final synthesis explicitly needs that output.
+
+## Final Report Quality Bar
+
+The final \`.analysis/llm/analysis-document.json\` must include:
+
+- \`analysis_document.sections[]\` as the complete visible report structure.
+- \`analysis_document.requirements_trace[]\` with explicit \`goal_contract_refs[]\`, evidence or open questions.
+- \`analysis_document.report_quality_review\` with reviewer \`codex_llm\`, verdict \`decision_ready\`, \`partial\` or \`not_ready\`, and all required quality checks.
+- \`analysis_document.executive_decision_basis\` plus a visible executive/decision section that answers keep/modernize/replace/cost/risks/next actions before technical drilldown.
+- \`analysis_document.consistency_review\` with reviewer \`codex_llm\`, \`contradictions_found\`, and either zero contradictions or explicit contradiction details.
+- \`analysis_document.open_questions[]\` as a first-class uncertainty artifact. Use an empty array only after checking for unresolved proof gaps; blocking questions prevent decision-ready status.
+- Semantic lineage for major visible findings, recommendations, decisions and source-family claims. Prefer item-level \`semantic_lineage\` or top-level \`analysis_document.semantic_lineage[]\` that links the claim to its report section, upstream source-tier/skill/detail review artifacts and file:line evidence.
+- Evidence or explicit uncertainty for findings, decisions, roadmap items, flow steps, boundary/interface entries and source-family statements.
+- Visible path:line evidence navigation for major claims; use \`evidence\` or \`evidence_refs\` arrays so the renderer can show clickable proof chips.
+- Confidence for major visible findings, recommendations, decisions and source-family claims. The CLI computes evidence strength from evidence-reference count and reports weak support.
+- If \`.analysis/external_findings/*.json\` exists, treat those scanner/tool outputs as external evidence inputs only. Preserve \`source_tool\`, \`authority\`, severity/type/message and file:line evidence; the source tool remains authority for scanner facts while Codex synthesizes decision impact.
+- Request/response, OpenAPI/Swagger, SOAP/WSDL/XSD, Mermaid and business examples wherever present or defensibly inferred; inferred examples must use \`example_origin: "inferred"\`.
+
+Do not modify production source files unless the user explicitly asks for repository code changes.
+`;
 }
 function writeDetailTasksFromLlmPlan(analysisDir, plan) {
     const tasksDir = utils_2.Path.join(analysisDir, 'detail_tasks');
@@ -178,7 +250,7 @@ Expected JSON:
 {
   "source_family_detail_review": {
     "source_family": "${String(task.source_family || '').replace(/"/g, '\\"')}",
-    "review_status": "complete, partial or blocked",
+    "review_status": "complete",
     "summary": "Human-readable purpose and role of this source family.",
     "business_view": {
       "purpose": "...",
@@ -298,8 +370,8 @@ function sourceFamilyInventory(codeMap) {
             'Do not use partition counts as evidence that business behavior is understood.',
             'Do not report seed files as proof of routes, interfaces, flows, quality or architecture.'
         ],
-        llm_required_action: 'The LLM must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.',
-        summary: 'This is a mechanical inventory partition for navigation. Tags, ranks and path partitions are not semantic proof and do not parse imports, symbols, frameworks, contracts or examples. The LLM must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.',
+        llm_required_action: 'Codex must author repository-specific source-family names, purposes, priorities, skipped areas and detail-review decisions in llm/detail-agent-plan.json after whole-repository extraction.',
+        summary: 'This is a mechanical inventory partition for navigation. Tags, ranks and path partitions are not semantic proof and do not parse imports, symbols, frameworks, contracts or examples. Codex must author the actual detail-agent plan in llm/detail-agent-plan.json after whole-repository overview extraction and before the final analysis document.',
         total_inventory_partitions: partitions.length,
         inventory_partitions: partitions
     };
@@ -307,15 +379,15 @@ function sourceFamilyInventory(codeMap) {
 function overview(profile, modules, signals, glossary, capsules, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest) {
     return `# Cognianalysis · LLM-first Instructions
 
-This repository must be analyzed semantically by an agent harness/LLM. The generated code map is a navigation aid, not the source of final truth.
+This repository must be analyzed semantically by Codex as the in-session LLM executor. The generated code map is a navigation aid, not the source of final truth.
 
 ## Non-negotiable rules
 
 - Treat \`code-map.json\`, \`source-capsules.json\`, \`navigation-artifact-candidates.json\` and the legacy \`important-docs.json\` as inventory/discovery aids.
 	- Do **not** treat navigation hints as business facts, technical claims, interfaces, flows or entrypoints.
-	- The deterministic map is intentionally inventory-only: it does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships. The LLM must open source files and parse/understand those semantics itself.
-	- Start with \`.analysis/llm_tasks/00-analysis-strategy.md\`. The LLM-authored \`.analysis/llm/analysis-strategy.json\` is the repository-specific analysis plan. The files under \`.analysis/capability_templates/\` are optional templates, not a fixed semantic information architecture and not a mandatory execution list.
-	- Treat \`source-family-inventory.json\` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; the LLM must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
+	- The deterministic map is intentionally inventory-only: it does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships. Codex must open source files and parse/understand those semantics itself.
+	- Start with \`.analysis/llm_tasks/00-analysis-strategy.md\`. The Codex-authored LLM \`.analysis/llm/analysis-strategy.json\` is the repository-specific analysis plan. The files under \`.analysis/capability_templates/\` are optional templates, not a fixed semantic information architecture and not a mandatory execution list.
+	- Treat \`source-family-inventory.json\` as a legacy workflow filename for mechanical navigation partitions. The legacy filename does not mean the CLI has authored semantic source families; Codex must decide whether to rename, merge, split, reject or defer partitions as repository-specific source families.
 	- Do not use word matches, regex matches or filename matches as proof of behavior. Open the source and reason semantically.
 - Use source files, tests, DTO/schema files, OpenAPI/Swagger, SOAP/WSDL/XSD, GraphQL schemas, event schemas, examples, CI/CD files, configuration and documentation as evidence.
 - Every relevant assertion must include \`evidence: [{"path":"...", "line": 123, "symbol":"optional"}]\`.
@@ -327,24 +399,24 @@ This repository must be analyzed semantically by an agent harness/LLM. The gener
 - Extract business logic and function/use-case examples explicitly; do not bury them only in prose.
 - Extract domain/data/integration and process-readiness views; the assessment must not stop at documentation.
 - If behavior cannot be proven from code/docs, put it into \`open_questions\`.
-- Semantic completeness, documentation quality and management readiness are LLM judgments. Deterministic checks may require the LLM-authored judgment to exist and be structured, but must not replace it with keyword, menu or block-presence scoring.
+- Semantic completeness, documentation quality and management readiness are Codex-authored LLM judgments. Deterministic checks may require the Codex-authored judgment to exist and be structured, but must not replace it with keyword, menu or block-presence scoring.
 - Keep production code read-only unless explicitly asked otherwise.
 - Use English for generated JSON text and report-facing content, while preserving original domain terms and identifiers.
 - Always produce whole-repository documentation before any module or source-family deep dive.
-- Execute every \`.analysis/source_tier_tasks/*.md\` task before the final analysis document. These tasks create Tier 1 LLM-authored file cards for every included file. A file that is only listed in \`analysis_coverage.deferred_files\` is not analyzed and must not count as done.
+- Execute every \`.analysis/source_tier_tasks/*.md\` task before the final analysis document. These tasks create Tier 1 Codex-authored LLM file cards for every included file. A file that is only listed in \`analysis_coverage.deferred_files\` is not analyzed and must not count as done.
 - Use the tier model explicitly: Tier 0 is CLI inventory only, Tier 1 is mandatory per-file LLM understanding, Tier 2 is module/source-family synthesis, Tier 3 is behavior/contract/flow deep dive, and Tier 4 is decision/refactoring/process analysis.
 - For monorepos or multi-module repositories, summarize the complete source-family landscape: purpose, responsibility, entry points, exits/integrations, tests/examples, confidence and open questions for each relevant family.
-	- Create repository-specific skill workbench tasks from the LLM-authored analysis strategy before treating any generic capability template output as useful. Capability templates are optional output contracts, not the repository-specific semantic plan and not final-readiness gates.
-	- Create the LLM detail-agent plan only after the LLM-authored analysis strategy, Tier 1 file cards, LLM-planned skill workbench reviews and whole-repository extraction tasks have produced a repository-wide picture.
+	- Create repository-specific skill workbench tasks from the Codex-authored LLM analysis strategy before treating any generic capability template output as useful. Capability templates are optional output contracts, not the repository-specific semantic plan and not final-readiness gates.
+	- Create the Codex-authored LLM detail-agent plan only after the analysis strategy, Tier 1 file cards, Codex-planned skill workbench reviews and whole-repository extraction tasks have produced a repository-wide picture.
 - Author final summaries, E2E understanding, management statements and the visible report only after all planned detail-agent reviews exist and have been synthesized. Earlier tasks may extract building blocks, but must not pretend to be the final report.
 - Do not make one module the narrative center unless the source inventory proves the repository is actually single-module. A focused deep review must be labelled as a deep slice and must not replace the whole-repository view.
 - If E2E flow extraction is deep only for part of the repository, state that boundary explicitly and keep the remaining source families visible as surface-reviewed or follow-up drilldown areas.
-	- The final report should be authored by the LLM as a repo-specific analysis document. The renderer provides a stable component library and validation; it must not dictate a fixed one-size-fits-all information architecture.
-- Tool positioning must be concrete and LLM-authored. Use the official reference facts below as market context, not as repo evidence and not as a deterministic verdict. Then state what this analysis replaces, complements or cannot safely decide for this repository, with source evidence and handoff boundaries.
+	- The final report should be authored by Codex as a repo-specific LLM analysis document. The renderer provides a stable component library and validation; it must not dictate a fixed one-size-fits-all information architecture.
+- Tool positioning must be concrete and Codex-authored. Use the official reference facts below as market context, not as repo evidence and not as a deterministic verdict. Then state what this analysis replaces, complements or cannot safely decide for this repository, with source evidence and handoff boundaries.
 
 ## Tool-positioning reference categories
 
-These categories are external market context for comparison, not repository evidence. They are also written to \`.analysis/data/tool-positioning-references.json\`. Use them only to frame positioning; use source evidence for claims about this repository. Preserve the distinction between official reference facts, repository evidence and LLM-authored judgment.
+These categories are external market context for comparison, not repository evidence. They are also written to \`.analysis/data/tool-positioning-references.json\`. Use them only to frame positioning; use source evidence for claims about this repository. Preserve the distinction between official reference facts, repository evidence and Codex-authored LLM judgment.
 
 \`\`\`json
 ${JSON.stringify(toolPositioningReferences, null, 2)}
@@ -358,7 +430,7 @@ ${JSON.stringify(targetCoverage_1.TARGET_CAPABILITIES.map(c => ({ id: c.id, titl
 
 ## Original analysis goal contract
 
-This preserves the original product objective for the LLM. It is context, not a deterministic checklist or readiness verdict. Final semantic status must be authored through \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
+This preserves the original product objective for Codex. It is context, not a deterministic checklist or readiness verdict. Final semantic status must be authored through \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
 
 \`\`\`json
 ${JSON.stringify(goalContract, null, 2)}
@@ -366,7 +438,7 @@ ${JSON.stringify(goalContract, null, 2)}
 
 ## Tiered whole-codebase analysis model
 
-This model prevents blind spots. Source inventory alone is Tier 0 and has no semantic authority. Every included file needs a Tier 1 LLM-authored file card in \`.analysis/source_tiers/*.json\`; selected areas are then promoted to Tier 2-4 for technical drilldown, flows, risks and decisions.
+This model prevents blind spots. Source inventory alone is Tier 0 and has no semantic authority. Every included file needs a Tier 1 Codex-authored LLM file card in \`.analysis/source_tiers/*.json\`; selected areas are then promoted to Tier 2-4 for technical drilldown, flows, risks and decisions.
 
 \`\`\`json
 ${JSON.stringify({
@@ -381,7 +453,7 @@ ${JSON.stringify({
 
 ## LLM analysis skill catalog
 
-Use these as reusable analysis capabilities, not as deterministic routing rules. The LLM decides which skills matter for this repository and how deeply to apply them.
+Use these as reusable analysis capabilities, not as deterministic routing rules. Codex decides which skills matter for this repository and how deeply to apply them.
 
 \`\`\`json
 ${JSON.stringify(skillCatalog, null, 2)}
@@ -423,7 +495,7 @@ ${JSON.stringify(componentLibrary, null, 2)}
 
 ## Top glossary terms
 
-Domain terms must be extracted by the agent harness/LLM from source evidence, not from generated word lists.
+Domain terms must be extracted by Codex from source evidence, not from generated word lists.
 
 ## Context capsules
 
@@ -431,7 +503,7 @@ The full included file inventory is in \`.analysis/data/source-inventory.json\`.
 
 ## Optional capability templates
 
-Generic templates live in \`.analysis/capability_templates/*.md\`. They are reusable prompts for common output shapes only. Do not execute all templates by default. The LLM-authored analysis strategy and skill workbench findings decide whether a template output is useful for this repository.
+Generic templates live in \`.analysis/capability_templates/*.md\`. They are reusable prompts for common output shapes only. Do not execute all templates by default. The Codex-authored LLM analysis strategy and skill workbench findings decide whether a template output is useful for this repository.
 `;
 }
 function taskBody(task, profile, modules, signals, capsules, glossary, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest) {
@@ -471,7 +543,7 @@ Task id: \`${task.id}\`
 Task kind: \`${isCapabilityTemplate ? 'optional capability template' : 'required workflow task'}\`
 
 ${isCapabilityTemplate
-        ? 'This file is a reusable capability template, not a mandatory repository-analysis step. Execute it only when the LLM-authored analysis strategy, a skill workbench review or the final synthesis explicitly needs this output. Do not execute all capability templates just because they exist.'
+        ? 'This file is a reusable capability template, not a mandatory repository-analysis step. Execute it only when the Codex-authored LLM analysis strategy, a skill workbench review or the final synthesis explicitly needs this output. Do not execute all capability templates just because they exist.'
         : 'This file is part of the required LLM workflow gate for analysis strategy, detail planning or final report authoring.'}
 
 Read these files first:
@@ -491,12 +563,12 @@ Read these files first:
 - \`.analysis/data/source-family-inventory.json\`
 - \`.analysis/source-capsules.json\`
 
-	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; Codex must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
 		If this is not task \`analysis_strategy\`, read \`.analysis/llm/analysis-strategy.json\` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
 		Tier 1 file cards are the broad base for whole-codebase understanding. If \`.analysis/source_tiers/*.json\` is incomplete, do not claim whole-codebase completion; execute the missing \`.analysis/source_tier_tasks/*.md\` tasks first or mark final readiness partial.
 		After \`analysis_strategy\` and Tier 1 cards exist, run \`cognianalysis finalize . --allow-partial\` to materialize \`.analysis/skill_workbench_tasks/*.md\` from \`analysis_strategy.skill_application_plan[]\`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
 		Generic capability templates are optional. Prefer repository-specific \`.analysis/skill_workbench_tasks/*.md\` and direct final synthesis. If you use a template output, explain in the JSON why this capability output was needed for this repository.
-	For large repositories, use \`.analysis/data/source-family-inventory.json\` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in \`.analysis/llm/detail-agent-plan.json\`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
+	For large repositories, use \`.analysis/data/source-family-inventory.json\` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by Codex in \`.analysis/llm/detail-agent-plan.json\`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
 Write your result to \`.analysis/llm/${task.output}\` as valid JSON.
 
@@ -512,17 +584,17 @@ General rules:
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
 - Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
-- Account for the source inventory without using deferral as a success path. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered. Use \`analysis_coverage.deferred_files[]\` only for task-local scope boundaries or blocked follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in \`.analysis/source_tiers/*.json\` is the required broad base.
+- Account for the source inventory without using deferral as a success path. Every output must include \`analysis_coverage.inspected_files[]\` for files you opened or semantically considered. Use \`analysis_coverage.deferred_files[]\` only for task-local scope boundaries or evidence-gap follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in \`.analysis/source_tiers/*.json\` is the required broad base.
 - Start from the full repository scope. Summarize the whole source-family landscape before focusing on a specific module, framework, interface type or flow family.
 - For multi-module repositories, include source-family statements across the repository; a deep slice is acceptable only when clearly labelled and paired with whole-repo coverage context.
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
-- When using navigation partitions, the LLM must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
+- When using navigation partitions, Codex must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
 	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.
 	- The final analysis-document task must read all skill workbench reviews, all extraction outputs and all executed \`.analysis/detail_reviews/*.json\` files, then synthesize the complete picture.
-- Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
+- Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by Codex in \`analysis_document.requirements_trace\` and \`analysis_document.report_quality_review\`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an \`open_questions\` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
 - Use a clear \`confidence\` statement and \`open_questions\` when behavior is unclear.
 - Do not modify production source files.
@@ -581,7 +653,7 @@ function schemaForTask(taskId) {
 
 	The strategy should answer: how should this repository be understood, which source slices look meaningful, which skill workbenches should be materialized from \`skill_application_plan[]\`, how will every file receive Tier 1 coverage, what deeper reviews may be necessary, and what kind of final report structure would be useful for humans.
 
-The deterministic CLI will only check that this LLM-authored strategy exists and is structured. It will not judge whether the chosen strategy is semantically correct; that remains the LLM's responsibility and must be revisited in report_quality_review.
+The deterministic CLI will only check that this Codex-authored LLM strategy exists and is structured. It will not judge whether the chosen strategy is semantically correct; that remains Codex's responsibility and must be revisited in report_quality_review.
 
 {
   "analysis_strategy": {
@@ -627,18 +699,18 @@ The deterministic CLI will only check that this LLM-authored strategy exists and
     if (taskId === 'detail_agent_plan')
         return `## Expected JSON
 
-	This task happens after the LLM-authored analysis strategy, Tier 1 file-card coverage, LLM-planned skill workbench reviews, whole-repository extraction tasks and before the final report. Read \`.analysis/llm/analysis-strategy.json\`, all existing \`.analysis/skill_reviews/*.json\`, all existing \`.analysis/llm/*.json\` outputs except \`analysis-document.json\` as building blocks, plus the source inventory and source-family inventory. Then author a repository-specific plan for focused detail agents.
+	This task happens after the Codex-authored LLM analysis strategy, Tier 1 file-card coverage, Codex-planned skill workbench reviews, whole-repository extraction tasks and before the final report. Read \`.analysis/llm/analysis-strategy.json\`, all existing \`.analysis/skill_reviews/*.json\`, all existing \`.analysis/llm/*.json\` outputs except \`analysis-document.json\` as building blocks, plus the source inventory and source-family inventory. Then author a repository-specific plan for focused detail agents.
 
 This is not the final report. Do not write management conclusions or final E2E synthesis here. The purpose is to decide which source families, interface areas or process routes need deeper LLM review before the final analysis document is authored.
 
 Required planning intent:
 
-		- Start from the complete repository picture produced by Tier 1 cards, LLM-planned skill workbench reviews and any optional capability-template outputs the LLM strategy explicitly selected.
+		- Start from the complete repository picture produced by Tier 1 cards, Codex-planned skill workbench reviews and any optional capability-template outputs the Codex-authored strategy explicitly selected.
 - Use \`.analysis/data/source-family-inventory.json\` only as navigation context.
 - Select detail tasks because they are important for business understanding, E2E behavior, interfaces/contracts, quality/process risk or refactoring decisions.
 - Keep the plan generic: source families can be modules, bounded contexts, contract families, jobs, UI apps, data/integration areas or any repository-specific slice that makes semantic sense.
 - Include seed files only as starting points; detail agents must open source directly.
-- If no detail review is needed, return an empty \`tasks\` list, set \`no_detail_reviews_needed: true\`, and explain why through \`summary\`, \`not_planned[]\`, evidence or open questions. Do not leave \`tasks[]\` empty without an explicit LLM-authored skip rationale.
+- If no detail review is needed, return an empty \`tasks\` list, set \`no_detail_reviews_needed: true\`, and explain why through \`summary\`, \`not_planned[]\`, evidence or open questions. Do not leave \`tasks[]\` empty without an explicit Codex-authored skip rationale.
 
 {
   "detail_agent_plan": {
@@ -651,7 +723,7 @@ Required planning intent:
       {
         "id": "detail-source-family-id",
         "source_family": "Repository-specific family or slice name",
-        "recommended_agent": "Skill id or custom agent name chosen by the LLM.",
+        "recommended_agent": "Skill id or custom agent name chosen by Codex.",
         "priority": "Repository-specific priority rationale or label.",
         "priority_score": 0.0,
         "focus": ["What this detail review must understand"],
@@ -688,7 +760,8 @@ The HTML renderer will provide the component library and styling. You decide the
 Required report intent:
 
 - Start with system understanding: whole-repository overview, important relationships, system entry/exit, E2E context, business need, business use and what the system appears to be for.
-- Use the LLM-authored analysis strategy as the starting plan, then update or contradict it explicitly if later Tier 1/detail evidence proves a better report structure.
+- Use the Codex-authored LLM analysis strategy as the starting plan, then update or contradict it explicitly if later Tier 1/detail evidence proves a better report structure.
+- Use \`.analysis/data/analysis-scope.json\` as the declared scope contract. If the mode is not \`complete\`, visibly disclose selected/deferred file counts and confidence impact before making decisions from the report.
 - Explain the tier model in the technical drilldown or evidence-governance area when it matters: Tier 1 file cards cover every included file, then Tier 2-4 deep dives cover important modules, flows, contracts, risks and refactoring decisions.
 - Put the management/business narrative inside visible \`analysis_document.sections[].blocks[]\`, not only in top-level helper fields such as \`executive_decision_basis\`. Top-level fields can support automation, but the human report is the authored sections.
 - Then cover the four required levels:
@@ -700,15 +773,22 @@ Required report intent:
 - Include comparison/tool positioning: how this automated analysis compares to or complements consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Name the repo-specific decision value, what can be replaced, what is only complemented and the handoff boundaries. Use \`.analysis/data/tool-positioning-references.json\` as official market context only; source-code evidence remains required for repository-specific claims.
 	- Include confidence, known gaps and open questions. Do not overclaim.
 	- Every substantive claim must include evidence, or must be clearly listed as an open question.
+	- Include top-level \`analysis_document.open_questions[]\` with structured \`id\`, \`question\`, \`reason\`, \`impact\`, \`blocking\`, and \`evidence\` or \`evidence_gap\`. If any items exist, mirror them in a visible \`open_questions\` block so decision makers do not have to find uncertainty in prose.
+	- Include confidence on major visible findings, recommendations, decisions and source-family claims. Use explicit uncertainty when confidence cannot be high. The CLI will compute evidence_strength from evidence-reference count and surface weak support.
+	- Include semantic lineage on major visible findings, recommendations, decisions and source-family claims. Use item-level \`semantic_lineage\` or top-level \`analysis_document.semantic_lineage[]\` with \`claim_id\`, \`report_section_id\`, \`origin_artifact\`, \`supporting_artifacts\` and \`evidence\`. The CLI will also build a deterministic provenance backstop from evidence overlap, but Codex-authored lineage is preferred.
+	- Include a visible executive/decision section before technical drilldown. The report must answer: should stakeholders keep the system, modernize it, replace it, what cost/effort is implied, what are the biggest risks, and what should happen next.
+	- Include \`consistency_review\` as a Codex-authored LLM contradiction check across the final report. Set \`contradictions_found: 0\` only if you have checked claims for conflicts; otherwise list unresolved contradictions and use a non-ready quality verdict.
+	- Read \`.analysis/data/analysis-run.json\` and preserve its \`analysis_run_id\` where practical. Finalization writes \`analysis-run-provenance.json\` and \`artifact-dependency-graph.json\` to make stale/mixed artifacts visible.
+	- If \`.analysis/external_findings/*.json\` exists, explicitly decide whether and how those external findings affect risk, modernization or open questions. Do not make Cognianalysis the scanner authority.
 	- Explicitly synthesize every executed LLM-planned skill workbench into the document. List the integrated skill workbench IDs in \`skill_workbench_synthesis.integrated_skill_workbenches\`; otherwise finalization will mark the report stale.
 	- Explicitly synthesize every executed source-family detail review into the document. List the integrated source families in \`detail_review_synthesis.integrated_detail_reviews\`; otherwise finalization will mark the report stale.
 - If the detail-agent plan still has unexecuted tasks, do not claim final readiness. Either wait for the reviews or mark the report partial with the missing families and open questions.
 - If technical drilldown, evidence governance, quality-review, requirements-trace, coverage or raw-data explanation matters to the audience, create repository-specific sections for them inside \`analysis_document.sections\`. Do not rely on fixed appendix menu items.
 - Each visible section should earn its place by explaining a business decision, business use, system relationship, risk, improvement path or technical drilldown. Avoid sections that merely enumerate classes, functions or files.
 - Use \`agent_plan\` blocks only to show the already planned/executed detail-review basis or remaining follow-up. The source of executable pre-report detail tasks is \`.analysis/llm/detail-agent-plan.json\`, not the final report.
-- Include \`report_quality_review\` as an LLM-authored self-audit of the final document. This is not a CLI text search. You must explicitly judge whether the authored report is management-ready, repo-specific, whole-repo-first, evidence-aware and covers the four requested service levels plus functional/technical views, improvements/refactoring and tool positioning.
-- The CLI will trust this structured LLM judgment for semantic readiness. It only checks that the judgment exists, is explicit and can be rendered with evidence; it does not infer quality from keywords, class/function lists or fixed report menus.
-- The CLI will also treat \`requirements_trace\` as an LLM-authored trace artifact, not as a fixed deterministic checklist. Use the original target picture below, but word and extend trace rows in the way that best fits the repository. The LLM verdict remains the semantic authority.
+- Include \`report_quality_review\` as a Codex-authored LLM self-audit of the final document. This is not a CLI text search. You must explicitly judge whether the authored report is management-ready, repo-specific, whole-repo-first, evidence-aware and covers the four requested service levels plus functional/technical views, improvements/refactoring and tool positioning.
+- The CLI will trust this structured Codex-authored LLM judgment for semantic readiness. It only checks that the judgment exists, is explicit and can be rendered with evidence; it does not infer quality from keywords, class/function lists or fixed report menus.
+- The CLI will also treat \`requirements_trace\` as a Codex-authored LLM trace artifact, not as a fixed deterministic checklist. Use the original target picture below, but word and extend trace rows in the way that best fits the repository. The Codex LLM verdict remains the semantic authority.
 - For every original goal item you address, add \`goal_contract_refs\` to the relevant \`requirements_trace\` row. Use exact IDs from \`analysis_goal_contract\`: \`required_output_shape.<key>\`, \`required_levels.<id>\`, \`required_views.<id>\` and \`required_report_behaviors.<id>\`. This includes \`required_output_shape.management_drilldown\` for the visible business-need/business-use narrative with technical drilldown. The CLI checks only that these explicit references exist and are valid; it does not match trace labels by text and does not decide whether the goal is semantically satisfied.
 - If any \`requirements_trace\` row is \`partial\` or \`open\` and \`report_quality_review.verdict\` is \`decision_ready\`, include \`report_quality_review.partial_requirement_rationale[]\` for every such row. This is where you explicitly explain why the remaining limit is acceptable for decision readiness, what follow-up remains, and which evidence or open question supports that judgment.
 - The suggested \`checks\` are review prompts, not deterministic truth requirements. Set them honestly. If the report is useful but has known limits, use \`verdict: "partial"\` or keep \`verdict: "decision_ready"\` only when the decision basis is sufficient despite clearly stated follow-up.
@@ -725,6 +805,10 @@ Any block may include a \`labels\` object when the default component wording is 
     "authoring_mode": "llm",
     "synthesis_stage": "final_after_detail_reviews",
     "source_basis": "Short statement of which source inventory and extracted artifacts were used.",
+    "analysis_run_id": "Use .analysis/data/analysis-run.json analysis_run_id when available.",
+    "semantic_lineage": [
+      {"claim_id":"stable-claim-id", "report_section_id":"section-id", "origin_artifact":"detail_reviews/example.json", "supporting_artifacts":["skill_reviews/example.json", "source_tiers/source-tier-0001.json"], "evidence":[]}
+    ],
     "requirements_trace": [
       {"requirement":"Reverse Engineering & Documentation", "goal_contract_refs":["required_levels.reverse_engineering_documentation", "required_report_behaviors.whole_repo_first", "required_report_behaviors.tiered_whole_codebase_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Code Analysis", "goal_contract_refs":["required_levels.code_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
@@ -739,9 +823,28 @@ Any block may include a \`labels\` object when the default component wording is 
 	      "summary": "Decision-grade summary.",
       "recommendation": "What stakeholders should do next.",
       "confidence": "Repository-specific confidence statement.",
+      "decision_questions": {
+        "keep_system": "Should stakeholders keep this system as-is? Answer with rationale.",
+        "modernize_system": "Should stakeholders modernize it? Answer with rationale.",
+        "replace_system": "Should stakeholders replace it? Answer with rationale.",
+        "cost": "Relative effort or cost signal for the next move.",
+        "biggest_risks": ["Risk that matters most for the decision."],
+        "next_actions": ["Concrete next action."]
+      },
       "evidence": [],
 	      "open_questions": []
 	    },
+	    "consistency_review": {
+	      "reviewer": "codex_llm",
+	      "summary": "Codex-authored LLM review of whether major report claims contradict each other.",
+	      "contradictions_found": 0,
+	      "contradictions": [],
+	      "evidence": [],
+	      "open_questions": []
+	    },
+	    "open_questions": [
+	      {"id":"oq-stable-id", "question":"What remains unknown?", "reason":"Why source evidence is insufficient.", "impact":"Decision/risk area affected by this uncertainty.", "blocking":false, "evidence":[], "evidence_gap":"Use when absence of direct evidence is the support."}
+	    ],
 	    "skill_workbench_synthesis": {
 	      "integrated_skill_workbenches": ["skill workbench id from .analysis/skill_reviews/*.json"],
 	      "summary": "How LLM-planned skill workbench reviews shaped the final analysis document.",
@@ -755,9 +858,9 @@ Any block may include a \`labels\` object when the default component wording is 
       "evidence": []
     },
     "report_quality_review": {
-      "reviewer": "llm",
+      "reviewer": "codex_llm",
       "verdict": "decision_ready, partial or not_ready",
-      "summary": "LLM-authored judgment of whether this is a management-ready decision document with technical drilldown.",
+      "summary": "Codex-authored LLM judgment of whether this is a management-ready decision document with technical drilldown.",
       "criteria": [
         {"name":"Repository-specific criterion", "verdict":"Repository-specific verdict.", "reason":"...", "evidence":[]}
       ],
@@ -874,7 +977,7 @@ Any block may include a \`labels\` object when the default component wording is 
             "type": "open_questions",
             "title": "Optional block title",
             "items": [
-              {"question":"...", "why_it_matters":"...", "owner":"Repository-specific owner or unknown.", "evidence":[]}
+              {"id":"oq-stable-id", "question":"...", "reason":"Why this is unresolved.", "impact":"Decision/risk area affected.", "blocking":false, "owner":"Repository-specific owner or unknown.", "evidence":[], "evidence_gap":"Optional proof gap when there is no direct source line."}
             ]
           }
         ],

@@ -1,0 +1,56 @@
+name: verify
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  proof-harness:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify demo regression suite
+        run: npm run verify:demo
+
+      - name: Verify golden benchmark suite
+        run: npm run verify:golden
+
+      - name: Record non-blocking market-proof boundary
+        shell: bash
+        run: |
+          set +e
+          npm run verify:baseline > baseline.out 2>&1
+          baseline_status=$?
+          node dist/cli.js doctor examples/demo-repo --market-proof --strict > market-proof.out 2>&1
+          strict_status=$?
+          {
+            echo "## Market Proof Boundary"
+            echo
+            echo "Baseline verifier exit code: ${baseline_status}"
+            echo
+            echo '```text'
+            cat baseline.out
+            echo '```'
+            echo
+            echo "Strict market-proof exit code: ${strict_status}"
+            echo
+            echo '```text'
+            cat market-proof.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

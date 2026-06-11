@@ -1,6 +1,6 @@
 {
   "contract_kind": "source_tier_execution_backlog",
-  "semantic_authority": "llm",
+  "semantic_authority": "codex_llm",
   "deterministic_authority": "task/output reconciliation only",
   "total_tasks": 1,
   "complete_tasks": 1,
@@ -9,7 +9,8 @@
   "partial_tasks": 0,
   "invalid_tasks": 0,
   "invalid_file_card_tasks": 0,
-  "blocked_tasks": 0,
+  "non_complete_review_status_tasks": 0,
+  "non_complete_review_status_examples": [],
   "total_task_files": 32,
   "authored_file_cards_in_task_outputs": 32,
   "complete": true,

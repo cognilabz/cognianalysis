@@ -14,9 +14,18 @@ function sourceTierModelArtifact() {
     return {
         model_kind: 'tiered_whole_codebase_analysis',
         version: exports.SOURCE_TIER_MODEL_VERSION,
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'task_materialization_and_path_contract_only',
-        purpose: 'Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 LLM-authored file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.',
+        llm_execution_model: {
+            executor: 'codex_in_session',
+            execution_surface: 'current_codex_session',
+            direct_llm_api_allowed: false,
+            api_credentials_required: false,
+            external_service_state_tracked: false,
+            runtime_contract: 'codex_authors_required_artifacts_in_session',
+            incomplete_evidence_handling: 'codex_authors_uncertainty_open_questions_or_partial_readiness'
+        },
+        purpose: 'Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 Codex-authored LLM file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.',
         tiers: [
             {
                 id: 'tier0_inventory',
@@ -27,34 +36,37 @@ function sourceTierModelArtifact() {
             {
                 id: 'tier1_file_card',
                 depth: 1,
-                owner: 'llm',
+                owner: 'codex_llm',
                 required_for_every_included_file: true,
-                meaning: 'A short LLM-authored per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence.'
+                meaning: 'A short Codex-authored LLM per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence.'
             },
             {
                 id: 'tier2_module_or_source_family',
                 depth: 2,
-                owner: 'llm',
+                owner: 'codex_llm',
                 meaning: 'Module/source-family synthesis built from Tier 1 cards and direct source inspection: responsibilities, internal relationships, technical drilldown and uncertainty.'
             },
             {
                 id: 'tier3_behavior_contract_flow',
                 depth: 3,
-                owner: 'llm',
+                owner: 'codex_llm',
                 meaning: 'Deep behavior review for important flows, interfaces, contracts, state changes, examples, failure paths and side effects.'
             },
             {
                 id: 'tier4_decision_transformation',
                 depth: 4,
-                owner: 'llm',
+                owner: 'codex_llm',
                 meaning: 'Decision-level findings, risks, process improvements, refactoring and target-architecture options.'
             }
         ],
         completion_rule: 'Final readiness requires Tier 1 file-card coverage for every included source-inventory file. Deferred files are not completed analysis; they remain gaps until a Tier 1 card exists.',
         llm_rules: [
+            'Codex is the LLM executor for generated workpacks; the CLI must not call a direct LLM API or require API credentials.',
+            'The Codex LLM step is not an external service state. Codex is already the active in-session executor, so only artifact/readiness contracts can be incomplete or partial.',
             'Do not summarize files from path names alone.',
             'Open each listed file or use an already-opened exact source excerpt before authoring its Tier 1 card.',
             'Use unknown/none when business relevance cannot be proven.',
+            'The Codex-authored Tier 1 step is mandatory for every included file; Codex must write the card and place thin evidence in uncertainty or open questions.',
             'Keep evidence exact with file:line references.',
             'Use Tier 1 to prevent blind spots; use Tier 2-4 to explain interactions and decision implications.'
         ]
@@ -102,7 +114,7 @@ function writeSourceTierTasks(analysisDir, codeMap, batchSize = DEFAULT_TIER_BAT
         batch_size: batchSize,
         total_files: files.length,
         task_count: tasks.length,
-        summary: 'Execute every source_tier_tasks/*.md task before final report synthesis. These tasks create Tier 1 LLM-authored file cards for every included source-inventory file.',
+        summary: 'Execute every source_tier_tasks/*.md task before final report synthesis. These tasks create Tier 1 Codex-authored LLM file cards for every included source-inventory file.',
         tasks
     };
     (0, utils_1.writeJson)(utils_1.Path.join(dataDir, 'source-tier-model.json'), manifest.model);
@@ -135,7 +147,7 @@ function writeSourceTierContext(repo, analysisDir, taskId, maxCharsPerFile = 600
         expected_output: task.expected_output,
         file_count: files.length,
         max_chars_per_file: maxCharsPerFile,
-        instruction: 'Use these exact source excerpts only as input context. The LLM must author Tier 1 file cards and preserve uncertainty; this artifact does not classify or summarize behavior.',
+        instruction: 'Use these exact source excerpts only as input context. Codex is the LLM executor and must author Tier 1 file cards directly, preserving uncertainty; this artifact does not classify or summarize behavior.',
         files
     };
     const out = utils_1.Path.join(analysisDir, 'source_tier_contexts', `${taskId}.json`);
@@ -228,7 +240,7 @@ function sourceTierOutputStatus(analysisDir, task, batchFiles) {
         duplicate_file_examples: [...duplicatePaths].slice(0, 10),
         invalid_file_card_count: invalidCards.length,
         invalid_file_card_examples: invalidCards.slice(0, 10),
-        status: complete ? 'complete' : reviewStatus === 'blocked' ? 'blocked' : 'partial'
+        status: complete ? 'complete' : 'partial'
     };
 }
 function sourceTierBacklogArtifact(analysisDir) {
@@ -262,13 +274,13 @@ function sourceTierBacklogArtifact(analysisDir) {
     const missing = rows.filter((row) => row.status === 'missing');
     const partial = rows.filter((row) => row.status === 'partial');
     const invalid = rows.filter((row) => row.status === 'invalid_json' || row.status === 'invalid_task');
-    const blocked = rows.filter((row) => row.status === 'blocked');
+    const nonCompleteReviewStatus = rows.filter((row) => row.valid_json && row.review_status && row.review_status !== 'complete');
     const invalidCardTasks = rows.filter((row) => Number(row.invalid_file_card_count || 0) > 0);
     const totalFiles = rows.reduce((sum, row) => sum + Number(row.file_count || 0), 0);
     const cardCount = rows.reduce((sum, row) => sum + Number(row.card_count || 0), 0);
     return {
         contract_kind: 'source_tier_execution_backlog',
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'task/output reconciliation only',
         total_tasks: rows.length,
         complete_tasks: rows.length - incomplete.length,
@@ -277,14 +289,15 @@ function sourceTierBacklogArtifact(analysisDir) {
         partial_tasks: partial.length,
         invalid_tasks: invalid.length,
         invalid_file_card_tasks: invalidCardTasks.length,
-        blocked_tasks: blocked.length,
+        non_complete_review_status_tasks: nonCompleteReviewStatus.length,
+        non_complete_review_status_examples: nonCompleteReviewStatus.slice(0, 50),
         total_task_files: totalFiles,
         authored_file_cards_in_task_outputs: cardCount,
         complete: incomplete.length === 0 && rows.length > 0,
         next_tasks: incomplete.slice(0, 50),
         rows,
         summary: incomplete.length
-            ? `${incomplete.length}/${rows.length} Tier 1 task outputs still need LLM-authored file cards.`
+            ? `${incomplete.length}/${rows.length} Tier 1 task outputs still need Codex-authored LLM file cards.`
             : 'All Tier 1 task outputs are present and complete.'
     };
 }
@@ -295,7 +308,7 @@ function writeNextSourceTierContexts(repo, analysisDir, limit = 1, maxCharsPerFi
     const workpackPath = utils_1.Path.join(analysisDir, 'source-tier-next.md');
     const plan = {
         plan_kind: 'next_source_tier_contexts',
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'select incomplete task outputs, package exact source excerpts and write Codex workpack only',
         analysis_dir: analysisDir,
         selected_count: contexts.length,
@@ -340,6 +353,9 @@ Do not call an external LLM API. Do not generate deterministic summaries from fi
 - Every file in each context's \`files[]\` array must receive exactly one \`tier1_file_card\`.
 - Use \`unknown\` or \`none\` when business relevance or relationships are not proven from the excerpt.
 - Do not use \`analysis_coverage.deferred_files\` for Tier 1. Deferred files are incomplete.
+- Write \`review_status: "complete"\` for this workpack. Codex is the LLM executor here; preserve thin evidence as uncertainty in the file card or \`open_questions\` while keeping the review complete.
+- Tier 1 has no external service state. Codex is present in this session; incomplete source evidence becomes explicit uncertainty.
+- The CLI must not model this LLM step as an unavailable service. Codex authors the output in-session; only the resulting artifacts/readiness can be incomplete, partial or not decision-ready.
 - Keep evidence references exact and point them to the same file as the card.
 - If an excerpt is truncated or insufficient, preserve uncertainty in the card instead of inventing behavior.
 - After writing the outputs, run \`cognianalysis tier-status .\` and \`cognianalysis audit-report .\`.
@@ -371,6 +387,9 @@ This task exists because whole-repository documentation is not complete when mos
 - Every file listed below must appear exactly once in \`source_file_tier_review.files[]\`.
 - Every card needs at least one exact evidence reference to the same file.
 - Do not use \`analysis_coverage.deferred_files\` as a substitute for a file card.
+- Set \`source_file_tier_review.review_status\` to \`complete\`. Codex is executing the LLM work directly; this is not an API call. Put uncertainty in the card text or \`open_questions\`.
+- Tier 1 has no external service state because Codex is the in-session LLM executor. Thin or truncated evidence must be represented as uncertainty.
+- Do not write or rely on any LLM unavailable state. If evidence is insufficient, use \`confidence\` and \`open_questions\`; if the final report is not good enough later, Codex says so in \`report_quality_review\`.
 
 ## Files For This Batch
 
@@ -389,7 +408,7 @@ Expected shape:
   "source_file_tier_review": {
     "task_id": "${id}",
     "tier_model_version": "${exports.SOURCE_TIER_MODEL_VERSION}",
-    "review_status": "complete, partial or blocked",
+    "review_status": "complete",
     "files": [
       {
         "path": "relative/path/File.ext",

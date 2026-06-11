@@ -1,8 +1,8 @@
 {
   "catalog_kind": "llm_analysis_skill_catalog",
-  "semantic_authority": "llm",
+  "semantic_authority": "codex_llm",
   "deterministic_authority": "catalog_presence_and_shape_only",
-  "purpose": "Reusable LLM analysis capabilities for repository understanding. The CLI exposes and validates the catalog shape; the LLM decides which skills matter for a repository and how to apply them.",
+  "purpose": "Reusable Codex LLM analysis capabilities for repository understanding. The CLI exposes and validates the catalog shape; Codex decides which skills matter for a repository and how to apply them.",
   "skills": [
     {
       "id": "analysis_strategy_planning",
@@ -16,7 +16,7 @@
         "analysis_strategy.whole_repo_first_plan",
         "analysis_strategy.report_intent"
       ],
-      "guidance": "Use inventory only as context. The LLM decides how this repository should be understood, which skills matter and where deeper review may be needed."
+      "guidance": "Use inventory only as context. Codex decides how this repository should be understood, which skills matter and where deeper review may be needed."
     },
     {
       "id": "whole_repository_understanding",
@@ -34,7 +34,7 @@
     {
       "id": "tiered_source_file_analysis",
       "label": "Tiered Source File Analysis",
-      "purpose": "Create mandatory Tier 1 LLM-authored file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.",
+      "purpose": "Create mandatory Tier 1 Codex-authored LLM file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.",
       "stage_ids": [
         "llm_source_file_tier_analysis",
         "llm_whole_repository_building_blocks",
@@ -80,7 +80,7 @@
         "graphql",
         "events"
       ],
-      "guidance": "Inventory seed files are only starting points. The LLM must find and parse contracts from source evidence and state uncertainty."
+      "guidance": "Inventory seed files are only starting points. Codex must find and parse contracts from source evidence and state uncertainty."
     },
     {
       "id": "request_response_examples",
@@ -172,7 +172,7 @@
         "llm/detail-agent-plan.json",
         "detail_agent_plan.tasks[]"
       ],
-      "guidance": "The LLM chooses detail-review priorities; deterministic inventories only provide navigation context."
+      "guidance": "Codex chooses detail-review priorities; deterministic inventories only provide navigation context."
     },
     {
       "id": "final_report_authoring",

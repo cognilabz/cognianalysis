@@ -14,7 +14,7 @@ const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 
 function stagedLlmWorkflowMessage(): string {
-  return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, run ${CLI_NAME} finalize . --allow-partial to materialize LLM-planned skill_workbench_tasks, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the LLM strategy or skill reviews need that output shape, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+  return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, run ${CLI_NAME} finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
 }
 
 function aggregateWithMaterializedDetailTasks(repo: string, analysis: string): any {
@@ -60,7 +60,7 @@ async function callTool(name: string, args: any): Promise<any> {
     const rows = bundle.target_artifact_contract_coverage || bundle.target_coverage || [];
     const readiness = computeFinalLlmReadiness(bundle);
     if (bundle.status?.state === 'llm_extracted' && readiness.failures.length && args?.allowPartial !== true) {
-      throw new Error(`Final LLM readiness is partial: ${readiness.failures.slice(0, 6).join('; ')}`);
+      throw new Error(`Final Codex-authored analysis readiness is partial: ${readiness.failures.slice(0, 6).join('; ')}`);
     }
     return {
       report,

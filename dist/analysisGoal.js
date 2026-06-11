@@ -5,7 +5,7 @@ function analysisGoalContractArtifact() {
     return {
         contract_kind: 'analysis_goal_context',
         deterministic_authority: 'goal_context_only',
-        semantic_verdict_authority: 'llm',
+        semantic_verdict_authority: 'codex_llm',
         semantic_status_source: [
             'analysis_document.requirements_trace',
             'analysis_document.report_quality_review'

@@ -15,17 +15,27 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
     const finalReportTask = byOutput.get('llm/analysis-document.json') || null;
     return {
         pipeline_kind: 'llm_driven_overview_detail_final_report',
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'artifact_contracts_only',
-        summary: 'The CLI prepares context, materializes Tier 1 file-card tasks, LLM-planned skill workbench tasks and detail tasks, exposes optional capability templates, validates artifact contracts/evidence and renders HTML. The LLM authors per-file Tier 1 understanding, repository-specific skill application, detail-review priorities and the final decision document.',
+        llm_execution_model: {
+            executor: 'codex_in_session',
+            execution_surface: 'current_codex_session',
+            direct_llm_api_allowed: false,
+            api_credentials_required: false,
+            external_service_state_tracked: false,
+            runtime_contract: 'codex_authors_required_artifacts_in_session',
+            readiness_verdict_source: 'analysis_document.report_quality_review.verdict'
+        },
+        summary: 'The CLI prepares context, materializes Tier 1 file-card tasks, Codex-planned skill workbench tasks and detail tasks, exposes optional capability templates, validates artifact contracts/evidence and renders HTML. Codex is the in-session LLM executor and authors per-file Tier 1 understanding, repository-specific skill application, detail-review priorities and the final decision document.',
         invariants: [
-            'The LLM authors a repository-specific analysis strategy before source tiering, optional capability templates, detail planning and the final report.',
-            'Every included file receives an LLM-authored Tier 1 file card before whole-repository synthesis.',
+            'Codex authors a repository-specific LLM analysis strategy before source tiering, optional capability templates, detail planning and the final report.',
+            'Codex execution is not modeled as an external service state; missing or weak understanding becomes uncertainty, open questions or a Codex-authored partial/not_ready verdict.',
+            'Every included file receives a Codex-authored LLM Tier 1 file card before whole-repository synthesis.',
             'Repository-specific skill workbench tasks are materialized from analysis_strategy.skill_application_plan before detail-agent planning.',
-            'Whole-repository building blocks come from Tier 1 file cards, LLM-planned skill workbench reviews and any optional capability templates the LLM strategy explicitly uses.',
-            'The detail-agent plan is authored by the LLM in llm/detail-agent-plan.json after whole-repository building blocks.',
-            'Focused detail-review tasks are mechanically materialized from the LLM-authored plan.',
-            'Final analysis_document is authored only after pre-final LLM building blocks and planned detail reviews exist.',
+            'Whole-repository building blocks come from Tier 1 file cards, Codex-planned skill workbench reviews and any optional capability templates the Codex-authored strategy explicitly uses.',
+            'The detail-agent plan is authored by Codex in llm/detail-agent-plan.json after whole-repository building blocks.',
+            'Focused detail-review tasks are mechanically materialized from the Codex-authored LLM plan.',
+            'Final analysis_document is authored only after pre-final Codex LLM building blocks and planned detail reviews exist.',
             'Semantic readiness is decided by analysis_document.report_quality_review.verdict, not by deterministic keyword or menu checks.'
         ],
         stages: [
@@ -47,7 +57,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_analysis_strategy',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['deterministic_context_preparation'],
                 purpose: 'Author the repository-specific analysis strategy, source-slice hypotheses, skill application plan and report intent before source tiering, optional capability templates, detail planning and final synthesis are used.',
@@ -56,7 +66,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_source_file_tier_analysis',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['llm_analysis_strategy'],
                 purpose: 'Author Tier 1 file cards for every included source-inventory file before repository synthesis, so technical drilldown is not limited to E2E files.',
@@ -73,7 +83,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_skill_workbench_reviews',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['deterministic_skill_workbench_task_materialization'],
                 purpose: 'Execute the LLM-planned skill workbenches as reusable semantic extraction building blocks.',
@@ -81,7 +91,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_whole_repository_building_blocks',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['llm_analysis_strategy', 'llm_source_file_tier_analysis', 'llm_skill_workbench_reviews'],
                 purpose: 'Author whole-repository building blocks before final report synthesis. Optional capability templates provide reusable output shapes; repository-specific semantic emphasis comes from the LLM-planned skill workbenches.',
@@ -89,7 +99,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_detail_agent_plan',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['llm_whole_repository_building_blocks', 'llm_skill_workbench_reviews'],
                 purpose: 'Choose focused detail-review areas after the whole-repository picture exists.',
@@ -106,7 +116,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_detail_reviews',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['deterministic_detail_task_materialization'],
                 purpose: 'Execute the planned source-family/detail reviews and write structured review JSON.',
@@ -114,7 +124,7 @@ function analysisPipelineArtifact(tasks = [], capabilityTemplates = []) {
             },
             {
                 id: 'llm_final_analysis_document',
-                controller: 'llm',
+                controller: 'codex_llm',
                 semantic_authority: true,
                 depends_on: ['llm_whole_repository_building_blocks', 'llm_detail_reviews'],
                 purpose: 'Author the visible management-ready report through the component library after all building blocks and detail reviews are available.',
@@ -205,7 +215,7 @@ function computeAnalysisPipelineContract(bundle) {
     ];
     return {
         contract_kind: 'llm_driven_analysis_pipeline_contract',
-        semantic_verdict_authority: 'llm',
+        semantic_verdict_authority: 'codex_llm',
         deterministic_contract_scope: 'stage order, artifact presence and authority boundaries only',
         complete: missing.length === 0,
         missing,
@@ -220,6 +230,6 @@ function computeAnalysisPipelineContract(bundle) {
         llm_quality_verdict_decision_ready: qualityVerdictReady,
         summary: missing.length
             ? `Analysis pipeline contract is incomplete: ${missing.slice(0, 8).join(', ')}.`
-            : 'Analysis pipeline contract is complete: whole-repository LLM building blocks, LLM detail plan, detail reviews and final LLM-authored report are ordered and ready.'
+            : 'Analysis pipeline contract is complete: whole-repository Codex LLM building blocks, Codex-authored detail plan, detail reviews and final Codex-authored LLM report are ordered and ready.'
     };
 }

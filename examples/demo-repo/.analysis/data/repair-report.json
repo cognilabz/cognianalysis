@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "generated_at": "2026-06-11T05:13:16.173Z",
+  "repaired_scaffolding": false,
+  "json_problems": [],
+  "missing_or_invalid_workflow_artifacts": [],
+  "stale_or_incomplete_outputs": [],
+  "next_action": "Run cognianalysis open /Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo"
+}

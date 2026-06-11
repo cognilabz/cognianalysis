@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "baseline-comparison",
+  "generated_at": "2026-06-11T05:12:59.359Z",
+  "total_baselines": 0,
+  "required_baseline_kinds": [
+    "raw_agent_prompt",
+    "scanner_report"
+  ],
+  "present_baseline_kinds": [],
+  "missing_baseline_kinds": [
+    "raw_agent_prompt",
+    "scanner_report"
+  ],
+  "failed_baselines": [],
+  "verdict": "missing_baselines",
+  "baselines": []
+}

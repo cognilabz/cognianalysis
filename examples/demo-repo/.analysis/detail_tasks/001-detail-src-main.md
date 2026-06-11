@@ -59,7 +59,7 @@ Expected JSON:
 {
   "source_family_detail_review": {
     "source_family": "src/main",
-    "review_status": "complete, partial or blocked",
+    "review_status": "complete",
     "summary": "Human-readable purpose and role of this source family.",
     "business_view": {
       "purpose": "...",

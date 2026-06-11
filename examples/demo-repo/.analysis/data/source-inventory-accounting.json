@@ -1,6 +1,6 @@
 {
   "contract_kind": "source_inventory_accounting",
-  "semantic_verdict_authority": "llm",
+  "semantic_verdict_authority": "codex_llm",
   "accounting_status_meaning": "Whether each included source file has validated evidence or appears in LLM analysis_coverage.inspected_files. Deferred files are visible but are not completed analysis and do not count as accounted.",
   "deterministic_contract_scope": "included inventory path reconciliation and structured analysis_coverage path/reason validation only",
   "status": "complete",

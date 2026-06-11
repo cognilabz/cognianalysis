@@ -1,0 +1,9 @@
+{
+  "contract_kind": "analysis_staleness",
+  "deterministic_contract_scope": "Compares the commit captured when the analysis code map was prepared with the current repository commit. Uncommitted working-tree drift is not included in this deterministic check.",
+  "analysis_commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
+  "current_commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
+  "comparable": true,
+  "stale": false,
+  "summary": "Repository commit matches the prepared analysis commit."
+}

@@ -1,0 +1,10 @@
+{
+  "contract_kind": "analysis_run_identity",
+  "analysis_run_id": "run-716f2e2b60302e97",
+  "prepared_at": "2026-06-11T05:13:14Z",
+  "source_commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
+  "repo_root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
+  "analysis_dir": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo/.analysis",
+  "scope_mode": "complete",
+  "deterministic_contract_scope": "Run identity and artifact provenance anchor only; semantic analysis remains Codex-authored."
+}

@@ -5,7 +5,7 @@ You are running inside an agent harness as the semantic extraction step for Cogn
 Task id: `flows_mermaid`
 Task kind: `optional capability template`
 
-This file is a reusable capability template, not a mandatory repository-analysis step. Execute it only when the LLM-authored analysis strategy, a skill workbench review or the final synthesis explicitly needs this output. Do not execute all capability templates just because they exist.
+This file is a reusable capability template, not a mandatory repository-analysis step. Execute it only when the Codex-authored LLM analysis strategy, a skill workbench review or the final synthesis explicitly needs this output. Do not execute all capability templates just because they exist.
 
 Read these files first:
 
@@ -24,12 +24,12 @@ Read these files first:
 - `.analysis/data/source-family-inventory.json`
 - `.analysis/source-capsules.json`
 
-	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; the LLM must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
+	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; Codex must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
 		If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
 		Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
 		After `analysis_strategy` and Tier 1 cards exist, run `cognianalysis finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
 		Generic capability templates are optional. Prefer repository-specific `.analysis/skill_workbench_tasks/*.md` and direct final synthesis. If you use a template output, explain in the JSON why this capability output was needed for this repository.
-	For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by the LLM in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
+	For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by Codex in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
 Write your result to `.analysis/llm/flows-mermaid.json` as valid JSON.
 
@@ -45,17 +45,17 @@ General rules:
 - Do not include markdown in the JSON output.
 - Prefer concrete evidence over speculation.
 - Do not promote generated hints, word matches, regex matches or filename matches into semantic conclusions.
-- Account for the source inventory without using deferral as a success path. Every output must include `analysis_coverage.inspected_files[]` for files you opened or semantically considered. Use `analysis_coverage.deferred_files[]` only for task-local scope boundaries or blocked follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in `.analysis/source_tiers/*.json` is the required broad base.
+- Account for the source inventory without using deferral as a success path. Every output must include `analysis_coverage.inspected_files[]` for files you opened or semantically considered. Use `analysis_coverage.deferred_files[]` only for task-local scope boundaries or evidence-gap follow-up; deferred files are not finished whole-codebase analysis. Tier 1 file-card coverage in `.analysis/source_tiers/*.json` is the required broad base.
 - Start from the full repository scope. Summarize the whole source-family landscape before focusing on a specific module, framework, interface type or flow family.
 - For multi-module repositories, include source-family statements across the repository; a deep slice is acceptable only when clearly labelled and paired with whole-repo coverage context.
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
-- When using navigation partitions, the LLM must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
+- When using navigation partitions, Codex must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
 	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.
 	- The final analysis-document task must read all skill workbench reviews, all extraction outputs and all executed `.analysis/detail_reviews/*.json` files, then synthesize the complete picture.
-- Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by the LLM in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
+- Deterministic scripts only validate JSON shape, evidence references, output presence and renderer component compatibility. They do not decide whether the report is complete, well documented or management-ready. Those semantic judgments must be authored by Codex in `analysis_document.requirements_trace` and `analysis_document.report_quality_review`.
 - Do not leave empty sections or empty component blocks for the renderer to explain. If something is unknown, author an `open_questions` block or a narrative limitation with evidence context; the renderer will not generate placeholder report prose for you.
 - Use a clear `confidence` statement and `open_questions` when behavior is unclear.
 - Do not modify production source files.
@@ -75,8 +75,8 @@ Rules for examples:
   "repo": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-10T18:06:14Z",
-    "commit": "09f47d0c004b3707fafac9312116e4a9a01fc475",
+    "analyzed_at": "2026-06-11T05:13:14Z",
+    "commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
@@ -94,7 +94,10 @@ Rules for examples:
     "source_files": 18,
     "total_files": 32,
     "total_lines": 854,
-    "skipped_files": 0
+    "skipped_files": 0,
+    "analysis_scope_mode": "complete",
+    "scope_total_files_before_scope": 32,
+    "scope_deferred_files": 0
   },
   "source_inventory": {
     "file_count": 32,
@@ -1472,7 +1475,7 @@ Rules for examples:
           "business_need?",
           "business_use?",
           "technical_drilldown?",
-          "evidence?"
+          "evidence?|evidence_refs?"
         ],
         "guidance": "Use for authored prose that explains business need, business use, system meaning or technical drilldown. Do not use it as a dumping ground for class/function lists."
       },
@@ -1487,7 +1490,8 @@ Rules for examples:
           "items[]",
           "items[].title|name|criterion|verdict|id",
           "items[].description|summary|reason|recommendation",
-          "items[].evidence?"
+          "items[].confidence?",
+          "items[].evidence?|items[].evidence_refs?"
         ],
         "guidance": "Use when each statement should stand alone with confidence, severity or evidence."
       },
@@ -1517,7 +1521,7 @@ Rules for examples:
           "families[]",
           "families[].name",
           "families[].role|business_use|technical_shape",
-          "families[].confidence?",
+          "families[].confidence",
           "families[].evidence?"
         ],
         "guidance": "Use for LLM-authored source-family understanding. Deterministic inventory partitions remain navigation aids only."
@@ -1587,7 +1591,7 @@ Rules for examples:
           "rows[].options?",
           "rows[].recommendation?",
           "rows[].risk?",
-          "rows[].confidence?",
+          "rows[].confidence",
           "rows[].evidence?"
         ],
         "guidance": "Use when the report needs to become a decision basis rather than only documentation. Set labels when the repository-specific decision vocabulary should drive table wording."
@@ -1607,6 +1611,7 @@ Rules for examples:
           "items[].description?",
           "items[].effort?",
           "items[].risk?",
+          "items[].confidence?",
           "items[].evidence?"
         ],
         "guidance": "Use for target architecture or migration/optimization recommendations."
@@ -1657,20 +1662,22 @@ Rules for examples:
           "title?",
           "labels.question?",
           "items[]",
+          "items[].id",
           "items[].question|title",
-          "items[].why_it_matters|description?",
-          "items[].owner?",
-          "items[].evidence?"
+          "items[].reason|why_it_matters|description",
+          "items[].impact",
+          "items[].blocking",
+          "items[].evidence?|items[].evidence_refs?|items[].evidence_gap?"
         ],
-        "guidance": "Use when code evidence cannot support a stronger claim."
+        "guidance": "Use when code evidence cannot support a stronger claim. Mirror any top-level analysis_document.open_questions entries here when unresolved uncertainty should be visible to report readers."
       }
     ]
   },
   "analysis_skill_catalog": {
     "catalog_kind": "llm_analysis_skill_catalog",
-    "semantic_authority": "llm",
+    "semantic_authority": "codex_llm",
     "deterministic_authority": "catalog_presence_and_shape_only",
-    "purpose": "Reusable LLM analysis capabilities for repository understanding. The CLI exposes and validates the catalog shape; the LLM decides which skills matter for a repository and how to apply them.",
+    "purpose": "Reusable Codex LLM analysis capabilities for repository understanding. The CLI exposes and validates the catalog shape; Codex decides which skills matter for a repository and how to apply them.",
     "skills": [
       {
         "id": "analysis_strategy_planning",
@@ -1684,7 +1691,7 @@ Rules for examples:
           "analysis_strategy.whole_repo_first_plan",
           "analysis_strategy.report_intent"
         ],
-        "guidance": "Use inventory only as context. The LLM decides how this repository should be understood, which skills matter and where deeper review may be needed."
+        "guidance": "Use inventory only as context. Codex decides how this repository should be understood, which skills matter and where deeper review may be needed."
       },
       {
         "id": "whole_repository_understanding",
@@ -1702,7 +1709,7 @@ Rules for examples:
       {
         "id": "tiered_source_file_analysis",
         "label": "Tiered Source File Analysis",
-        "purpose": "Create mandatory Tier 1 LLM-authored file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.",
+        "purpose": "Create mandatory Tier 1 Codex-authored LLM file cards for every included file, then promote important areas to Tier 2-4 technical drilldown, behavior, risk and transformation analysis.",
         "stage_ids": [
           "llm_source_file_tier_analysis",
           "llm_whole_repository_building_blocks",
@@ -1748,7 +1755,7 @@ Rules for examples:
           "graphql",
           "events"
         ],
-        "guidance": "Inventory seed files are only starting points. The LLM must find and parse contracts from source evidence and state uncertainty."
+        "guidance": "Inventory seed files are only starting points. Codex must find and parse contracts from source evidence and state uncertainty."
       },
       {
         "id": "request_response_examples",
@@ -1840,7 +1847,7 @@ Rules for examples:
           "llm/detail-agent-plan.json",
           "detail_agent_plan.tasks[]"
         ],
-        "guidance": "The LLM chooses detail-review priorities; deterministic inventories only provide navigation context."
+        "guidance": "Codex chooses detail-review priorities; deterministic inventories only provide navigation context."
       },
       {
         "id": "final_report_authoring",
@@ -1891,7 +1898,7 @@ Rules for examples:
   "analysis_goal_contract": {
     "contract_kind": "analysis_goal_context",
     "deterministic_authority": "goal_context_only",
-    "semantic_verdict_authority": "llm",
+    "semantic_verdict_authority": "codex_llm",
     "semantic_status_source": [
       "analysis_document.requirements_trace",
       "analysis_document.report_quality_review"
@@ -1982,9 +1989,18 @@ Rules for examples:
   "source_tier_model": {
     "model_kind": "tiered_whole_codebase_analysis",
     "version": "source-tier-v1",
-    "semantic_authority": "llm",
+    "semantic_authority": "codex_llm",
     "deterministic_authority": "task_materialization_and_path_contract_only",
-    "purpose": "Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 LLM-authored file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.",
+    "llm_execution_model": {
+      "executor": "codex_in_session",
+      "execution_surface": "current_codex_session",
+      "direct_llm_api_allowed": false,
+      "api_credentials_required": false,
+      "external_service_state_tracked": false,
+      "runtime_contract": "codex_authors_required_artifacts_in_session",
+      "incomplete_evidence_handling": "codex_authors_uncertainty_open_questions_or_partial_readiness"
+    },
+    "purpose": "Make whole-codebase understanding explicit. Every included file receives at least a Tier 1 Codex-authored LLM file card before final synthesis; selected areas then receive deeper Tier 2-4 reviews.",
     "tiers": [
       {
         "id": "tier0_inventory",
@@ -1995,34 +2011,37 @@ Rules for examples:
       {
         "id": "tier1_file_card",
         "depth": 1,
-        "owner": "llm",
+        "owner": "codex_llm",
         "required_for_every_included_file": true,
-        "meaning": "A short LLM-authored per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence."
+        "meaning": "A short Codex-authored LLM per-file understanding card: purpose, technical role, business relevance or none/unknown, relationships visible from the file, confidence and evidence."
       },
       {
         "id": "tier2_module_or_source_family",
         "depth": 2,
-        "owner": "llm",
+        "owner": "codex_llm",
         "meaning": "Module/source-family synthesis built from Tier 1 cards and direct source inspection: responsibilities, internal relationships, technical drilldown and uncertainty."
       },
       {
         "id": "tier3_behavior_contract_flow",
         "depth": 3,
-        "owner": "llm",
+        "owner": "codex_llm",
         "meaning": "Deep behavior review for important flows, interfaces, contracts, state changes, examples, failure paths and side effects."
       },
       {
         "id": "tier4_decision_transformation",
         "depth": 4,
-        "owner": "llm",
+        "owner": "codex_llm",
         "meaning": "Decision-level findings, risks, process improvements, refactoring and target-architecture options."
       }
     ],
     "completion_rule": "Final readiness requires Tier 1 file-card coverage for every included source-inventory file. Deferred files are not completed analysis; they remain gaps until a Tier 1 card exists.",
     "llm_rules": [
+      "Codex is the LLM executor for generated workpacks; the CLI must not call a direct LLM API or require API credentials.",
+      "The Codex LLM step is not an external service state. Codex is already the active in-session executor, so only artifact/readiness contracts can be incomplete or partial.",
       "Do not summarize files from path names alone.",
       "Open each listed file or use an already-opened exact source excerpt before authoring its Tier 1 card.",
       "Use unknown/none when business relevance cannot be proven.",
+      "The Codex-authored Tier 1 step is mandatory for every included file; Codex must write the card and place thin evidence in uncertainty or open questions.",
       "Keep evidence exact with file:line references.",
       "Use Tier 1 to prevent blind spots; use Tier 2-4 to explain interactions and decision implications."
     ]
@@ -2042,7 +2061,7 @@ Rules for examples:
     "verification_basis": "Official public vendor or project documentation checked for category framing. The LLM must still decide repository-specific positioning from source evidence.",
     "purpose": "Official public tool-market context for LLM-authored positioning. These references frame comparison categories; they are not repository evidence, do not decide report readiness and must not be used as deterministic replacement/complement verdicts.",
     "llm_positioning_rubric": {
-      "semantic_authority": "llm",
+      "semantic_authority": "codex_llm",
       "deterministic_scope": "reference categories, source URLs and source support notes only",
       "required_judgment_dimensions": [
         "repo_specific_decision_value",

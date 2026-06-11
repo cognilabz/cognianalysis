@@ -52,12 +52,12 @@ function writeSkillWorkbenchTasksFromLlmStrategy(analysisDir, strategyDoc) {
     const manifest = {
         mode: 'llm_strategy_skill_workbenches',
         version: exports.SKILL_WORKBENCH_VERSION,
-        semantic_authority: 'llm',
+        semantic_authority: 'codex_llm',
         deterministic_authority: 'task_materialization_from_analysis_strategy_only',
         planning_source: 'llm/analysis-strategy.json',
         summary: tasks.length
             ? 'These skill workbench tasks were mechanically materialized from analysis_strategy.skill_application_plan[]. Execute them before detail-agent planning and final report synthesis.'
-            : 'No skill workbench tasks were materialized because the LLM analysis strategy did not plan skill_application_plan[] entries.',
+            : 'No skill workbench tasks were materialized because the Codex-authored LLM analysis strategy did not plan skill_application_plan[] entries.',
         tasks
     };
     (0, utils_1.writeJson)(utils_1.Path.join(analysisDir, 'skill-workbench-task-manifest.json'), manifest);
@@ -67,7 +67,7 @@ function writeSkillWorkbenchTasksFromLlmStrategy(analysisDir, strategyDoc) {
 function skillWorkbenchTaskBody(task, originalRow) {
     return `# LLM-Planned Skill Workbench · ${task.skill_id}
 
-You are executing a skill workbench that was planned by the LLM-authored repository analysis strategy.
+You are executing a skill workbench that was planned by the Codex-authored LLM repository analysis strategy.
 
 This task is not selected by filename, regex, path convention or a fixed report menu. It exists only because \`.analysis/llm/analysis-strategy.json\` decided this skill matters for the current repository.
 
@@ -101,7 +101,7 @@ Expected JSON:
     "id": "${task.id}",
     "skill_id": "${task.skill_id}",
     "version": "${exports.SKILL_WORKBENCH_VERSION}",
-    "review_status": "complete, partial or blocked",
+    "review_status": "complete",
     "summary": "Repository-specific semantic extraction result for this planned skill.",
     "scope": "What source, Tier 1 cards and previous outputs were inspected.",
     "findings": [
@@ -134,6 +134,8 @@ Rules:
 - Every substantive claim needs file:line evidence.
 - Do not use filename, regex or word-match hints as proof of behavior.
 - Do not produce final management conclusions here. Produce reusable semantic workbench outputs for detail-agent planning and final report synthesis.
-- If the planned skill turns out not to matter, set \`review_status\` to \`complete\`, explain why, and provide evidence or open questions.
+- Codex is the LLM executor for this workbench. Do not call a direct LLM API. Codex must complete the review and put uncertainty in limitations or open questions.
+- Do not model this as an LLM unavailable state. Weak source proof becomes explicit uncertainty, not an external service result.
+- If the planned skill turns out not to matter or evidence is thin, set \`review_status\` to \`complete\`, explain the limitation, and provide evidence or open questions.
 `;
 }

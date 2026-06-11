@@ -6,7 +6,7 @@
   "verification_basis": "Official public vendor or project documentation checked for category framing. The LLM must still decide repository-specific positioning from source evidence.",
   "purpose": "Official public tool-market context for LLM-authored positioning. These references frame comparison categories; they are not repository evidence, do not decide report readiness and must not be used as deterministic replacement/complement verdicts.",
   "llm_positioning_rubric": {
-    "semantic_authority": "llm",
+    "semantic_authority": "codex_llm",
     "deterministic_scope": "reference categories, source URLs and source support notes only",
     "required_judgment_dimensions": [
       "repo_specific_decision_value",
