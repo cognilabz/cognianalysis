@@ -122,12 +122,12 @@ assert(evalOutput.includes('Original product readiness:'), 'eval must expose ori
 assert(evalOutput.includes('Verdict: PARTIALLY_READY'), 'eval must not claim full product readiness for the single demo suite');
 assert(evalOutput.includes('Core ideas covered:'), 'eval must answer whether original ideas are covered');
 assert(evalOutput.includes('Core features implemented: partly'), 'eval must answer whether original features are implemented');
-assert(evalOutput.includes('Perfectly simplified: yes'), 'eval must recognize the generated thin harness/orchestration contracts');
+assert(evalOutput.includes('Perfectly simplified: no'), 'eval must not claim perfect simplification until real parallel/cache proof exists');
 assert(evalOutput.includes('PRODUCT-MISSING multi_repo_benchmark'), 'eval must surface missing multi-repo golden proof');
 assert(evalOutput.includes('PRODUCT-MISSING baseline_comparison'), 'eval must surface missing external baseline proof');
+assert(evalOutput.includes('PRODUCT-MISSING parallel_orchestration'), 'eval must surface missing real parallel/cache execution proof');
 assert(!evalOutput.includes('PRODUCT-MISSING thin_artifact_model'), 'eval must not keep claiming the generated thin artifact model is missing');
 assert(!evalOutput.includes('PRODUCT-MISSING simplified_harness_contract'), 'eval must not keep claiming the generated simplified harness contract is missing');
-assert(!evalOutput.includes('PRODUCT-MISSING parallel_orchestration'), 'eval must not keep claiming generated orchestration proof is missing');
 const evalStrict = run(['eval', demo, '--strict'], { capture: true, expectFailure: true });
 const evalStrictOutput = `${evalStrict.stdout || ''}\n${evalStrict.stderr || ''}`;
 assert(evalStrictOutput.includes('Original product readiness:'), 'eval --strict failure must still print product readiness');
@@ -324,7 +324,10 @@ assert(bundle.product_artifact_model?.complete === true, `Demo thin artifact mod
 assert(bundle.product_artifact_model?.model === 'thin_llm_first_harness', 'Demo product artifact model must be the thin LLM-first harness');
 assert(bundle.simplified_harness_contract?.complete === true, `Demo simplified harness contract incomplete: ${(bundle.simplified_harness_contract?.missing || []).join(', ')}`);
 assert(bundle.simplified_harness_contract?.public_loop?.join(',') === 'analyze,status,open,eval', 'Demo simplified harness must expose the small product loop');
-assert(bundle.parallel_orchestration_contract?.complete === true, `Demo parallel orchestration contract incomplete: ${(bundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
+assert(bundle.parallel_orchestration_contract?.complete === false, 'Demo must not mark parallel orchestration complete without execution/cache proof artifacts');
+assert(bundle.parallel_orchestration_contract?.scaffold_ready === true, `Demo parallel orchestration scaffold incomplete: ${(bundle.parallel_orchestration_contract?.scaffold_missing || []).join(', ')}`);
+assert(bundle.parallel_orchestration_contract?.missing?.includes('parallel_execution_proof'), 'Demo parallel orchestration contract must require parallel execution proof');
+assert(bundle.parallel_orchestration_contract?.missing?.includes('cache_reuse_proof'), 'Demo parallel orchestration contract must require cache reuse proof');
 assert(bundle.parallel_orchestration_contract?.execution_model === 'harness_parallel_workers_over_generated_workpacks', 'Demo orchestration contract must keep LLM execution harness-owned');
 assert(bundle.parallel_orchestration_contract?.batch_model?.task_count > 0, 'Demo orchestration contract must expose source-tier batch tasks');
 for (const command of ['analyze', 'status', 'open', 'eval']) {

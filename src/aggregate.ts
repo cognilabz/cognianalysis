@@ -127,6 +127,8 @@ export function aggregate(repo: string, analysisDir: string): any {
     analysis_skill_catalog: analysisSkillCatalogArtifact(),
     analysis_run: analysisRun,
     analysis_scope: analysisScope,
+    parallel_execution_proof: loadJson<any>(Path.join(dataDir, 'parallel-execution-proof.json'), {}),
+    cache_reuse_proof: loadJson<any>(Path.join(dataDir, 'cache-reuse-proof.json'), {}),
     source_tier_model: sourceTierModelArtifact(),
     source_tier_task_manifest: validateNested(repo, sourceTierTaskManifest),
     analysis_pipeline: analysisPipeline,
@@ -336,18 +338,26 @@ function computeProductArtifactModel(bundle: any): any {
     'data/bundle.json',
     'report/index.html'
   ];
-  const missing = [
-    ...missingCommands(publicCommands, requiredPublicCommands).map(command => `missing public command ${command}`),
-    ...(bundle.report_component_library?.library_kind === 'analysis_document_component_library' ? [] : ['missing report component library']),
-    ...(bundle.analysis_goal_contract?.contract_kind ? [] : ['missing original goal contract']),
-    ...(bundle.analysis_pipeline?.pipeline_kind ? [] : ['missing analysis pipeline artifact']),
-    ...(bundle.semantic_authority?.semantic_decider ? [] : ['missing semantic authority contract'])
+  const checks = [
+    { id: 'public_commands', ready: missingCommands(publicCommands, requiredPublicCommands).length === 0, evidence: [...publicCommands].join(',') },
+    { id: 'product_request', ready: bundle.product_analysis_request?.entrypoint === 'analyze', evidence: String(bundle.product_analysis_request?.entrypoint || 'missing') },
+    { id: 'task_guide_model', ready: asList(bundle.tasks).length > 0 && bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_final_report', evidence: `tasks=${asList(bundle.tasks).length}` },
+    { id: 'llm_artifacts', ready: bundle.llm_artifacts?.complete === true, evidence: `ready=${bundle.llm_artifacts?.ready_count || 0}/${bundle.llm_artifacts?.total_count || 0}` },
+    { id: 'source_tier_artifacts', ready: bundle.source_tier_task_manifest?.task_count > 0 && bundle.source_tier_coverage?.complete === true, evidence: `tasks=${bundle.source_tier_task_manifest?.task_count || 0}, coverage=${bundle.source_tier_coverage?.complete === true}` },
+    { id: 'skill_workbench_artifacts', ready: bundle.skill_workbench_coverage?.complete === true, evidence: `executed=${bundle.skill_workbench_coverage?.executed_count || 0}/${bundle.skill_workbench_coverage?.planned_count || 0}` },
+    { id: 'detail_review_artifacts', ready: bundle.source_family_detail_review_coverage?.complete === true, evidence: `executed=${bundle.source_family_detail_review_coverage?.executed_count || 0}/${bundle.source_family_detail_review_coverage?.planned_count || 0}` },
+    { id: 'report_artifacts', ready: bundle.report_artifacts?.index_html === true && bundle.report_artifacts?.analysis_data_json === true, evidence: `index=${bundle.report_artifacts?.index_html === true}, data=${bundle.report_artifacts?.analysis_data_json === true}` },
+    { id: 'component_library', ready: bundle.report_component_library?.library_kind === 'analysis_document_component_library', evidence: String(bundle.report_component_library?.library_kind || 'missing') },
+    { id: 'original_goal_contract', ready: !!bundle.analysis_goal_contract?.contract_kind, evidence: String(bundle.analysis_goal_contract?.contract_kind || 'missing') },
+    { id: 'semantic_authority', ready: bundle.semantic_authority?.semantic_decider === 'codex_llm', evidence: String(bundle.semantic_authority?.semantic_decider || 'missing') }
   ];
+  const missing = checks.filter(check => !check.ready).map(check => check.id);
   return {
     contract_kind: 'product_artifact_model',
     model: 'thin_llm_first_harness',
     complete: missing.length === 0,
-    deterministic_contract_scope: 'Verifies the user-facing artifact model is thin: product request, one task guide, LLM-authored facts/reviews/report, deterministic bundle/evidence/report outputs and dev-only internals. It does not judge semantic report quality.',
+    deterministic_contract_scope: 'Verifies the user-facing artifact model is thin and materialized: product request, one task guide, LLM-authored facts/reviews/report, deterministic bundle/evidence/report outputs and dev-only internals. It does not judge semantic report quality.',
+    checks,
     public_commands: requiredPublicCommands,
     hidden_or_dev_scoped_commands: asList(bundle.tooling?.internal_cli_commands),
     compatibility_aliases: asList(bundle.tooling?.compatibility_cli_commands),
@@ -419,7 +429,9 @@ function computeParallelOrchestrationContract(bundle: any): any {
   const backlog = bundle.source_tier_backlog || {};
   const graph = bundle.artifact_dependency_graph || {};
   const provenance = bundle.analysis_run_provenance || {};
-  const checks = [
+  const parallelProof = bundle.parallel_execution_proof || {};
+  const cacheProof = bundle.cache_reuse_proof || {};
+  const scaffoldChecks = [
     {
       id: 'tier_batches_exist',
       ready: Number(manifest.task_count || 0) > 0 && Number(manifest.batch_size || 0) > 0,
@@ -446,11 +458,26 @@ function computeParallelOrchestrationContract(bundle: any): any {
       evidence: `provenance=${provenance.complete === true}, artifacts=${asList(provenance.generated_from_matrix).length}`
     }
   ];
+  const proofChecks = [
+    {
+      id: 'parallel_execution_proof',
+      ready: parallelProof.complete === true && Number(parallelProof.worker_count || 0) >= 2,
+      evidence: `complete=${parallelProof.complete === true}, workers=${Number(parallelProof.worker_count || 0)}`
+    },
+    {
+      id: 'cache_reuse_proof',
+      ready: cacheProof.complete === true && Number(cacheProof.cache_hits || 0) > 0,
+      evidence: `complete=${cacheProof.complete === true}, cache_hits=${Number(cacheProof.cache_hits || 0)}`
+    }
+  ];
+  const checks = [...scaffoldChecks, ...proofChecks];
+  const scaffoldMissing = scaffoldChecks.filter(check => !check.ready).map(check => check.id);
   const missing = checks.filter(check => !check.ready).map(check => check.id);
   return {
     contract_kind: 'parallel_orchestration_contract',
     complete: missing.length === 0,
-    deterministic_contract_scope: 'Verifies that Cognianalysis can split Tier 1 work into independent batches, prepare next-work contexts with a limit, track backlog, and use artifact hashes/provenance as cache/freshness keys. LLM execution remains harness-owned.',
+    scaffold_ready: scaffoldMissing.length === 0,
+    deterministic_contract_scope: 'Separates orchestration scaffold from product proof. Scaffold checks verify Tier 1 batch workpacks, backlog selection and artifact hash/provenance cache keys. Complete readiness also requires real parallel execution and cache reuse proof artifacts. LLM execution remains harness-owned.',
     execution_model: 'harness_parallel_workers_over_generated_workpacks',
     caching_model: 'artifact content hashes plus generated_from provenance and product request freshness',
     batch_model: {
@@ -460,10 +487,11 @@ function computeParallelOrchestrationContract(bundle: any): any {
       complete_tasks: Number(backlog.complete_tasks || 0)
     },
     checks,
+    scaffold_missing: scaffoldMissing,
     missing,
     summary: missing.length
-      ? `Parallel/caching orchestration contract is incomplete: ${missing.join(', ')}.`
-      : 'Parallel/caching orchestration contract is available through Tier 1 batch workpacks, backlog selection and artifact hash/provenance cache keys.'
+      ? `Parallel/caching orchestration proof is incomplete: ${missing.join(', ')}.`
+      : 'Parallel/caching orchestration is proven through batch workpacks, real parallel execution evidence and cache reuse evidence.'
   };
 }
 

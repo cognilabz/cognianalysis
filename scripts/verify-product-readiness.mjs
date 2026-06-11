@@ -99,6 +99,17 @@ function missingIds(result) {
 
 {
   const bundle = baseBundle();
+  bundle.product_artifact_model = {
+    model: 'thin_llm_first_harness',
+    complete: false,
+    missing: ['llm_artifacts', 'report_artifacts']
+  };
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('thin_artifact_model'), 'declared thin model with missing artifacts must not satisfy thin_artifact_model');
+}
+
+{
+  const bundle = baseBundle();
   bundle.simplified_harness_contract = { complete: false, missing: ['single_product_entrypoint'] };
   const result = readiness(bundle);
   assert(missingIds(result).includes('simplified_harness_contract'), 'incomplete simplified harness contract must not satisfy simplification readiness');
@@ -109,6 +120,17 @@ function missingIds(result) {
   bundle.parallel_orchestration_contract = { complete: false, missing: ['artifact_cache_keys_available'] };
   const result = readiness(bundle);
   assert(missingIds(result).includes('parallel_orchestration'), 'incomplete orchestration contract must not satisfy parallel_orchestration readiness');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.parallel_orchestration_contract = {
+    complete: false,
+    scaffold_ready: true,
+    missing: ['parallel_execution_proof', 'cache_reuse_proof']
+  };
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('parallel_orchestration'), 'scaffold-only orchestration must not satisfy parallel_orchestration readiness');
 }
 
 {
