@@ -8,6 +8,7 @@ export const BASELINE_VERIFIER_ID = 'scripts/verify-baseline.mjs';
 const REQUIRED_BASELINE_KINDS = ['raw_agent_prompt', 'scanner_report'];
 const REQUIRED_BASELINE_METRICS = ['fact_recall', 'evidence_precision', 'unsupported_claim_rate', 'decision_usefulness'];
 const REQUIRED_GOLDEN_METRICS = ['fact_recall', 'evidence_precision', 'unsupported_claim_rate', 'decision_readiness', 'report_completeness', 'invalid_evidence'];
+const DEFAULT_REQUIRED_GOLDEN_CATEGORIES = ['rest_openapi_service', 'soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith'];
 
 function asList(value: any): any[] {
   if (value === null || value === undefined) return [];
@@ -57,6 +58,95 @@ function readJsonObject(file: string): any {
   } catch {
     return {};
   }
+}
+
+function goldenRepresentativeCoverage(root: string, expectedFiles: string[], suiteRows: any[]): any {
+  const manifestFile = Path.join(root, 'benchmarks', 'golden', 'manifest.json');
+  const manifest = loadJson<any | null>(manifestFile, null);
+  const expectedByFile = new Map(expectedFiles.map(file => {
+    const expectedFile = posixRelative(root, file);
+    return [expectedFile, loadJson<any>(file, {})];
+  }));
+  const suiteByExpectedFile = new Map(suiteRows.map((suite: any) => [String(suite.expected_file || ''), suite]));
+  const errors: string[] = [];
+  if (!manifest) {
+    return {
+      manifest_file: posixRelative(root, manifestFile),
+      valid_manifest: false,
+      ready: false,
+      minimum_representative_suites: 5,
+      required_categories: DEFAULT_REQUIRED_GOLDEN_CATEGORIES,
+      covered_categories: [],
+      missing_categories: DEFAULT_REQUIRED_GOLDEN_CATEGORIES,
+      distinct_repositories: 0,
+      suites: [],
+      errors: ['missing golden representative manifest']
+    };
+  }
+
+  const minimumRepresentativeSuites = Number(manifest.minimum_representative_suites || 0);
+  const requiredCategories = asList(manifest.required_categories).map(String).filter(Boolean);
+  if (manifest.schemaVersion !== '1.0') errors.push('manifest schemaVersion must be 1.0');
+  if (!Number.isFinite(minimumRepresentativeSuites) || minimumRepresentativeSuites < 5) errors.push('manifest minimum_representative_suites must be at least 5');
+  if (requiredCategories.length < 5) errors.push('manifest required_categories must include at least 5 categories');
+  for (const category of DEFAULT_REQUIRED_GOLDEN_CATEGORIES) {
+    if (!requiredCategories.includes(category)) errors.push(`manifest required_categories missing ${category}`);
+  }
+
+  const seenExpectedFiles = new Set<string>();
+  const seenRepos = new Set<string>();
+  const duplicateRepos = new Set<string>();
+  const rows = asList(manifest.suites).map((row: any, index: number) => {
+    const expected_file = String(row?.expected_file || '').trim();
+    const repo = String(row?.repo || '').trim();
+    const category = String(row?.category || '').trim();
+    const rationale = String(row?.rationale || '').trim();
+    const rowErrors: string[] = [];
+    if (!expected_file) rowErrors.push('expected_file is required');
+    if (expected_file && !expectedByFile.has(expected_file)) rowErrors.push('expected_file does not match a discovered golden expected file');
+    if (expected_file && seenExpectedFiles.has(expected_file)) rowErrors.push('expected_file is duplicated in manifest');
+    if (expected_file) seenExpectedFiles.add(expected_file);
+    const expected = expectedByFile.get(expected_file) || {};
+    if (!repo) rowErrors.push('repo is required');
+    if (repo && expected.repo && repo !== expected.repo) rowErrors.push(`repo must match expected repo ${expected.repo}`);
+    if (repo && seenRepos.has(repo)) duplicateRepos.add(repo);
+    if (repo) seenRepos.add(repo);
+    if (!category) rowErrors.push('category is required');
+    if (category && !requiredCategories.includes(category)) rowErrors.push('category must be listed in required_categories');
+    if (!rationale) rowErrors.push('rationale is required');
+    if (rowErrors.length) errors.push(`manifest suite ${expected_file || index + 1}: ${rowErrors.join('; ')}`);
+    const suite = suiteByExpectedFile.get(expected_file);
+    return {
+      expected_file,
+      repo,
+      category,
+      verdict: suite?.valid ? 'pass' : suite?.result?.verdict || 'missing',
+      valid: rowErrors.length === 0 && suite?.valid === true
+    };
+  });
+  for (const expectedFile of expectedByFile.keys()) {
+    if (!seenExpectedFiles.has(expectedFile)) errors.push(`manifest missing discovered expected file ${expectedFile}`);
+  }
+  for (const repo of duplicateRepos) errors.push(`manifest repo is duplicated: ${repo}`);
+  const coveredCategories = [...new Set(rows.filter(row => row.valid).map(row => row.category))].sort();
+  const missingCategories = requiredCategories.filter(category => !coveredCategories.includes(category));
+  const distinctRepositories = new Set(rows.filter(row => row.valid).map(row => row.repo).filter(Boolean)).size;
+  const validSuites = rows.filter(row => row.valid).length;
+  return {
+    manifest_file: posixRelative(root, manifestFile),
+    valid_manifest: errors.length === 0,
+    ready: errors.length === 0
+      && validSuites >= minimumRepresentativeSuites
+      && distinctRepositories >= minimumRepresentativeSuites
+      && missingCategories.length === 0,
+    minimum_representative_suites: minimumRepresentativeSuites,
+    required_categories: requiredCategories,
+    covered_categories: coveredCategories,
+    missing_categories: missingCategories,
+    distinct_repositories: distinctRepositories,
+    suites: rows,
+    errors
+  };
 }
 
 function rowSnippet(row: any): string {
@@ -358,6 +448,7 @@ export function goldenProofStatus(root: string, analysis: string, expectedSource
       valid: validation_errors.length === 0
     };
   });
+  const representative = goldenRepresentativeCoverage(root, expectedFiles, expected);
   const aggregateErrors: string[] = [];
   if (!aggregate) aggregateErrors.push('missing golden aggregate results.json');
   else {
@@ -372,13 +463,22 @@ export function goldenProofStatus(root: string, analysis: string, expectedSource
     if (Number(aggregate.passed_repos) !== expected.filter(item => item.valid).length) aggregateErrors.push('golden aggregate passed_repos must match validated result artifacts');
     if (Number(aggregate.failed_repos || 0) !== expected.filter(item => !item.valid).length) aggregateErrors.push('golden aggregate failed_repos must match invalid result artifacts');
     if (Number(aggregate.minimum_market_proof_repos || 0) < 5) aggregateErrors.push('golden aggregate minimum_market_proof_repos must be at least 5');
-    if (aggregate.market_proof_ready !== (expectedFiles.length >= 5 && expected.every(item => item.valid))) aggregateErrors.push('golden aggregate market_proof_ready must reflect validated artifacts');
+    const aggregateCoverage = aggregate.representative_coverage || {};
+    if (aggregateCoverage.ready !== representative.ready) aggregateErrors.push('golden aggregate representative_coverage.ready must reflect validated manifest coverage');
+    if (Number(aggregateCoverage.distinct_repositories || 0) !== representative.distinct_repositories) aggregateErrors.push('golden aggregate representative_coverage.distinct_repositories must match validated manifest coverage');
+    if (asList(aggregateCoverage.missing_categories).join('|') !== representative.missing_categories.join('|')) aggregateErrors.push('golden aggregate representative_coverage.missing_categories must match validated manifest coverage');
+    if (aggregate.market_proof_ready !== (expectedFiles.length >= 5 && expected.every(item => item.valid) && representative.ready === true)) aggregateErrors.push('golden aggregate market_proof_ready must reflect validated artifacts and representative coverage');
   }
   const passed = expected.filter(item => item.valid).length;
   const failures = [
     ...aggregateErrors,
     ...(expectedFiles.length < 5 ? [`need at least 5 golden repos, found ${expectedFiles.length}`] : []),
     ...(passed < 5 ? [`need at least 5 validated passing golden repos, found ${passed}`] : []),
+    ...(representative.ready ? [] : [
+      ...representative.errors.map((error: string) => `golden representative manifest: ${error}`),
+      ...(representative.missing_categories.length ? [`need representative golden categories: ${representative.missing_categories.join(', ')}`] : []),
+      ...(representative.distinct_repositories < Number(representative.minimum_representative_suites || 5) ? [`need ${representative.minimum_representative_suites || 5} distinct representative golden repositories, found ${representative.distinct_repositories}`] : [])
+    ]),
     ...expected.filter(item => !item.valid).flatMap(item => item.validation_errors.map((error: string) => `${item.expected_file}: ${error}`))
   ];
   return {
@@ -386,6 +486,7 @@ export function goldenProofStatus(root: string, analysis: string, expectedSource
     expectedFiles,
     expected: expected.map(item => item.expected_file),
     aggregate,
+    representativeCoverage: representative,
     result: currentRepoResult,
     suites: expected,
     total: expectedFiles.length,
@@ -412,6 +513,7 @@ export function marketProofStatusForRoot(root: string, analysis: string, current
     benchmarkDoc,
     goldenDir: golden.dir,
     goldenExpected: golden.expected,
+    goldenRepresentativeCoverage: golden.representativeCoverage,
     goldenScript,
     goldenAggregate: golden.aggregate,
     goldenProofReady: golden.ready,

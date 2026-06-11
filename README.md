@@ -458,6 +458,8 @@ npm run verify:baseline
 
 `verify:golden` runs the golden benchmark protocol described in `docs/BENCHMARK.md`. It discovers `benchmarks/golden/**/*.expected.json`, scores expected fact recall, evidence precision, unsupported-claim rate, decision readiness and report completeness, and writes fresh result JSON under an ignored temp workspace by default so verification does not dirty the checkout. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` when intentionally refreshing the tracked `benchmarks/golden/results.json` snapshot. This is proof scaffolding, not a market-superiority claim.
 
+`benchmarks/golden/manifest.json` makes "representative" machine-checkable. Strict market proof requires five verifier-passing suites in five distinct repositories across the required categories: REST/OpenAPI service, SOAP/WSDL service, event-driven service, frontend/backend app and legacy monolith. A duplicated or single-domain golden suite cannot satisfy the product-readiness gate.
+
 `verify:baseline` checks externally or manually generated baseline comparison artifacts under `benchmarks/baseline/**/*.baseline.json`. It writes fresh result JSON under an ignored temp workspace by default and fails until required raw-agent and scanner-style baselines are present, passing, and shaped with metrics, provenance and comparison targets. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` only when intentionally refreshing the tracked baseline snapshot.
 
 ## Portfolio mode

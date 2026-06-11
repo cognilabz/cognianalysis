@@ -378,6 +378,12 @@ function printMarketProofStatus(analysis) {
     console.log(`- Golden expected suites: ${status.goldenExpected.length} · ${status.goldenDir}`);
     console.log(`- Golden verifier: ${utils_1.FS.existsSync(status.goldenScript) ? 'present' : 'missing'} · ${status.goldenScript}`);
     console.log(`- Golden aggregate: ${status.goldenAggregate?.verdict || 'missing'} · validated=${status.passedGoldenRepos}/${status.totalGoldenRepos} · proof=${status.goldenProofReady ? 'ready' : 'not_ready'}`);
+    const representative = status.goldenRepresentativeCoverage || {};
+    if (representative.required_categories) {
+        console.log(`- Golden representative coverage: ${representative.ready ? 'ready' : 'not_ready'} · categories=${(representative.covered_categories || []).length}/${(representative.required_categories || []).length} · repos=${representative.distinct_repositories ?? 0}/${representative.minimum_representative_suites ?? 5}`);
+        for (const category of representative.missing_categories || [])
+            console.log(`  REPRESENTATIVE-MISSING ${category}`);
+    }
     if (!status.result) {
         console.log('- Golden result: missing · run npm run verify:golden');
     }

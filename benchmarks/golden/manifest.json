@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "minimum_representative_suites": 5,
+  "required_categories": [
+    "rest_openapi_service",
+    "soap_wsdl_service",
+    "event_driven_service",
+    "frontend_backend_app",
+    "legacy_monolith"
+  ],
+  "suites": [
+    {
+      "expected_file": "benchmarks/golden/demo-repo.expected.json",
+      "repo": "examples/demo-repo",
+      "category": "rest_openapi_service",
+      "rationale": "Seeded onboarding service exercises REST/OpenAPI, SOAP/WSDL examples, business flow extraction, quality findings and refactoring recommendations."
+    }
+  ]
+}

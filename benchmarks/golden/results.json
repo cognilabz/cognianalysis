@@ -1,11 +1,46 @@
 {
   "schemaVersion": "1.0",
   "benchmark": "golden-suite",
-  "generated_at": "2026-06-11T05:12:48.792Z",
+  "generated_by": "scripts/verify-golden.mjs",
+  "source_commit": "3703736776f337201906131be9a278ac98acef63",
+  "generated_at": "2026-06-11T22:55:40.457Z",
   "total_repos": 1,
   "passed_repos": 1,
   "failed_repos": 0,
   "minimum_market_proof_repos": 5,
+  "representative_coverage": {
+    "manifest_file": "benchmarks/golden/manifest.json",
+    "valid_manifest": true,
+    "ready": false,
+    "minimum_representative_suites": 5,
+    "required_categories": [
+      "rest_openapi_service",
+      "soap_wsdl_service",
+      "event_driven_service",
+      "frontend_backend_app",
+      "legacy_monolith"
+    ],
+    "covered_categories": [
+      "rest_openapi_service"
+    ],
+    "missing_categories": [
+      "soap_wsdl_service",
+      "event_driven_service",
+      "frontend_backend_app",
+      "legacy_monolith"
+    ],
+    "distinct_repositories": 1,
+    "suites": [
+      {
+        "expected_file": "benchmarks/golden/demo-repo.expected.json",
+        "repo": "examples/demo-repo",
+        "category": "rest_openapi_service",
+        "verdict": "pass",
+        "valid": true
+      }
+    ],
+    "errors": []
+  },
   "market_proof_ready": false,
   "verdict": "pass",
   "results": [

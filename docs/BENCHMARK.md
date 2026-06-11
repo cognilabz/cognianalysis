@@ -20,6 +20,8 @@ npm run verify:baseline
 
 That command reads `benchmarks/baseline/**/*.baseline.json`, writes fresh result JSON under an ignored temp workspace by default, and fails until the required baseline kinds are present, passing and shaped with required metrics, provenance and comparison target fields. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` only when intentionally refreshing the tracked `benchmarks/baseline/results.json` snapshot. It intentionally does not invent baseline results.
 
+Representative proof is also separate from simple suite correctness. `benchmarks/golden/manifest.json` lists the required representative categories and maps each expected suite to exactly one category and repository. Strict market proof requires at least five verifier-passing suites across five distinct repositories and all required categories: REST/OpenAPI service, SOAP/WSDL service, event-driven service, frontend/backend app and legacy monolith. The current demo is only one manifest row, so `npm run verify:golden` can pass while `market_proof_ready` remains false.
+
 ## Metrics
 
 - `fact_recall`: expected facts found in the final report.

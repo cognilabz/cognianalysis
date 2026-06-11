@@ -41,6 +41,68 @@ function perfectMetricDerivation() {
   };
 }
 
+function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit') {
+  const repo = `fixtures/repo-${index}`;
+  const expectedFile = `benchmarks/golden/repo-${index}.expected.json`;
+  const metrics = {
+    fact_recall: 1,
+    evidence_precision: 1,
+    unsupported_claim_rate: 0,
+    decision_readiness: 1,
+    report_completeness: 1,
+    invalid_evidence: 0
+  };
+  writeJson(join(root, expectedFile), {
+    benchmark: `repo-${index}`,
+    repo,
+    facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+    claims: [{ id: 'claim-1', expected: 'supported claim' }],
+    decisions: [{ id: 'decision-1', expected: 'useful decision' }],
+    minimums: { fact_recall: 1 }
+  });
+  writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), {
+    schemaVersion: '1.0',
+    benchmark: `repo-${index}`,
+    generated_by: 'scripts/verify-golden.mjs',
+    source_commit: sourceCommit,
+    expected_file: expectedFile,
+    repo,
+    verdict: 'pass',
+    metrics,
+    failures: []
+  });
+  return {
+    benchmark: `repo-${index}`,
+    repo,
+    expected_file: expectedFile,
+    verdict: 'pass',
+    metrics,
+    failures: []
+  };
+}
+
+function writePerfectGoldenAggregate(root, results, sourceCommit = 'current-commit', representativeCoverage = {}) {
+  writeJson(join(root, 'benchmarks', 'golden', 'results.json'), {
+    schemaVersion: '1.0',
+    benchmark: 'golden-suite',
+    generated_by: 'scripts/verify-golden.mjs',
+    source_commit: sourceCommit,
+    total_repos: results.length,
+    passed_repos: results.length,
+    failed_repos: 0,
+    minimum_market_proof_repos: 5,
+    representative_coverage: {
+      ready: true,
+      distinct_repositories: results.length,
+      missing_categories: [],
+      ...representativeCoverage
+    },
+    market_proof_ready: true,
+    verdict: 'pass',
+    results
+  });
+}
+
 function trace(label, status = 'covered', evidence = [ev]) {
   return { label, status, evidence };
 }
@@ -217,6 +279,61 @@ function missingIds(result) {
     assert.equal(status.goldenProofReady, false, 'forged golden aggregate without per-suite verifier artifacts must not be proof-ready');
     assert.equal(status.passedGoldenRepos, 0, 'validated passing golden count must come from per-suite result artifacts');
     assert(status.strictFailures.some(item => item.includes('missing verifier result artifact')), 'strict failures must name missing per-suite golden artifacts');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-golden-manifest-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) results.push(writePerfectGoldenSuite(root, i));
+    writePerfectGoldenAggregate(root, results);
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'five valid golden suites without a representative manifest must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('missing golden representative manifest')), 'strict failures must name the missing representative manifest');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-golden-category-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) results.push(writePerfectGoldenSuite(root, i));
+    writeJson(join(root, 'benchmarks', 'golden', 'manifest.json'), {
+      schemaVersion: '1.0',
+      minimum_representative_suites: 5,
+      required_categories: ['rest_openapi_service', 'soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith'],
+      suites: results.map(result => ({
+        expected_file: result.expected_file,
+        repo: result.repo,
+        category: 'rest_openapi_service',
+        rationale: 'Deliberately duplicated category fixture.'
+      }))
+    });
+    writePerfectGoldenAggregate(root, results, 'current-commit', {
+      ready: false,
+      distinct_repositories: 5,
+      missing_categories: ['soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith']
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'five valid golden suites in one representative category must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('need representative golden categories')), 'strict failures must name missing representative categories');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

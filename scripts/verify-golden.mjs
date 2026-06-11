@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 const root = resolve(new URL('..', import.meta.url).pathname);
 const cli = join(root, 'dist', 'cli.js');
 const goldenRoot = join(root, 'benchmarks', 'golden');
+const manifestPath = join(goldenRoot, 'manifest.json');
 const verifierId = 'scripts/verify-golden.mjs';
 const verifyRoot = mkdtempSync(join(root, '.verify-tmp-golden-'));
 const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
@@ -47,6 +48,15 @@ function gitCommit() {
 function asList(value) {
   if (value === null || value === undefined) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+function readJsonObject(file, fallback = {}) {
+  if (!existsSync(file)) return fallback;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return fallback;
+  }
 }
 
 function hasEvidence(item) {
@@ -155,6 +165,92 @@ function scoreExpected(expectedPath) {
   return result;
 }
 
+function representativeCoverage(expectedFiles, results) {
+  const manifest = readJsonObject(manifestPath, null);
+  const expectedByFile = new Map(expectedFiles.map(file => {
+    const expected = readJsonObject(file, {});
+    return [relative(root, file).replace(/\\/g, '/'), expected];
+  }));
+  const resultByExpectedFile = new Map(results.map(result => [result.expected_file, result]));
+  const errors = [];
+  if (!manifest) {
+    return {
+      manifest_file: relative(root, manifestPath).replace(/\\/g, '/'),
+      valid_manifest: false,
+      ready: false,
+      minimum_representative_suites: 5,
+      required_categories: [],
+      covered_categories: [],
+      missing_categories: [],
+      distinct_repositories: 0,
+      suites: [],
+      errors: ['missing golden representative manifest']
+    };
+  }
+
+  const minimumRepresentativeSuites = Number(manifest.minimum_representative_suites || 0);
+  const requiredCategories = asList(manifest.required_categories).map(String).filter(Boolean);
+  const suites = asList(manifest.suites);
+  if (manifest.schemaVersion !== '1.0') errors.push('manifest schemaVersion must be 1.0');
+  if (!Number.isFinite(minimumRepresentativeSuites) || minimumRepresentativeSuites < 5) errors.push('manifest minimum_representative_suites must be at least 5');
+  if (requiredCategories.length < 5) errors.push('manifest required_categories must include at least 5 categories');
+
+  const seenExpectedFiles = new Set();
+  const seenRepos = new Set();
+  const duplicateRepos = new Set();
+  const rows = suites.map((suite, index) => {
+    const expectedFile = String(suite?.expected_file || '').trim();
+    const repo = String(suite?.repo || '').trim();
+    const category = String(suite?.category || '').trim();
+    const rationale = String(suite?.rationale || '').trim();
+    const rowErrors = [];
+    if (!expectedFile) rowErrors.push('expected_file is required');
+    if (expectedFile && !expectedByFile.has(expectedFile)) rowErrors.push('expected_file does not match a discovered golden expected file');
+    if (expectedFile && seenExpectedFiles.has(expectedFile)) rowErrors.push('expected_file is duplicated in manifest');
+    if (expectedFile) seenExpectedFiles.add(expectedFile);
+    const expected = expectedByFile.get(expectedFile) || {};
+    if (!repo) rowErrors.push('repo is required');
+    if (repo && expected.repo && repo !== expected.repo) rowErrors.push(`repo must match expected repo ${expected.repo}`);
+    if (repo && seenRepos.has(repo)) duplicateRepos.add(repo);
+    if (repo) seenRepos.add(repo);
+    if (!category) rowErrors.push('category is required');
+    if (category && !requiredCategories.includes(category)) rowErrors.push('category must be listed in required_categories');
+    if (!rationale) rowErrors.push('rationale is required');
+    if (rowErrors.length) errors.push(`manifest suite ${expectedFile || index + 1}: ${rowErrors.join('; ')}`);
+    const result = resultByExpectedFile.get(expectedFile);
+    return {
+      expected_file: expectedFile,
+      repo,
+      category,
+      verdict: result?.verdict || 'missing',
+      valid: rowErrors.length === 0 && result?.verdict === 'pass'
+    };
+  });
+  for (const expectedFile of expectedByFile.keys()) {
+    if (!seenExpectedFiles.has(expectedFile)) errors.push(`manifest missing discovered expected file ${expectedFile}`);
+  }
+  for (const repo of duplicateRepos) errors.push(`manifest repo is duplicated: ${repo}`);
+  const coveredCategories = [...new Set(rows.filter(row => row.valid).map(row => row.category))].sort();
+  const missingCategories = requiredCategories.filter(category => !coveredCategories.includes(category));
+  const distinctRepositories = new Set(rows.filter(row => row.valid).map(row => row.repo).filter(Boolean)).size;
+  const validSuites = rows.filter(row => row.valid).length;
+  return {
+    manifest_file: relative(root, manifestPath).replace(/\\/g, '/'),
+    valid_manifest: errors.length === 0,
+    ready: errors.length === 0
+      && validSuites >= minimumRepresentativeSuites
+      && distinctRepositories >= minimumRepresentativeSuites
+      && missingCategories.length === 0,
+    minimum_representative_suites: minimumRepresentativeSuites,
+    required_categories: requiredCategories,
+    covered_categories: coveredCategories,
+    missing_categories: missingCategories,
+    distinct_repositories: distinctRepositories,
+    suites: rows,
+    errors
+  };
+}
+
 const expectedFiles = walk(goldenRoot, file => file.endsWith('.expected.json'));
 if (!expectedFiles.length) {
   console.log(`Golden benchmark: fail`);
@@ -165,6 +261,7 @@ if (!expectedFiles.length) {
 const sourceCommit = gitCommit();
 const results = expectedFiles.map(scoreExpected);
 const failed = results.filter(result => result.verdict !== 'pass');
+const representative = representativeCoverage(expectedFiles, results);
 const aggregate = {
   schemaVersion: '1.0',
   benchmark: 'golden-suite',
@@ -175,7 +272,8 @@ const aggregate = {
   passed_repos: results.length - failed.length,
   failed_repos: failed.length,
   minimum_market_proof_repos: 5,
-  market_proof_ready: results.length >= 5 && failed.length === 0,
+  representative_coverage: representative,
+  market_proof_ready: results.length >= 5 && failed.length === 0 && representative.ready === true,
   verdict: failed.length ? 'fail' : 'pass',
   results: results.map(result => ({
     benchmark: result.benchmark,
