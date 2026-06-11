@@ -53,7 +53,7 @@ Parallel/caching readiness is proven with:
 cognianalysis dev prove-orchestration .
 ```
 
-That command refuses one-workpack or stale analyses. It writes proof only after concurrent artifact-hash workers validate at least two completed source-tier workpack outputs and a deterministic cache-hit key can be derived from the current run id, source commit, product request hash, artifact path and artifact hash.
+That command refuses one-workpack or stale analyses, and it also refuses post-hoc completed outputs without harness evidence. It writes proof only after `.analysis/data/orchestration-execution-log.json` records at least two source-tier workpack worker executions with matching task IDs, timings and output hashes, and `.analysis/data/cache-ledger.json` records a prior cache entry that was reused later with the deterministic run/request/artifact cache key.
 
 ## Required Expansion
 

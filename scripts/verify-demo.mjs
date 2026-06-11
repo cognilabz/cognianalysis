@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -71,6 +72,10 @@ function assert(condition, message) {
 
 function writeJson(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
+}
+
+function sha1Short(value, len = 20) {
+  return createHash('sha1').update(value).digest('hex').slice(0, len);
 }
 
 function runtimeSourceFiles(dir) {
@@ -459,9 +464,43 @@ writeJson(sourceTierDataManifestPath, sourceTierManifest);
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
 run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+const noLogProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
+const noLogProofOutput = `${noLogProof.stdout || ''}\n${noLogProof.stderr || ''}`;
+assert(noLogProofOutput.includes('Missing orchestration execution log'), 'Proof command must refuse two completed workpack outputs without harness execution logs');
+let orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+const hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
+const firstOutputHash = hashByPath.get('source_tiers/source-tier-0001.json');
+const secondOutputHash = hashByPath.get('source_tiers/source-tier-0002.json');
+writeJson(join(orchestrationAnalysis, 'data', 'orchestration-execution-log.json'), {
+  schemaVersion: '1.0',
+  execution_kind: 'source_tier_workpack_execution',
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  worker_tasks: [
+    { worker_id: 'worker-1', task_id: 'source-tier-0001', started_at: '2026-01-01T00:00:00.000Z', ended_at: '2026-01-01T00:00:10.000Z', duration_ms: 10000, artifact_path: 'source_tiers/source-tier-0001.json', artifact_hash: firstOutputHash },
+    { worker_id: 'worker-2', task_id: 'source-tier-0002', started_at: '2026-01-01T00:00:05.000Z', ended_at: '2026-01-01T00:00:15.000Z', duration_ms: 10000, artifact_path: 'source_tiers/source-tier-0002.json', artifact_hash: secondOutputHash }
+  ]
+});
+const cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0001.json|${firstOutputHash}`, 20);
+writeJson(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), {
+  schemaVersion: '1.0',
+  ledger_kind: 'artifact_cache_ledger',
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  cache_entries: [
+    {
+      cache_key: cacheKey,
+      hit: true,
+      artifact_path: 'source_tiers/source-tier-0001.json',
+      artifact_hash: firstOutputHash,
+      created_at: '2026-01-01T00:00:20.000Z',
+      reused_at: '2026-01-01T00:00:25.000Z'
+    }
+  ]
+});
 const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
-const orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === true, `Generated orchestration proof should satisfy the contract: ${(orchestrationBundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);

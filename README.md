@@ -432,7 +432,7 @@ cognianalysis dev aggregate .     # merge .analysis/llm/*.json into .analysis/da
 cognianalysis dev coverage .      # print target context, Tier 1 coverage and source inventory accounting
 cognianalysis dev render .        # render .analysis/report/index.html
 cognianalysis dev validate .      # validate file:line evidence references
-cognianalysis dev prove-orchestration . # record parallel/cache proof from completed source-tier workpack artifacts
+cognianalysis dev prove-orchestration . # materialize parallel/cache proof from harness execution/cache logs
 cognianalysis dev doctor . --market-proof --strict
 cognianalysis dev portfolio --repos repos.txt --out portfolio-analysis
 cognianalysis run .               # compatibility alias for the product-mode loop
@@ -457,7 +457,7 @@ npm run verify:baseline
 
 `cognianalysis eval` prints two separate gates: benchmark/market-proof status and original-product readiness. Original-product readiness answers whether the entry-question vision is actually implemented and simplified: evidence-backed decision documents, functional and technical/API views, examples, bugs/security/quality, process analysis, refactoring/modernization roadmap, representative golden proof, baseline comparison proof, a thin artifact model and productized parallel/caching orchestration. Strict mode fails until both gates are ready; this prevents the project from claiming "fully covered" or "perfectly simplified" from a single demo report or documentation-only change.
 
-`cognianalysis dev prove-orchestration` writes `.analysis/data/parallel-execution-proof.json` and `.analysis/data/cache-reuse-proof.json` only when the current analysis already has at least two completed source-tier workpack outputs with artifact hashes, complete run provenance and a fresh product request. The command runs concurrent artifact-hash workers and derives deterministic cache-hit keys from the run id, source commit, request hash, artifact path and artifact hash. Small one-workpack analyses are rejected instead of being self-certified as parallel execution.
+`cognianalysis dev prove-orchestration` writes `.analysis/data/parallel-execution-proof.json` and `.analysis/data/cache-reuse-proof.json` only from pre-existing harness evidence: `.analysis/data/orchestration-execution-log.json` must record at least two source-tier workpack worker executions with matching task IDs, timings and output hashes, and `.analysis/data/cache-ledger.json` must record a prior cache entry reused later with a deterministic cache key. Small one-workpack analyses, post-hoc completed outputs without execution logs, and cache-key generation without prior reuse are rejected instead of being self-certified as parallel execution.
 
 `verify:golden` runs the golden benchmark protocol described in `docs/BENCHMARK.md`. It discovers `benchmarks/golden/**/*.expected.json`, scores expected fact recall, evidence precision, unsupported-claim rate, decision readiness and report completeness, and writes fresh result JSON under an ignored temp workspace by default so verification does not dirty the checkout. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` when intentionally refreshing the tracked `benchmarks/golden/results.json` snapshot. This is proof scaffolding, not a market-superiority claim.
 
