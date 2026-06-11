@@ -450,18 +450,33 @@ function cmdPrepare(args: string[]): number {
   return 0;
 }
 
-function productAnalysisRequest(args: string[]): any {
-  const mode = String(argValue(args, '--mode', 'brief') || 'brief').trim().toLowerCase();
+function productAnalysisRequest(args: string[], previous?: any): any {
+  const previousScopeRequest = previous?.analysis_scope_request || {};
+  const previousTarget = previous?.target || {};
+  const hasScope = args.includes('--scope');
+  const hasScopeFiles = args.includes('--scope-files');
+  if (previous && hasScopeFiles && !hasScope && String(previousScopeRequest.mode || 'complete') === 'complete') {
+    throw new Error('--scope-files requires --scope when the previous product request is complete.');
+  }
+  const mode = String(args.includes('--mode') ? argValue(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
   if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
-  const goal = String(argValue(args, '--goal', '') || '').trim();
-  const scopeMode = analysisScopeMode(args);
-  const scopeFiles = scopeMode === 'complete' ? null : Math.max(1, numericArg(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400));
+  const goal = String(args.includes('--goal') ? argValue(args, '--goal', '') : previous?.goal || '').trim();
+  const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || 'complete');
+  if (!SCOPE_MODES.has(scopeMode)) throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
+  const previousScopeFiles = Number(previousScopeRequest.scope_files || 0);
+  const scopeFiles = scopeMode === 'complete'
+    ? null
+    : hasScopeFiles
+      ? Math.max(1, numericArg(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400))
+      : previousScopeFiles > 0
+        ? previousScopeFiles
+        : Math.max(1, scopeMode === 'critical-path' ? 1200 : 400);
   const target = {
-    flow: String(argValue(args, '--flow', '') || '').trim(),
-    module: String(argValue(args, '--module', '') || '').trim(),
-    api: String(argValue(args, '--api', '') || '').trim(),
-    risk: String(argValue(args, '--risk', '') || '').trim(),
-    decision: String(argValue(args, '--decision', '') || '').trim()
+    flow: String(args.includes('--flow') ? argValue(args, '--flow', '') : previousTarget.flow || '').trim(),
+    module: String(args.includes('--module') ? argValue(args, '--module', '') : previousTarget.module || '').trim(),
+    api: String(args.includes('--api') ? argValue(args, '--api', '') : previousTarget.api || '').trim(),
+    risk: String(args.includes('--risk') ? argValue(args, '--risk', '') : previousTarget.risk || '').trim(),
+    decision: String(args.includes('--decision') ? argValue(args, '--decision', '') : previousTarget.decision || '').trim()
   };
   const hasTarget = Object.values(target).some(Boolean);
   if (mode === 'deep-dive' && !hasTarget && !goal) {
@@ -514,7 +529,7 @@ function writeProductAnalysisRequest(repo: string, analysis: string, args: strin
   const requestPath = Path.join(analysis, 'data', 'product-analysis-request.json');
   const previous = loadJson<any | null>(requestPath, null);
   if (previous && !hasProductRequestOption(args)) return previous;
-  const request = productAnalysisRequest(args);
+  const request = productAnalysisRequest(args, previous || undefined);
   const stableRequest = ({ generated_at: _generatedAt, repo: _repo, request_hash: _hash, ...rest }: any) => rest;
   const previousHash = previous ? sha1Short(JSON.stringify(stableRequest(previous)), 16) : '';
   const currentHash = sha1Short(JSON.stringify(stableRequest(request)), 16);

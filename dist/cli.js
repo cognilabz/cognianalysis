@@ -456,19 +456,35 @@ function cmdPrepare(args) {
     console.log(stagedLlmWorkflowMessage());
     return 0;
 }
-function productAnalysisRequest(args) {
-    const mode = String((0, utils_1.argValue)(args, '--mode', 'brief') || 'brief').trim().toLowerCase();
+function productAnalysisRequest(args, previous) {
+    const previousScopeRequest = previous?.analysis_scope_request || {};
+    const previousTarget = previous?.target || {};
+    const hasScope = args.includes('--scope');
+    const hasScopeFiles = args.includes('--scope-files');
+    if (previous && hasScopeFiles && !hasScope && String(previousScopeRequest.mode || 'complete') === 'complete') {
+        throw new Error('--scope-files requires --scope when the previous product request is complete.');
+    }
+    const mode = String(args.includes('--mode') ? (0, utils_1.argValue)(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
     if (!PRODUCT_ANALYSIS_MODES.has(mode))
         throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
-    const goal = String((0, utils_1.argValue)(args, '--goal', '') || '').trim();
-    const scopeMode = analysisScopeMode(args);
-    const scopeFiles = scopeMode === 'complete' ? null : Math.max(1, (0, utils_1.numericArg)(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400));
+    const goal = String(args.includes('--goal') ? (0, utils_1.argValue)(args, '--goal', '') : previous?.goal || '').trim();
+    const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || 'complete');
+    if (!SCOPE_MODES.has(scopeMode))
+        throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
+    const previousScopeFiles = Number(previousScopeRequest.scope_files || 0);
+    const scopeFiles = scopeMode === 'complete'
+        ? null
+        : hasScopeFiles
+            ? Math.max(1, (0, utils_1.numericArg)(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400))
+            : previousScopeFiles > 0
+                ? previousScopeFiles
+                : Math.max(1, scopeMode === 'critical-path' ? 1200 : 400);
     const target = {
-        flow: String((0, utils_1.argValue)(args, '--flow', '') || '').trim(),
-        module: String((0, utils_1.argValue)(args, '--module', '') || '').trim(),
-        api: String((0, utils_1.argValue)(args, '--api', '') || '').trim(),
-        risk: String((0, utils_1.argValue)(args, '--risk', '') || '').trim(),
-        decision: String((0, utils_1.argValue)(args, '--decision', '') || '').trim()
+        flow: String(args.includes('--flow') ? (0, utils_1.argValue)(args, '--flow', '') : previousTarget.flow || '').trim(),
+        module: String(args.includes('--module') ? (0, utils_1.argValue)(args, '--module', '') : previousTarget.module || '').trim(),
+        api: String(args.includes('--api') ? (0, utils_1.argValue)(args, '--api', '') : previousTarget.api || '').trim(),
+        risk: String(args.includes('--risk') ? (0, utils_1.argValue)(args, '--risk', '') : previousTarget.risk || '').trim(),
+        decision: String(args.includes('--decision') ? (0, utils_1.argValue)(args, '--decision', '') : previousTarget.decision || '').trim()
     };
     const hasTarget = Object.values(target).some(Boolean);
     if (mode === 'deep-dive' && !hasTarget && !goal) {
@@ -522,7 +538,7 @@ function writeProductAnalysisRequest(repo, analysis, args) {
     const previous = (0, utils_1.loadJson)(requestPath, null);
     if (previous && !hasProductRequestOption(args))
         return previous;
-    const request = productAnalysisRequest(args);
+    const request = productAnalysisRequest(args, previous || undefined);
     const stableRequest = ({ generated_at: _generatedAt, repo: _repo, request_hash: _hash, ...rest }) => rest;
     const previousHash = previous ? (0, utils_1.sha1Short)(JSON.stringify(stableRequest(previous)), 16) : '';
     const currentHash = (0, utils_1.sha1Short)(JSON.stringify(stableRequest(request)), 16);
