@@ -2,7 +2,7 @@ import { Path, ensureDir, escapeHtml, loadJson, safeJsonForHtml, utcNow, writeJs
 import { loadBundle } from './aggregate';
 
 export function renderReport(analysisDir: string, outputDir?: string, title?: string): string {
-  const bundle = loadBundle(analysisDir);
+  const bundle = publicReportBundle(loadBundle(analysisDir));
   const out = outputDir || Path.join(analysisDir, 'report');
   ensureDir(out);
   const reportTitle = title || bundle.analysis_document?.title || `Cognianalysis · ${bundle.profile?.repo_name || 'Repository'}`;
@@ -19,6 +19,31 @@ export function renderReport(analysisDir: string, outputDir?: string, title?: st
     generated_at: utcNow()
   });
   return index;
+}
+
+function publicReportBundle(bundle: any): any {
+  const copy = JSON.parse(JSON.stringify(bundle || {}));
+  const localRoot = String(copy.profile?.root || '');
+  const redactLocalPath = (value: any): any => {
+    if (typeof value === 'string' && localRoot && Path.isAbsolute(localRoot) && value.startsWith(localRoot)) {
+      const relative = Path.relative(localRoot, value).replace(/\\/g, '/');
+      return relative && relative !== '..' && !relative.startsWith('../') ? `<local-repo>/${relative}` : '<local-repo>';
+    }
+    if (Array.isArray(value)) return value.map(redactLocalPath);
+    if (value && typeof value === 'object') {
+      for (const key of Object.keys(value)) value[key] = redactLocalPath(value[key]);
+    }
+    return value;
+  };
+  redactLocalPath(copy);
+  if (copy.profile && typeof copy.profile === 'object') {
+    const root = localRoot;
+    if (Path.isAbsolute(root)) {
+      copy.profile.local_root_hidden = true;
+      copy.profile.root = '';
+    }
+  }
+  return copy;
 }
 
 function chip(value: any, cls = ''): string {
@@ -372,6 +397,11 @@ export function buildHtml(bundle: any, title: string): string {
   const nav = sections.map(([id, label], index) => `<a class="nav-link ${index === 0 ? 'active' : ''}" href="#${id}" data-section="${id}">${escapeHtml(label)}</a>`).join('');
   const htmlSections = sections.map(([id, label, body], index) => `<section class="view ${index === 0 ? 'active' : ''}" id="${id}"><div class="section-title"><h2>${escapeHtml(label)}</h2></div>${body}</section>`).join('\n');
   const dataJson = safeJsonForHtml(bundle);
+  const rootLine = bundle.profile?.root
+    ? `<p class="muted">${escapeHtml(bundle.profile.root)}</p>`
+    : bundle.profile?.local_root_hidden
+      ? '<p class="muted">Local repository path hidden in report output.</p>'
+      : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -384,9 +414,8 @@ export function buildHtml(bundle: any, title: string): string {
 <script id="analysis-data" type="application/json">${dataJson}</script>
 <div class="layout">
 <aside class="sidebar"><div class="brand"><div class="logo">${escapeHtml(initials(shellTitle))}</div><div><div class="brand-title">${escapeHtml(shellTitle)}</div><div class="brand-subtitle">${escapeHtml(shellSubtitle)}</div></div></div><nav>${nav}</nav><div class="side-note"><strong>${escapeHtml(bundle.profile?.repo_name || 'Repository')}</strong><br><span>${escapeHtml(bundle.profile?.repo_type || 'unknown')}</span></div></aside>
-<main><header class="hero"><div><p class="eyebrow">${escapeHtml(heroEyebrow)}</p><h1>${escapeHtml(title)}</h1><p class="muted">${escapeHtml(bundle.profile?.root || '')}</p></div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${htmlSections}</main>
+<main><header class="hero"><div><p class="eyebrow">${escapeHtml(heroEyebrow)}</p><h1>${escapeHtml(title)}</h1>${rootLine}</div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${htmlSections}</main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>${JS}</script>
 </body>
 </html>`;

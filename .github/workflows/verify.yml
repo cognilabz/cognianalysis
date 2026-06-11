@@ -9,6 +9,10 @@ on:
 jobs:
   proof-harness:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 24]
 
     steps:
       - name: Checkout
@@ -17,13 +21,16 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
         run: npm install --no-package-lock
 
       - name: Build
         run: npm run build
+
+      - name: Verify committed dist is current
+        run: git diff --exit-code -- dist
 
       - name: Verify LLM authority boundary
         run: npm run verify:llm-boundary
@@ -42,6 +49,21 @@ jobs:
             echo "$status"
             exit 1
           fi
+
+      - name: Verify packed package smoke
+        shell: bash
+        run: |
+          tmpdir="$(mktemp -d)"
+          npm pack --json --pack-destination "$tmpdir" > "$tmpdir/pack.json"
+          tarball="$(node -e "const path=require('path'); const fs=require('fs'); const pack=JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))[0]; console.log(path.join(process.argv[1], pack.filename));" "$tmpdir" "$tmpdir/pack.json")"
+          smoke="$(mktemp -d)"
+          mkdir -p "$smoke/target"
+          cd "$smoke"
+          npm init -y
+          npm install --no-package-lock "$tarball"
+          npx cognianalysis --help
+          npx cognianalysis init-harness ./target --harness generic
+          test -f ./target/AGENTS.md
 
       - name: Record non-blocking market-proof boundary
         shell: bash

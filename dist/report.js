@@ -5,7 +5,7 @@ exports.buildHtml = buildHtml;
 const utils_1 = require("./utils");
 const aggregate_1 = require("./aggregate");
 function renderReport(analysisDir, outputDir, title) {
-    const bundle = (0, aggregate_1.loadBundle)(analysisDir);
+    const bundle = publicReportBundle((0, aggregate_1.loadBundle)(analysisDir));
     const out = outputDir || utils_1.Path.join(analysisDir, 'report');
     (0, utils_1.ensureDir)(out);
     const reportTitle = title || bundle.analysis_document?.title || `Cognianalysis · ${bundle.profile?.repo_name || 'Repository'}`;
@@ -22,6 +22,32 @@ function renderReport(analysisDir, outputDir, title) {
         generated_at: (0, utils_1.utcNow)()
     });
     return index;
+}
+function publicReportBundle(bundle) {
+    const copy = JSON.parse(JSON.stringify(bundle || {}));
+    const localRoot = String(copy.profile?.root || '');
+    const redactLocalPath = (value) => {
+        if (typeof value === 'string' && localRoot && utils_1.Path.isAbsolute(localRoot) && value.startsWith(localRoot)) {
+            const relative = utils_1.Path.relative(localRoot, value).replace(/\\/g, '/');
+            return relative && relative !== '..' && !relative.startsWith('../') ? `<local-repo>/${relative}` : '<local-repo>';
+        }
+        if (Array.isArray(value))
+            return value.map(redactLocalPath);
+        if (value && typeof value === 'object') {
+            for (const key of Object.keys(value))
+                value[key] = redactLocalPath(value[key]);
+        }
+        return value;
+    };
+    redactLocalPath(copy);
+    if (copy.profile && typeof copy.profile === 'object') {
+        const root = localRoot;
+        if (utils_1.Path.isAbsolute(root)) {
+            copy.profile.local_root_hidden = true;
+            copy.profile.root = '';
+        }
+    }
+    return copy;
 }
 function chip(value, cls = '') {
     return `<span class="chip ${cls}">${(0, utils_1.escapeHtml)(value)}</span>`;
@@ -375,6 +401,11 @@ function buildHtml(bundle, title) {
     const nav = sections.map(([id, label], index) => `<a class="nav-link ${index === 0 ? 'active' : ''}" href="#${id}" data-section="${id}">${(0, utils_1.escapeHtml)(label)}</a>`).join('');
     const htmlSections = sections.map(([id, label, body], index) => `<section class="view ${index === 0 ? 'active' : ''}" id="${id}"><div class="section-title"><h2>${(0, utils_1.escapeHtml)(label)}</h2></div>${body}</section>`).join('\n');
     const dataJson = (0, utils_1.safeJsonForHtml)(bundle);
+    const rootLine = bundle.profile?.root
+        ? `<p class="muted">${(0, utils_1.escapeHtml)(bundle.profile.root)}</p>`
+        : bundle.profile?.local_root_hidden
+            ? '<p class="muted">Local repository path hidden in report output.</p>'
+            : '';
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -387,9 +418,8 @@ function buildHtml(bundle, title) {
 <script id="analysis-data" type="application/json">${dataJson}</script>
 <div class="layout">
 <aside class="sidebar"><div class="brand"><div class="logo">${(0, utils_1.escapeHtml)(initials(shellTitle))}</div><div><div class="brand-title">${(0, utils_1.escapeHtml)(shellTitle)}</div><div class="brand-subtitle">${(0, utils_1.escapeHtml)(shellSubtitle)}</div></div></div><nav>${nav}</nav><div class="side-note"><strong>${(0, utils_1.escapeHtml)(bundle.profile?.repo_name || 'Repository')}</strong><br><span>${(0, utils_1.escapeHtml)(bundle.profile?.repo_type || 'unknown')}</span></div></aside>
-<main><header class="hero"><div><p class="eyebrow">${(0, utils_1.escapeHtml)(heroEyebrow)}</p><h1>${(0, utils_1.escapeHtml)(title)}</h1><p class="muted">${(0, utils_1.escapeHtml)(bundle.profile?.root || '')}</p></div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${htmlSections}</main>
+<main><header class="hero"><div><p class="eyebrow">${(0, utils_1.escapeHtml)(heroEyebrow)}</p><h1>${(0, utils_1.escapeHtml)(title)}</h1>${rootLine}</div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${htmlSections}</main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>${JS}</script>
 </body>
 </html>`;

@@ -5,8 +5,10 @@ exports.exists = exists;
 exports.ensureDir = ensureDir;
 exports.readText = readText;
 exports.writeText = writeText;
+exports.writeTextIfChanged = writeTextIfChanged;
 exports.loadJson = loadJson;
 exports.writeJson = writeJson;
+exports.writeJsonIfChanged = writeJsonIfChanged;
 exports.rel = rel;
 exports.toPosix = toPosix;
 exports.utcNow = utcNow;
@@ -59,6 +61,15 @@ function writeText(file, text) {
     ensureDir(path.dirname(file));
     fs.writeFileSync(file, text, 'utf8');
 }
+function writeTextIfChanged(file, text) {
+    try {
+        if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text)
+            return false;
+    }
+    catch { }
+    writeText(file, text);
+    return true;
+}
 function loadJson(file, fallback) {
     try {
         if (!fs.existsSync(file))
@@ -70,7 +81,10 @@ function loadJson(file, fallback) {
     }
 }
 function writeJson(file, value) {
-    writeText(file, JSON.stringify(value, null, 2) + '\n');
+    writeTextIfChanged(file, JSON.stringify(value, null, 2) + '\n');
+}
+function writeJsonIfChanged(file, value) {
+    return writeTextIfChanged(file, JSON.stringify(value, null, 2) + '\n');
 }
 function rel(file, root) {
     const r = path.relative(root, file).replace(/\\/g, '/');

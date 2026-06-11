@@ -31,6 +31,14 @@ export function writeText(file: string, text: string): void {
   fs.writeFileSync(file, text, 'utf8');
 }
 
+export function writeTextIfChanged(file: string, text: string): boolean {
+  try {
+    if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text) return false;
+  } catch {}
+  writeText(file, text);
+  return true;
+}
+
 export function loadJson<T = any>(file: string, fallback: T): T {
   try {
     if (!fs.existsSync(file)) return fallback;
@@ -41,7 +49,11 @@ export function loadJson<T = any>(file: string, fallback: T): T {
 }
 
 export function writeJson(file: string, value: any): void {
-  writeText(file, JSON.stringify(value, null, 2) + '\n');
+  writeTextIfChanged(file, JSON.stringify(value, null, 2) + '\n');
+}
+
+export function writeJsonIfChanged(file: string, value: any): boolean {
+  return writeTextIfChanged(file, JSON.stringify(value, null, 2) + '\n');
 }
 
 export function rel(file: string, root: string): string {
