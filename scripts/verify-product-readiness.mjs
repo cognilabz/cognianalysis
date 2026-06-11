@@ -33,6 +33,14 @@ function sha1(value) {
   return createHash('sha1').update(value).digest('hex');
 }
 
+function perfectMetricDerivation() {
+  return {
+    fact_rows: [{ id: 'fact-1', found: true, evidence_present: true }],
+    claim_rows: [{ id: 'claim-1', unsupported: false }],
+    decision_rows: [{ id: 'decision-1', useful: true }]
+  };
+}
+
 function trace(label, status = 'covered', evidence = [ev]) {
   return { label, status, evidence };
 }
@@ -318,7 +326,8 @@ function missingIds(result) {
         },
         comparison: {
           target: 'benchmarks/golden/repo-1.expected.json'
-        }
+        },
+        metric_derivation: perfectMetricDerivation()
       });
     }
     writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
@@ -379,7 +388,8 @@ function missingIds(result) {
         },
         comparison: {
           target: 'benchmarks/golden/repo-1.expected.json'
-        }
+        },
+        metric_derivation: perfectMetricDerivation()
       });
     }
     writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
@@ -439,7 +449,8 @@ function missingIds(result) {
         },
         comparison: {
           target: 'benchmarks/golden/repo-1.expected.json'
-        }
+        },
+        metric_derivation: perfectMetricDerivation()
       });
     }
     writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
@@ -458,6 +469,69 @@ function missingIds(result) {
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.baselineProofReady, false, 'baseline artifacts with missing provenance output must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('provenance artifact does not exist')), 'strict failures must reject missing baseline provenance artifacts');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-missing-baseline-derivation-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'golden', 'repo-1.expected.json'), {
+      benchmark: 'repo-1',
+      repo: 'fixtures/repo-1',
+      facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      minimums: { fact_recall: 1 }
+    });
+    for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      const artifactText = `${kind} baseline output\n`;
+      writeFixture(join(root, 'artifacts', `${kind}.md`), artifactText);
+      writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
+        schemaVersion: '1.0',
+        repo: 'fixtures/repo-1',
+        baseline_kind: kind,
+        source_commit: 'current-commit',
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_usefulness: 1
+        },
+        provenance: {
+          generated_by: kind,
+          artifact: `artifacts/${kind}.md`,
+          artifact_sha1: sha1(artifactText)
+        },
+        comparison: {
+          target: 'benchmarks/golden/repo-1.expected.json'
+        }
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'current-commit',
+      total_baselines: 2,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.baselineProofReady, false, 'baseline artifacts without metric derivation rows must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation fact rows are required')), 'strict failures must reject missing baseline fact derivation rows');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation claim rows are required')), 'strict failures must reject missing baseline claim derivation rows');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation decision rows are required')), 'strict failures must reject missing baseline decision derivation rows');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -29,6 +29,17 @@ Each file should include:
   },
   "comparison": {
     "target": "benchmarks/golden/demo-repo.expected.json"
+  },
+  "metric_derivation": {
+    "fact_rows": [
+      { "id": "fact-1", "found": false, "evidence_present": false }
+    ],
+    "claim_rows": [
+      { "id": "claim-1", "unsupported": false }
+    ],
+    "decision_rows": [
+      { "id": "decision-1", "useful": false }
+    ]
   }
 }
 ```

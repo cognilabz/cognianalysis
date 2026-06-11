@@ -37,6 +37,10 @@ function sameMetrics(left: any, right: any, keys: string[]): boolean {
   return keys.every(key => left?.[key] === right?.[key]);
 }
 
+function numbersEqual(left: any, right: any): boolean {
+  return typeof left === 'number' && typeof right === 'number' && Math.abs(left - right) < 1e-9;
+}
+
 function fileSha1(file: string): string {
   return Crypto.createHash('sha1').update(FS.readFileSync(file)).digest('hex');
 }
@@ -45,6 +49,38 @@ function resolveInsideRoot(root: string, relativePath: string): string {
   const resolved = Path.resolve(root, relativePath);
   const normalizedRoot = Path.resolve(root);
   return resolved === normalizedRoot || resolved.startsWith(`${normalizedRoot}${Path.sep}`) ? resolved : '';
+}
+
+function validateBaselineMetricDerivation(parsed: any): string[] {
+  const errors: string[] = [];
+  const metrics = parsed?.metrics || {};
+  const derivation = parsed?.metric_derivation || parsed?.metricDerivation || {};
+  const comparison = parsed?.comparison || parsed?.compared_to || {};
+  const factRows = asList(derivation.fact_rows || derivation.facts || comparison.fact_rows || comparison.facts || parsed?.facts || parsed?.scored_facts);
+  const claimRows = asList(derivation.claim_rows || derivation.claims || comparison.claim_rows || comparison.claims || parsed?.claims);
+  const decisionRows = asList(derivation.decision_rows || derivation.decisions || comparison.decision_rows || comparison.decisions || parsed?.decisions);
+  if (factRows.length === 0) errors.push('metric_derivation fact rows are required');
+  if (claimRows.length === 0) errors.push('metric_derivation claim rows are required');
+  if (decisionRows.length === 0) errors.push('metric_derivation decision rows are required');
+  if (factRows.length > 0) {
+    const foundRows = factRows.filter((row: any) => row?.found === true);
+    const evidenceRows = foundRows.filter((row: any) => row?.evidence_present === true || row?.has_evidence === true);
+    const factRecall = foundRows.length / factRows.length;
+    const evidencePrecision = foundRows.length ? evidenceRows.length / foundRows.length : 0;
+    if (!numbersEqual(metrics.fact_recall, factRecall)) errors.push('metrics.fact_recall must match metric_derivation fact rows');
+    if (!numbersEqual(metrics.evidence_precision, evidencePrecision)) errors.push('metrics.evidence_precision must match metric_derivation fact rows');
+  }
+  if (claimRows.length > 0) {
+    const unsupported = claimRows.filter((row: any) => row?.unsupported === true || row?.supported === false).length;
+    const unsupportedRate = unsupported / claimRows.length;
+    if (!numbersEqual(metrics.unsupported_claim_rate, unsupportedRate)) errors.push('metrics.unsupported_claim_rate must match metric_derivation claim rows');
+  }
+  if (decisionRows.length > 0) {
+    const useful = decisionRows.filter((row: any) => row?.useful === true || row?.decision_useful === true).length;
+    const decisionUsefulness = useful / decisionRows.length;
+    if (!numbersEqual(metrics.decision_usefulness, decisionUsefulness)) errors.push('metrics.decision_usefulness must match metric_derivation decision rows');
+  }
+  return errors;
 }
 
 function validateBaselineArtifact(parsed: any, root: string, expectedSourceCommit: string | null, aggregateSourceCommit: string): string[] {
@@ -82,6 +118,7 @@ function validateBaselineArtifact(parsed: any, root: string, expectedSourceCommi
   const resolvedComparison = comparisonTarget ? resolveInsideRoot(root, comparisonTarget) : '';
   if (comparisonTarget && !resolvedComparison) errors.push('comparison target must stay inside repository root');
   if (resolvedComparison && !FS.existsSync(resolvedComparison)) errors.push(`comparison target does not exist: ${comparisonTarget}`);
+  errors.push(...validateBaselineMetricDerivation(parsed));
   return errors;
 }
 
