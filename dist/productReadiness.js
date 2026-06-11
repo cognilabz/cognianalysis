@@ -82,9 +82,9 @@ function evidenceTextMatches(value, needles) {
 }
 function hasExplicitSecurityCoverage(bundle) {
     return traceCoveredWithEvidence(bundle, 'security', ['covered', 'partial'])
-        || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab', 'auth'])
-        || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab', 'auth'])
-        || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab', 'auth']);
+        || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab'])
+        || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab'])
+        || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab']);
 }
 function hasQualityEvidence(bundle) {
     return traceCoveredWithEvidence(bundle, 'code', ['covered', 'partial'])

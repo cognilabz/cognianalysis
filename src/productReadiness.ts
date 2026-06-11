@@ -97,9 +97,9 @@ function evidenceTextMatches(value: any, needles: string[]): boolean {
 
 function hasExplicitSecurityCoverage(bundle: any): boolean {
   return traceCoveredWithEvidence(bundle, 'security', ['covered', 'partial'])
-    || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab', 'auth'])
-    || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab', 'auth'])
-    || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab', 'auth']);
+    || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab'])
+    || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab'])
+    || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab']);
 }
 
 function hasQualityEvidence(bundle: any): boolean {
