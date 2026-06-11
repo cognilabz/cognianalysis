@@ -498,6 +498,10 @@ function computeArtifactDependencyGraph(analysisDir, analysisRun) {
                 : 'Artifact dependency graph is complete for required analysis artifacts.'
     };
 }
+function productRequestStableHash(request) {
+    const { generated_at: _generatedAt, repo: _repo, request_hash: _requestHash, ...stable } = request || {};
+    return (0, utils_1.sha1Short)(JSON.stringify(stable), 16);
+}
 function computeProductAnalysisRequestFreshness(analysisDir) {
     const marker = (0, utils_1.loadJson)(utils_1.Path.join(analysisDir, 'data', 'product-analysis-request-freshness.json'), {});
     const request = artifactInfo(analysisDir, 'data/product-analysis-request.json');
@@ -511,17 +515,20 @@ function computeProductAnalysisRequestFreshness(analysisDir) {
             summary: 'No product analysis request has been recorded for this workspace.'
         };
     }
+    const requestBody = (0, utils_1.loadJson)(utils_1.Path.join(analysisDir, 'data', 'product-analysis-request.json'), {});
+    const currentRequestHash = productRequestStableHash(requestBody);
+    const markerHashMismatch = !!marker.current_request_hash && marker.current_request_hash !== currentRequestHash;
     const requiredOutputs = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
     const mtimeStaleOutputs = requiredOutputs.filter(relativePath => {
         const info = artifactInfo(analysisDir, relativePath);
         return info.exists && info.mtime_ms < request.mtime_ms;
     });
     const markerHasFreshnessDecision = typeof marker.stale === 'boolean';
-    const shouldCheckRequiredOutputs = marker.stale === true || (!markerHasFreshnessDecision && mtimeStaleOutputs.length > 0);
+    const shouldCheckRequiredOutputs = marker.stale === true || markerHashMismatch || (!markerHasFreshnessDecision && mtimeStaleOutputs.length > 0);
     const staleOutputs = shouldCheckRequiredOutputs
         ? requiredOutputs.filter(relativePath => {
             const info = artifactInfo(analysisDir, relativePath);
-            return !info.exists || (marker.stale === true ? info.mtime_ms <= request.mtime_ms : info.mtime_ms < request.mtime_ms);
+            return !info.exists || (marker.stale === true || markerHashMismatch ? info.mtime_ms <= request.mtime_ms : info.mtime_ms < request.mtime_ms);
         })
         : [];
     return {
@@ -529,8 +536,10 @@ function computeProductAnalysisRequestFreshness(analysisDir) {
         deterministic_contract_scope: 'A changed product analysis request blocks final readiness until required Codex-authored LLM artifacts are newer than the request. Identical reruns preserve the request file and do not bump freshness.',
         complete: staleOutputs.length === 0,
         stale: staleOutputs.length > 0,
-        current_request_hash: marker.current_request_hash || artifactContentHash(utils_1.Path.join(analysisDir, 'data', 'product-analysis-request.json')),
+        current_request_hash: currentRequestHash,
         previous_request_hash: marker.previous_request_hash || null,
+        marker_request_hash: marker.current_request_hash || null,
+        marker_hash_mismatch: markerHashMismatch,
         request_mtime_ms: request.mtime_ms,
         stale_outputs: staleOutputs,
         summary: staleOutputs.length

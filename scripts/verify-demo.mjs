@@ -1041,6 +1041,8 @@ try {
   rmSync(join(tempRepo, '.analysis'), { recursive: true, force: true });
   const missingTarget = run(['analyze', tempRepo, '--mode', 'deep-dive', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
   assert(String(missingTarget.stderr || missingTarget.stdout || '').includes('Deep-dive mode requires --goal'), 'Deep-dive without a target or goal must fail closed');
+  const freshScopeFilesOnly = run(['analyze', tempRepo, '--scope-files', '5', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
+  assert(String(freshScopeFilesOnly.stderr || freshScopeFilesOnly.stdout || '').includes('--scope-files requires --scope'), 'Fresh analyze with --scope-files but no --scope must fail clearly');
   const missingRepo = join(tempBoundaryRoot, 'missing-repo');
   const missingRepoRun = run(['analyze', missingRepo, '--mode', 'brief'], { capture: true, expectFailure: true });
   assert(String(missingRepoRun.stderr || missingRepoRun.stdout || '').includes('Repository path does not exist'), 'Analyze must reject missing repo paths before writing analysis data');
@@ -1065,6 +1067,16 @@ try {
   const equalMtimeAudit = run(['dev', 'audit-report', equalMtimeRepo], { capture: true, expectFailure: true });
   const equalMtimeOutput = `${equalMtimeAudit.stdout || ''}\n${equalMtimeAudit.stderr || ''}`;
   assert(equalMtimeOutput.includes('product analysis request changed'), 'Stale request marker must require LLM artifacts newer than the request, not equal-time artifacts');
+  const staleMarkerRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-stale-marker-mask-'));
+  const staleMarkerRepo = join(staleMarkerRoot, 'demo-repo');
+  cpSync(demo, staleMarkerRepo, { recursive: true });
+  const staleMarkerRequestPath = join(staleMarkerRepo, '.analysis', 'data', 'product-analysis-request.json');
+  const staleMarkerRequest = JSON.parse(readFileSync(staleMarkerRequestPath, 'utf8'));
+  staleMarkerRequest.goal = 'Mutated goal without freshness marker update';
+  writeFileSync(staleMarkerRequestPath, JSON.stringify(staleMarkerRequest, null, 2) + '\n');
+  const staleMarkerAudit = run(['dev', 'audit-report', staleMarkerRepo], { capture: true, expectFailure: true });
+  const staleMarkerOutput = `${staleMarkerAudit.stdout || ''}\n${staleMarkerAudit.stderr || ''}`;
+  assert(staleMarkerOutput.includes('product analysis request changed'), 'Freshness marker stale:false must not mask a changed product request hash');
   const legacyRequestRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-legacy-request-refresh-'));
   const legacyRequestRepo = join(legacyRequestRoot, 'demo-repo');
   cpSync(demo, legacyRequestRepo, { recursive: true });

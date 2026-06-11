@@ -455,8 +455,8 @@ function productAnalysisRequest(args: string[], previous?: any): any {
   const previousTarget = previous?.target || {};
   const hasScope = args.includes('--scope');
   const hasScopeFiles = args.includes('--scope-files');
-  if (previous && hasScopeFiles && !hasScope && String(previousScopeRequest.mode || 'complete') === 'complete') {
-    throw new Error('--scope-files requires --scope when the previous product request is complete.');
+  if (hasScopeFiles && !hasScope && (!previous || String(previousScopeRequest.mode || 'complete') === 'complete')) {
+    throw new Error('--scope-files requires --scope unless the previous product request already has a non-complete scope.');
   }
   const mode = String(args.includes('--mode') ? argValue(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
   if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
