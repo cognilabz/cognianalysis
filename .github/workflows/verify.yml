@@ -34,6 +34,15 @@ jobs:
       - name: Verify golden benchmark suite
         run: npm run verify:golden
 
+      - name: Verify proof commands leave the worktree clean
+        shell: bash
+        run: |
+          status="$(git status --short)"
+          if [ -n "$status" ]; then
+            echo "$status"
+            exit 1
+          fi
+
       - name: Record non-blocking market-proof boundary
         shell: bash
         run: |

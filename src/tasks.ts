@@ -224,10 +224,13 @@ export function writeDetailTasksFromLlmPlan(analysisDir: string, plan: any): any
     FS.unlinkSync(Path.join(tasksDir, file));
   }
   const planTasks = plan?.tasks || [];
+  const usedIds = new Set<string>();
   const tasks = planTasks.map((task: any, index: number) => {
     const rawId = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`)}`;
     const safeId = cleanId(String(rawId));
-    const id = safeId === 'item' ? `detail-${index + 1}` : safeId;
+    const baseId = safeId === 'item' ? `detail-${index + 1}` : safeId;
+    const id = usedIds.has(baseId) ? `${baseId}-${index + 1}` : baseId;
+    usedIds.add(id);
     const filename = `${String(index + 1).padStart(3, '0')}-${id}.md`;
     const output = `detail_reviews/${id}.json`;
     writeText(Path.join(tasksDir, filename), detailTaskBody(task, output));

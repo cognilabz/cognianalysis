@@ -2453,7 +2453,7 @@ function dedupeEvidence(items: any[]): any[] {
   const seen = new Set<string>();
   const out: any[] = [];
   for (const e of items) {
-    const key = `${e.path || ''}:${e.line || 1}:${e.symbol || ''}`;
+    const key = `${evidenceKey(e)}:${e.symbol || ''}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(e);

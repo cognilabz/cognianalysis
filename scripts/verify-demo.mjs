@@ -846,6 +846,15 @@ try {
       expected_outputs: ['Sanitized detail task and review paths'],
       seed_files: ['src/main/java/com/acme/onboarding/OnboardingService.java'],
       evidence: [{ path: 'src/main/java/com/acme/onboarding/OnboardingService.java', line: 1 }]
+    },
+    {
+      id: 'escape/detail/src/main',
+      source_family: 'src/main duplicate',
+      recommended_agent: 'detail-reviewer',
+      focus: ['Path-safe task materialization collision regression'],
+      expected_outputs: ['Unique sanitized detail task and review paths'],
+      seed_files: ['src/main/java/com/acme/onboarding/OnboardingController.java'],
+      evidence: [{ path: 'src/main/java/com/acme/onboarding/OnboardingController.java', line: 1 }]
     }
   ];
   delete plan.detail_agent_plan.no_detail_reviews_needed;
@@ -853,10 +862,14 @@ try {
 
   run(['dev', 'finalize', tempDemo, '--allow-partial'], { capture: true });
   const manifest = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'detail-task-manifest.json'), 'utf8'));
-  const task = manifest.tasks?.[0] || {};
-  assert(task.id === 'escape-detail-src-main', `Detail task id must be sanitized, got ${task.id}`);
-  assert(task.task_file === 'detail_tasks/001-escape-detail-src-main.md', `Detail task file must stay inside detail_tasks, got ${task.task_file}`);
-  assert(task.expected_output === 'detail_reviews/escape-detail-src-main.json', `Detail review output must stay inside detail_reviews, got ${task.expected_output}`);
+  const firstTask = manifest.tasks?.[0] || {};
+  const secondTask = manifest.tasks?.[1] || {};
+  assert(firstTask.id === 'escape-detail-src-main', `Detail task id must be sanitized, got ${firstTask.id}`);
+  assert(firstTask.task_file === 'detail_tasks/001-escape-detail-src-main.md', `Detail task file must stay inside detail_tasks, got ${firstTask.task_file}`);
+  assert(firstTask.expected_output === 'detail_reviews/escape-detail-src-main.json', `Detail review output must stay inside detail_reviews, got ${firstTask.expected_output}`);
+  assert(secondTask.id === 'escape-detail-src-main-2', `Sanitized detail task id collisions must be made unique, got ${secondTask.id}`);
+  assert(secondTask.task_file === 'detail_tasks/002-escape-detail-src-main-2.md', `Colliding detail task file must stay inside detail_tasks, got ${secondTask.task_file}`);
+  assert(secondTask.expected_output === 'detail_reviews/escape-detail-src-main-2.json', `Colliding detail review output must stay inside detail_reviews, got ${secondTask.expected_output}`);
   assert(!existsSync(join(tempDemo, '.analysis', 'escape')), 'Unsafe detail task id must not create sibling paths outside detail_tasks/detail_reviews');
 } finally {
   rmSync(tempRootUnsafeDetailTaskId, { recursive: true, force: true });
