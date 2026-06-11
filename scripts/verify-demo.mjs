@@ -534,6 +534,33 @@ orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data'
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Proof files must be incomplete until they declare and match the exact harness logs');
 assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('generated_from_orchestration_execution_log'), 'Parallel proof must declare orchestration execution log lineage');
 assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('generated_from_cache_ledger'), 'Cache proof must declare cache ledger lineage');
+const secondCacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0002.json|${secondOutputHash}`, 20);
+writeJson(join(orchestrationAnalysis, 'data', 'parallel-execution-proof.json'), {
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  generated_from: ['data/orchestration-execution-log.json'],
+  worker_count: 2,
+  worker_tasks: [
+    { worker_id: 'worker-1', task_id: 'source-tier-0001', started_at: '2026-01-01T00:00:01.000Z', ended_at: '2026-01-01T00:00:10.000Z', duration_ms: 9000, artifact_hash: firstOutputHash },
+    { worker_id: 'worker-2', task_id: 'source-tier-0002', started_at: '2026-01-01T00:00:05.000Z', ended_at: '2026-01-01T00:00:15.000Z', duration_ms: 10000, artifact_hash: secondOutputHash }
+  ]
+});
+writeJson(join(orchestrationAnalysis, 'data', 'cache-reuse-proof.json'), {
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  generated_from: ['data/cache-ledger.json'],
+  cache_hits: 1,
+  cache_entries: [{ cache_key: secondCacheKey, hit: true, artifact_path: 'source_tiers/source-tier-0002.json', artifact_hash: secondOutputHash }]
+});
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Proof files with correct lineage but mismatched log/ledger rows must not complete orchestration');
+assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_tasks_match_orchestration_execution_log'), 'Parallel proof rows must match the exact orchestration execution log rows');
+assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entries_match_cache_ledger'), 'Cache proof rows must match the exact cache ledger rows');
 const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
