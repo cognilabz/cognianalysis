@@ -58,6 +58,42 @@ function readJsonObject(file) {
         return {};
     }
 }
+function goldenHasEvidence(item) {
+    return asList(item?.evidence).length > 0 || asList(item?.evidence_refs).length > 0;
+}
+function addGoldenReportFact(out, text, item, source) {
+    const value = String(text || '').trim();
+    if (!value)
+        return;
+    out.push({ text: value, source, has_evidence: goldenHasEvidence(item) });
+}
+function goldenReportFacts(bundle) {
+    const out = [];
+    for (const section of asList(bundle?.analysis_document?.sections)) {
+        for (const block of asList(section?.blocks)) {
+            const type = String(block?.type || 'narrative').toLowerCase();
+            for (const item of asList(block?.entries))
+                addGoldenReportFact(out, item.name || item.title, item, `${section.id || section.title}:${type}:entry`);
+            for (const item of asList(block?.exits))
+                addGoldenReportFact(out, item.name || item.title, item, `${section.id || section.title}:${type}:exit`);
+            for (const item of asList(block?.state))
+                addGoldenReportFact(out, item.name || item.title, item, `${section.id || section.title}:${type}:state`);
+            for (const item of asList(block?.steps))
+                addGoldenReportFact(out, item.description || item.title, item, `${section.id || section.title}:${type}:step`);
+            for (const item of asList(block?.items))
+                addGoldenReportFact(out, item.title || item.name || item.description, item, `${section.id || section.title}:${type}:item`);
+            for (const item of asList(block?.rows)) {
+                addGoldenReportFact(out, item.decision, item, `${section.id || section.title}:${type}:decision`);
+                addGoldenReportFact(out, item.recommendation, item, `${section.id || section.title}:${type}:recommendation`);
+            }
+            for (const item of asList(block?.levels))
+                addGoldenReportFact(out, item.level || item.title, item, `${section.id || section.title}:${type}:level`);
+            for (const item of asList(block?.families))
+                addGoldenReportFact(out, item.name || item.title, item, `${section.id || section.title}:${type}:family`);
+        }
+    }
+    return out;
+}
 function goldenRepresentativeCoverage(root, expectedFiles, suiteRows) {
     const manifestFile = utils_1.Path.join(root, 'benchmarks', 'golden', 'manifest.json');
     const manifest = (0, utils_1.loadJson)(manifestFile, null);
@@ -609,6 +645,7 @@ function validateGoldenMetricDerivation(root, parsed, expected) {
         else if (typeof reportLintComplete === 'boolean' && reportLintComplete !== reportLint.complete)
             errors.push('metric_derivation.report_lint_complete must match suite analysis-document-report-lint.json complete');
     }
+    const bundleFacts = bundle ? goldenReportFacts(bundle) : [];
     if (expectedFacts.length > 0) {
         const factRecall = foundRows.length / expectedFacts.length;
         if (!numbersEqual(metrics.fact_recall, factRecall))
@@ -636,6 +673,18 @@ function validateGoldenMetricDerivation(root, parsed, expected) {
         const reportCompleteness = reportLintComplete === true && componentCoverageComplete === true ? 1 : 0;
         if (!numbersEqual(metrics.report_completeness, reportCompleteness))
             errors.push('metrics.report_completeness must match metric_derivation report_lint/component_coverage completeness');
+    }
+    if (bundle) {
+        for (const row of foundRows) {
+            const id = String(row?.id || '').trim() || 'unknown';
+            const matched = String(row?.matched_text || '').trim();
+            const source = String(row?.source || '').trim();
+            const hit = bundleFacts.find((fact) => fact.text === matched && fact.source === source);
+            if (!hit)
+                errors.push(`golden fact row ${id} matched_text/source must be present in suite bundle analysis_document`);
+            else if (Boolean(hit.has_evidence) !== Boolean(row?.evidence_present))
+                errors.push(`golden fact row ${id} evidence_present must match suite bundle evidence`);
+        }
     }
     return errors;
 }
