@@ -46,6 +46,9 @@ function callMcpTool(name, args = {}) {
   if (result.status !== 0) {
     throw new Error(`MCP tool failed with exit ${result.status}: ${result.stderr || result.stdout}`);
   }
+  if (!String(result.stderr || '').includes('Compatibility alias: prefer cognianalysis dev mcp.')) {
+    throw new Error('Top-level mcp compatibility alias must warn on stderr before executing');
+  }
   const lines = String(result.stdout || '').trim().split(/\r?\n/).filter(Boolean);
   const response = JSON.parse(lines.at(-1));
   if (response.error) throw new Error(`MCP error: ${response.error.message}`);
@@ -199,7 +202,7 @@ assert(helpOutput.includes('--scope complete|critical-path|representative'), 'CL
 assert(helpOutput.includes('--scope-files N'), 'CLI help must expose non-complete scope sizing');
 assert(helpOutput.includes('status [repo]'), 'CLI help must expose product-mode status');
 assert(helpOutput.includes('eval [repo]'), 'CLI help must expose product-mode eval');
-assert(helpOutput.includes('repair [repo]'), 'CLI help must expose product-mode repair');
+assert(helpOutput.includes('dev repair [repo]'), 'CLI help must expose repair recovery under dev namespace');
 assert(helpOutput.includes('open [repo]'), 'CLI help must expose product-mode open');
 assert(helpOutput.includes('init-harness'), 'CLI help must expose the generic harness installer');
 assert(helpOutput.includes('init-codex'), 'CLI help must keep the Codex compatibility installer');
@@ -215,7 +218,7 @@ assert(scopedAnalysisScope.deferred_files > 0, 'Scoped prepare must expose defer
 const tempHarnessRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-harness-install-'));
 try {
   const harnessTarget = join(tempHarnessRoot, 'target');
-  run(['init-harness', harnessTarget, '--harness', 'all'], { capture: true });
+  run(['dev', 'init-harness', harnessTarget, '--harness', 'all'], { capture: true });
   const expectedHarnessFiles = [
     'AGENTS.md',
     '.agents/skills/cognianalysis/SKILL.md',
@@ -246,13 +249,13 @@ try {
   assert(readFileSync(join(harnessTarget, '.aider.conf.yml'), 'utf8').includes('read: CONVENTIONS.md'), 'Aider adapter must configure the conventions file as readable context');
 
   const codexOnlyTarget = join(tempHarnessRoot, 'codex-only');
-  run(['init-codex', codexOnlyTarget], { capture: true });
+  run(['dev', 'init-codex', codexOnlyTarget], { capture: true });
   assert(existsSync(join(codexOnlyTarget, 'AGENTS.md')), 'init-codex must still write AGENTS.md');
   assert(existsSync(join(codexOnlyTarget, '.agents/skills/cognianalysis/SKILL.md')), 'init-codex must still write Codex skills');
   assert(!existsSync(join(codexOnlyTarget, 'CLAUDE.md')), 'init-codex must stay Codex-only and not write Claude adapter files');
 
   const noSkillsTarget = join(tempHarnessRoot, 'no-skills');
-  run(['init-harness', noSkillsTarget, '--harness', 'claude', '--no-skills'], { capture: true });
+  run(['dev', 'init-harness', noSkillsTarget, '--harness', 'claude', '--no-skills'], { capture: true });
   assert(existsSync(join(noSkillsTarget, 'AGENTS.md')), 'init-harness --no-skills must still write AGENTS.md');
   assert(existsSync(join(noSkillsTarget, 'CLAUDE.md')), 'init-harness --harness claude must write CLAUDE.md');
   assert(!existsSync(join(noSkillsTarget, '.agents')), 'init-harness --no-skills must not copy .agents skills');
@@ -440,7 +443,7 @@ assert(bundle.semantic_authority?.external_findings_ingestion_complete === true,
 assert(bundle.analysis_document_open_questions?.complete === true, `Demo bundle open-question contract incomplete: ${(bundle.analysis_document_open_questions?.missing || []).join(', ')}`);
 assert(bundle.analysis_document_open_questions?.blocking_count === 0, 'Demo bundle must expose zero blocking open questions');
 assert(bundle.semantic_authority?.open_questions_complete === true, 'Semantic authority must expose the completed open-question contract');
-assert(demoAnalysisScope.mode === 'complete', `Demo default analysis scope must be complete, got ${demoAnalysisScope.mode}`);
+assert(demoAnalysisScope.mode === 'representative', `Demo default brief analysis scope must be representative, got ${demoAnalysisScope.mode}`);
 assert(demoAnalysisStaleness.stale === false, 'Demo analysis staleness artifact must report current analysis');
 assert(demoOpenQuestions.complete === true, `Demo open-question artifact incomplete: ${(demoOpenQuestions.missing || []).join(', ')}`);
 assert(demoOpenQuestions.question_count === 0, 'Demo must explicitly report no top-level open questions');
@@ -1169,7 +1172,7 @@ try {
   const productRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
   assert(productRequest.mode === 'blueprint', `Analyze must persist requested product mode, got ${productRequest.mode}`);
   assert(productRequest.goal === 'Create a rebuild decision brief.', 'Analyze must persist the goal-first product request');
-  assert(productRequest.analysis_scope_request?.mode === 'complete', 'Analyze must persist the requested analysis scope mode');
+  assert(productRequest.analysis_scope_request?.mode === 'representative', 'Blueprint mode must default to adaptive representative scope');
   const tempTaskGuide = readFileSync(join(tempRepo, '.analysis', 'TASK.md'), 'utf8');
   const tempStrategyTask = readFileSync(join(tempRepo, '.analysis', 'llm_tasks', '00-analysis-strategy.md'), 'utf8');
   const tempFinalTask = readFileSync(join(tempRepo, '.analysis', 'llm_tasks', '12-analysis-document.md'), 'utf8');
@@ -1182,11 +1185,16 @@ try {
   assert((deepDive.stdout || '').includes('Cognianalysis analyze: mode=deep-dive'), 'Analyze must accept a targeted deep-dive mode');
   const deepDiveRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
   assert(deepDiveRequest.target?.flow === 'onboarding', 'Deep-dive analyze must persist the requested flow target');
+  assert(deepDiveRequest.analysis_scope_request?.mode === 'representative', 'Deep-dive must preserve an existing explicit/non-complete scope on an existing request');
   rmSync(join(tempRepo, '.analysis'), { recursive: true, force: true });
   const missingTarget = run(['analyze', tempRepo, '--mode', 'deep-dive', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
   assert(String(missingTarget.stderr || missingTarget.stdout || '').includes('Deep-dive mode requires --goal'), 'Deep-dive without a target or goal must fail closed');
-  const freshScopeFilesOnly = run(['analyze', tempRepo, '--scope-files', '5', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
-  assert(String(freshScopeFilesOnly.stderr || freshScopeFilesOnly.stdout || '').includes('--scope-files requires --scope'), 'Fresh analyze with --scope-files but no --scope must fail clearly');
+  const freshScopeFilesOnly = run(['analyze', tempRepo, '--scope-files', '5', '--no-seed', '--no-html'], { capture: true });
+  const freshScopeFilesOnlyRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  assert(freshScopeFilesOnlyRequest.analysis_scope_request?.mode === 'representative' && freshScopeFilesOnlyRequest.analysis_scope_request?.scope_files === 5, 'Fresh brief analyze with --scope-files must use the adaptive representative default scope');
+  rmSync(join(tempRepo, '.analysis'), { recursive: true, force: true });
+  const completeScopeFilesOnly = run(['analyze', tempRepo, '--mode', 'complete', '--scope-files', '5', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
+  assert(String(completeScopeFilesOnly.stderr || completeScopeFilesOnly.stdout || '').includes('--scope-files requires --scope'), 'Complete mode with --scope-files but no --scope must fail clearly');
   const missingRepo = join(tempBoundaryRoot, 'missing-repo');
   const missingRepoRun = run(['analyze', missingRepo, '--mode', 'brief'], { capture: true, expectFailure: true });
   assert(String(missingRepoRun.stderr || missingRepoRun.stdout || '').includes('Repository path does not exist'), 'Analyze must reject missing repo paths before writing analysis data');

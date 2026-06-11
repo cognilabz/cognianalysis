@@ -114,6 +114,15 @@ function stableProductRequest(productRequest) {
     return stableRequest;
 }
 function singleTaskGuide(profile, tierManifest, taskDefs, templateDefs, productRequest) {
+    const productMode = String(productRequest?.mode || 'brief');
+    const scopeMode = String(productRequest?.analysis_scope_request?.mode || profile.analysis_scope_mode || 'representative');
+    const completeMode = productMode === 'complete' && scopeMode === 'complete';
+    const sourceTierStep = completeMode
+        ? 'Execute every `.analysis/source_tier_tasks/*.md` task and write Tier 1 file cards to `.analysis/source_tiers/*.json` before final readiness.'
+        : 'Execute selected/adaptive `.analysis/source_tier_tasks/*.md` workpacks as needed for the Codex-authored strategy and report scope. Do not expand to whole-repository Tier 1 unless the run is `--mode complete --scope complete`; disclose deferred files, confidence impact and follow-up deep dives in the final report.';
+    const sourceTierReadiness = completeMode
+        ? 'Every included file needs a Tier 1 Codex-authored LLM card before a final report can claim whole-codebase readiness. Deferred files are visible follow-up, not completed analysis.'
+        : 'Adaptive modes do not claim whole-codebase Tier 1 readiness. The final report must visibly state selected scope, deferred-file count, confidence impact and any open questions or deep-dive backlog before claiming decision readiness.';
     return `# Cognianalysis Task
 
 This is the single human-facing workpack for this repository. The detailed task files remain available for harnesses, batching and CI, but this file is the path a user should read first.
@@ -137,7 +146,7 @@ The LLM step is not an external service check and cannot be represented as unava
 3. Run \`cognianalysis status .\` whenever you need a product-language progress view, scope/freshness state and next action.
 4. Run \`cognianalysis repair .\` if JSON is malformed, manifests/task guides are missing, outputs are stale, or an interrupted run needs recovery.
 5. Author \`.analysis/llm/analysis-strategy.json\` from \`.analysis/llm_tasks/00-analysis-strategy.md\`.
-6. Execute every \`.analysis/source_tier_tasks/*.md\` task and write Tier 1 file cards to \`.analysis/source_tiers/*.json\`.
+6. ${sourceTierStep}
 7. Run \`cognianalysis dev finalize . --allow-partial\` to materialize LLM-planned skill workbench tasks.
 8. Execute every \`.analysis/skill_workbench_tasks/*.md\` task into \`.analysis/skill_reviews/*.json\`.
 9. Author \`.analysis/llm/detail-agent-plan.json\` from \`.analysis/llm_tasks/11-detail-agent-plan.md\`.
@@ -150,15 +159,15 @@ The LLM step is not an external service check and cannot be represented as unava
 
 ${taskDefs.map(task => `- \`${task.expected_output}\` from \`${task.task_file}\``).join('\n')}
 
-## Whole-Codebase Base
+## Source Inventory Base
 
 - Tier 1 file-card tasks: ${tierManifest?.task_count || 0}
 - Included files in Tier 1 scope: ${tierManifest?.total_files || 0}
 - Manifest: \`.analysis/source-tier-task-manifest.json\`
 
-Every included file needs a Tier 1 Codex-authored LLM card before a final report can claim whole-codebase readiness. Deferred files are visible follow-up, not completed analysis.
+${sourceTierReadiness}
 
-Analysis scope mode: \`${profile.analysis_scope_mode || 'complete'}\`. If this is not \`complete\`, the final report must visibly state the scope, deferred-file count and confidence impact.
+Product mode: \`${productMode}\`. Analysis scope mode: \`${scopeMode}\`. If this is not \`--mode complete --scope complete\`, the final report must visibly state the scope, deferred-file count and confidence impact.
 
 ## Optional Capability Templates
 

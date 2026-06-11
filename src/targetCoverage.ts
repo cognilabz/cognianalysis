@@ -5,7 +5,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'existing-harness-execution',
     title: 'Existing harness execution',
     description: 'Cognianalysis is launched from an existing harness through AGENTS.md, harness-native instruction files, CLI commands or optional MCP tools, not by a custom coding agent.',
-    addressed_by: ['resources/AGENTS.md', 'harness-native instruction files', '.agents/skills/cognianalysis/SKILL.md', 'CLI commands', 'optional cognianalysis mcp'],
+    addressed_by: ['resources/AGENTS.md', 'harness-native instruction files', '.agents/skills/cognianalysis/SKILL.md', 'CLI commands', 'optional cognianalysis dev mcp'],
     expected_outputs: ['.analysis/llm_tasks/*.md', '.analysis/llm/*.json'],
     output_keys: ['tasks']
   },
@@ -293,7 +293,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     id: 'harness-portability',
     title: 'Harness portability',
     description: 'Skills plus CLI are portable; optional stdio bridge exposes deterministic commands.',
-    addressed_by: ['AGENTS.md', 'skills', 'cognianalysis mcp'],
+    addressed_by: ['AGENTS.md', 'skills', 'cognianalysis dev mcp'],
     expected_outputs: ['skills', 'CLI tools'],
     output_keys: ['tasks']
   }

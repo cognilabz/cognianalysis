@@ -50,6 +50,13 @@ function analysisScopeMode(args) {
         throw new Error(`Unknown --scope ${mode}. Expected complete, critical-path or representative.`);
     return mode;
 }
+function defaultScopeForProductMode(mode) {
+    if (mode === 'complete')
+        return 'complete';
+    if (mode === 'deep-dive')
+        return 'critical-path';
+    return 'representative';
+}
 function scopedCodeMap(codeMap, args) {
     const mode = analysisScopeMode(args);
     const files = Array.isArray(codeMap.files) ? codeMap.files : [];
@@ -213,12 +220,20 @@ function hasReportBlock(bundle, type) {
     return (bundle.analysis_document?.sections || [])
         .some((section) => (section.blocks || []).some((block) => String(block.type || '').toLowerCase() === type));
 }
+function productModeForBundle(bundle) {
+    return String(bundle?.product_analysis_request?.mode || 'brief').toLowerCase();
+}
+function requiresCompleteTierForBundle(bundle) {
+    return productModeForBundle(bundle) === 'complete';
+}
 function productStatusRows(analysis, bundle, statuses) {
     const indexed = utils_1.FS.existsSync(utils_1.Path.join(analysis, 'data', 'code-map.json'));
     const scopeDeclared = !!bundle?.analysis_scope?.mode;
     const notStale = !!bundle && bundle.analysis_staleness?.stale !== true;
     const strategyReady = bundle?.llm_analysis_strategy?.strategy_present === true;
-    const repositoryCoverageReady = bundle?.source_tier_coverage?.complete === true;
+    const repositoryCoverageReady = requiresCompleteTierForBundle(bundle)
+        ? bundle?.source_tier_coverage?.complete === true
+        : scopeDeclared;
     const functionalReady = traceStatus(bundle, 'functional') === 'covered' && hasReportBlock(bundle, 'flow');
     const technicalReady = traceStatus(bundle, 'technical') === 'covered' && hasReportBlock(bundle, 'boundary_map');
     const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered' && hasReportBlock(bundle, 'roadmap');
@@ -238,7 +253,7 @@ function productStatusRows(analysis, bundle, statuses) {
         { id: 'freshness', label: 'Analysis matches current commit', ready: notStale },
         { id: 'task_guide', label: 'Task guide available', ready: utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md')) },
         { id: 'strategy', label: 'Analysis strategy complete', ready: strategyReady },
-        { id: 'coverage', label: 'Repository coverage complete', ready: repositoryCoverageReady },
+        { id: 'coverage', label: requiresCompleteTierForBundle(bundle) ? 'Repository coverage complete' : 'Adaptive source scope declared', ready: repositoryCoverageReady },
         { id: 'functional', label: 'Functional model complete', ready: functionalReady },
         { id: 'technical', label: 'Technical model complete', ready: technicalReady },
         { id: 'refactoring', label: 'Refactoring assessment complete', ready: refactoringReady },
@@ -260,7 +275,7 @@ function nextProductAction(repo, analysis, bundle, statuses) {
     const missingWorkflow = statuses.find(row => !row.ready);
     if (missingWorkflow?.path === 'llm/analysis-strategy.json')
         return 'Open .analysis/TASK.md and complete "Analysis Strategy".';
-    if (bundle?.source_tier_coverage?.complete !== true)
+    if (requiresCompleteTierForBundle(bundle) && bundle?.source_tier_coverage?.complete !== true)
         return `Run ${CLI_NAME} dev tier-next ${repo} --limit 1, complete the next Tier 1 workpack, then rerun status.`;
     if (missingWorkflow?.path === 'llm/detail-agent-plan.json')
         return 'Open .analysis/TASK.md and complete "Detail Agent Plan".';
@@ -471,14 +486,15 @@ function productAnalysisRequest(args, previous) {
     const previousTarget = previous?.target || {};
     const hasScope = args.includes('--scope');
     const hasScopeFiles = args.includes('--scope-files');
-    if (hasScopeFiles && !hasScope && (!previous || String(previousScopeRequest.mode || 'complete') === 'complete')) {
-        throw new Error('--scope-files requires --scope unless the previous product request already has a non-complete scope.');
-    }
     const mode = String(args.includes('--mode') ? (0, utils_1.argValue)(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
     if (!PRODUCT_ANALYSIS_MODES.has(mode))
         throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint, deep-dive or complete.`);
+    const defaultScopeMode = defaultScopeForProductMode(mode);
+    if (hasScopeFiles && !hasScope && String(previousScopeRequest.mode || defaultScopeMode) === 'complete') {
+        throw new Error('--scope-files requires --scope unless the previous product request or selected mode already has a non-complete default scope.');
+    }
     const goal = String(args.includes('--goal') ? (0, utils_1.argValue)(args, '--goal', '') : previous?.goal || '').trim();
-    const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || 'complete');
+    const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || defaultScopeMode);
     if (!SCOPE_MODES.has(scopeMode))
         throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
     if (mode === 'complete' && scopeMode !== 'complete')
@@ -520,10 +536,10 @@ function productAnalysisRequest(args, previous) {
         depth_policy: mode === 'complete'
             ? 'audit-heavy whole-repository analysis with complete included source inventory coverage'
             : mode === 'deep-dive'
-                ? 'targeted source-family, flow, module, API, risk or decision analysis for the requested slice'
+                ? 'targeted critical-path source-family, flow, module, API, risk or decision analysis for the requested slice'
                 : mode === 'blueprint'
-                    ? 'decision report plus modernization/rebuild blueprint and deep-dive backlog'
-                    : 'concise decision report with broad system understanding and explicit deep-dive backlog'
+                    ? 'adaptive decision report plus modernization/rebuild blueprint and deep-dive backlog; complete every-file Tier 1 is reserved for --mode complete'
+                    : 'adaptive concise decision report with broad system understanding, explicit deferred scope and deep-dive backlog; complete every-file Tier 1 is reserved for --mode complete'
     };
 }
 function hasProductRequestOption(args) {
@@ -1296,7 +1312,10 @@ function portfolioHtml(rows) {
     return `<!doctype html><meta charset='utf-8'><title>Portfolio Analysis</title><style>body{font-family:system-ui;margin:30px;background:#f5f7fb}table{border-collapse:collapse;width:100%;background:white}td,th{border:1px solid #e0e6f0;padding:10px;text-align:left}</style><h1>Portfolio Analysis</h1><table><thead><tr><th>Repo</th><th>Type</th><th>Source Files</th><th>Inventory Signals</th><th>Status</th><th>Error</th><th>Report</th></tr></thead><tbody>${trs}</tbody></table>`;
 }
 function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function runCommand(command, args) {
+function compatibilityWarning(preferred) {
+    console.log(`Compatibility alias: prefer ${CLI_NAME} ${preferred}.`);
+}
+function runCommand(command, args, options = {}) {
     if (!command || command === 'help' || command === '--help' || command === '-h') {
         usage();
         return 0;
@@ -1311,7 +1330,7 @@ function runCommand(command, args) {
             devUsage();
             return 0;
         }
-        return runCommand(devCommand, args.slice(1));
+        return runCommand(devCommand, args.slice(1), { dev: true });
     }
     if (command === 'analyze')
         return cmdAnalyze(args);
@@ -1321,6 +1340,17 @@ function runCommand(command, args) {
         return cmdOpen(args);
     if (command === 'eval')
         return cmdEval(args);
+    if (!options.dev && command === 'mcp') {
+        console.error(`Compatibility alias: prefer ${CLI_NAME} dev mcp.`);
+        (0, mcp_1.startMcpLikeServer)();
+        return 0;
+    }
+    if (!options.dev) {
+        const preferred = command === 'finish' || command === 'report' ? 'dev finalize' : `dev ${command}`;
+        const compatibilityCommands = new Set(['resume', 'repair', 'init-harness', 'init-agent', 'init-codex', 'init', 'prepare', 'run', 'doctor', 'finalize', 'finish', 'report', 'aggregate', 'render', 'validate', 'coverage', 'tier-status', 'tier-next', 'tier-context', 'audit-report', 'portfolio']);
+        if (compatibilityCommands.has(command))
+            compatibilityWarning(preferred);
+    }
     if (command === 'resume')
         return cmdResume(args);
     if (command === 'repair')
@@ -1374,8 +1404,10 @@ async function main(argv = process.argv.slice(2)) {
     }
 }
 if (require.main === module) {
-    if (process.argv[2] === 'mcp')
+    if (process.argv[2] === 'mcp') {
+        console.error(`Compatibility alias: prefer ${CLI_NAME} dev mcp.`);
         (0, mcp_1.startMcpLikeServer)();
+    }
     else
         main()
             .then(code => process.exit(code))

@@ -59,8 +59,8 @@ There are three different instruction layers:
 
 | Layer | Purpose | Source of truth |
 |---|---|---|
-| Harness adapters | Tool-native instruction files copied by `cognianalysis init-harness .` | `resources/AGENTS.md` plus generated adapter wrappers |
-| Codex agent skills | Codex-native entrypoints and reusable runbooks copied by `cognianalysis init-harness . --harness codex` or `cognianalysis init-codex .` | `resources/agents/skills/*/SKILL.md` |
+| Harness adapters | Tool-native instruction files copied by `cognianalysis dev init-harness .` | `resources/AGENTS.md` plus generated adapter wrappers |
+| Codex agent skills | Codex-native entrypoints and reusable runbooks copied by `cognianalysis dev init-harness . --harness codex` or `cognianalysis dev init-codex .` | `resources/agents/skills/*/SKILL.md` |
 | LLM analysis skills | Fine-grained reusable capabilities used inside generated analysis tasks | `src/analysisSkills.ts` and `.analysis/data/analysis-skill-catalog.json` |
 
 The repository tracks the reusable templates under `resources/`. A root `.agents/` directory is an installed/local harness output for a target checkout and is ignored here to avoid duplicating those templates.
@@ -129,7 +129,7 @@ The goal is not only documentation generation. The pack is designed to produce a
 | Evidence-first governance | `cognianalysis dev finalize`, embedded evidence index and validated file:line references |
 | Interactive static HTML report | `cognianalysis dev finalize`, LLM-authored sections rendered through the stable component library |
 | Portfolio mode | `cognianalysis dev portfolio --repos repos.txt --out portfolio-analysis` |
-| Harness portability | `init-harness`, portable `AGENTS.md`, tool-native instruction files, CLI and optional `cognianalysis mcp` bridge |
+| Harness portability | `dev init-harness`, portable `AGENTS.md`, tool-native instruction files, CLI and optional `cognianalysis dev mcp` bridge |
 
 The target picture is represented directly in the tool as unscored LLM trace context. `cognianalysis dev finalize .` writes the target rows into the embedded audit data so the LLM-authored `requirements_trace` can reference the original goal without the CLI deciding whether any target is satisfied.
 
@@ -168,24 +168,24 @@ Install the CLI once, then install harness instructions into each target reposit
 For the broadest setup, from the target repository run:
 
 ```bash
-cognianalysis init-harness . --harness all
+cognianalysis dev init-harness . --harness all
 ```
 
 For a single harness:
 
 ```bash
-cognianalysis init-harness . --harness claude
-cognianalysis init-harness . --harness cursor
-cognianalysis init-harness . --harness windsurf
-cognianalysis init-harness . --harness copilot
-cognianalysis init-harness . --harness aider
-cognianalysis init-harness . --harness codex
+cognianalysis dev init-harness . --harness claude
+cognianalysis dev init-harness . --harness cursor
+cognianalysis dev init-harness . --harness windsurf
+cognianalysis dev init-harness . --harness copilot
+cognianalysis dev init-harness . --harness aider
+cognianalysis dev init-harness . --harness codex
 ```
 
-`init-codex` is still supported as a compatibility alias for existing Codex users:
+`init-codex` is still supported as a compatibility alias for existing Codex users; new setup should use the dev namespace:
 
 ```bash
-cognianalysis init-codex .
+cognianalysis dev init-codex .
 ```
 
 The installer writes portable shared instructions first, then adds harness-native adapter files:
@@ -205,7 +205,7 @@ Existing files are kept unless `--force` is passed. Use `--no-skills` when you o
 For harnesses that support MCP, you can also configure a stdio MCP server that runs:
 
 ```bash
-cognianalysis mcp
+cognianalysis dev mcp
 ```
 
 That bridge exposes deterministic prepare/finalize/audit/report tooling. It still does not replace the LLM extraction step.
@@ -215,7 +215,7 @@ That bridge exposes deterministic prepare/finalize/audit/report tooling. It stil
 From the target repository, install the harness assets once if the repository does not already contain them:
 
 ```bash
-cognianalysis init-harness . --harness all
+cognianalysis dev init-harness . --harness all
 ```
 
 Then start your harness and use the minimal prompt. In Codex:

@@ -22,6 +22,8 @@ export function finalLlmReadinessGaps(bundle: any): string[] {
   const goalTraceAlignment = bundle.analysis_goal_trace_alignment || {};
   const pipelineContract = bundle.analysis_pipeline_contract || {};
   const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
+  const productMode = String(bundle.product_analysis_request?.mode || 'brief').toLowerCase();
+  const completeMode = productMode === 'complete';
   const gaps: string[] = [];
   if (bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact !== true || bundle.llm_analysis_strategy?.strategy_present !== true) gaps.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
   if (bundle.report_mode?.llm_authored !== true) gaps.push('visible report is not Codex-authored');
@@ -49,7 +51,7 @@ export function finalLlmReadinessGaps(bundle: any): string[] {
   if (bundle.report_mode?.final_synthesis_ready !== true) gaps.push('final Codex-authored report is not synthesized after completed detail reviews');
   if (pipelineContract.complete !== true) gaps.push(`Codex-authored analysis pipeline contract incomplete: ${(pipelineContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
   if (skillCatalogContract.complete !== true) gaps.push(`Codex-authored analysis skill catalog contract incomplete: ${(skillCatalogContract.missing || []).slice(0, 6).join(', ') || 'unknown'}`);
-  if (sourceTierCoverage.complete !== true) gaps.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
+  if (completeMode && sourceTierCoverage.complete !== true) gaps.push(`tiered whole-codebase file analysis incomplete: ${sourceTierCoverage.tier1_file_cards || 0}/${sourceTierCoverage.total_files || 0} Tier 1 file cards, ${sourceTierCoverage.missing_tier1_files || 0} missing, ${sourceTierCoverage.invalid_file_cards || 0} invalid`);
   if (skillWorkbenchCoverage.complete !== true) gaps.push(`Codex-planned skill workbench execution incomplete: ${skillWorkbenchCoverage.executed_count || 0}/${skillWorkbenchCoverage.planned_count || 0} executed, status=${skillWorkbenchCoverage.status || 'unknown'}`);
   if (skillSynthesis.complete !== true) gaps.push(`skill-workbench synthesis ${skillSynthesis.status || 'not complete'}`);
   if (detailCoverage.complete !== true) gaps.push(`source-family detail review coverage ${detailCoverage.status || 'not complete'}: ${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0} executed, ${detailCoverage.integrated_count || 0}/${detailCoverage.planned_count || 0} integrated`);
@@ -66,6 +68,8 @@ export function computeFinalLlmReadiness(bundle: any): any {
   return {
     state: readinessGaps.length ? 'partial' : 'ready',
     semantic_verdict_authority: 'codex_llm',
+    product_mode: String(bundle.product_analysis_request?.mode || 'brief').toLowerCase(),
+    complete_mode_requires_whole_repo_tier1: String(bundle.product_analysis_request?.mode || 'brief').toLowerCase() === 'complete',
     llm_execution_model: {
       executor: 'codex_in_session',
       execution_surface: 'current_codex_session',
@@ -77,7 +81,7 @@ export function computeFinalLlmReadiness(bundle: any): any {
     },
     final_verdict_source: 'analysis_document.report_quality_review.verdict',
     final_verdict: bundle.analysis_document_quality_review?.verdict || '',
-    deterministic_contract_scope: 'prerequisite artifacts, explicit Codex-authored goal-trace references, Tier 1 source-file analysis coverage, Codex-planned skill workbench execution, detail-review integration, renderer contract, evidence/index contracts, semantic lineage, run provenance, artifact dependency freshness, external finding shape, open-question structure, and Codex-authored verdict/rationale presence only',
+    deterministic_contract_scope: 'prerequisite artifacts, explicit Codex-authored goal-trace references, mode-aware Tier 1 source-file analysis coverage, Codex-planned skill workbench execution, detail-review integration, renderer contract, evidence/index contracts, semantic lineage, run provenance, artifact dependency freshness, external finding shape, open-question structure, and Codex-authored verdict/rationale presence only',
     failures: readinessGaps,
     readiness_gaps: readinessGaps,
     gap_count: readinessGaps.length

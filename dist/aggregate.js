@@ -187,7 +187,7 @@ function aggregate(repo, analysisDir) {
     bundle.analysis_staleness = computeAnalysisStaleness(repo, bundle.profile);
     bundle.llm_artifacts = computeLlmArtifactStatus(analysisDir, bundle.tasks);
     bundle.analysis_document_prerequisite_coverage = computeAnalysisDocumentPrerequisiteCoverage(bundle.llm_artifacts);
-    bundle.skill_workbench_coverage = computeSkillWorkbenchCoverage(bundle.llm_skill_workbench_plan, bundle.skill_workbench_reviews, bundle.skill_workbench_task_manifest, bundle.source_tier_coverage);
+    bundle.skill_workbench_coverage = computeSkillWorkbenchCoverage(bundle.llm_skill_workbench_plan, bundle.skill_workbench_reviews, bundle.skill_workbench_task_manifest, bundle.source_tier_coverage, bundle.product_analysis_request);
     bundle.analysis_document_skill_workbench_synthesis = computeSkillWorkbenchSynthesisStatus(bundle.analysis_document, bundle.skill_workbench_reviews);
     bundle.analysis_document_detail_review_synthesis = computeDetailReviewSynthesisStatus(bundle.analysis_document, bundle.source_family_detail_reviews);
     bundle.source_family_detail_review_coverage = computeDetailReviewCoverage(bundle.llm_detail_agent_plan, bundle.source_family_detail_reviews, bundle.analysis_document_detail_review_synthesis);
@@ -1994,7 +1994,7 @@ function skillReviewId(value, index = 0) {
         return '';
     return (0, utils_1.cleanId)(value.id || value.skill_workbench_id || value.task_id || value.skill_id || value.name) || `skill-workbench-${index + 1}`;
 }
-function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCoverage) {
+function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCoverage, productRequest) {
     const planned = (0, utils_1.asList)(plan?.tasks)
         .map((task, index) => skillReviewId(task, index))
         .filter(Boolean)
@@ -2015,11 +2015,13 @@ function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCovera
     const unexpectedReviews = executedIds.filter(id => !plannedIds.includes(id));
     const usesAnalysisStrategyPlan = plan?.uses_analysis_strategy_artifact === true;
     const sourceTierComplete = sourceTierCoverage?.complete === true;
+    const productMode = String(productRequest?.mode || 'brief').toLowerCase();
+    const requiresCompleteTierBeforeWorkbenches = productMode === 'complete';
     const materializedTaskManifestPresent = plan?.materialized_task_manifest_present === true;
     const planningDecisionPresent = plan?.planning_decision_present === true;
     const noSkillDecision = plan?.no_skill_workbenches_needed === true;
     const complete = usesAnalysisStrategyPlan
-        && sourceTierComplete
+        && (!requiresCompleteTierBeforeWorkbenches || sourceTierComplete)
         && planningDecisionPresent
         && (noSkillDecision || materializedTaskManifestPresent)
         && pendingMaterialization.length === 0
@@ -2027,7 +2029,7 @@ function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCovera
         && unexpectedReviews.length === 0;
     const status = !usesAnalysisStrategyPlan
         ? 'missing_analysis_strategy'
-        : !sourceTierComplete
+        : requiresCompleteTierBeforeWorkbenches && !sourceTierComplete
             ? 'waiting_for_tier1_file_cards'
             : !planningDecisionPresent
                 ? 'missing_skill_workbench_decision'
@@ -2046,6 +2048,8 @@ function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCovera
         deterministic_contract_scope: 'planned skill ids from analysis_strategy, materialized task ids and executed skill_reviews ids only; no semantic scoring of skill-review quality',
         complete,
         status,
+        product_mode: productMode,
+        requires_complete_tier_before_workbenches: requiresCompleteTierBeforeWorkbenches,
         planning_source: plan?.planning_source || 'missing_llm_analysis_strategy',
         uses_analysis_strategy_artifact: usesAnalysisStrategyPlan,
         source_tier_complete_before_skill_workbenches: sourceTierComplete,
@@ -2062,7 +2066,7 @@ function computeSkillWorkbenchCoverage(plan, reviews, manifest, sourceTierCovera
         materialized_skill_workbenches: materializedIds,
         executed_skill_workbenches: executedIds,
         summary: plannedIds.length
-            ? sourceTierComplete
+            ? sourceTierComplete || !requiresCompleteTierBeforeWorkbenches
                 ? `${plannedIds.filter(id => executedSet.has(id)).length}/${plannedIds.length} LLM-planned skill workbenches executed.`
                 : `Skill workbenches are planned but wait for Tier 1 file-card coverage: ${sourceTierCoverage?.tier1_file_cards || 0}/${sourceTierCoverage?.total_files || 0} files.`
             : planningDecisionPresent
