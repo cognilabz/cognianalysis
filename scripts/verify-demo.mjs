@@ -1139,12 +1139,15 @@ try {
   mkdirSync(join(tempRepo, 'services', 'api', 'src', 'main', 'java'), { recursive: true });
   mkdirSync(join(tempRepo, 'web', 'src'), { recursive: true });
   mkdirSync(join(tempRepo, 'tools', '.venvs', 'ignored-env'), { recursive: true });
+  mkdirSync(join(tempRepo, '.analysis-seed', 'source_tiers'), { recursive: true });
   writeFileSync(join(tempRepo, 'services', 'api', 'pom.xml'), '<project></project>\n');
   writeFileSync(join(tempRepo, 'services', 'api', 'src', 'main', 'java', 'Api.java'), 'class Api {}\n');
   writeFileSync(join(tempRepo, 'web', 'package.json'), '{"scripts":{"test":"echo ok"}}\n');
   writeFileSync(join(tempRepo, 'web', 'src', 'App.ts'), 'export const app = () => "ok";\n');
   writeFileSync(join(tempRepo, 'tools', '.venvs', 'ignored-env', 'generated.py'), 'print("not source inventory")\n');
+  writeFileSync(join(tempRepo, '.analysis-seed', 'source_tiers', 'source-tier-seed.json'), '{"source_tier_reviews":[]}\n');
   const mcpPrepare = callMcpTool('prepare', { repo: tempRepo });
+  assert(existsSync(join(tempRepo, '.analysis', 'source_tiers', 'source-tier-seed.json')), 'MCP prepare must copy source_tiers seed artifacts like CLI prepare');
   assert(mcpPrepare.staged_llm_workflow?.includes('00-analysis-strategy.md'), 'MCP prepare must expose the LLM analysis strategy step');
   assert(mcpPrepare.staged_llm_workflow?.includes('skill_workbench_tasks'), 'MCP prepare must expose the LLM-planned skill workbench materialization step');
   assert(mcpPrepare.staged_llm_workflow?.includes('capability_templates'), 'MCP prepare must describe optional capability templates');

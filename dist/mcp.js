@@ -50,6 +50,9 @@ async function callTool(name, args) {
         const detailReviewSeedDir = utils_1.Path.join(repo, '.analysis-seed', 'detail_reviews');
         if (utils_1.FS.existsSync(detailReviewSeedDir))
             (0, utils_1.copyRecursive)(detailReviewSeedDir, utils_1.Path.join(analysis, 'detail_reviews'), false);
+        const sourceTierSeedDir = utils_1.Path.join(repo, '.analysis-seed', 'source_tiers');
+        if (utils_1.FS.existsSync(sourceTierSeedDir))
+            (0, utils_1.copyRecursive)(sourceTierSeedDir, utils_1.Path.join(analysis, 'source_tiers'), false);
         const skillReviewSeedDir = utils_1.Path.join(repo, '.analysis-seed', 'skill_reviews');
         if (utils_1.FS.existsSync(skillReviewSeedDir))
             (0, utils_1.copyRecursive)(skillReviewSeedDir, utils_1.Path.join(analysis, 'skill_reviews'), false);

@@ -50,6 +50,8 @@ async function callTool(name: string, args: any): Promise<any> {
     if (FS.existsSync(seedDir)) copyRecursive(seedDir, Path.join(analysis, 'llm'), false);
     const detailReviewSeedDir = Path.join(repo, '.analysis-seed', 'detail_reviews');
     if (FS.existsSync(detailReviewSeedDir)) copyRecursive(detailReviewSeedDir, Path.join(analysis, 'detail_reviews'), false);
+    const sourceTierSeedDir = Path.join(repo, '.analysis-seed', 'source_tiers');
+    if (FS.existsSync(sourceTierSeedDir)) copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
     const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
     if (FS.existsSync(skillReviewSeedDir)) copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
     return { analysis, tasks: tasks.length, staged_llm_workflow: stagedLlmWorkflowMessage() };
