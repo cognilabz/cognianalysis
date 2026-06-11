@@ -429,23 +429,66 @@ function artifactHashSet(bundle: any): Set<string> {
     .filter(Boolean));
 }
 
+function artifactHashesByPath(bundle: any): Map<string, string> {
+  return new Map(asList(bundle.artifact_dependency_graph?.nodes)
+    .map((node: any) => [String(node?.path || '').trim(), String(node?.content_hash || '').trim()])
+    .filter((entry: string[]) => entry[0] && entry[1]) as [string, string][]);
+}
+
+function graphNodeFresh(bundle: any, id: string): boolean {
+  const node = asList(bundle.artifact_dependency_graph?.nodes).find((item: any) => String(item?.id || '') === id);
+  return node?.fresh === true;
+}
+
+function hasOverlappingWorkerWindows(tasks: any[]): boolean {
+  const windows = tasks.map((task: any) => ({
+    start: Date.parse(String(task?.started_at || '')),
+    end: Date.parse(String(task?.ended_at || ''))
+  })).filter(window => Number.isFinite(window.start) && Number.isFinite(window.end) && window.end > window.start);
+  for (let i = 0; i < windows.length; i += 1) {
+    for (let j = i + 1; j < windows.length; j += 1) {
+      if (windows[i].start < windows[j].end && windows[j].start < windows[i].end) return true;
+    }
+  }
+  return false;
+}
+
 function validateParallelExecutionProof(bundle: any): any {
   const proof = bundle.parallel_execution_proof || {};
-  const hashes = artifactHashSet(bundle);
+  const hashesByPath = artifactHashesByPath(bundle);
+  const sourceTierTasks = asList(bundle.source_tier_task_manifest?.tasks);
+  const taskEntries: [string, any][] = sourceTierTasks
+    .map((task: any) => [String(task?.id || '').trim(), task] as [string, any])
+    .filter((entry: [string, any]) => entry[0]);
+  const tasksById = new Map<string, any>(taskEntries);
   const tasks = asList(proof.worker_tasks || proof.tasks);
+  const workerIds = new Set(tasks.map((task: any) => String(task?.worker_id || '').trim()).filter(Boolean));
+  const taskIds = new Set(tasks.map((task: any) => String(task?.task_id || '').trim()).filter(Boolean));
   const missing = [
     ...(proof.schemaVersion === '1.0' ? [] : ['schemaVersion']),
     ...(proof.complete === true ? [] : ['complete']),
     ...(String(proof.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['analysis_run_id']),
     ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
+    ...(graphNodeFresh(bundle, 'parallel_execution_proof') ? [] : ['proof_node_fresh']),
     ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
     ...(Number(proof.worker_count || 0) >= 2 ? [] : ['worker_count']),
     ...(tasks.length >= 2 ? [] : ['worker_tasks']),
+    ...(workerIds.size >= 2 ? [] : ['distinct_workers']),
+    ...(taskIds.size >= 2 ? [] : ['distinct_tasks']),
     ...(tasks.every((task: any) => String(task?.worker_id || '').trim() && String(task?.task_id || '').trim()) ? [] : ['worker_task_identity']),
-    ...(tasks.every((task: any) => Number(task?.duration_ms || 0) > 0 || (String(task?.started_at || '').trim() && String(task?.ended_at || '').trim())) ? [] : ['worker_task_timing'])
+    ...(tasks.every((task: any) => Number(task?.duration_ms || 0) > 0 || (String(task?.started_at || '').trim() && String(task?.ended_at || '').trim())) ? [] : ['worker_task_timing']),
+    ...(hasOverlappingWorkerWindows(tasks) ? [] : ['worker_task_concurrency'])
   ];
   const taskHashes = tasks.map((task: any) => String(task?.artifact_hash || task?.output_hash || '').trim()).filter(Boolean);
-  if (!taskHashes.length || taskHashes.some((hash: string) => !hashes.has(hash))) missing.push('worker_task_artifact_hashes');
+  if (!tasks.every((task: any) => tasksById.has(String(task?.task_id || '').trim()))) missing.push('source_tier_task_ids');
+  const taskHashesMatchOutputs = tasks.every((task: any) => {
+    const taskId = String(task?.task_id || '').trim();
+    const expectedOutput = String(tasksById.get(taskId)?.expected_output || '').trim();
+    const expectedHash = expectedOutput ? hashesByPath.get(expectedOutput) : '';
+    const proofHash = String(task?.artifact_hash || task?.output_hash || '').trim();
+    return !!expectedHash && proofHash === expectedHash;
+  });
+  if (!taskHashes.length || !taskHashesMatchOutputs) missing.push('worker_task_artifact_hashes');
   return {
     valid: missing.length === 0,
     missing,
@@ -457,22 +500,35 @@ function validateParallelExecutionProof(bundle: any): any {
 
 function validateCacheReuseProof(bundle: any): any {
   const proof = bundle.cache_reuse_proof || {};
-  const hashes = artifactHashSet(bundle);
+  const hashesByPath = artifactHashesByPath(bundle);
   const entries = asList(proof.cache_entries || proof.entries || proof.cache_keys);
   const hitEntries = entries.filter((entry: any) => entry?.hit === true || entry?.cache_hit === true);
+  const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
   const missing = [
     ...(proof.schemaVersion === '1.0' ? [] : ['schemaVersion']),
     ...(proof.complete === true ? [] : ['complete']),
     ...(String(proof.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['analysis_run_id']),
     ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
+    ...(graphNodeFresh(bundle, 'cache_reuse_proof') ? [] : ['proof_node_fresh']),
     ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
     ...(Number(proof.cache_hits || 0) > 0 ? [] : ['cache_hits']),
     ...(hitEntries.length > 0 ? [] : ['cache_hit_entries']),
     ...(bundle.product_analysis_request_freshness?.complete === true ? [] : ['product_request_freshness'])
   ];
   const entryHashes = hitEntries.map((entry: any) => String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim()).filter(Boolean);
-  if (!entryHashes.length || entryHashes.some((hash: string) => !hashes.has(hash))) missing.push('cache_entry_artifact_hashes');
-  if (hitEntries.some((entry: any) => !String(entry?.cache_key || entry?.key || '').trim())) missing.push('cache_entry_keys');
+  const entryPathsValid = hitEntries.every((entry: any) => {
+    const path = String(entry?.artifact_path || entry?.path || '').trim();
+    const hash = String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim();
+    return !!path && !!hash && hashesByPath.get(path) === hash;
+  });
+  if (!entryHashes.length || !entryPathsValid) missing.push('cache_entry_artifact_hashes');
+  const keysValid = hitEntries.every((entry: any) => {
+    const key = String(entry?.cache_key || entry?.key || '').trim();
+    const path = String(entry?.artifact_path || entry?.path || '').trim();
+    const hash = String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim();
+    return !!key && !!path && !!hash && key === sha1Short(`${bundle.analysis_run?.analysis_run_id || ''}|${bundle.analysis_run?.source_commit || ''}|${requestHash}|${path}|${hash}`, 20);
+  });
+  if (!keysValid) missing.push('cache_entry_keys');
   return {
     valid: missing.length === 0,
     missing,

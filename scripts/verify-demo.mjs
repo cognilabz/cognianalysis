@@ -353,6 +353,34 @@ const proofHash = fakeProofBundle.artifact_dependency_graph?.nodes?.find(node =>
 writeFileSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), JSON.stringify({
   schemaVersion: '1.0',
   complete: true,
+  analysis_run_id: bundle.analysis_run.analysis_run_id,
+  source_commit: bundle.analysis_run.source_commit,
+  generated_from: ['source-tier-task-manifest.json'],
+  worker_count: 2,
+  worker_tasks: [
+    { worker_id: 'w1', task_id: 'fake-task-a', started_at: '2026-01-01T00:00:00.000Z', ended_at: '2026-01-01T00:00:10.000Z', duration_ms: 10000, artifact_hash: proofHash },
+    { worker_id: 'w2', task_id: 'fake-task-b', started_at: '2026-01-01T00:00:05.000Z', ended_at: '2026-01-01T00:00:15.000Z', duration_ms: 10000, artifact_hash: proofHash }
+  ]
+}, null, 2) + '\n', 'utf8');
+writeFileSync(join(demo, '.analysis', 'data', 'cache-reuse-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: bundle.analysis_run.analysis_run_id,
+  source_commit: bundle.analysis_run.source_commit,
+  generated_from: ['artifact-dependency-graph.json'],
+  cache_hits: 1,
+  cache_entries: [{ cache_key: 'fake-key', hit: true, artifact_path: 'not-a-real-artifact.json', artifact_hash: proofHash }]
+}, null, 2) + '\n', 'utf8');
+run(['dev', 'aggregate', demo], { capture: true });
+fakeProofBundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+assert(fakeProofBundle.parallel_orchestration_contract?.complete === false, 'Current-run fake proof with arbitrary graph hashes must not complete orchestration');
+assert(fakeProofBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('source_tier_task_ids'), 'Parallel proof validation must bind worker tasks to source-tier task IDs');
+assert(fakeProofBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_task_artifact_hashes'), 'Parallel proof validation must bind worker hashes to expected task outputs');
+assert(fakeProofBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entry_artifact_hashes'), 'Cache proof validation must bind cache hashes to artifact paths');
+assert(fakeProofBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entry_keys'), 'Cache proof validation must reject non-deterministic cache keys');
+writeFileSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), JSON.stringify({
+  schemaVersion: '1.0',
+  complete: true,
   analysis_run_id: 'run-stale',
   source_commit: 'stale-commit',
   generated_from: ['source-tier-task-manifest.json'],
