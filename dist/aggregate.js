@@ -512,7 +512,13 @@ function computeProductAnalysisRequestFreshness(analysisDir) {
         };
     }
     const requiredOutputs = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
-    const staleOutputs = marker.stale === true
+    const mtimeStaleOutputs = requiredOutputs.filter(relativePath => {
+        const info = artifactInfo(analysisDir, relativePath);
+        return info.exists && info.mtime_ms < request.mtime_ms;
+    });
+    const markerHasFreshnessDecision = typeof marker.stale === 'boolean';
+    const shouldCheckRequiredOutputs = marker.stale === true || (!markerHasFreshnessDecision && mtimeStaleOutputs.length > 0);
+    const staleOutputs = shouldCheckRequiredOutputs
         ? requiredOutputs.filter(relativePath => {
             const info = artifactInfo(analysisDir, relativePath);
             return !info.exists || info.mtime_ms < request.mtime_ms;

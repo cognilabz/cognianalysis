@@ -12,6 +12,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive']);
+const PRODUCT_REQUEST_LLM_OUTPUTS = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
 const OPTION_VALUE_FLAGS = new Set([
   '--analysis',
   '--capsules',
@@ -497,7 +498,9 @@ function analysisScopeChanged(analysis: string, request: any): boolean {
   if (requestedMode !== 'complete') {
     const requestedFiles = Number(requested.scope_files || 0);
     const selectedFiles = Number(current.selected_files || 0);
-    if (requestedFiles > 0 && selectedFiles !== requestedFiles) return true;
+    const totalFilesBeforeScope = Number(current.total_files_before_scope || selectedFiles);
+    const expectedSelectedFiles = Math.min(requestedFiles, totalFilesBeforeScope || requestedFiles);
+    if (requestedFiles > 0 && selectedFiles !== expectedSelectedFiles) return true;
   }
   return false;
 }
@@ -511,6 +514,8 @@ function writeProductAnalysisRequest(repo: string, analysis: string, args: strin
   const currentHash = sha1Short(JSON.stringify(stableRequest(request)), 16);
   if (previous && previousHash === currentHash) return previous;
   ensureDir(Path.join(analysis, 'data'));
+  const hasExistingLlmOutputs = PRODUCT_REQUEST_LLM_OUTPUTS.some(relativePath => FS.existsSync(Path.join(analysis, relativePath)));
+  const requestChanged = previous ? previousHash !== currentHash : hasExistingLlmOutputs;
   const persisted = {
     ...request,
     request_hash: currentHash,
@@ -521,13 +526,13 @@ function writeProductAnalysisRequest(repo: string, analysis: string, args: strin
     contract_kind: 'product_analysis_request_freshness',
     current_request_hash: currentHash,
     previous_request_hash: previousHash || null,
-    stale: !!previous && previousHash !== currentHash,
-    complete: !previous || previousHash === currentHash,
-    stale_outputs: previous && previousHash !== currentHash
-      ? ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json']
+    stale: requestChanged,
+    complete: !requestChanged,
+    stale_outputs: requestChanged
+      ? PRODUCT_REQUEST_LLM_OUTPUTS
       : [],
-    summary: previous && previousHash !== currentHash
-      ? 'Product analysis request changed; downstream Codex-authored LLM artifacts must be re-authored for the new mode, goal, target or scope.'
+    summary: requestChanged
+      ? 'Product analysis request changed or was added to an already-authored workspace; downstream Codex-authored LLM artifacts must be re-authored for the current mode, goal, target or scope.'
       : 'Product analysis request is current.'
   });
   return persisted;
