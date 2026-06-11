@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -169,6 +169,25 @@ const strategyTask = readFileSync(join(demo, '.analysis', 'llm_tasks', '00-analy
 const rootAgents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
 const resourceAgents = readFileSync(join(root, 'resources', 'AGENTS.md'), 'utf8');
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
+
+const symlinkTargetRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-evidence-escape-'));
+const symlinkRepoRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-symlink-repo-'));
+try {
+  const symlinkRepo = join(symlinkRepoRoot, 'demo-repo');
+  cpSync(demo, symlinkRepo, { recursive: true });
+  writeFileSync(join(symlinkTargetRoot, 'outside.txt'), 'outside repo\n', 'utf8');
+  symlinkSync(join(symlinkTargetRoot, 'outside.txt'), join(symlinkRepo, 'outside-link.txt'));
+  const docPath = join(symlinkRepo, '.analysis', 'llm', 'analysis-document.json');
+  const doc = JSON.parse(readFileSync(docPath, 'utf8'));
+  doc.analysis_document.sections[0].blocks[0].evidence.push({ path: 'outside-link.txt', line: 1 });
+  writeFileSync(docPath, JSON.stringify(doc, null, 2) + '\n', 'utf8');
+  const symlinkValidate = run(['dev', 'validate', symlinkRepo], { capture: true, expectFailure: true });
+  assert((symlinkValidate.stdout || '').includes('path escapes repository'), 'Evidence validation must reject symlinks that resolve outside the repository');
+} finally {
+  rmSync(symlinkTargetRoot, { recursive: true, force: true });
+  rmSync(symlinkRepoRoot, { recursive: true, force: true });
+}
+
 const helpOutput = run(['--help'], { capture: true }).stdout || '';
 assert(helpOutput.includes('analyze [repo]'), 'CLI help must expose product-mode analyze');
 assert(helpOutput.includes('--mode brief|blueprint|deep-dive'), 'CLI help must expose product analysis modes');

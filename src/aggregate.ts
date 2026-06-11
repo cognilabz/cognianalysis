@@ -2436,6 +2436,9 @@ function validateEvidence(repo: string, ev: any): any {
   if (!relativePath || full !== repoRoot && !full.startsWith(`${repoRoot}${Path.sep}`)) return { ...ev, line, valid: false, reason: 'invalid path' };
   if (!Number.isInteger(line) || line < 1) return { ...ev, line, valid: false, reason: 'invalid line' };
   if (!fs.existsSync(full)) return { ...ev, line, valid: false, reason: 'file not found' };
+  const repoRootReal = fs.realpathSync(repoRoot);
+  const fullReal = fs.realpathSync(full);
+  if (fullReal !== repoRootReal && !fullReal.startsWith(`${repoRootReal}${Path.sep}`)) return { ...ev, line, valid: false, reason: 'path escapes repository' };
   const lineCount = countLines(full);
   if (line > lineCount) return { ...ev, line, valid: false, reason: 'line out of range', line_count: lineCount };
   const snippet = getLine(full, line);
