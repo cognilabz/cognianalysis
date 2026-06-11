@@ -1133,7 +1133,8 @@ function majorReportClaimItems(doc) {
     }));
 }
 function evidenceKey(ev) {
-    return `${String(ev?.path || '')}:${Number(ev?.line || 1)}`;
+    const line = ev?.line === undefined || ev?.line === null || ev?.line === '' ? 1 : Number(ev.line);
+    return `${String(ev?.path || '')}:${Number.isInteger(line) && line >= 1 ? line : 'invalid'}`;
 }
 function artifactEvidenceRows(artifact, artifactPath) {
     const rows = [];
@@ -1152,7 +1153,7 @@ function artifactEvidenceRows(artifact, artifactPath) {
                 artifact: artifactPath,
                 evidence_key: evidenceKey(ev),
                 path: ev.path,
-                line: Number(ev.line || 1)
+                line: ev?.line === undefined || ev?.line === null || ev?.line === '' ? 1 : Number(ev.line)
             });
         }
         for (const [key, child] of Object.entries(value)) {

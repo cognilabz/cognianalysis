@@ -831,6 +831,37 @@ try {
   rmSync(tempRootUnexpectedDetailReview, { recursive: true, force: true });
 }
 
+const tempRootUnsafeDetailTaskId = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-unsafe-detail-task-id-'));
+try {
+  const tempDemo = join(tempRootUnsafeDetailTaskId, 'demo-repo');
+  cpSync(demo, tempDemo, { recursive: true });
+  const planPath = join(tempDemo, '.analysis', 'llm', 'detail-agent-plan.json');
+  const plan = JSON.parse(readFileSync(planPath, 'utf8'));
+  plan.detail_agent_plan.tasks = [
+    {
+      id: '../escape/detail:src/main',
+      source_family: 'src/main',
+      recommended_agent: 'detail-reviewer',
+      focus: ['Path-safe task materialization regression'],
+      expected_outputs: ['Sanitized detail task and review paths'],
+      seed_files: ['src/main/java/com/acme/onboarding/OnboardingService.java'],
+      evidence: [{ path: 'src/main/java/com/acme/onboarding/OnboardingService.java', line: 1 }]
+    }
+  ];
+  delete plan.detail_agent_plan.no_detail_reviews_needed;
+  writeFileSync(planPath, JSON.stringify(plan, null, 2) + '\n');
+
+  run(['dev', 'finalize', tempDemo, '--allow-partial'], { capture: true });
+  const manifest = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'detail-task-manifest.json'), 'utf8'));
+  const task = manifest.tasks?.[0] || {};
+  assert(task.id === 'escape-detail-src-main', `Detail task id must be sanitized, got ${task.id}`);
+  assert(task.task_file === 'detail_tasks/001-escape-detail-src-main.md', `Detail task file must stay inside detail_tasks, got ${task.task_file}`);
+  assert(task.expected_output === 'detail_reviews/escape-detail-src-main.json', `Detail review output must stay inside detail_reviews, got ${task.expected_output}`);
+  assert(!existsSync(join(tempDemo, '.analysis', 'escape')), 'Unsafe detail task id must not create sibling paths outside detail_tasks/detail_reviews');
+} finally {
+  rmSync(tempRootUnsafeDetailTaskId, { recursive: true, force: true });
+}
+
 const tempRootMissingGoalRefs = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-goal-refs-'));
 try {
   const tempDemo = join(tempRootMissingGoalRefs, 'demo-repo');

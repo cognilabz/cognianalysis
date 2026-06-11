@@ -1,5 +1,5 @@
 import { CodeMap } from './types';
-import { FS, ensureDir, loadJson, writeJson, writeText } from './utils';
+import { FS, cleanId, ensureDir, loadJson, writeJson, writeText } from './utils';
 import { TARGET_CAPABILITIES } from './targetCoverage';
 import { Path } from './utils';
 import { reportComponentLibraryArtifact } from './reportComponents';
@@ -225,7 +225,9 @@ export function writeDetailTasksFromLlmPlan(analysisDir: string, plan: any): any
   }
   const planTasks = plan?.tasks || [];
   const tasks = planTasks.map((task: any, index: number) => {
-    const id = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`).replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+    const rawId = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`)}`;
+    const safeId = cleanId(String(rawId));
+    const id = safeId === 'item' ? `detail-${index + 1}` : safeId;
     const filename = `${String(index + 1).padStart(3, '0')}-${id}.md`;
     const output = `detail_reviews/${id}.json`;
     writeText(Path.join(tasksDir, filename), detailTaskBody(task, output));

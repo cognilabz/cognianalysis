@@ -198,7 +198,9 @@ function writeDetailTasksFromLlmPlan(analysisDir, plan) {
     }
     const planTasks = plan?.tasks || [];
     const tasks = planTasks.map((task, index) => {
-        const id = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`).replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+        const rawId = task.id || `detail-${String(task.source_family || `source-family-${index + 1}`)}`;
+        const safeId = (0, utils_1.cleanId)(String(rawId));
+        const id = safeId === 'item' ? `detail-${index + 1}` : safeId;
         const filename = `${String(index + 1).padStart(3, '0')}-${id}.md`;
         const output = `detail_reviews/${id}.json`;
         (0, utils_1.writeText)(utils_2.Path.join(tasksDir, filename), detailTaskBody(task, output));
