@@ -35,9 +35,9 @@ function sha1(value) {
 
 function perfectMetricDerivation() {
   return {
-    fact_rows: [{ id: 'fact', found: true, evidence_present: true, artifact_snippet: 'fact' }],
-    claim_rows: [{ id: 'claim-1', unsupported: false, artifact_snippet: 'supported claim' }],
-    decision_rows: [{ id: 'decision-1', useful: true, artifact_snippet: 'useful decision' }]
+    fact_rows: [{ id: 'fact', found: true, evidence_present: true, artifact_snippet: 'fact', support_snippet: 'fact', scored_by: 'fixture' }],
+    claim_rows: [{ id: 'claim-1', unsupported: false, artifact_snippet: 'supported claim', support_snippet: 'supported claim', scored_by: 'fixture' }],
+    decision_rows: [{ id: 'decision-1', useful: true, artifact_snippet: 'useful decision', support_snippet: 'useful decision', scored_by: 'fixture' }]
   };
 }
 

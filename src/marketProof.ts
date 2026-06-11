@@ -63,6 +63,10 @@ function rowSnippet(row: any): string {
   return String(row?.artifact_snippet || row?.snippet || row?.evidence_text || row?.matched_text || '').trim();
 }
 
+function rowOutcomeSnippet(row: any): string {
+  return String(row?.support_snippet || row?.justification_snippet || row?.outcome_snippet || row?.support_text || '').trim();
+}
+
 function idSetFrom(value: any): Set<string> {
   return new Set(asList(value).map((item: any) => String(item?.id || '').trim()).filter(Boolean));
 }
@@ -84,6 +88,22 @@ function validateRowsBoundToArtifact(rows: any[], artifactText: string, label: s
     const snippet = rowSnippet(row);
     if (!snippet) errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is required`);
     else if (!artifactText.includes(snippet)) errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is absent from provenance artifact`);
+  });
+  return errors;
+}
+
+function validatePositiveOutcomeProof(rows: any[], artifactText: string, label: string): string[] {
+  const errors: string[] = [];
+  rows.forEach((row: any) => {
+    const positive = (label === 'fact' && (row?.found === true || row?.evidence_present === true || row?.has_evidence === true))
+      || (label === 'claim' && (row?.unsupported === false || row?.supported === true))
+      || (label === 'decision' && (row?.useful === true || row?.decision_useful === true));
+    if (!positive) return;
+    const id = String(row?.id || '').trim() || 'unknown';
+    if (!String(row?.scored_by || row?.reviewer || row?.judge || '').trim()) errors.push(`metric_derivation ${label} row ${id} scorer/reviewer is required`);
+    const snippet = rowOutcomeSnippet(row);
+    if (!snippet) errors.push(`metric_derivation ${label} row ${id} support_snippet is required`);
+    else if (!artifactText.includes(snippet)) errors.push(`metric_derivation ${label} row ${id} support_snippet is absent from provenance artifact`);
   });
   return errors;
 }
@@ -132,6 +152,9 @@ function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: str
   errors.push(...validateRowsBoundToArtifact(factRows, artifactText, 'fact'));
   errors.push(...validateRowsBoundToArtifact(claimRows, artifactText, 'claim'));
   errors.push(...validateRowsBoundToArtifact(decisionRows, artifactText, 'decision'));
+  errors.push(...validatePositiveOutcomeProof(factRows, artifactText, 'fact'));
+  errors.push(...validatePositiveOutcomeProof(claimRows, artifactText, 'claim'));
+  errors.push(...validatePositiveOutcomeProof(decisionRows, artifactText, 'decision'));
   if (comparisonTargetFile && FS.existsSync(comparisonTargetFile)) {
     const target = readJsonObject(comparisonTargetFile);
     const expectedFactIds = idSetFrom(target?.facts || target?.expected_facts);
