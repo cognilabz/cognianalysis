@@ -1148,6 +1148,17 @@ try {
   const goalRepresentativeRequest = JSON.parse(readFileSync(join(goalRepresentativeRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
   assert(goalRepresentativeRequest.goal === 'New scoped goal', 'Goal-only analyze must update the requested goal');
   assert(goalRepresentativeRequest.analysis_scope_request?.mode === 'representative' && goalRepresentativeRequest.analysis_scope_request?.scope_files === 5, 'Goal-only analyze must preserve an existing representative scope');
+  const scopeDefaultRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-scope-default-change-'));
+  const scopeDefaultRepo = join(scopeDefaultRoot, 'demo-repo');
+  cpSync(demo, scopeDefaultRepo, { recursive: true });
+  rmSync(join(scopeDefaultRepo, '.analysis'), { recursive: true, force: true });
+  run(['analyze', scopeDefaultRepo, '--scope', 'representative', '--scope-files', '5', '--no-seed', '--no-html'], { capture: true });
+  run(['analyze', scopeDefaultRepo, '--scope', 'critical-path', '--no-seed', '--no-html'], { capture: true });
+  const criticalPathDefaultRequest = JSON.parse(readFileSync(join(scopeDefaultRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  assert(criticalPathDefaultRequest.analysis_scope_request?.mode === 'critical-path' && criticalPathDefaultRequest.analysis_scope_request?.scope_files === 1200, 'Changing scope mode without --scope-files must persist the new mode default instead of the previous limit');
+  const repeatedCriticalPath = run(['analyze', scopeDefaultRepo, '--no-seed', '--no-html'], { capture: true });
+  const repeatedCriticalPathOutput = `${repeatedCriticalPath.stdout || ''}\n${repeatedCriticalPath.stderr || ''}`;
+  assert(!repeatedCriticalPathOutput.includes('requested scope differs'), 'Plain analyze after scope mode defaulting must not rebuild from a stale scope_files value');
   assert(analyzePendingOutput.includes('00-analysis-strategy.md'), 'Analyze pending output must describe the LLM analysis strategy step');
   assert(analyzePendingOutput.includes('skill_workbench_tasks'), 'Analyze pending output must describe LLM-planned skill workbench materialization');
   assert(analyzePendingOutput.includes('capability_templates'), 'Analyze pending output must describe optional capability templates');

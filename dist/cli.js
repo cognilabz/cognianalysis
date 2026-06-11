@@ -471,12 +471,14 @@ function productAnalysisRequest(args, previous) {
     const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || 'complete');
     if (!SCOPE_MODES.has(scopeMode))
         throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
+    const previousScopeMode = String(previousScopeRequest.mode || 'complete');
     const previousScopeFiles = Number(previousScopeRequest.scope_files || 0);
+    const preservePreviousScopeFiles = !hasScope || scopeMode === previousScopeMode;
     const scopeFiles = scopeMode === 'complete'
         ? null
         : hasScopeFiles
             ? Math.max(1, (0, utils_1.numericArg)(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400))
-            : previousScopeFiles > 0
+            : preservePreviousScopeFiles && previousScopeFiles > 0
                 ? previousScopeFiles
                 : Math.max(1, scopeMode === 'critical-path' ? 1200 : 400);
     const target = {
