@@ -122,6 +122,8 @@ function aggregate(repo, analysisDir) {
         analysis_skill_catalog: (0, analysisSkills_1.analysisSkillCatalogArtifact)(),
         analysis_run: analysisRun,
         analysis_scope: analysisScope,
+        orchestration_execution_log: (0, utils_1.loadJson)(utils_1.Path.join(dataDir, 'orchestration-execution-log.json'), {}),
+        cache_ledger: (0, utils_1.loadJson)(utils_1.Path.join(dataDir, 'cache-ledger.json'), {}),
         parallel_execution_proof: (0, utils_1.loadJson)(utils_1.Path.join(dataDir, 'parallel-execution-proof.json'), {}),
         cache_reuse_proof: (0, utils_1.loadJson)(utils_1.Path.join(dataDir, 'cache-reuse-proof.json'), {}),
         source_tier_model: (0, sourceTiers_1.sourceTierModelArtifact)(),
@@ -436,8 +438,50 @@ function hasOverlappingWorkerWindows(tasks) {
     }
     return false;
 }
+function validateOrchestrationExecutionLog(bundle) {
+    const log = bundle.orchestration_execution_log || {};
+    const hashesByPath = artifactHashesByPath(bundle);
+    const sourceTierTasks = (0, utils_1.asList)(bundle.source_tier_task_manifest?.tasks);
+    const tasksById = new Map(sourceTierTasks
+        .map((task) => [String(task?.id || '').trim(), task])
+        .filter((entry) => entry[0]));
+    const tasks = (0, utils_1.asList)(log.worker_tasks || log.tasks);
+    const workerIds = new Set(tasks.map((task) => String(task?.worker_id || '').trim()).filter(Boolean));
+    const taskIds = new Set(tasks.map((task) => String(task?.task_id || '').trim()).filter(Boolean));
+    const missing = [
+        ...(log.schemaVersion === '1.0' ? [] : ['orchestration_execution_log.schemaVersion']),
+        ...(String(log.execution_kind || '') === 'source_tier_workpack_execution' ? [] : ['orchestration_execution_log.execution_kind']),
+        ...(String(log.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['orchestration_execution_log.analysis_run_id']),
+        ...(String(log.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['orchestration_execution_log.source_commit']),
+        ...(graphNodeFresh(bundle, 'orchestration_execution_log') ? [] : ['orchestration_execution_log_node_fresh']),
+        ...(tasks.length >= 2 ? [] : ['orchestration_execution_log.worker_tasks']),
+        ...(workerIds.size >= 2 ? [] : ['orchestration_execution_log.distinct_workers']),
+        ...(taskIds.size >= 2 ? [] : ['orchestration_execution_log.distinct_tasks']),
+        ...(tasks.every((task) => String(task?.worker_id || '').trim() && String(task?.task_id || '').trim()) ? [] : ['orchestration_execution_log.worker_task_identity']),
+        ...(tasks.every((task) => Number(task?.duration_ms || 0) > 0 || (String(task?.started_at || '').trim() && String(task?.ended_at || '').trim())) ? [] : ['orchestration_execution_log.worker_task_timing']),
+        ...(hasOverlappingWorkerWindows(tasks) ? [] : ['orchestration_execution_log.worker_task_concurrency'])
+    ];
+    if (!tasks.every((task) => tasksById.has(String(task?.task_id || '').trim())))
+        missing.push('orchestration_execution_log.source_tier_task_ids');
+    const hashesMatch = tasks.every((task) => {
+        const taskId = String(task?.task_id || '').trim();
+        const path = String(task?.artifact_path || task?.path || tasksById.get(taskId)?.expected_output || '').trim();
+        const expectedHash = path ? hashesByPath.get(path) : '';
+        const artifactHash = String(task?.artifact_hash || task?.output_hash || '').trim();
+        return !!expectedHash && artifactHash === expectedHash;
+    });
+    if (!hashesMatch)
+        missing.push('orchestration_execution_log.artifact_hashes');
+    return {
+        valid: missing.length === 0,
+        missing,
+        worker_count: workerIds.size,
+        worker_tasks: tasks.length
+    };
+}
 function validateParallelExecutionProof(bundle) {
     const proof = bundle.parallel_execution_proof || {};
+    const executionLogValidation = validateOrchestrationExecutionLog(bundle);
     const hashesByPath = artifactHashesByPath(bundle);
     const sourceTierTasks = (0, utils_1.asList)(bundle.source_tier_task_manifest?.tasks);
     const taskEntries = sourceTierTasks
@@ -454,6 +498,7 @@ function validateParallelExecutionProof(bundle) {
         ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
         ...(graphNodeFresh(bundle, 'parallel_execution_proof') ? [] : ['proof_node_fresh']),
         ...((0, utils_1.asList)(proof.generated_from).length > 0 ? [] : ['generated_from']),
+        ...(executionLogValidation.valid ? [] : ['orchestration_execution_log']),
         ...(Number(proof.worker_count || 0) >= 2 ? [] : ['worker_count']),
         ...(tasks.length >= 2 ? [] : ['worker_tasks']),
         ...(workerIds.size >= 2 ? [] : ['distinct_workers']),
@@ -477,13 +522,57 @@ function validateParallelExecutionProof(bundle) {
     return {
         valid: missing.length === 0,
         missing,
+        orchestration_execution_log_validation: executionLogValidation,
         worker_count: Number(proof.worker_count || 0),
         worker_tasks: tasks.length,
         artifact_hashes_checked: taskHashes.length
     };
 }
+function validateCacheLedger(bundle) {
+    const ledger = bundle.cache_ledger || {};
+    const hashesByPath = artifactHashesByPath(bundle);
+    const entries = (0, utils_1.asList)(ledger.cache_entries || ledger.entries);
+    const hitEntries = entries.filter((entry) => entry?.hit === true || entry?.cache_hit === true);
+    const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
+    const missing = [
+        ...(ledger.schemaVersion === '1.0' ? [] : ['cache_ledger.schemaVersion']),
+        ...(String(ledger.ledger_kind || '') === 'artifact_cache_ledger' ? [] : ['cache_ledger.ledger_kind']),
+        ...(String(ledger.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['cache_ledger.analysis_run_id']),
+        ...(String(ledger.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['cache_ledger.source_commit']),
+        ...(graphNodeFresh(bundle, 'cache_ledger') ? [] : ['cache_ledger_node_fresh']),
+        ...(hitEntries.length > 0 ? [] : ['cache_ledger.hit_entries'])
+    ];
+    const hashesMatch = hitEntries.every((entry) => {
+        const path = String(entry?.artifact_path || entry?.path || '').trim();
+        const hash = String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim();
+        return !!path && !!hash && hashesByPath.get(path) === hash;
+    });
+    if (!hashesMatch)
+        missing.push('cache_ledger.artifact_hashes');
+    const keysValid = hitEntries.every((entry) => {
+        const key = String(entry?.cache_key || entry?.key || '').trim();
+        const path = String(entry?.artifact_path || entry?.path || '').trim();
+        const hash = String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim();
+        return !!key && !!path && !!hash && key === (0, utils_1.sha1Short)(`${bundle.analysis_run?.analysis_run_id || ''}|${bundle.analysis_run?.source_commit || ''}|${requestHash}|${path}|${hash}`, 20);
+    });
+    if (!keysValid)
+        missing.push('cache_ledger.cache_keys');
+    const reuseTimingValid = hitEntries.every((entry) => {
+        const created = Date.parse(String(entry?.created_at || ''));
+        const reused = Date.parse(String(entry?.reused_at || entry?.hit_at || ''));
+        return Number.isFinite(created) && Number.isFinite(reused) && reused > created;
+    });
+    if (!reuseTimingValid)
+        missing.push('cache_ledger.prior_cache_reuse_timing');
+    return {
+        valid: missing.length === 0,
+        missing,
+        hit_entries: hitEntries.length
+    };
+}
 function validateCacheReuseProof(bundle) {
     const proof = bundle.cache_reuse_proof || {};
+    const cacheLedgerValidation = validateCacheLedger(bundle);
     const hashesByPath = artifactHashesByPath(bundle);
     const entries = (0, utils_1.asList)(proof.cache_entries || proof.entries || proof.cache_keys);
     const hitEntries = entries.filter((entry) => entry?.hit === true || entry?.cache_hit === true);
@@ -495,6 +584,7 @@ function validateCacheReuseProof(bundle) {
         ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
         ...(graphNodeFresh(bundle, 'cache_reuse_proof') ? [] : ['proof_node_fresh']),
         ...((0, utils_1.asList)(proof.generated_from).length > 0 ? [] : ['generated_from']),
+        ...(cacheLedgerValidation.valid ? [] : ['cache_ledger']),
         ...(Number(proof.cache_hits || 0) > 0 ? [] : ['cache_hits']),
         ...(hitEntries.length > 0 ? [] : ['cache_hit_entries']),
         ...(bundle.product_analysis_request_freshness?.complete === true ? [] : ['product_request_freshness'])
@@ -518,6 +608,7 @@ function validateCacheReuseProof(bundle) {
     return {
         valid: missing.length === 0,
         missing,
+        cache_ledger_validation: cacheLedgerValidation,
         cache_hits: Number(proof.cache_hits || 0),
         hit_entries: hitEntries.length,
         artifact_hashes_checked: entryHashes.length
@@ -749,11 +840,17 @@ function computeArtifactDependencyGraph(analysisDir, analysisRun) {
         depends_on: ['detail_agent_plan']
     }));
     const optionalProofNodes = [
+        utils_1.FS.existsSync(utils_1.Path.join(analysisDir, 'data', 'orchestration-execution-log.json'))
+            ? { id: 'orchestration_execution_log', path: 'data/orchestration-execution-log.json', kind: 'orchestration_execution_log', depends_on: [...sourceTierNodes.map(node => node.id)] }
+            : null,
+        utils_1.FS.existsSync(utils_1.Path.join(analysisDir, 'data', 'cache-ledger.json'))
+            ? { id: 'cache_ledger', path: 'data/cache-ledger.json', kind: 'cache_ledger', depends_on: ['orchestration_execution_log'] }
+            : null,
         utils_1.FS.existsSync(utils_1.Path.join(analysisDir, 'data', 'parallel-execution-proof.json'))
-            ? { id: 'parallel_execution_proof', path: 'data/parallel-execution-proof.json', kind: 'orchestration_proof', depends_on: ['analysis_document'] }
+            ? { id: 'parallel_execution_proof', path: 'data/parallel-execution-proof.json', kind: 'orchestration_proof', depends_on: ['analysis_document', 'orchestration_execution_log'] }
             : null,
         utils_1.FS.existsSync(utils_1.Path.join(analysisDir, 'data', 'cache-reuse-proof.json'))
-            ? { id: 'cache_reuse_proof', path: 'data/cache-reuse-proof.json', kind: 'orchestration_proof', depends_on: ['parallel_execution_proof'] }
+            ? { id: 'cache_reuse_proof', path: 'data/cache-reuse-proof.json', kind: 'orchestration_proof', depends_on: ['parallel_execution_proof', 'cache_ledger'] }
             : null
     ].filter(Boolean);
     const nodes = [

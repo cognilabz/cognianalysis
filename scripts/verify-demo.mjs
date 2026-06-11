@@ -464,13 +464,44 @@ writeJson(sourceTierDataManifestPath, sourceTierManifest);
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
 run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+let orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+let hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
+let firstOutputHash = hashByPath.get('source_tiers/source-tier-0001.json');
+let secondOutputHash = hashByPath.get('source_tiers/source-tier-0002.json');
+let cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0001.json|${firstOutputHash}`, 20);
+writeJson(join(orchestrationAnalysis, 'data', 'parallel-execution-proof.json'), {
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  generated_from: ['source-tier-task-manifest.json', 'source_tiers/*.json'],
+  worker_count: 2,
+  worker_tasks: [
+    { worker_id: 'worker-1', task_id: 'source-tier-0001', started_at: '2026-01-01T00:00:00.000Z', ended_at: '2026-01-01T00:00:10.000Z', duration_ms: 10000, artifact_hash: firstOutputHash },
+    { worker_id: 'worker-2', task_id: 'source-tier-0002', started_at: '2026-01-01T00:00:05.000Z', ended_at: '2026-01-01T00:00:15.000Z', duration_ms: 10000, artifact_hash: secondOutputHash }
+  ]
+});
+writeJson(join(orchestrationAnalysis, 'data', 'cache-reuse-proof.json'), {
+  schemaVersion: '1.0',
+  complete: true,
+  analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
+  source_commit: orchestrationBundle.analysis_run.source_commit,
+  generated_from: ['artifact-dependency-graph.json', 'product-analysis-request.json'],
+  cache_hits: 1,
+  cache_entries: [{ cache_key: cacheKey, hit: true, artifact_path: 'source_tiers/source-tier-0001.json', artifact_hash: firstOutputHash }]
+});
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Valid-looking proof files without execution log/cache ledger must not complete orchestration');
+assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('orchestration_execution_log'), 'Parallel proof validation must require the harness execution log');
+assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_ledger'), 'Cache proof validation must require the cache ledger');
 const noLogProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 const noLogProofOutput = `${noLogProof.stdout || ''}\n${noLogProof.stderr || ''}`;
 assert(noLogProofOutput.includes('Missing orchestration execution log'), 'Proof command must refuse two completed workpack outputs without harness execution logs');
-let orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
-const hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
-const firstOutputHash = hashByPath.get('source_tiers/source-tier-0001.json');
-const secondOutputHash = hashByPath.get('source_tiers/source-tier-0002.json');
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
+firstOutputHash = hashByPath.get('source_tiers/source-tier-0001.json');
+secondOutputHash = hashByPath.get('source_tiers/source-tier-0002.json');
 writeJson(join(orchestrationAnalysis, 'data', 'orchestration-execution-log.json'), {
   schemaVersion: '1.0',
   execution_kind: 'source_tier_workpack_execution',
@@ -481,7 +512,7 @@ writeJson(join(orchestrationAnalysis, 'data', 'orchestration-execution-log.json'
     { worker_id: 'worker-2', task_id: 'source-tier-0002', started_at: '2026-01-01T00:00:05.000Z', ended_at: '2026-01-01T00:00:15.000Z', duration_ms: 10000, artifact_path: 'source_tiers/source-tier-0002.json', artifact_hash: secondOutputHash }
   ]
 });
-const cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0001.json|${firstOutputHash}`, 20);
+cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0001.json|${firstOutputHash}`, 20);
 writeJson(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), {
   schemaVersion: '1.0',
   ledger_kind: 'artifact_cache_ledger',
