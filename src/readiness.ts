@@ -15,6 +15,7 @@ export function finalLlmReadinessGaps(bundle: any): string[] {
   const externalFindings = bundle.external_findings_contract || {};
   const runProvenance = bundle.analysis_run_provenance || {};
   const dependencyGraph = bundle.artifact_dependency_graph || {};
+  const productRequestFreshness = bundle.product_analysis_request_freshness || {};
   const staleness = bundle.analysis_staleness || {};
   const qualityReview = bundle.analysis_document_quality_review || {};
   const requirementsTraceContract = bundle.analysis_document_requirements_trace_contract || bundle.analysis_document_goal_coverage || {};
@@ -38,6 +39,7 @@ export function finalLlmReadinessGaps(bundle: any): string[] {
   if (externalFindings.complete !== true) gaps.push(`external findings ingestion incomplete: ${(externalFindings.invalid_findings || []).map((item: any) => item.id || item).slice(0, 8).join(', ') || 'unknown'}`);
   if (runProvenance.complete !== true) gaps.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item: any) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
   if (dependencyGraph.complete !== true) gaps.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
+  if (productRequestFreshness.complete === false) gaps.push(`product analysis request changed; re-author stale LLM artifacts: ${(productRequestFreshness.stale_outputs || []).slice(0, 8).join(', ') || 'unknown'}`);
   if (staleness.stale === true) gaps.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
   if (requirementsTraceContract.complete !== true) gaps.push(`Codex-authored requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
   if (goalTraceAlignment.complete !== true) gaps.push(`Codex-authored goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item: any) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);

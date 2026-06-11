@@ -20,6 +20,7 @@ function finalLlmReadinessGaps(bundle) {
     const externalFindings = bundle.external_findings_contract || {};
     const runProvenance = bundle.analysis_run_provenance || {};
     const dependencyGraph = bundle.artifact_dependency_graph || {};
+    const productRequestFreshness = bundle.product_analysis_request_freshness || {};
     const staleness = bundle.analysis_staleness || {};
     const qualityReview = bundle.analysis_document_quality_review || {};
     const requirementsTraceContract = bundle.analysis_document_requirements_trace_contract || bundle.analysis_document_goal_coverage || {};
@@ -59,6 +60,8 @@ function finalLlmReadinessGaps(bundle) {
         gaps.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
     if (dependencyGraph.complete !== true)
         gaps.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
+    if (productRequestFreshness.complete === false)
+        gaps.push(`product analysis request changed; re-author stale LLM artifacts: ${(productRequestFreshness.stale_outputs || []).slice(0, 8).join(', ') || 'unknown'}`);
     if (staleness.stale === true)
         gaps.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
     if (requirementsTraceContract.complete !== true)

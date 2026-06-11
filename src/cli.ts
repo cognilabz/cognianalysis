@@ -3,7 +3,7 @@ import { aggregate, prepareAnalysis } from './aggregate';
 import { renderReport } from './report';
 import { buildRepoMap } from './repoMap';
 import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './tasks';
-import { FS, Path, argValue, copyRecursive, ensureDir, hasFlag, loadJson, numericArg, writeJson, writeText } from './utils';
+import { FS, Path, argValue, copyRecursive, ensureDir, hasFlag, loadJson, numericArg, sha1Short, writeJson, writeText } from './utils';
 import { startMcpLikeServer } from './mcp';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
 import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
@@ -452,6 +452,8 @@ function productAnalysisRequest(args: string[]): any {
   const mode = String(argValue(args, '--mode', 'brief') || 'brief').trim().toLowerCase();
   if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
   const goal = String(argValue(args, '--goal', '') || '').trim();
+  const scopeMode = analysisScopeMode(args);
+  const scopeFiles = scopeMode === 'complete' ? null : Math.max(1, numericArg(args, '--scope-files', scopeMode === 'critical-path' ? 1200 : 400));
   const target = {
     flow: String(argValue(args, '--flow', '') || '').trim(),
     module: String(argValue(args, '--module', '') || '').trim(),
@@ -469,6 +471,10 @@ function productAnalysisRequest(args: string[]): any {
     mode,
     goal,
     target,
+    analysis_scope_request: {
+      mode: scopeMode,
+      scope_files: scopeFiles
+    },
     generated_at: new Date().toISOString(),
     public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
     internal_work_area: '.analysis',
@@ -480,14 +486,51 @@ function productAnalysisRequest(args: string[]): any {
   };
 }
 
+function analysisScopeChanged(analysis: string, request: any): boolean {
+  const codeMapPath = Path.join(analysis, 'data', 'code-map.json');
+  const scopePath = Path.join(analysis, 'data', 'analysis-scope.json');
+  if (!FS.existsSync(codeMapPath) || !FS.existsSync(scopePath)) return false;
+  const current = loadJson<any>(scopePath, {});
+  const requested = request?.analysis_scope_request || {};
+  const requestedMode = String(requested.mode || 'complete');
+  if (String(current.mode || 'complete') !== requestedMode) return true;
+  if (requestedMode !== 'complete') {
+    const requestedFiles = Number(requested.scope_files || 0);
+    const selectedFiles = Number(current.selected_files || 0);
+    if (requestedFiles > 0 && selectedFiles !== requestedFiles) return true;
+  }
+  return false;
+}
+
 function writeProductAnalysisRequest(repo: string, analysis: string, args: string[]): any {
   const request = productAnalysisRequest(args);
+  const requestPath = Path.join(analysis, 'data', 'product-analysis-request.json');
+  const previous = loadJson<any | null>(requestPath, null);
+  const stableRequest = ({ generated_at: _generatedAt, repo: _repo, request_hash: _hash, ...rest }: any) => rest;
+  const previousHash = previous ? sha1Short(JSON.stringify(stableRequest(previous)), 16) : '';
+  const currentHash = sha1Short(JSON.stringify(stableRequest(request)), 16);
+  if (previous && previousHash === currentHash) return previous;
   ensureDir(Path.join(analysis, 'data'));
-  writeJson(Path.join(analysis, 'data', 'product-analysis-request.json'), {
+  const persisted = {
     ...request,
+    request_hash: currentHash,
     repo
+  };
+  writeJson(requestPath, persisted);
+  writeJson(Path.join(analysis, 'data', 'product-analysis-request-freshness.json'), {
+    contract_kind: 'product_analysis_request_freshness',
+    current_request_hash: currentHash,
+    previous_request_hash: previousHash || null,
+    stale: !!previous && previousHash !== currentHash,
+    complete: !previous || previousHash === currentHash,
+    stale_outputs: previous && previousHash !== currentHash
+      ? ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json']
+      : [],
+    summary: previous && previousHash !== currentHash
+      ? 'Product analysis request changed; downstream Codex-authored LLM artifacts must be re-authored for the new mode, goal, target or scope.'
+      : 'Product analysis request is current.'
   });
-  return request;
+  return persisted;
 }
 
 function cmdAnalyze(args: string[]): number {
@@ -495,8 +538,14 @@ function cmdAnalyze(args: string[]): number {
   if (!FS.existsSync(repo) || !FS.statSync(repo).isDirectory()) throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const request = writeProductAnalysisRequest(repo, analysis, args);
+  const scopeChanged = analysisScopeChanged(analysis, request);
+  if (scopeChanged) {
+    console.log('Cognianalysis analyze: requested scope differs from existing analysis; rebuilding repository index and task guide.');
+    const rc = cmdPrepare(args);
+    if (rc !== 0) return rc;
+  }
   const codeMapPath = Path.join(analysis, 'data', 'code-map.json');
-  if (FS.existsSync(codeMapPath)) writeLlmTasks(analysis, loadJson<any>(codeMapPath, {}));
+  if (!scopeChanged && FS.existsSync(codeMapPath)) writeLlmTasks(analysis, loadJson<any>(codeMapPath, {}));
   console.log(`Cognianalysis analyze: mode=${request.mode}${request.goal ? ` · goal=${request.goal}` : ''}`);
   return cmdRun(args);
 }
@@ -665,6 +714,7 @@ function cmdDoctor(args: string[]): number {
   const externalFindings = bundle.external_findings_contract || {};
   const runProvenance = bundle.analysis_run_provenance || {};
   const dependencyGraph = bundle.artifact_dependency_graph || {};
+  const productRequestFreshness = bundle.product_analysis_request_freshness || {};
   const staleness = bundle.analysis_staleness || {};
   console.log(`Status: ${bundle.status?.state || 'unknown'}`);
   console.log(`Analysis scope: ${bundle.analysis_scope?.mode || 'unknown'} · selected=${bundle.analysis_scope?.selected_files ?? 'unknown'} · deferred=${bundle.analysis_scope?.deferred_files ?? 'unknown'}`);
@@ -831,6 +881,7 @@ function cmdAuditReport(args: string[]): number {
   const goalTraceAlignment = bundle.analysis_goal_trace_alignment || {};
   const pipelineContract = bundle.analysis_pipeline_contract || {};
   const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
+  const productRequestFreshness = bundle.product_analysis_request_freshness || {};
   const failures: string[] = [];
   if (bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact !== true || bundle.llm_analysis_strategy?.strategy_present !== true) failures.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
   if (bundle.report_mode?.llm_authored !== true) failures.push('visible report is not Codex-authored');
@@ -848,6 +899,7 @@ function cmdAuditReport(args: string[]): number {
   if (externalFindings.complete !== true) failures.push(`external findings ingestion incomplete: ${(externalFindings.invalid_findings || []).map((item: any) => item.id || item).slice(0, 8).join(', ') || 'unknown'}`);
   if (runProvenance.complete !== true) failures.push(`analysis run provenance incomplete: ${(runProvenance.missing_required_artifacts || []).concat((runProvenance.mismatched_run_artifacts || []).map((item: any) => item.path || item)).slice(0, 8).join(', ') || 'unknown'}`);
   if (dependencyGraph.complete !== true) failures.push(`artifact dependency graph incomplete: ${(dependencyGraph.missing_nodes || []).concat(dependencyGraph.stale_nodes || []).slice(0, 8).join(', ') || 'unknown'}`);
+  if (productRequestFreshness.complete === false) failures.push(`product analysis request changed; re-author stale LLM artifacts: ${(productRequestFreshness.stale_outputs || []).slice(0, 8).join(', ') || 'unknown'}`);
   if (staleness.stale === true) failures.push(`analysis is stale: prepared at ${staleness.analysis_commit || 'unknown'} but current commit is ${staleness.current_commit || 'unknown'}`);
   if (requirementsTraceContract.complete !== true) failures.push(`Codex-authored requirements trace contract incomplete: ${(requirementsTraceContract.missing || []).concat(requirementsTraceContract.weak || []).slice(0, 6).join(', ') || 'unknown'}`);
   if (goalTraceAlignment.complete !== true) failures.push(`Codex-authored goal trace reference contract incomplete: ${(goalTraceAlignment.missing_goal_refs || []).map((item: any) => item.ref || item).concat(goalTraceAlignment.unknown_goal_refs || []).slice(0, 8).join(', ') || 'unknown'}`);
@@ -888,6 +940,7 @@ function cmdAuditReport(args: string[]): number {
   console.log(`Semantic lineage: ${semanticLineage.complete ? 'complete' : 'partial'} · claims=${semanticLineage.complete_claim_count || 0}/${semanticLineage.claim_count || 0}`);
   console.log(`Analysis run provenance: ${runProvenance.complete ? 'complete' : 'partial'} · run=${runProvenance.analysis_run_id || 'unknown'} · artifacts=${runProvenance.artifact_count || 0}`);
   console.log(`Artifact dependency graph: ${dependencyGraph.complete ? 'complete' : 'partial'} · nodes=${dependencyGraph.node_count || 0} · stale=${(dependencyGraph.stale_nodes || []).length || 0}`);
+  console.log(`Product request freshness: ${productRequestFreshness.complete === false ? 'stale' : 'current'} · stale=${(productRequestFreshness.stale_outputs || []).length || 0}`);
   console.log(`External findings: ${externalFindings.complete ? 'ready' : 'partial'} · findings=${externalFindings.finding_count || 0} · invalid=${externalFindings.invalid_count || 0}`);
   console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
   console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · Codex statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
@@ -920,6 +973,7 @@ function cmdFinalize(args: string[]): number {
   const readiness = computeFinalLlmReadiness(bundle);
   const readinessFailures = readiness.failures;
   const openQuestions = bundle.analysis_document_open_questions || {};
+  const productRequestFreshness = bundle.product_analysis_request_freshness || {};
 
   console.log(`Finalized analysis workspace: ${analysis}`);
   console.log(`Status: ${bundle.status?.state}`);
@@ -931,6 +985,7 @@ function cmdFinalize(args: string[]): number {
   console.log(`Source inventory accounting: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} files accounted · ${sourceCoverage.unaccounted_files ?? sourceCoverage.uncovered_files ?? 0} unaccounted · ${sourceCoverage.invalid_coverage_items || 0} invalid coverage items · ${sourceCoverage.inventory_accounting_percent ?? sourceCoverage.coverage_percent ?? 0}%`);
   console.log(`Evidence: ${(bundle.evidence_index || []).length} total · ${invalid.length} invalid`);
   console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
+  console.log(`Product request freshness: ${productRequestFreshness.complete === false ? 'stale' : 'current'} · stale=${(productRequestFreshness.stale_outputs || []).length || 0}`);
   console.log(`Final Codex-authored analysis readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
   if (report) console.log(`Report: ${report}`);
 

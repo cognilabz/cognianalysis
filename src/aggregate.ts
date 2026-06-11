@@ -68,6 +68,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   const skillWorkbenchTaskManifest = loadJson<any>(Path.join(analysisDir, 'skill-workbench-task-manifest.json'), { tasks: [] });
   const sourceTierTaskManifest = loadJson<any>(Path.join(analysisDir, 'source-tier-task-manifest.json'), { tasks: [] });
   const capabilityTemplateManifest = loadJson<any>(Path.join(analysisDir, 'capability-template-manifest.json'), { templates: [] });
+  const productAnalysisRequest = loadJson<any | null>(Path.join(dataDir, 'product-analysis-request.json'), null);
   const analysisRun = analysisRunSeed(repo, analysisDir, profile);
 
   const assessment = llm.assessment || null;
@@ -122,6 +123,7 @@ export function aggregate(repo: string, analysisDir: string): any {
     analysis_goal_contract: analysisGoalContractArtifact(),
     tool_positioning_references: toolPositioningReferencesArtifact(),
     report_component_library: reportComponentLibraryArtifact(),
+    product_analysis_request: productAnalysisRequest,
     analysis_skill_catalog: analysisSkillCatalogArtifact(),
     analysis_run: analysisRun,
     analysis_scope: analysisScope,
@@ -198,6 +200,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.analysis_skill_catalog_contract = computeAnalysisSkillCatalogContract(bundle.analysis_skill_catalog);
   bundle.analysis_run_provenance = computeAnalysisRunProvenance(analysisDir, bundle.analysis_run);
   bundle.artifact_dependency_graph = computeArtifactDependencyGraph(analysisDir, bundle.analysis_run);
+  bundle.product_analysis_request_freshness = computeProductAnalysisRequestFreshness(analysisDir);
   bundle.semantic_authority = computeSemanticAuthority(bundle);
   bundle.final_llm_readiness = computeFinalLlmReadiness(bundle);
   bundle.target_coverage = computeTargetCoverage(bundle);
@@ -227,6 +230,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'external-findings.json'), bundle.external_findings_contract);
   writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
   writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
+  writeJson(Path.join(dataDir, 'product-analysis-request-freshness.json'), bundle.product_analysis_request_freshness);
   writeJson(Path.join(dataDir, 'analysis-staleness.json'), bundle.analysis_staleness);
   writeJson(Path.join(dataDir, 'bundle.json'), bundle);
   writeJson(Path.join(dataDir, 'evidence.json'), bundle.evidence_index);
@@ -381,14 +385,17 @@ function provenanceRow(analysisDir: string, analysisRun: any, relativePath: stri
 }
 
 function computeAnalysisRunProvenance(analysisDir: string, analysisRun: any): any {
+  const hasProductRequest = FS.existsSync(Path.join(analysisDir, 'data', 'product-analysis-request.json'));
+  const productRequestParents = hasProductRequest ? ['data/product-analysis-request.json'] : [];
   const rows: any[] = [
     provenanceRow(analysisDir, analysisRun, 'data/code-map.json'),
-    provenanceRow(analysisDir, analysisRun, 'llm/analysis-strategy.json', ['data/code-map.json', 'data/source-inventory.json']),
+    ...(hasProductRequest ? [provenanceRow(analysisDir, analysisRun, 'data/product-analysis-request.json', ['data/code-map.json'])] : []),
+    provenanceRow(analysisDir, analysisRun, 'llm/analysis-strategy.json', ['data/code-map.json', 'data/source-inventory.json', ...productRequestParents]),
     ...listJsonArtifacts(analysisDir, 'source_tiers').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/analysis-strategy.json', 'source-tier-task-manifest.json'])),
     ...listJsonArtifacts(analysisDir, 'skill_reviews').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/analysis-strategy.json', 'skill-workbench-task-manifest.json', 'source_tiers/*.json'])),
-    provenanceRow(analysisDir, analysisRun, 'llm/detail-agent-plan.json', ['llm/analysis-strategy.json', 'skill_reviews/*.json', 'source_tiers/*.json']),
+    provenanceRow(analysisDir, analysisRun, 'llm/detail-agent-plan.json', ['llm/analysis-strategy.json', 'skill_reviews/*.json', 'source_tiers/*.json', ...productRequestParents]),
     ...listJsonArtifacts(analysisDir, 'detail_reviews').map(path => provenanceRow(analysisDir, analysisRun, path, ['llm/detail-agent-plan.json', 'detail-task-manifest.json'])),
-    provenanceRow(analysisDir, analysisRun, 'llm/analysis-document.json', ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'source_tiers/*.json', 'skill_reviews/*.json', 'detail_reviews/*.json'])
+    provenanceRow(analysisDir, analysisRun, 'llm/analysis-document.json', ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'source_tiers/*.json', 'skill_reviews/*.json', 'detail_reviews/*.json', ...productRequestParents])
   ];
   const existingRows = rows.filter(row => row.exists);
   const mismatches = existingRows.filter(row => row.run_match !== true);
@@ -435,6 +442,8 @@ function nodeFreshness(analysisDir: string, node: any, nodesById: Map<string, an
 }
 
 function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): any {
+  const hasProductRequest = FS.existsSync(Path.join(analysisDir, 'data', 'product-analysis-request.json'));
+  const productRequestDependency = hasProductRequest ? ['product_request'] : [];
   const sourceTierNodes = listJsonArtifacts(analysisDir, 'source_tiers').map((path, index) => ({
     id: `source_tier_${index + 1}`,
     path,
@@ -456,14 +465,15 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
   const nodes = [
     { id: 'code_map', path: 'data/code-map.json', kind: 'deterministic_context', depends_on: [] },
     { id: 'source_inventory', path: 'data/source-inventory.json', kind: 'deterministic_context', depends_on: ['code_map'] },
-    { id: 'analysis_strategy', path: 'llm/analysis-strategy.json', kind: 'llm_strategy', depends_on: ['code_map', 'source_inventory'] },
+    ...(hasProductRequest ? [{ id: 'product_request', path: 'data/product-analysis-request.json', kind: 'product_request', depends_on: ['code_map'] }] : []),
+    { id: 'analysis_strategy', path: 'llm/analysis-strategy.json', kind: 'llm_strategy', depends_on: ['code_map', 'source_inventory', ...productRequestDependency] },
     ...sourceTierNodes,
     { id: 'skill_workbench_manifest', path: 'skill-workbench-task-manifest.json', kind: 'deterministic_task_materialization', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id)] },
     ...skillReviewNodes,
-    { id: 'detail_agent_plan', path: 'llm/detail-agent-plan.json', kind: 'llm_detail_plan', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id)] },
+    { id: 'detail_agent_plan', path: 'llm/detail-agent-plan.json', kind: 'llm_detail_plan', depends_on: ['analysis_strategy', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...productRequestDependency] },
     { id: 'detail_task_manifest', path: 'detail-task-manifest.json', kind: 'deterministic_task_materialization', depends_on: ['detail_agent_plan'] },
     ...detailReviewNodes,
-    { id: 'analysis_document', path: 'llm/analysis-document.json', kind: 'llm_final_report', depends_on: ['analysis_strategy', 'detail_agent_plan', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...detailReviewNodes.map(node => node.id)] }
+    { id: 'analysis_document', path: 'llm/analysis-document.json', kind: 'llm_final_report', depends_on: ['analysis_strategy', 'detail_agent_plan', ...sourceTierNodes.map(node => node.id), ...skillReviewNodes.map(node => node.id), ...detailReviewNodes.map(node => node.id), ...productRequestDependency] }
   ];
   const nodesById = new Map(nodes.map(node => [node.id, node]));
   const rows = nodes.map(node => nodeFreshness(analysisDir, node, nodesById));
@@ -472,7 +482,7 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
   return {
     contract_kind: 'artifact_dependency_graph',
     analysis_run_id: analysisRun.analysis_run_id,
-    deterministic_contract_scope: 'Artifact existence and dependency/freshness metadata only; mtime stale nodes are advisory because seeded harnesses may copy authored artifacts out of authoring order. Semantic readiness remains Codex-authored and synthesis contracts decide final report currency.',
+    deterministic_contract_scope: 'Artifact existence and dependency/freshness metadata only; mtime stale nodes are advisory because seeded harnesses may copy authored artifacts out of authoring order. Product-request hash freshness is tracked separately as a blocking readiness contract.',
     complete: missing.length === 0,
     node_count: rows.length,
     missing_nodes: missing,
@@ -481,6 +491,7 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
     nodes: rows,
     rerun_recommendations: stale.concat(missing).map(id => {
       if (id === 'analysis_strategy') return 'Re-author llm/analysis-strategy.json, then rerun downstream source tiers, skill workbenches, detail plan and final report.';
+      if (id === 'product_request') return 'Review the product analysis request and re-author downstream LLM artifacts for the new request.';
       if (id.startsWith('source_tier')) return 'Re-author stale or missing source_tiers/*.json, then rerun skill workbenches, detail plan and final report.';
       if (id.startsWith('skill_review')) return 'Re-author stale or missing skill_reviews/*.json, then rerun detail plan and final report.';
       if (id === 'detail_agent_plan') return 'Re-author llm/detail-agent-plan.json, then materialize/execute detail tasks and final report.';
@@ -493,6 +504,41 @@ function computeArtifactDependencyGraph(analysisDir: string, analysisRun: any): 
       : stale.length
         ? `Artifact dependency graph is complete with ${stale.length} advisory mtime stale node${stale.length === 1 ? '' : 's'}; final report currency is governed by synthesis contracts.`
         : 'Artifact dependency graph is complete for required analysis artifacts.'
+  };
+}
+
+function computeProductAnalysisRequestFreshness(analysisDir: string): any {
+  const marker = loadJson<any>(Path.join(analysisDir, 'data', 'product-analysis-request-freshness.json'), {});
+  const request = artifactInfo(analysisDir, 'data/product-analysis-request.json');
+  if (!request.exists) {
+    return {
+      contract_kind: 'product_analysis_request_freshness',
+      complete: true,
+      stale: false,
+      current_request_hash: '',
+      stale_outputs: [],
+      summary: 'No product analysis request has been recorded for this workspace.'
+    };
+  }
+  const requiredOutputs = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
+  const staleOutputs = marker.stale === true
+    ? requiredOutputs.filter(relativePath => {
+        const info = artifactInfo(analysisDir, relativePath);
+        return !info.exists || info.mtime_ms < request.mtime_ms;
+      })
+    : [];
+  return {
+    contract_kind: 'product_analysis_request_freshness',
+    deterministic_contract_scope: 'A changed product analysis request blocks final readiness until required Codex-authored LLM artifacts are newer than the request. Identical reruns preserve the request file and do not bump freshness.',
+    complete: staleOutputs.length === 0,
+    stale: staleOutputs.length > 0,
+    current_request_hash: marker.current_request_hash || artifactContentHash(Path.join(analysisDir, 'data', 'product-analysis-request.json')),
+    previous_request_hash: marker.previous_request_hash || null,
+    request_mtime_ms: request.mtime_ms,
+    stale_outputs: staleOutputs,
+    summary: staleOutputs.length
+      ? `Product analysis request changed; re-author downstream LLM artifacts: ${staleOutputs.join(', ')}.`
+      : 'Product analysis request is current for required LLM artifacts.'
   };
 }
 
