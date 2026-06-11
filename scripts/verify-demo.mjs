@@ -1047,6 +1047,18 @@ try {
   const missingRepoRun = run(['analyze', missingRepo, '--mode', 'brief'], { capture: true, expectFailure: true });
   assert(String(missingRepoRun.stderr || missingRepoRun.stdout || '').includes('Repository path does not exist'), 'Analyze must reject missing repo paths before writing analysis data');
   assert(!existsSync(missingRepo), 'Analyze must not create a missing repo directory before validation');
+  const missingResumeRepo = join(tempBoundaryRoot, 'missing-resume-repo');
+  const missingResume = run(['resume', missingResumeRepo], { capture: true, expectFailure: true });
+  assert(String(missingResume.stderr || missingResume.stdout || '').includes('Repository path does not exist'), 'Resume must reject missing repo paths before prepare fallback');
+  assert(!existsSync(missingResumeRepo), 'Resume must not create a missing repo directory before validation');
+  const missingRepairRepo = join(tempBoundaryRoot, 'missing-repair-repo');
+  const missingRepair = run(['repair', missingRepairRepo], { capture: true, expectFailure: true });
+  assert(String(missingRepair.stderr || missingRepair.stdout || '').includes('Repository path does not exist'), 'Repair must reject missing repo paths before prepare fallback');
+  assert(!existsSync(missingRepairRepo), 'Repair must not create a missing repo directory before validation');
+  const missingRunRepo = join(tempBoundaryRoot, 'missing-run-repo');
+  const missingCompatibilityRun = run(['run', missingRunRepo], { capture: true, expectFailure: true });
+  assert(String(missingCompatibilityRun.stderr || missingCompatibilityRun.stdout || '').includes('Repository path does not exist'), 'Compatibility run must reject missing repo paths before prepare fallback');
+  assert(!existsSync(missingRunRepo), 'Compatibility run must not create a missing repo directory before validation');
   const readyRequestRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-request-refresh-'));
   const readyRequestRepo = join(readyRequestRoot, 'demo-repo');
   cpSync(demo, readyRequestRepo, { recursive: true });

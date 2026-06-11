@@ -414,8 +414,13 @@ function repoArg(args: string[], fallback = '.'): string {
   return Path.resolve(first || fallback);
 }
 
+function assertRepoDirectory(repo: string): void {
+  if (!FS.existsSync(repo) || !FS.statSync(repo).isDirectory()) throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
+}
+
 function cmdPrepare(args: string[]): number {
   const repo = repoArg(args);
+  assertRepoDirectory(repo);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const codeMap = scopedCodeMap(buildRepoMap(repo, {
     maxFileSize: numericArg(args, '--max-file-size', 1_250_000),
@@ -588,7 +593,7 @@ function writeProductAnalysisRequest(repo: string, analysis: string, args: strin
 
 function cmdAnalyze(args: string[]): number {
   const repo = repoArg(args);
-  if (!FS.existsSync(repo) || !FS.statSync(repo).isDirectory()) throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
+  assertRepoDirectory(repo);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const request = writeProductAnalysisRequest(repo, analysis, args);
   const scopeChanged = analysisScopeChanged(analysis, request);
