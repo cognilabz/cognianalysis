@@ -140,6 +140,14 @@ function scoreExpected(expectedPath) {
       report_completeness: reportCompleteness,
       invalid_evidence: invalidEvidence
     },
+    metric_derivation: {
+      expected_fact_count: scoredFacts.length,
+      found_fact_count: foundCount,
+      evidence_backed_found_fact_count: evidenceCount,
+      report_fact_count: facts.length,
+      unsupported_claim_count: unsupportedClaimCount,
+      invalid_evidence_count: invalidEvidence
+    },
     minimums: expected.minimums,
     facts: scoredFacts,
     unsupported_claims: bundle.analysis_document_report_lint?.unsupported_claims || [],

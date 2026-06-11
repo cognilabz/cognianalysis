@@ -394,6 +394,7 @@ export function baselineProofStatus(root: string, expectedSourceCommit: string |
 function validateGoldenResultArtifact(parsed: any, expected: any, expectedFile: string, expectedSourceCommit: string | null, aggregateSourceCommit: string): string[] {
   const errors: string[] = [];
   const metrics = parsed?.metrics || {};
+  errors.push(...validateGoldenMetricDerivation(parsed, expected));
   if (parsed?.schemaVersion !== '1.0') errors.push('schemaVersion must be 1.0');
   if (parsed?.generated_by !== GOLDEN_VERIFIER_ID) errors.push(`generated_by must be ${GOLDEN_VERIFIER_ID}`);
   if (!expectedSourceCommit) errors.push('current source commit is unavailable for golden freshness validation');
@@ -412,6 +413,91 @@ function validateGoldenResultArtifact(parsed: any, expected: any, expectedFile: 
   if (finiteNumber(metrics.unsupported_claim_rate) && metrics.unsupported_claim_rate < 0) errors.push('metrics.unsupported_claim_rate must be >= 0');
   if (finiteNumber(metrics.invalid_evidence) && metrics.invalid_evidence !== 0) errors.push('metrics.invalid_evidence must be 0');
   if (asList(parsed?.failures).length > 0) errors.push('failures must be empty');
+  return errors;
+}
+
+function validateGoldenMetricDerivation(parsed: any, expected: any): string[] {
+  const errors: string[] = [];
+  const metrics = parsed?.metrics || {};
+  const derivation = parsed?.metric_derivation || parsed?.metricDerivation || {};
+  const expectedFacts = asList(expected?.facts);
+  const rows = asList(parsed?.facts);
+  if (expectedFacts.length === 0) errors.push('expected facts are required for golden metric derivation');
+  if (rows.length === 0) errors.push('golden fact rows are required for metric derivation');
+
+  const expectedById = new Map<string, any>();
+  for (const fact of expectedFacts) {
+    const id = String(fact?.id || '').trim();
+    if (!id) errors.push('expected fact id is required for golden metric derivation');
+    else expectedById.set(id, fact);
+  }
+
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const id = String(row?.id || '').trim();
+    if (!id) {
+      errors.push('golden fact row id is required');
+      continue;
+    }
+    if (seen.has(id)) errors.push(`golden fact row ${id} is duplicated`);
+    seen.add(id);
+    const expectedFact = expectedById.get(id);
+    if (!expectedFact) {
+      errors.push(`golden fact row ${id} is not present in expected facts`);
+      continue;
+    }
+    const expectedText = String(expectedFact.expected || '').trim();
+    if (String(row?.expected || '').trim() !== expectedText) errors.push(`golden fact row ${id} expected text must match expected fact`);
+    if (row?.found === true) {
+      const matched = String(row?.matched_text || '').trim();
+      if (!matched) errors.push(`golden fact row ${id} matched_text is required when found`);
+      else if (expectedText && !matched.includes(expectedText)) errors.push(`golden fact row ${id} matched_text must include expected fact text`);
+      if (!String(row?.source || '').trim()) errors.push(`golden fact row ${id} source is required when found`);
+      if (expectedFact.evidence_required === true && row?.evidence_present !== true) errors.push(`golden fact row ${id} evidence_present is required`);
+    }
+  }
+  for (const id of expectedById.keys()) {
+    if (!seen.has(id)) errors.push(`golden fact row ${id} is missing`);
+  }
+
+  const requiredCounts = [
+    'expected_fact_count',
+    'found_fact_count',
+    'evidence_backed_found_fact_count',
+    'report_fact_count',
+    'unsupported_claim_count',
+    'invalid_evidence_count'
+  ];
+  for (const key of requiredCounts) {
+    if (!finiteNumber(derivation[key])) errors.push(`metric_derivation.${key} must be a finite number`);
+    else if (derivation[key] < 0 || Math.floor(derivation[key]) !== derivation[key]) errors.push(`metric_derivation.${key} must be a non-negative integer`);
+  }
+
+  const foundRows = rows.filter((row: any) => row?.found === true);
+  const evidenceRows = foundRows.filter((row: any) => row?.evidence_present === true);
+  const unsupportedClaimCount = asList(parsed?.unsupported_claims).length;
+  const reportFactCount = Number(derivation.report_fact_count);
+  if (finiteNumber(derivation.expected_fact_count) && derivation.expected_fact_count !== expectedFacts.length) errors.push('metric_derivation.expected_fact_count must match expected facts');
+  if (finiteNumber(derivation.found_fact_count) && derivation.found_fact_count !== foundRows.length) errors.push('metric_derivation.found_fact_count must match golden fact rows');
+  if (finiteNumber(derivation.evidence_backed_found_fact_count) && derivation.evidence_backed_found_fact_count !== evidenceRows.length) errors.push('metric_derivation.evidence_backed_found_fact_count must match golden fact rows');
+  if (finiteNumber(derivation.unsupported_claim_count) && derivation.unsupported_claim_count !== unsupportedClaimCount) errors.push('metric_derivation.unsupported_claim_count must match unsupported_claims');
+  if (finiteNumber(derivation.invalid_evidence_count) && !numbersEqual(metrics.invalid_evidence, derivation.invalid_evidence_count)) errors.push('metrics.invalid_evidence must match metric_derivation.invalid_evidence_count');
+  if (finiteNumber(derivation.report_fact_count) && reportFactCount <= 0) errors.push('metric_derivation.report_fact_count must be greater than 0');
+
+  if (expectedFacts.length > 0) {
+    const factRecall = foundRows.length / expectedFacts.length;
+    if (!numbersEqual(metrics.fact_recall, factRecall)) errors.push('metrics.fact_recall must match golden fact rows');
+  }
+  if (foundRows.length > 0) {
+    const evidencePrecision = evidenceRows.length / foundRows.length;
+    if (!numbersEqual(metrics.evidence_precision, evidencePrecision)) errors.push('metrics.evidence_precision must match golden fact rows');
+  } else if (!numbersEqual(metrics.evidence_precision, 0)) {
+    errors.push('metrics.evidence_precision must be 0 when no golden facts are found');
+  }
+  if (reportFactCount > 0) {
+    const unsupportedClaimRate = unsupportedClaimCount / reportFactCount;
+    if (!numbersEqual(metrics.unsupported_claim_rate, unsupportedClaimRate)) errors.push('metrics.unsupported_claim_rate must match metric_derivation report facts and unsupported_claims');
+  }
   return errors;
 }
 
