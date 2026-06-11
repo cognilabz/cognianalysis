@@ -109,6 +109,16 @@ function missingIds(result) {
 
 {
   const bundle = baseBundle();
+  delete bundle.process;
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Process Analysis')
+    .concat(trace('Process Analysis', 'covered', [ev]));
+  const result = readiness(bundle);
+  assert(!missingIds(result).includes('process_view'), 'evidence-backed process trace must satisfy process_view even without a process object');
+}
+
+{
+  const bundle = baseBundle();
   bundle.quality = { risks: [{ title: 'Maintainability issue', evidence: [ev] }] };
   bundle.findings = [{ category: 'maintainability', title: 'Duplication risk', evidence: [ev] }];
   bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'quality');
@@ -157,6 +167,18 @@ function missingIds(result) {
   bundle.analysis_document.sections = [{ id: 'roadmap', blocks: [{ type: 'roadmap' }] }];
   const result = readiness(bundle);
   assert(missingIds(result).includes('refactoring_modernization'), 'roadmap block without evidence must not satisfy refactoring_modernization');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Refactoring / Target Architecture')
+    .concat(trace('Refactoring / Target Architecture', 'covered', []));
+  bundle.refactoring = [];
+  bundle.modernization = [];
+  bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'roadmap');
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('refactoring_modernization'), 'covered refactoring trace without evidence must not satisfy refactoring_modernization');
 }
 
 {

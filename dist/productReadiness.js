@@ -63,10 +63,12 @@ function evidenceBackedExamples(bundle) {
     ].filter(item => hasEvidence(item));
 }
 function hasProcessEvidence(bundle) {
+    if (traceCoveredWithEvidence(bundle, 'process', ['covered', 'partial']))
+        return true;
     const process = bundle?.process;
     if (!process || typeof process !== 'object')
         return false;
-    return traceCoveredWithEvidence(bundle, 'process', ['covered', 'partial']) || hasEvidence(process);
+    return hasEvidence(process);
 }
 function evidenceTextMatches(value, needles) {
     if (!value)
@@ -114,7 +116,7 @@ function computeProductReadiness(repo, analysis, bundle, marketProof) {
     const examplesReady = exampleCount > 0;
     const qualityReady = hasQualityEvidence(bundle) && hasExplicitSecurityCoverage(bundle);
     const processReady = hasProcessEvidence(bundle);
-    const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered'
+    const refactoringReady = traceCoveredWithEvidence(bundle, 'refactoring')
         || hasEvidenceBackedReportBlock(bundle, 'roadmap')
         || hasEvidenceBackedItems(bundle, 'refactoring')
         || hasEvidenceBackedItems(bundle, 'modernization');
