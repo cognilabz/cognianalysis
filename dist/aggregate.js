@@ -2426,15 +2426,19 @@ function validateEvidence(repo, ev) {
         return { path: String(ev), line: 1, valid: false, reason: 'invalid evidence object' };
     const relativePath = String(ev.path || '');
     const line = Number(ev.line || 1);
-    const full = utils_1.Path.join(repo, relativePath);
+    const repoRoot = utils_1.Path.resolve(repo);
+    const full = utils_1.Path.resolve(repoRoot, relativePath);
     const fs = require('node:fs');
-    if (!relativePath || relativePath.includes('..'))
+    if (!relativePath || full !== repoRoot && !full.startsWith(`${repoRoot}${utils_1.Path.sep}`))
         return { ...ev, line, valid: false, reason: 'invalid path' };
+    if (!Number.isInteger(line) || line < 1)
+        return { ...ev, line, valid: false, reason: 'invalid line' };
     if (!fs.existsSync(full))
         return { ...ev, line, valid: false, reason: 'file not found' };
+    const lineCount = (0, utils_1.countLines)(full);
+    if (line > lineCount)
+        return { ...ev, line, valid: false, reason: 'line out of range', line_count: lineCount };
     const snippet = (0, utils_1.getLine)(full, line);
-    if (!snippet && line > 1)
-        return { ...ev, line, valid: false, reason: 'line not found' };
     return { ...ev, line, valid: true, snippet };
 }
 function collectEvidence(value) {

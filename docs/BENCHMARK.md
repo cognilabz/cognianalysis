@@ -10,7 +10,7 @@ Run:
 npm run verify:golden
 ```
 
-The script rebuilds the CLI, discovers every `benchmarks/golden/**/*.expected.json` suite, runs each target repository through the product-mode flow (`cognianalysis analyze`, with `run` kept as a compatibility alias), scores the final LLM-authored report, writes each repo's `.analysis/data/golden-benchmark.json`, and writes the aggregate `benchmarks/golden/results.json`.
+The script rebuilds the CLI, discovers every `benchmarks/golden/**/*.expected.json` suite, runs each target repository through the product-mode flow (`cognianalysis analyze`, with `run` kept as a compatibility alias), and scores the final LLM-authored report. Fresh result JSON is written under an ignored temp workspace by default so verification does not dirty the checkout. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` when intentionally refreshing each tracked repo's `.analysis/data/golden-benchmark.json` and the aggregate `benchmarks/golden/results.json` snapshot.
 
 Baseline proof is separate:
 
@@ -18,7 +18,7 @@ Baseline proof is separate:
 npm run verify:baseline
 ```
 
-That command reads `benchmarks/baseline/**/*.baseline.json` and fails until the required baseline kinds are present and passing. It intentionally does not invent baseline results.
+That command reads `benchmarks/baseline/**/*.baseline.json`, writes fresh result JSON under an ignored temp workspace by default, and fails until the required baseline kinds are present and passing. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` only when intentionally refreshing the tracked `benchmarks/baseline/results.json` snapshot. It intentionally does not invent baseline results.
 
 ## Metrics
 

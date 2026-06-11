@@ -4,8 +4,12 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
-const demo = join(root, 'examples', 'demo-repo');
+const demoFixture = join(root, 'examples', 'demo-repo');
+const verifyRoot = mkdtempSync(join(root, '.verify-tmp-demo-'));
+const demo = join(verifyRoot, 'demo-repo');
 const cli = join(root, 'dist', 'cli.js');
+cpSync(demoFixture, demo, { recursive: true });
+process.on('exit', () => rmSync(verifyRoot, { recursive: true, force: true }));
 
 function run(args, options = {}) {
   const result = spawnSync(process.execPath, [cli, ...args], {
@@ -741,6 +745,27 @@ try {
   assert(refreshedBundle.source_inventory_accounting?.invalid_coverage_items >= 3, 'Invalid analysis_coverage entries were not counted in the refreshed bundle');
 } finally {
   rmSync(tempRootInvalidCoverage, { recursive: true, force: true });
+}
+
+const tempRootInvalidEvidenceLine = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-invalid-evidence-line-'));
+try {
+  const tempDemo = join(tempRootInvalidEvidenceLine, 'demo-repo');
+  cpSync(demo, tempDemo, { recursive: true });
+  const documentPath = join(tempDemo, '.analysis', 'llm', 'analysis-document.json');
+  const document = JSON.parse(readFileSync(documentPath, 'utf8'));
+  const sourceInventory = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'source-inventory.json'), 'utf8'));
+  const evidencePath = (sourceInventory.included_files || []).map(item => item.path).find(Boolean);
+  assert(evidencePath, 'Positive demo setup did not produce an inventory path for invalid evidence testing');
+  document.analysis_document.report_quality_review.evidence = [{ path: evidencePath, line: 999999 }];
+  writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
+
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
+  const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
+  assert(output.includes('invalid evidence'), 'Out-of-range file:line evidence did not fail audit-report');
+  const refreshedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
+  assert((refreshedBundle.evidence_index || []).some(item => item.valid === false && item.reason === 'line out of range'), 'Out-of-range evidence line was not marked invalid in the evidence index');
+} finally {
+  rmSync(tempRootInvalidEvidenceLine, { recursive: true, force: true });
 }
 
 const tempRootMissingDetailDecision = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-detail-decision-'));

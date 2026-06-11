@@ -1,10 +1,15 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const cli = join(root, 'dist', 'cli.js');
 const goldenRoot = join(root, 'benchmarks', 'golden');
+const verifyRoot = mkdtempSync(join(root, '.verify-tmp-golden-'));
+const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
+  ? root
+  : verifyRoot;
+process.on('exit', () => rmSync(verifyRoot, { recursive: true, force: true }));
 
 function walk(dir, predicate, out = []) {
   if (!existsSync(dir)) return out;
@@ -67,9 +72,12 @@ function reportFacts(bundle) {
 
 function scoreExpected(expectedPath) {
   const expected = JSON.parse(readFileSync(expectedPath, 'utf8'));
-  const repo = join(root, expected.repo);
+  const sourceRepo = join(root, expected.repo);
+  const repo = join(verifyRoot, 'repos', expected.benchmark || relative(goldenRoot, expectedPath).replace(/\.expected\.json$/, ''));
+  cpSync(sourceRepo, repo, { recursive: true });
   const analysis = join(repo, '.analysis');
-  run(['run', repo]);
+  rmSync(analysis, { recursive: true, force: true });
+  run(['analyze', repo, '--goal', expected.goal || 'Create a decision report for this repository.']);
 
   const bundlePath = join(analysis, 'data', 'bundle.json');
   if (!existsSync(bundlePath)) throw new Error(`Missing bundle: ${bundlePath}`);
@@ -129,7 +137,7 @@ function scoreExpected(expectedPath) {
   if (failures.length) result.verdict = 'fail';
   result.failures = failures;
 
-  const outPath = join(analysis, 'data', 'golden-benchmark.json');
+  const outPath = join(resultRoot, expected.repo, '.analysis', 'data', 'golden-benchmark.json');
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(result, null, 2) + '\n');
   return result;
@@ -163,7 +171,8 @@ const aggregate = {
     failures: result.failures
   }))
 };
-const aggregatePath = join(goldenRoot, 'results.json');
+const aggregatePath = join(resultRoot, 'benchmarks', 'golden', 'results.json');
+mkdirSync(dirname(aggregatePath), { recursive: true });
 writeFileSync(aggregatePath, JSON.stringify(aggregate, null, 2) + '\n');
 
 console.log(`Golden benchmark: ${aggregate.verdict}`);

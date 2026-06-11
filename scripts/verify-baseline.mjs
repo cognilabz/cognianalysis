@@ -1,8 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const baselineRoot = join(root, 'benchmarks', 'baseline');
+const verifyRoot = mkdtempSync(join(root, '.verify-tmp-baseline-'));
+const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
+  ? root
+  : verifyRoot;
+process.on('exit', () => rmSync(verifyRoot, { recursive: true, force: true }));
 
 function walk(dir, predicate, out = []) {
   if (!existsSync(dir)) return out;
@@ -44,7 +49,7 @@ const result = {
   baselines
 };
 
-const outPath = join(baselineRoot, 'results.json');
+const outPath = join(resultRoot, 'benchmarks', 'baseline', 'results.json');
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify(result, null, 2) + '\n');
 

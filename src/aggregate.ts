@@ -1,5 +1,5 @@
 import { CodeMap } from './types';
-import { FS, Path, asList, cleanId, ensureDir, getLine, gitCommit, loadJson, mergeDict, sha1Short, utcNow, writeJson } from './utils';
+import { FS, Path, asList, cleanId, countLines, ensureDir, getLine, gitCommit, loadJson, mergeDict, sha1Short, utcNow, writeJson } from './utils';
 import { computeTargetCoverage, TARGET_CAPABILITIES } from './targetCoverage';
 import { reportComponentLibraryArtifact, supportedReportComponentTypes } from './reportComponents';
 import { analysisPipelineArtifact, computeAnalysisPipelineContract } from './analysisPipeline';
@@ -2423,12 +2423,15 @@ function validateEvidence(repo: string, ev: any): any {
   if (!ev || typeof ev !== 'object') return { path: String(ev), line: 1, valid: false, reason: 'invalid evidence object' };
   const relativePath = String(ev.path || '');
   const line = Number(ev.line || 1);
-  const full = Path.join(repo, relativePath);
+  const repoRoot = Path.resolve(repo);
+  const full = Path.resolve(repoRoot, relativePath);
   const fs = require('node:fs');
-  if (!relativePath || relativePath.includes('..')) return { ...ev, line, valid: false, reason: 'invalid path' };
+  if (!relativePath || full !== repoRoot && !full.startsWith(`${repoRoot}${Path.sep}`)) return { ...ev, line, valid: false, reason: 'invalid path' };
+  if (!Number.isInteger(line) || line < 1) return { ...ev, line, valid: false, reason: 'invalid line' };
   if (!fs.existsSync(full)) return { ...ev, line, valid: false, reason: 'file not found' };
+  const lineCount = countLines(full);
+  if (line > lineCount) return { ...ev, line, valid: false, reason: 'line out of range', line_count: lineCount };
   const snippet = getLine(full, line);
-  if (!snippet && line > 1) return { ...ev, line, valid: false, reason: 'line not found' };
   return { ...ev, line, valid: true, snippet };
 }
 
