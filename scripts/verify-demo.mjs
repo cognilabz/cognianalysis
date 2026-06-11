@@ -150,15 +150,16 @@ const rootAgents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
 const resourceAgents = readFileSync(join(root, 'resources', 'AGENTS.md'), 'utf8');
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
 const helpOutput = run(['--help'], { capture: true }).stdout || '';
-assert(helpOutput.includes('run [repo]'), 'CLI help must expose product-mode run');
+assert(helpOutput.includes('analyze [repo]'), 'CLI help must expose product-mode analyze');
+assert(helpOutput.includes('--mode brief|blueprint|deep-dive'), 'CLI help must expose product analysis modes');
+assert(helpOutput.includes('--goal text'), 'CLI help must expose goal-first product input');
 assert(helpOutput.includes('resume [repo]'), 'CLI help must expose product-mode resume');
+assert(helpOutput.includes('dev prepare [repo]'), 'CLI help must expose internal prepare under dev namespace');
 assert(helpOutput.includes('--scope complete|critical-path|representative'), 'CLI help must expose deliberate scope modes');
 assert(helpOutput.includes('--scope-files N'), 'CLI help must expose non-complete scope sizing');
 assert(helpOutput.includes('status [repo]'), 'CLI help must expose product-mode status');
 assert(helpOutput.includes('repair [repo]'), 'CLI help must expose product-mode repair');
 assert(helpOutput.includes('open [repo]'), 'CLI help must expose product-mode open');
-assert(helpOutput.includes('doctor [repo]'), 'CLI help must expose product-mode doctor');
-assert(helpOutput.includes('init [repo]'), 'CLI help must expose product-mode init alias');
 assert(helpOutput.includes('init-harness'), 'CLI help must expose the generic harness installer');
 assert(helpOutput.includes('init-codex'), 'CLI help must keep the Codex compatibility installer');
 const scopedTarget = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-scope-'));
@@ -251,8 +252,14 @@ assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_f
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
-for (const command of ['run', 'resume', 'status', 'repair', 'open', 'doctor', 'init']) {
-  assert(bundle.tooling?.cli_commands?.includes(command), `Demo tooling contract must expose product-mode command: ${command}`);
+for (const command of ['analyze', 'status', 'open', 'resume', 'repair']) {
+  assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
+}
+for (const command of ['dev prepare', 'dev finalize', 'dev audit-report', 'dev tier-status', 'dev tier-next']) {
+  assert(bundle.tooling?.internal_cli_commands?.includes(command), `Demo tooling contract must expose internal dev command: ${command}`);
+}
+for (const command of ['run', 'prepare', 'finalize']) {
+  assert(bundle.tooling?.compatibility_cli_commands?.includes(command), `Demo tooling contract must preserve compatibility command: ${command}`);
 }
 assert(bundle.tooling?.product_mode_available === true, 'Demo tooling contract must expose product mode availability');
 assert(bundle.skill_workbench_coverage?.complete === true, `Demo LLM-planned skill workbench coverage incomplete: ${bundle.skill_workbench_coverage?.status || 'unknown'}`);
@@ -281,7 +288,7 @@ assert(demoTaskManifest.tasks?.length === 3, 'Demo task manifest must contain on
 assert(demoTaskManifest.tasks?.every(task => task.task_kind === 'workflow_task' && task.required_for_final === true), 'Required task manifest entries must be workflow gates');
 assert(demoTaskManifest.capability_templates?.length === 10, 'Demo task manifest must expose optional capability templates separately');
 assert(singleTask.includes('Product-Mode Loop'), 'Generated TASK.md must expose the product-mode loop');
-assert(singleTask.includes('cognianalysis run .'), 'Generated TASK.md must make run the normal entrypoint');
+assert(singleTask.includes('cognianalysis analyze .'), 'Generated TASK.md must make analyze the normal entrypoint');
 assert(singleTask.includes('cognianalysis resume .'), 'Generated TASK.md must expose resume for interrupted runs');
 assert(singleTask.includes('--scope critical-path --scope-files N'), 'Generated TASK.md must expose scoped large-repo runs');
 assert(singleTask.includes('analysis_document.open_questions'), 'Generated TASK.md must expose the structured open-question contract');
@@ -1008,8 +1015,12 @@ try {
   assert(mcpPrepare.staged_llm_workflow?.includes('capability_templates'), 'MCP prepare must describe optional capability templates');
   assert(mcpPrepare.staged_llm_workflow?.includes('11-detail-agent-plan.md'), 'MCP prepare must expose the staged detail-agent plan step');
   assert(mcpPrepare.staged_llm_workflow?.includes('12-analysis-document.md'), 'MCP prepare must expose final report authoring after detail reviews');
-  const analyzePending = run(['analyze', tempRepo, '--no-seed', '--no-html'], { capture: true });
+  const analyzePending = run(['analyze', tempRepo, '--mode', 'blueprint', '--goal', 'Create a rebuild decision brief.', '--no-seed', '--no-html'], { capture: true });
   const analyzePendingOutput = `${analyzePending.stdout || ''}\n${analyzePending.stderr || ''}`;
+  assert(analyzePendingOutput.includes('Cognianalysis analyze: mode=blueprint'), 'Analyze output must surface the selected product mode');
+  const productRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  assert(productRequest.mode === 'blueprint', `Analyze must persist requested product mode, got ${productRequest.mode}`);
+  assert(productRequest.goal === 'Create a rebuild decision brief.', 'Analyze must persist the goal-first product request');
   assert(analyzePendingOutput.includes('00-analysis-strategy.md'), 'Analyze pending output must describe the LLM analysis strategy step');
   assert(analyzePendingOutput.includes('skill_workbench_tasks'), 'Analyze pending output must describe LLM-planned skill workbench materialization');
   assert(analyzePendingOutput.includes('capability_templates'), 'Analyze pending output must describe optional capability templates');

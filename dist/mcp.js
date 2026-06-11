@@ -14,7 +14,7 @@ const SERVER_NAME = 'cognianalysis';
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 function stagedLlmWorkflowMessage() {
-    return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, run ${CLI_NAME} finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+    return `author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md for Tier 1 file cards, run ${CLI_NAME} dev finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then 11-detail-agent-plan.md, run ${CLI_NAME} dev finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} analyze . plus ${CLI_NAME} dev audit-report .`;
 }
 function aggregateWithMaterializedDetailTasks(repo, analysis) {
     let bundle = (0, aggregate_1.aggregate)(repo, analysis);

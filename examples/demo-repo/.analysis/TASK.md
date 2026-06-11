@@ -12,19 +12,19 @@ The LLM step is not an external service check and cannot be represented as unava
 
 ## Product-Mode Loop
 
-1. Run `cognianalysis run .` to prepare the workspace or see the next missing artifact. For large repositories, choose scope deliberately: `--scope complete`, `--scope critical-path --scope-files N` or `--scope representative --scope-files N`.
+1. Run `cognianalysis analyze .` to prepare the workspace or see the next missing artifact. For large repositories, choose scope deliberately: `--scope complete`, `--scope critical-path --scope-files N` or `--scope representative --scope-files N`.
 2. Run `cognianalysis resume .` to continue an existing analysis and print completed stages as skipped.
 3. Run `cognianalysis status .` whenever you need a product-language progress view, scope/freshness state and next action.
 4. Run `cognianalysis repair .` if JSON is malformed, manifests/task guides are missing, outputs are stale, or an interrupted run needs recovery.
 5. Author `.analysis/llm/analysis-strategy.json` from `.analysis/llm_tasks/00-analysis-strategy.md`.
 6. Execute every `.analysis/source_tier_tasks/*.md` task and write Tier 1 file cards to `.analysis/source_tiers/*.json`.
-7. Run `cognianalysis finalize . --allow-partial` to materialize LLM-planned skill workbench tasks.
+7. Run `cognianalysis dev finalize . --allow-partial` to materialize LLM-planned skill workbench tasks.
 8. Execute every `.analysis/skill_workbench_tasks/*.md` task into `.analysis/skill_reviews/*.json`.
 9. Author `.analysis/llm/detail-agent-plan.json` from `.analysis/llm_tasks/11-detail-agent-plan.md`.
-10. Run `cognianalysis finalize . --allow-partial` to materialize detail tasks.
+10. Run `cognianalysis dev finalize . --allow-partial` to materialize detail tasks.
 11. Execute every `.analysis/detail_tasks/*.md` task into `.analysis/detail_reviews/*.json`.
 12. Author `.analysis/llm/analysis-document.json` from `.analysis/llm_tasks/12-analysis-document.md`.
-13. Run `cognianalysis run .`, `cognianalysis status .`, then `cognianalysis audit-report .`.
+13. Run `cognianalysis analyze .`, `cognianalysis status .`, then `cognianalysis dev audit-report .`.
 
 ## Required Workflow Artifacts
 

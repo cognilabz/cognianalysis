@@ -10,7 +10,7 @@ Run:
 npm run verify:golden
 ```
 
-The script rebuilds the CLI, discovers every `benchmarks/golden/**/*.expected.json` suite, runs each target repository through `cognianalysis run`, scores the final LLM-authored report, writes each repo's `.analysis/data/golden-benchmark.json`, and writes the aggregate `benchmarks/golden/results.json`.
+The script rebuilds the CLI, discovers every `benchmarks/golden/**/*.expected.json` suite, runs each target repository through the product-mode flow (`cognianalysis analyze`, with `run` kept as a compatibility alias), scores the final LLM-authored report, writes each repo's `.analysis/data/golden-benchmark.json`, and writes the aggregate `benchmarks/golden/results.json`.
 
 Baseline proof is separate:
 

@@ -39,7 +39,7 @@ exports.TARGET_CAPABILITIES = [
         id: 'whole-codebase-source-inventory-accounting',
         title: 'Whole-codebase source inventory accounting',
         description: 'Every included repository file is accounted for by evidence or explicit Codex/in-session LLM inspection. Deferred files remain visible as incomplete follow-up and do not count as completed whole-codebase analysis.',
-        addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cognianalysis finalize source inventory accounting contract', 'embedded report audit data'],
+        addressed_by: ['source-inventory.json', 'analysis_coverage in LLM outputs', 'cognianalysis dev finalize source inventory accounting contract', 'embedded report audit data'],
         expected_outputs: ['source_inventory_accounting.complete=true', 'analysis_coverage.inspected_files[]'],
         output_keys: ['source_inventory_accounting.complete', 'analysis_coverage']
     },

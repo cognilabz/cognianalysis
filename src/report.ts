@@ -337,7 +337,7 @@ function pendingAnalysisDocumentSections(bundle: any): [string, string, string][
     <p class="eyebrow">LLM-authored analysis document required</p>
     <h2>Report pending · ${escapeHtml(bundle.profile?.repo_name || 'Repository')}</h2>
     <p>This is not a completed analysis report. The CLI has prepared deterministic context and audit data, but the human-facing report is intentionally withheld until an LLM-authored <code>analysis_document.sections</code> output exists.</p>
-    <p>The next step is to author <code>.analysis/llm_tasks/00-analysis-strategy.md</code>, complete every <code>.analysis/source_tier_tasks/*.md</code> Tier 1 file-card task, run <code>cognianalysis finalize . --allow-partial</code> to materialize strategy-planned skill workbenches, execute those reviews, optionally use <code>.analysis/capability_templates/*.md</code> only when the LLM strategy calls for them, then continue through detail planning and the final LLM-authored analysis document.</p>
+    <p>The next step is to author <code>.analysis/llm_tasks/00-analysis-strategy.md</code>, complete every <code>.analysis/source_tier_tasks/*.md</code> Tier 1 file-card task, run <code>cognianalysis dev finalize . --allow-partial</code> to materialize strategy-planned skill workbenches, execute those reviews, optionally use <code>.analysis/capability_templates/*.md</code> only when the LLM strategy calls for them, then continue through detail planning and the final LLM-authored analysis document.</p>
     <div class="metrics compact">
       ${metric('Report mode', bundle.report_mode?.state || 'awaiting_llm_authored_report')}
       ${metric('Generated tasks', tasks.length)}

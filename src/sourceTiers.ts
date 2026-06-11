@@ -346,7 +346,7 @@ Do not call an external LLM API. Do not generate deterministic summaries from fi
 - The CLI must not model this LLM step as an unavailable service. Codex authors the output in-session; only the resulting artifacts/readiness can be incomplete, partial or not decision-ready.
 - Keep evidence references exact and point them to the same file as the card.
 - If an excerpt is truncated or insufficient, preserve uncertainty in the card instead of inventing behavior.
-- After writing the outputs, run \`cognianalysis tier-status .\` and \`cognianalysis audit-report .\`.
+- After writing the outputs, run \`cognianalysis dev tier-status .\` and \`cognianalysis dev audit-report .\`.
 
 ## Work Items
 

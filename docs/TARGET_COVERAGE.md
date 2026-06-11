@@ -1,6 +1,6 @@
 # Target Capability Context
 
-This document defines the product-level target context used by `cognianalysis finalize` and `cognianalysis coverage`.
+This document defines the product-level target context used by `cognianalysis dev finalize` and `cognianalysis dev coverage`.
 
 The target rows are not semantic coverage and are not CLI-scored. They preserve the original capability picture as LLM trace context:
 

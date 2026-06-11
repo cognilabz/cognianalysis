@@ -6,18 +6,17 @@ This package is **not a coding agent** and **not a proprietary scanner**. Codex,
 
 ## What changed in v0.7
 
-The normal flow no longer requires users to run `cognianalysis aggregate`, `cognianalysis coverage`, `cognianalysis render` and `cognianalysis validate` manually. Those commands still exist for debugging and CI, but the intended product-mode entrypoint is now:
+The normal flow no longer requires users to run `cognianalysis aggregate`, `cognianalysis coverage`, `cognianalysis render`, `cognianalysis validate` or the staged Tier/debug commands manually. Those commands still exist for debugging and CI under `cognianalysis dev ...`, but the intended product-mode entrypoint is now:
 
 ```bash
-cognianalysis run .
-cognianalysis resume .
+cognianalysis analyze . --goal "Create a decision document for this repository."
 cognianalysis status .
-cognianalysis repair .
+cognianalysis open .
 ```
 
-`run` prepares the workspace when needed, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. `finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
+`analyze` prepares the workspace when needed, records the product request in `.analysis/data/product-analysis-request.json`, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. It accepts `--mode brief|blueprint|deep-dive` so the default can stay decision-oriented while deeper source review happens only when a flow, module, API, risk or rebuild decision needs it. `dev finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
 
-`run` and `prepare` also accept deliberate scope modes: `--scope complete`, `--scope critical-path` or `--scope representative`, with `--scope-files N` for the non-complete modes. The scope decision is persisted to `.analysis/data/analysis-scope.json`. `complete` is the whole included source inventory; non-complete modes are intentionally decision-limited and require the final report to disclose the selected/deferred file counts and confidence impact.
+`analyze` and `dev prepare` also accept deliberate scope modes: `--scope complete`, `--scope critical-path` or `--scope representative`, with `--scope-files N` for the non-complete modes. The scope decision is persisted to `.analysis/data/analysis-scope.json`. `complete` is the whole included source inventory; non-complete modes are intentionally decision-limited and require the final report to disclose the selected/deferred file counts and confidence impact.
 
 `resume` detects an existing `.analysis` workspace, prints completed product stages as skipped, and continues the same product-mode loop. `status` is the product-language progress view: repository indexed, analysis scope, current-commit freshness, analysis strategy, repository coverage, functional model, technical model, refactoring assessment, executive decision layer, consistency review, structured open questions and decision-report readiness. `repair` rebuilds task guides/manifests, detects broken JSON and writes `.analysis/data/repair-report.json` without requiring manual cleanup.
 
@@ -87,7 +86,7 @@ The goal is not only documentation generation. The pack is designed to produce a
 | LLM-first semantic extraction | Codex, as the active in-session LLM, performs meaning extraction; CLI prepares context and validates output |
 | LLM-authored analysis strategy | `00-analysis-strategy.md` and `llm/analysis-strategy.json` define the repo-specific source slices, skill use, Tier 1/deep-dive plan and report intent before optional capability templates are considered |
 | Non-authoritative code map | Signals are broad navigation hints, never final entrypoint facts |
-| Whole-codebase source inventory accounting | `source-inventory.json`, `analysis_coverage`, embedded audit data and the `cognianalysis finalize` inventory-accounting contract. Deferred files stay visible as gaps and do not count as completed analysis. |
+| Whole-codebase source inventory accounting | `source-inventory.json`, `analysis_coverage`, embedded audit data and the `cognianalysis dev finalize` inventory-accounting contract. Deferred files stay visible as gaps and do not count as completed analysis. |
 | Tiered whole-codebase analysis | `.analysis/source_tier_tasks/*.md` and `.analysis/source_tiers/*.json` create mandatory Tier 1 LLM-authored file cards for every included file before Tier 2-4 module, behavior, quality and refactoring depth is selected. |
 | Deliberate large-repo scope strategy | `run`/`prepare --scope complete|critical-path|representative`, `--scope-files N` and `.analysis/data/analysis-scope.json`; non-complete scope is disclosed with deferred-file count and confidence impact instead of pretending to be whole-repo complete. |
 | LLM-planned skill workbenches | `analysis_strategy.skill_application_plan[]` is materialized into `.analysis/skill_workbench_tasks/*.md`; executed `.analysis/skill_reviews/*.json` are synthesized by the final report |
@@ -126,12 +125,12 @@ The goal is not only documentation generation. The pack is designed to produce a
 | Refactoring/modernization roadmap | LLM-selected architecture/refactoring output and LLM-authored `roadmap` blocks |
 | Target architecture / new tech stack | LLM-selected architecture/refactoring output, target architecture and modernization target state |
 | Tool alternative positioning | LLM-authored positioning against consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, with automation strengths and handoff boundaries |
-| Evidence-first governance | `cognianalysis finalize`, embedded evidence index and validated file:line references |
-| Interactive static HTML report | `cognianalysis finalize`, LLM-authored sections rendered through the stable component library |
+| Evidence-first governance | `cognianalysis dev finalize`, embedded evidence index and validated file:line references |
+| Interactive static HTML report | `cognianalysis dev finalize`, LLM-authored sections rendered through the stable component library |
 | Portfolio mode | `cognianalysis portfolio --repos repos.txt --out portfolio-analysis` |
 | Harness portability | `init-harness`, portable `AGENTS.md`, tool-native instruction files, CLI and optional `cognianalysis mcp` bridge |
 
-The target picture is represented directly in the tool as unscored LLM trace context. `cognianalysis finalize .` writes the target rows into the embedded audit data so the LLM-authored `requirements_trace` can reference the original goal without the CLI deciding whether any target is satisfied.
+The target picture is represented directly in the tool as unscored LLM trace context. `cognianalysis dev finalize .` writes the target rows into the embedded audit data so the LLM-authored `requirements_trace` can reference the original goal without the CLI deciding whether any target is satisfied.
 
 Target rows are not scored as `present`, `partial`, `missing` or `covered` by the CLI. They preserve capability IDs, descriptions and expected-output hints for LLM authoring only. The deterministic layer checks artifact shape, explicit goal-reference shape, evidence references, prerequisite order, inventory accounting and renderer compatibility, including that LLM-authored report blocks contain renderable fields or evidence. The LLM controls completeness, documentation quality and decision readiness through `requirements_trace` and `report_quality_review`.
 
@@ -228,15 +227,15 @@ In other harnesses, ask it to follow `AGENTS.md`, `CLAUDE.md`, the Cursor/Windsu
 
 The main workflow is responsible for the full sequence:
 
-1. run `cognianalysis prepare .` when `.analysis/llm_tasks/` does not exist,
+1. run `cognianalysis analyze .` when `.analysis/llm_tasks/` does not exist,
 2. execute `00-analysis-strategy.md` and write `llm/analysis-strategy.json` so the LLM owns the repo-specific analysis plan,
 3. execute every `.analysis/source_tier_tasks/*.md` task and write `.analysis/source_tiers/*.json` so every included file has a Tier 1 LLM-authored file card,
-4. run `cognianalysis finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`, then execute those tasks into `.analysis/skill_reviews/*.json`,
+4. run `cognianalysis dev finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`, then execute those tasks into `.analysis/skill_reviews/*.json`,
 5. optionally execute `.analysis/capability_templates/01-*.md` through `10-*.md` only when the LLM strategy, a skill review or final synthesis explicitly needs that output shape,
-6. execute `11-detail-agent-plan.md`, then run `cognianalysis finalize . --allow-partial` to materialize `.analysis/detail_tasks/*.md`,
+6. execute `11-detail-agent-plan.md`, then run `cognianalysis dev finalize . --allow-partial` to materialize `.analysis/detail_tasks/*.md`,
 6. execute every materialized detail task and write `.analysis/detail_reviews/*.json`,
 7. execute `12-analysis-document.md` only after the analysis strategy, Tier 1 file cards, skill reviews and detail reviews exist,
-8. run `cognianalysis finalize .` and `cognianalysis audit-report .`,
+8. run `cognianalysis analyze .` and `cognianalysis dev audit-report .`,
 9. fix missing strategy, missing Tier 1 file cards, invalid evidence references or LLM-authored report gaps if finalization/audit reports any.
 
 You should not need to paste the long checklist manually. It is embedded in the installed harness instructions and in the generated task files.
@@ -254,10 +253,10 @@ The CLI cannot perform the semantic LLM extraction by itself. For a manual or cu
 In Codex, the semantic LLM executor is Codex itself in the current session. There is no direct LLM API call, API credential gate or external service state. If evidence is thin, Codex still authors the requested artifact and records uncertainty, open questions or a partial/not_ready quality verdict.
 
 ```bash
-cognianalysis prepare .
+cognianalysis analyze .
 # Fill .analysis/source_tiers/*.json for every .analysis/source_tier_tasks/*.md batch.
-cognianalysis tier-status .   # show exactly which Tier 1 batches are still missing/partial/invalid.
-cognianalysis tier-next . --limit 1 --max-chars 6000
+cognianalysis dev tier-status .   # show exactly which Tier 1 batches are still missing/partial/invalid.
+cognianalysis dev tier-next . --limit 1 --max-chars 6000
 # Codex reads the generated .analysis/source-tier-next.md workpack and
 # .analysis/source_tier_contexts/*.json source excerpts, then writes the
 # requested .analysis/source_tiers/*.json output directly.
@@ -265,17 +264,17 @@ cognianalysis tier-next . --limit 1 --max-chars 6000
 # Fill .analysis/skill_reviews/*.json from skill_workbench_tasks.
 # Optionally fill .analysis/llm/*.json from capability_templates only when selected by the LLM strategy or synthesis.
 # Fill .analysis/llm/detail-agent-plan.json.
-cognianalysis finalize . --allow-partial
+cognianalysis dev finalize . --allow-partial
 # Fill every materialized .analysis/detail_reviews/*.json.
 # Then author .analysis/llm/analysis-document.json as the final synthesis
 # with analysis_document.synthesis_stage="final_after_detail_reviews".
-cognianalysis finalize .
-cognianalysis audit-report .
+cognianalysis analyze .
+cognianalysis dev audit-report .
 ```
 
-`cognianalysis finalize .` expects complete Tier 1 source-file coverage plus an LLM-authored `analysis_document` with `synthesis_stage: "final_after_detail_reviews"`, a structured LLM-authored `requirements_trace` artifact, explicit `goal_contract_refs` to the original goal contract, and `report_quality_review.verdict: "decision_ready"` after required workflow artifacts exist, LLM-planned skill workbenches are executed/synthesized, planned detail reviews are executed, and those reviews are synthesized unless `--allow-partial` is passed. Optional capability-template outputs are incorporated when the LLM deliberately produced them; they are not a fixed readiness gate. The CLI does not use a fixed requirements checklist to decide semantic completeness. Without the LLM-authored final document, the rendered HTML is an explicit pending page rather than a generated substitute report.
+`cognianalysis dev finalize .` expects complete Tier 1 source-file coverage plus an LLM-authored `analysis_document` with `synthesis_stage: "final_after_detail_reviews"`, a structured LLM-authored `requirements_trace` artifact, explicit `goal_contract_refs` to the original goal contract, and `report_quality_review.verdict: "decision_ready"` after required workflow artifacts exist, LLM-planned skill workbenches are executed/synthesized, planned detail reviews are executed, and those reviews are synthesized unless `--allow-partial` is passed. Optional capability-template outputs are incorporated when the LLM deliberately produced them; they are not a fixed readiness gate. The CLI does not use a fixed requirements checklist to decide semantic completeness. Without the LLM-authored final document, the rendered HTML is an explicit pending page rather than a generated substitute report.
 
-`cognianalysis finalize .` performs the complete deterministic finishing step:
+`cognianalysis dev finalize .` performs the complete deterministic finishing step:
 
 ```text
 aggregate .analysis/llm/*.json
@@ -296,7 +295,7 @@ write .analysis/data/analysis-staleness.json
 
 ## Generated LLM tasks
 
-`cognianalysis prepare .` creates required workflow tasks and optional capability templates:
+`cognianalysis analyze .` creates required workflow tasks and optional capability templates when the workspace has not been prepared yet:
 
 ```text
 source_tier_tasks/*.md
@@ -401,38 +400,43 @@ and include evidence for the fields, rules and behavior used to construct it.
 Normal commands:
 
 ```bash
-cognianalysis run .           # product-mode loop: prepare, show missing LLM artifacts, or finalize when ready
-cognianalysis run . --scope complete
-cognianalysis run . --scope critical-path --scope-files 1200
-cognianalysis run . --scope representative --scope-files 400
+cognianalysis analyze .       # product-mode loop: prepare, show missing LLM artifacts, or finalize when ready
+cognianalysis analyze . --goal "Assess whether this service should be rebuilt."
+cognianalysis analyze . --mode brief
+cognianalysis analyze . --mode blueprint --goal "Plan a Spring Boot 3 + React migration."
+cognianalysis analyze . --mode deep-dive --goal "Inspect the billing flow before rebuild."
+cognianalysis analyze . --scope complete
+cognianalysis analyze . --scope critical-path --scope-files 1200
+cognianalysis analyze . --scope representative --scope-files 400
 cognianalysis resume .        # continue an existing analysis and print skipped/completed stages
 cognianalysis status .        # product-language progress, readiness and next action
 cognianalysis repair .        # rebuild task/manifests and report malformed or stale outputs
 cognianalysis open .          # print the rendered report path and browser URL
-cognianalysis doctor .        # explain workspace, artifact, lint and readiness state
-cognianalysis doctor . --market-proof # include golden benchmark proof status
-cognianalysis doctor . --market-proof --strict # fail until multi-repo + baseline proof exists
-cognianalysis init .          # alias for prepare
-cognianalysis prepare .       # build code map, source capsules and LLM task files
-cognianalysis finalize .      # aggregate, validate contracts and render the HTML report
-cognianalysis analyze .       # prepare and print the staged LLM workflow; if LLM JSON already exists, attempt finalization
-cognianalysis audit-report .  # return non-zero if the visible report is not Codex-authored/current
-cognianalysis tier-status .   # print Tier 1 task completion/backlog and next missing batches
-cognianalysis tier-next .     # create a Codex workpack plus source_tier_contexts/*.json for the next missing Tier 1 batches
 cognianalysis init-harness .  # install AGENTS.md, .agents/skills and common harness adapter files
 cognianalysis init-codex .    # compatibility alias for Codex-only assets
-cognianalysis portfolio --repos repos.txt --out portfolio-analysis
 cognianalysis mcp             # optional stdio-style bridge for prepare/finalize/audit-report contract commands
 ```
 
 Debug/CI commands:
 
 ```bash
-cognianalysis aggregate .     # merge .analysis/llm/*.json into .analysis/data/bundle.json
-cognianalysis coverage .      # print unscored target context, Tier 1 file-card coverage, task backlog and source inventory accounting
-cognianalysis render .        # render .analysis/report/index.html
-cognianalysis validate .      # validate file:line evidence references
+cognianalysis dev prepare .       # build code map, source capsules and LLM task files
+cognianalysis dev finalize .      # aggregate, validate contracts and render the HTML report
+cognianalysis dev audit-report .  # return non-zero if the visible report is not Codex-authored/current
+cognianalysis dev tier-status .   # print Tier 1 task completion/backlog and next missing batches
+cognianalysis dev tier-next .     # create a Codex workpack plus source_tier_contexts/*.json for the next missing Tier 1 batches
+cognianalysis dev aggregate .     # merge .analysis/llm/*.json into .analysis/data/bundle.json
+cognianalysis dev coverage .      # print target context, Tier 1 coverage and source inventory accounting
+cognianalysis dev render .        # render .analysis/report/index.html
+cognianalysis dev validate .      # validate file:line evidence references
+cognianalysis dev doctor . --market-proof --strict
+cognianalysis dev portfolio --repos repos.txt --out portfolio-analysis
+cognianalysis run .               # compatibility alias for the product-mode loop
+cognianalysis prepare .           # compatibility alias for dev prepare
+cognianalysis finalize .          # compatibility alias for dev finalize
 ```
+
+The direct compatibility aliases remain available for existing automation, but new users should start with `analyze`, `status` and `open`.
 
 For the bundled demo, the regression gate is:
 
@@ -443,7 +447,7 @@ npm run verify:golden
 npm run verify:baseline
 ```
 
-`verify:demo` runs the positive demo flow plus negative regressions: if `llm/detail-agent-plan.json` is removed, if a pre-final building-block output such as `llm/flows-mermaid.json` is missing, if the final Codex-authored `report_quality_review` is absent, if the Codex-authored review verdict is `partial`, if a `decision_ready` Codex-authored review omits accepted-limitation rationale for `partial`/`open` requirements, if the structured Codex-authored LLM requirements trace artifact is missing, if the executive decision layer/consistency review/evidence-strength artifacts are incomplete, or if deterministic no-seed fallbacks create scored semantic target rows, `cognianalysis audit-report`/verification must block readiness. A repo-specific trace vocabulary, repo-specific report-quality review vocabulary and visible business-need/business-use narrative fields must pass when the artifacts are structured and the Codex-authored quality verdict is decision-ready.
+`verify:demo` runs the positive demo flow plus negative regressions: if `llm/detail-agent-plan.json` is removed, if a pre-final building-block output such as `llm/flows-mermaid.json` is missing, if the final Codex-authored `report_quality_review` is absent, if the Codex-authored review verdict is `partial`, if a `decision_ready` Codex-authored review omits accepted-limitation rationale for `partial`/`open` requirements, if the structured Codex-authored LLM requirements trace artifact is missing, if the executive decision layer/consistency review/evidence-strength artifacts are incomplete, or if deterministic no-seed fallbacks create scored semantic target rows, `cognianalysis dev audit-report`/verification must block readiness. A repo-specific trace vocabulary, repo-specific report-quality review vocabulary and visible business-need/business-use narrative fields must pass when the artifacts are structured and the Codex-authored quality verdict is decision-ready.
 
 `verify:llm-boundary` is the fast guard for the LLM-first product line. It checks that runtime code still exposes inventory-only maps, unscored target context, LLM-owned semantic verdicts and deterministic artifact contracts, and that hardcoded semantic/report shortcuts do not reappear in runtime source.
 
@@ -463,4 +467,4 @@ cognianalysis portfolio --repos repos.txt --out portfolio-analysis
 
 ## Design principle
 
-The CLI prepares context. Codex, as the active in-session LLM, extracts meaning. `cognianalysis finalize` presents and validates the result. Signals from the code map are navigation hints only; they are never final facts by themselves.
+The CLI prepares context. Codex, as the active in-session LLM, extracts meaning. `cognianalysis dev finalize` presents and validates the result. Signals from the code map are navigation hints only; they are never final facts by themselves.

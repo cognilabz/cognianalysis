@@ -13,6 +13,7 @@ const sourceTiers_1 = require("./sourceTiers");
 const skillWorkbenches_1 = require("./skillWorkbenches");
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
+const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive']);
 function analysisPath(repo, value) {
     if (value)
         return utils_1.Path.resolve(value);
@@ -87,35 +88,41 @@ function usage() {
     console.log(`Cognianalysis v${VERSION} · LLM-first source-code analysis
 
 Usage:
-  ${CLI_NAME} init [repo] [--analysis .analysis] [--capsules 44]
-  ${CLI_NAME} run [repo] [--analysis .analysis] [--allow-partial] [--scope complete|critical-path|representative] [--scope-files N]
-  ${CLI_NAME} resume [repo] [--analysis .analysis]
+  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive] [--goal text] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} status [repo] [--analysis .analysis]
-  ${CLI_NAME} repair [repo] [--analysis .analysis]
   ${CLI_NAME} open [repo] [--analysis .analysis]
-  ${CLI_NAME} doctor [repo] [--analysis .analysis] [--market-proof] [--strict]
-  ${CLI_NAME} prepare [repo] [--analysis .analysis] [--capsules 44] [--scope complete|critical-path|representative] [--scope-files N]
-  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--no-html]
-  ${CLI_NAME} finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
-  ${CLI_NAME} finish [repo]   # alias for finalize
-  ${CLI_NAME} report [repo]   # alias for finalize
-  ${CLI_NAME} aggregate [repo] [--analysis .analysis]
-  ${CLI_NAME} render [repo] [--analysis .analysis] [--out report-dir] [--title title]
-  ${CLI_NAME} validate [repo] [--analysis .analysis]
-  ${CLI_NAME} coverage [repo] [--analysis .analysis]
-  ${CLI_NAME} tier-status [repo] [--analysis .analysis] [--limit 20]
-  ${CLI_NAME} tier-next [repo] [--analysis .analysis] [--limit 1] [--max-chars 6000]
-  ${CLI_NAME} tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
-  ${CLI_NAME} audit-report [repo] [--analysis .analysis]
+  ${CLI_NAME} resume [repo] [--analysis .analysis]
+  ${CLI_NAME} repair [repo] [--analysis .analysis]
   ${CLI_NAME} init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
   ${CLI_NAME} init-agent [target]   # alias for init-harness
   ${CLI_NAME} init-codex [target]   # compatibility alias for init-harness --harness codex
-  ${CLI_NAME} portfolio --repos repos.txt --out portfolio-analysis
   ${CLI_NAME} mcp
+
+Internal/debug commands:
+  ${CLI_NAME} dev prepare [repo] [--analysis .analysis] [--capsules 44] [--scope complete|critical-path|representative] [--scope-files N]
+  ${CLI_NAME} dev finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
+  ${CLI_NAME} dev audit-report [repo] [--analysis .analysis]
+  ${CLI_NAME} dev tier-status [repo] [--analysis .analysis] [--limit 20]
+  ${CLI_NAME} dev tier-next [repo] [--analysis .analysis] [--limit 1] [--max-chars 6000]
+  ${CLI_NAME} dev tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
+  ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
+
+Compatibility aliases still work: run, init/prepare, finalize/finish/report, aggregate, render, validate, coverage, tier-status, tier-next, tier-context, audit-report, doctor, portfolio.
 `);
 }
+function devUsage() {
+    console.log(`Internal/debug commands:
+  ${CLI_NAME} dev prepare [repo]
+  ${CLI_NAME} dev finalize [repo]
+  ${CLI_NAME} dev audit-report [repo]
+  ${CLI_NAME} dev tier-status [repo]
+  ${CLI_NAME} dev tier-next [repo]
+  ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
+
+Use ${CLI_NAME} analyze . for the normal product flow.`);
+}
 function stagedLlmWorkflowMessage() {
-    return `Next step for Codex, as the active in-session LLM: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} finalize . plus ${CLI_NAME} audit-report .`;
+    return `Next step for Codex, as the active in-session LLM: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} dev finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} dev finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} analyze . plus ${CLI_NAME} dev audit-report .`;
 }
 const REQUIRED_WORKFLOW_ARTIFACTS = [
     { label: 'analysis strategy', path: 'llm/analysis-strategy.json' },
@@ -362,7 +369,7 @@ function printProductNextStep(analysis, statuses) {
     const missing = statuses.filter(row => !row.ready);
     console.log(`Task guide: ${utils_1.Path.join(analysis, 'TASK.md')}`);
     if (!missing.length) {
-        console.log(`Next action: run ${CLI_NAME} finalize . and ${CLI_NAME} audit-report .`);
+        console.log(`Next action: run ${CLI_NAME} analyze . and ${CLI_NAME} dev audit-report .`);
         return;
     }
     console.log('Next action: complete the required LLM workflow artifacts below, then rerun product mode.');
@@ -410,28 +417,41 @@ function cmdPrepare(args) {
     console.log(stagedLlmWorkflowMessage());
     return 0;
 }
-function hasLlmJson(analysis) {
-    const llmDir = utils_1.Path.join(analysis, 'llm');
-    if (!utils_1.FS.existsSync(llmDir))
-        return false;
-    return utils_1.FS.readdirSync(llmDir).some((f) => f.endsWith('.json'));
+function productAnalysisRequest(args) {
+    const mode = String((0, utils_1.argValue)(args, '--mode', 'brief') || 'brief').trim().toLowerCase();
+    if (!PRODUCT_ANALYSIS_MODES.has(mode))
+        throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
+    const goal = String((0, utils_1.argValue)(args, '--goal', '') || '').trim();
+    return {
+        contract_kind: 'product_analysis_request',
+        entrypoint: 'analyze',
+        mode,
+        goal,
+        generated_at: new Date().toISOString(),
+        public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
+        internal_work_area: '.analysis',
+        depth_policy: mode === 'deep-dive'
+            ? 'targeted source-family, flow, module, API, risk or decision analysis for the requested slice'
+            : mode === 'blueprint'
+                ? 'decision report plus modernization/rebuild blueprint and deep-dive backlog'
+                : 'concise decision report with broad system understanding and explicit deep-dive backlog'
+    };
+}
+function writeProductAnalysisRequest(repo, analysis, args) {
+    const request = productAnalysisRequest(args);
+    (0, utils_1.ensureDir)(utils_1.Path.join(analysis, 'data'));
+    (0, utils_1.writeJson)(utils_1.Path.join(analysis, 'data', 'product-analysis-request.json'), {
+        ...request,
+        repo
+    });
+    return request;
 }
 function cmdAnalyze(args) {
-    const rc = cmdPrepare(args);
-    if (rc !== 0)
-        return rc;
     const repo = repoArg(args);
     const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
-    if (hasLlmJson(analysis)) {
-        console.log('LLM output detected. Finalizing report.');
-        return cmdFinalize(args);
-    }
-    const bundle = (0, aggregate_1.aggregate)(repo, analysis);
-    if (!(0, utils_1.hasFlag)(args, '--no-html'))
-        console.log(`Report: ${(0, report_1.renderReport)(analysis, undefined, (0, utils_1.argValue)(args, '--title'))}`);
-    console.log(`Status: ${bundle.status?.state}`);
-    console.log(stagedLlmWorkflowMessage());
-    return 0;
+    const request = writeProductAnalysisRequest(repo, analysis, args);
+    console.log(`Cognianalysis analyze: mode=${request.mode}${request.goal ? ` · goal=${request.goal}` : ''}`);
+    return cmdRun(args);
 }
 function cmdRun(args) {
     const repo = repoArg(args);
@@ -448,6 +468,7 @@ function cmdRun(args) {
         (0, aggregate_1.aggregate)(repo, analysis);
         console.log(`Cognianalysis product mode: waiting for Codex-authored workflow artifacts.`);
         printProductNextStep(analysis, statuses);
+        console.log(stagedLlmWorkflowMessage());
         return 0;
     }
     const rc = cmdFinalize(args);
@@ -1076,64 +1097,75 @@ function portfolioHtml(rows) {
     return `<!doctype html><meta charset='utf-8'><title>Portfolio Analysis</title><style>body{font-family:system-ui;margin:30px;background:#f5f7fb}table{border-collapse:collapse;width:100%;background:white}td,th{border:1px solid #e0e6f0;padding:10px;text-align:left}</style><h1>Portfolio Analysis</h1><table><thead><tr><th>Repo</th><th>Type</th><th>Source Files</th><th>Inventory Signals</th><th>Status</th><th>Error</th><th>Report</th></tr></thead><tbody>${trs}</tbody></table>`;
 }
 function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function runCommand(command, args) {
+    if (!command || command === 'help' || command === '--help' || command === '-h') {
+        usage();
+        return 0;
+    }
+    if (command === '--version' || command === '-v') {
+        console.log(VERSION);
+        return 0;
+    }
+    if (command === 'dev') {
+        const devCommand = args[0];
+        if (!devCommand || devCommand === 'help' || devCommand === '--help' || devCommand === '-h') {
+            devUsage();
+            return 0;
+        }
+        return runCommand(devCommand, args.slice(1));
+    }
+    if (command === 'analyze')
+        return cmdAnalyze(args);
+    if (command === 'status')
+        return cmdStatus(args);
+    if (command === 'open')
+        return cmdOpen(args);
+    if (command === 'resume')
+        return cmdResume(args);
+    if (command === 'repair')
+        return cmdRepair(args);
+    if (command === 'init-harness' || command === 'init-agent')
+        return cmdInitHarness(args);
+    if (command === 'init-codex')
+        return cmdInitCodex(args);
+    if (command === 'mcp') {
+        (0, mcp_1.startMcpLikeServer)();
+        return 0;
+    }
+    if (command === 'init' || command === 'prepare')
+        return cmdPrepare(args);
+    if (command === 'run')
+        return cmdRun(args);
+    if (command === 'doctor')
+        return cmdDoctor(args);
+    if (command === 'finalize' || command === 'finish' || command === 'report')
+        return cmdFinalize(args);
+    if (command === 'aggregate')
+        return cmdAggregate(args);
+    if (command === 'render')
+        return cmdRender(args);
+    if (command === 'validate')
+        return cmdValidate(args);
+    if (command === 'coverage')
+        return cmdCoverage(args);
+    if (command === 'tier-status')
+        return cmdTierStatus(args);
+    if (command === 'tier-next')
+        return cmdTierNext(args);
+    if (command === 'tier-context')
+        return cmdTierContext(args);
+    if (command === 'audit-report')
+        return cmdAuditReport(args);
+    if (command === 'portfolio')
+        return cmdPortfolio(args);
+    usage();
+    return 1;
+}
 async function main(argv = process.argv.slice(2)) {
     const command = argv[0];
     const args = argv.slice(1);
     try {
-        if (!command || command === 'help' || command === '--help' || command === '-h') {
-            usage();
-            return 0;
-        }
-        if (command === '--version' || command === '-v') {
-            console.log(VERSION);
-            return 0;
-        }
-        if (command === 'init' || command === 'prepare')
-            return cmdPrepare(args);
-        if (command === 'run')
-            return cmdRun(args);
-        if (command === 'resume')
-            return cmdResume(args);
-        if (command === 'status')
-            return cmdStatus(args);
-        if (command === 'repair')
-            return cmdRepair(args);
-        if (command === 'open')
-            return cmdOpen(args);
-        if (command === 'doctor')
-            return cmdDoctor(args);
-        if (command === 'analyze')
-            return cmdAnalyze(args);
-        if (command === 'finalize' || command === 'finish' || command === 'report')
-            return cmdFinalize(args);
-        if (command === 'aggregate')
-            return cmdAggregate(args);
-        if (command === 'render')
-            return cmdRender(args);
-        if (command === 'validate')
-            return cmdValidate(args);
-        if (command === 'coverage')
-            return cmdCoverage(args);
-        if (command === 'tier-status')
-            return cmdTierStatus(args);
-        if (command === 'tier-next')
-            return cmdTierNext(args);
-        if (command === 'tier-context')
-            return cmdTierContext(args);
-        if (command === 'audit-report')
-            return cmdAuditReport(args);
-        if (command === 'init-harness' || command === 'init-agent')
-            return cmdInitHarness(args);
-        if (command === 'init-codex')
-            return cmdInitCodex(args);
-        if (command === 'portfolio')
-            return cmdPortfolio(args);
-        if (command === 'mcp') {
-            (0, mcp_1.startMcpLikeServer)();
-            return 0;
-        }
-        usage();
-        return 1;
+        return runCommand(command, args);
     }
     catch (err) {
         console.error(`Error: ${err?.message || String(err)}`);

@@ -27,7 +27,7 @@ Read these files first:
 	Then open source files, tests, docs, contracts, schemas and configuration as needed. The deterministic map does not parse imports, symbols, framework names, contracts, examples, tests, entrypoints or relationships; Codex must parse and decide those from source. The source capsules and inventory-ranked seed files are only navigation aids. The source inventory defines the full included analysis scope; do not stop at the top capsules.
 		If this is not task `analysis_strategy`, read `.analysis/llm/analysis-strategy.json` first when it exists and follow its repository-specific analysis plan. If it does not exist yet, author it before treating any later task as final-ready.
 		Tier 1 file cards are the broad base for whole-codebase understanding. If `.analysis/source_tiers/*.json` is incomplete, do not claim whole-codebase completion; execute the missing `.analysis/source_tier_tasks/*.md` tasks first or mark final readiness partial.
-		After `analysis_strategy` and Tier 1 cards exist, run `cognianalysis finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
+		After `analysis_strategy` and Tier 1 cards exist, run `cognianalysis dev finalize . --allow-partial` to materialize `.analysis/skill_workbench_tasks/*.md` from `analysis_strategy.skill_application_plan[]`. Execute those LLM-planned skill workbenches before using any generic capability-template output as a supporting building block.
 		Generic capability templates are optional. Prefer repository-specific `.analysis/skill_workbench_tasks/*.md` and direct final synthesis. If you use a template output, explain in the JSON why this capability output was needed for this repository.
 	For large repositories, use `.analysis/data/source-family-inventory.json` only as navigation context. The legacy filename does not mean the CLI has authored semantic source families. The actual source-family/detail-agent plan must be authored by Codex in `.analysis/llm/detail-agent-plan.json`; deterministic inventory partitions are not semantic proof, not detail-review priorities and not source-family names.
 
@@ -75,8 +75,8 @@ Rules for examples:
   "repo": {
     "repo_name": "demo-repo",
     "root": "/Users/michaelhubeny/homespace/cognianalysis/examples/demo-repo",
-    "analyzed_at": "2026-06-11T05:13:14Z",
-    "commit": "6d6a7c5fc4148a8f6ea5f95d1bfb2202298a0416",
+    "analyzed_at": "2026-06-11T06:59:49Z",
+    "commit": "cf48e69aeacde11c4a357272dca853c43a274ca7",
     "repo_type": "source-inventory",
     "languages": {
       "Java": 261
