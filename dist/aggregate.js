@@ -271,9 +271,9 @@ function loadBundle(analysisDir) {
 }
 function computeToolingCapabilities() {
     return {
-        public_cli_commands: ['analyze', 'status', 'open', 'resume', 'repair', 'init-harness', 'init-codex', 'mcp'],
-        internal_cli_commands: ['dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
-        compatibility_cli_commands: ['run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio'],
+        public_cli_commands: ['analyze', 'status', 'open', 'eval'],
+        internal_cli_commands: ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
+        compatibility_cli_commands: ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio'],
         portfolio_mode_available: true,
         harness_portability_available: true,
         product_mode_available: true,

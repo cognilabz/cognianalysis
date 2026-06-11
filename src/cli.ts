@@ -11,7 +11,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
 
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
-const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive']);
+const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive', 'complete']);
 const PRODUCT_REQUEST_LLM_OUTPUTS = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
 const PRODUCT_REQUEST_OPTION_FLAGS = ['--mode', '--goal', '--flow', '--module', '--api', '--risk', '--decision', '--scope', '--scope-files'];
 const OPTION_VALUE_FLAGS = new Set([
@@ -113,17 +113,18 @@ function usage(): void {
   console.log(`Cognianalysis v${VERSION} · LLM-first source-code analysis
 
 Usage:
-  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
+  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive|complete] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} status [repo] [--analysis .analysis]
   ${CLI_NAME} open [repo] [--analysis .analysis]
-  ${CLI_NAME} resume [repo] [--analysis .analysis]
-  ${CLI_NAME} repair [repo] [--analysis .analysis]
-  ${CLI_NAME} init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
-  ${CLI_NAME} init-agent [target]   # alias for init-harness
-  ${CLI_NAME} init-codex [target]   # compatibility alias for init-harness --harness codex
-  ${CLI_NAME} mcp
+  ${CLI_NAME} eval [repo] [--analysis .analysis] [--strict]
 
 Internal/debug commands:
+  ${CLI_NAME} dev resume [repo] [--analysis .analysis]
+  ${CLI_NAME} dev repair [repo] [--analysis .analysis]
+  ${CLI_NAME} dev init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
+  ${CLI_NAME} dev init-agent [target]
+  ${CLI_NAME} dev init-codex [target]
+  ${CLI_NAME} dev mcp
   ${CLI_NAME} dev prepare [repo] [--analysis .analysis] [--capsules 44] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} dev finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
   ${CLI_NAME} dev audit-report [repo] [--analysis .analysis]
@@ -132,12 +133,16 @@ Internal/debug commands:
   ${CLI_NAME} dev tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
   ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
 
-Compatibility aliases still work: run, init/prepare, finalize/finish/report, aggregate, render, validate, coverage, tier-status, tier-next, tier-context, audit-report, doctor, portfolio.
+Compatibility aliases still work for existing automation. New users should start with analyze, status, open and eval.
 `);
 }
 
 function devUsage(): void {
   console.log(`Internal/debug commands:
+  ${CLI_NAME} dev resume [repo]
+  ${CLI_NAME} dev repair [repo]
+  ${CLI_NAME} dev init-harness [target]
+  ${CLI_NAME} dev mcp
   ${CLI_NAME} dev prepare [repo]
   ${CLI_NAME} dev finalize [repo]
   ${CLI_NAME} dev audit-report [repo]
@@ -150,7 +155,7 @@ Use ${CLI_NAME} analyze . for the normal product flow.`);
 }
 
 function stagedLlmWorkflowMessage(): string {
-  return `Next step for Codex, as the active in-session LLM: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} dev finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} dev finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} analyze . plus ${CLI_NAME} dev audit-report .`;
+  return `Next step for Codex, as the active in-session LLM: open .analysis/TASK.md and follow that single harness-native work guide. It starts with llm_tasks/00-analysis-strategy.md, uses source-tier work only for the selected scope, treats capability_templates as optional, materializes any LLM-planned skill_workbench_tasks and detail_tasks with ${CLI_NAME} dev finalize . --allow-partial, then authors llm_tasks/11-detail-agent-plan.md and llm_tasks/12-analysis-document.md before rerunning ${CLI_NAME} analyze .`;
 }
 
 function positionalArgs(args: string[]): string[] {
@@ -464,10 +469,11 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     throw new Error('--scope-files requires --scope unless the previous product request already has a non-complete scope.');
   }
   const mode = String(args.includes('--mode') ? argValue(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
-  if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
+  if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint, deep-dive or complete.`);
   const goal = String(args.includes('--goal') ? argValue(args, '--goal', '') : previous?.goal || '').trim();
   const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || 'complete');
   if (!SCOPE_MODES.has(scopeMode)) throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
+  if (mode === 'complete' && scopeMode !== 'complete') throw new Error('Complete mode requires --scope complete. Use brief, blueprint or deep-dive for scoped/adaptive analysis.');
   const previousScopeMode = String(previousScopeRequest.mode || 'complete');
   const previousScopeFiles = Number(previousScopeRequest.scope_files || 0);
   const preservePreviousScopeFiles = !hasScope || scopeMode === previousScopeMode;
@@ -502,7 +508,9 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     generated_at: new Date().toISOString(),
     public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
     internal_work_area: '.analysis',
-    depth_policy: mode === 'deep-dive'
+    depth_policy: mode === 'complete'
+      ? 'audit-heavy whole-repository analysis with complete included source inventory coverage'
+      : mode === 'deep-dive'
       ? 'targeted source-family, flow, module, API, risk or decision analysis for the requested slice'
       : mode === 'blueprint'
         ? 'decision report plus modernization/rebuild blueprint and deep-dive backlog'
@@ -688,6 +696,16 @@ function cmdStatus(args: string[]): number {
   const statuses = workflowArtifactStatuses(analysis);
   printRepositoryStatus(repo, analysis, bundle, statuses);
   return bundle.final_llm_readiness?.state === 'ready' ? 0 : 1;
+}
+
+function cmdEval(args: string[]): number {
+  const repo = repoArg(args);
+  const analysis = analysisPath(repo, argValue(args, '--analysis'));
+  console.log('Cognianalysis eval');
+  console.log(`Repo: ${repo}`);
+  console.log(`Analysis: ${analysis}`);
+  const marketProof = printMarketProofStatus(analysis);
+  return hasFlag(args, '--strict') && marketProof.strictReady !== true ? 1 : 0;
 }
 
 function cmdRepair(args: string[]): number {
@@ -1243,6 +1261,7 @@ function runCommand(command: string | undefined, args: string[]): number {
   if (command === 'analyze') return cmdAnalyze(args);
   if (command === 'status') return cmdStatus(args);
   if (command === 'open') return cmdOpen(args);
+  if (command === 'eval') return cmdEval(args);
   if (command === 'resume') return cmdResume(args);
   if (command === 'repair') return cmdRepair(args);
   if (command === 'init-harness' || command === 'init-agent') return cmdInitHarness(args);

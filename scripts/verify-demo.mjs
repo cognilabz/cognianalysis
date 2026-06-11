@@ -190,14 +190,15 @@ try {
 
 const helpOutput = run(['--help'], { capture: true }).stdout || '';
 assert(helpOutput.includes('analyze [repo]'), 'CLI help must expose product-mode analyze');
-assert(helpOutput.includes('--mode brief|blueprint|deep-dive'), 'CLI help must expose product analysis modes');
+assert(helpOutput.includes('--mode brief|blueprint|deep-dive|complete'), 'CLI help must expose product analysis modes');
 assert(helpOutput.includes('--goal text'), 'CLI help must expose goal-first product input');
 assert(helpOutput.includes('--flow name') && helpOutput.includes('--module path') && helpOutput.includes('--api name'), 'CLI help must expose deep-dive target flags');
-assert(helpOutput.includes('resume [repo]'), 'CLI help must expose product-mode resume');
+assert(helpOutput.includes('dev resume [repo]'), 'CLI help must expose resume recovery under dev namespace');
 assert(helpOutput.includes('dev prepare [repo]'), 'CLI help must expose internal prepare under dev namespace');
 assert(helpOutput.includes('--scope complete|critical-path|representative'), 'CLI help must expose deliberate scope modes');
 assert(helpOutput.includes('--scope-files N'), 'CLI help must expose non-complete scope sizing');
 assert(helpOutput.includes('status [repo]'), 'CLI help must expose product-mode status');
+assert(helpOutput.includes('eval [repo]'), 'CLI help must expose product-mode eval');
 assert(helpOutput.includes('repair [repo]'), 'CLI help must expose product-mode repair');
 assert(helpOutput.includes('open [repo]'), 'CLI help must expose product-mode open');
 assert(helpOutput.includes('init-harness'), 'CLI help must expose the generic harness installer');
@@ -301,13 +302,13 @@ assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_f
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
-for (const command of ['analyze', 'status', 'open', 'resume', 'repair', 'init-harness', 'init-codex', 'mcp']) {
+for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }
-for (const command of ['dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
+for (const command of ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
   assert(bundle.tooling?.internal_cli_commands?.includes(command), `Demo tooling contract must expose internal dev command: ${command}`);
 }
-for (const command of ['run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio']) {
+for (const command of ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio']) {
   assert(bundle.tooling?.compatibility_cli_commands?.includes(command), `Demo tooling contract must preserve compatibility command: ${command}`);
 }
 assert(bundle.tooling?.product_mode_available === true, 'Demo tooling contract must expose product mode availability');
@@ -323,7 +324,7 @@ for (const [name, text] of [['AGENTS.md', rootAgents], ['resources/AGENTS.md', r
   assert(text.includes('00-analysis-strategy.md') || text.includes('analysis-strategy.json'), `${name} must document the LLM analysis strategy step`);
   assert(text.includes('11-detail-agent-plan.md'), `${name} must document the LLM detail-agent plan step`);
   assert(text.includes('12-analysis-document.md'), `${name} must document final report authoring after detail reviews`);
-  assert(text.includes('cognianalysis resume .') || text.includes('`cognianalysis resume .`'), `${name} must document product-mode resume`);
+  assert(text.includes('cognianalysis dev resume .') || text.includes('cognianalysis resume .') || text.includes('`cognianalysis resume .`'), `${name} must document resume recovery`);
   assert(text.includes('--scope complete') && text.includes('critical-path') && text.includes('representative'), `${name} must document deliberate scope modes`);
   assert(text.includes('analysis-staleness') || text.includes('freshness'), `${name} must document stale-analysis freshness checks`);
   assert(text.includes('analysis_document.open_questions'), `${name} must document structured open questions`);

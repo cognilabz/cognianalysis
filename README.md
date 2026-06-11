@@ -12,13 +12,14 @@ The normal flow no longer requires users to run `cognianalysis aggregate`, `cogn
 cognianalysis analyze . --goal "Create a decision document for this repository."
 cognianalysis status .
 cognianalysis open .
+cognianalysis eval .
 ```
 
-`analyze` prepares the workspace when needed, records the product request in `.analysis/data/product-analysis-request.json`, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. It accepts `--mode brief|blueprint|deep-dive` so the default can stay decision-oriented while deeper source review happens only when a flow, module, API, risk or rebuild decision needs it. `dev finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
+`analyze` prepares the workspace when needed, records the product request in `.analysis/data/product-analysis-request.json`, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. It accepts `--mode brief|blueprint|deep-dive|complete` so the default can stay decision-oriented while deeper source review or audit-heavy whole-repo coverage happens only when the request calls for it. `dev finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
 
 `analyze` and `dev prepare` also accept deliberate scope modes: `--scope complete`, `--scope critical-path` or `--scope representative`, with `--scope-files N` for the non-complete modes. The scope decision is persisted to `.analysis/data/analysis-scope.json`. `complete` is the whole included source inventory; non-complete modes are intentionally decision-limited and require the final report to disclose the selected/deferred file counts and confidence impact.
 
-`resume` detects an existing `.analysis` workspace, prints completed product stages as skipped, and continues the same product-mode loop. `status` is the product-language progress view: repository indexed, analysis scope, current-commit freshness, analysis strategy, repository coverage, functional model, technical model, refactoring assessment, executive decision layer, consistency review, structured open questions and decision-report readiness. `repair` rebuilds task guides/manifests, detects broken JSON and writes `.analysis/data/repair-report.json` without requiring manual cleanup.
+`status` is the product-language progress view: repository indexed, analysis scope, current-commit freshness, analysis strategy, repository coverage, functional model, technical model, refactoring assessment, executive decision layer, consistency review, structured open questions and decision-report readiness. `eval` exposes benchmark and market-proof readiness without implying market superiority. `dev resume` detects an existing `.analysis` workspace, prints completed product stages as skipped, and continues the same product-mode loop; `dev repair` rebuilds task guides/manifests, detects broken JSON and writes `.analysis/data/repair-report.json` without requiring manual cleanup.
 
 The visible report is authored through `analysis_document.sections`, `requirements_trace` and `report_quality_review` by the LLM. `analysis_document.sections[]` is the complete visible report navigation and start order. The TypeScript renderer supplies the component library, styling, Mermaid rendering and evidence validation; it does not add a fixed start page, fixed report appendices or deterministic empty-state prose. Component blocks may carry LLM-authored `labels` so repository-specific wording can drive table headers and group labels without changing the style system. Deterministic code-map, coverage, synthesis and authority artifacts remain embedded audit data, but they are not injected as fixed human-report pages or deterministic report prose. The CLI does not judge whether the prose is "good" or management-ready; it requires the LLM to make that semantic judgment explicitly in `requirements_trace` and `report_quality_review`. Empty sections or blocks are treated only as renderer-contract gaps so the LLM must author real content or an explicit open question.
 
@@ -405,21 +406,23 @@ cognianalysis analyze . --goal "Assess whether this service should be rebuilt."
 cognianalysis analyze . --mode brief
 cognianalysis analyze . --mode blueprint --goal "Plan a Spring Boot 3 + React migration."
 cognianalysis analyze . --mode deep-dive --goal "Inspect the billing flow before rebuild."
+cognianalysis analyze . --mode complete --scope complete
 cognianalysis analyze . --scope complete
 cognianalysis analyze . --scope critical-path --scope-files 1200
 cognianalysis analyze . --scope representative --scope-files 400
-cognianalysis resume .        # continue an existing analysis and print skipped/completed stages
 cognianalysis status .        # product-language progress, readiness and next action
-cognianalysis repair .        # rebuild task/manifests and report malformed or stale outputs
 cognianalysis open .          # print the rendered report path and browser URL
-cognianalysis init-harness .  # install AGENTS.md, .agents/skills and common harness adapter files
-cognianalysis init-codex .    # compatibility alias for Codex-only assets
-cognianalysis mcp             # optional stdio-style bridge for prepare/finalize/audit-report contract tools
+cognianalysis eval .          # benchmark/market-proof status; use --strict for claim-gating CI
 ```
 
 Debug/CI commands:
 
 ```bash
+cognianalysis dev resume .        # continue an existing analysis and print skipped/completed stages
+cognianalysis dev repair .        # rebuild task/manifests and report malformed or stale outputs
+cognianalysis dev init-harness .  # install AGENTS.md, .agents/skills and common harness adapter files
+cognianalysis dev init-codex .    # compatibility alias for Codex-only assets
+cognianalysis dev mcp             # optional stdio-style bridge for prepare/finalize/audit-report contract tools
 cognianalysis dev prepare .       # build code map, source capsules and LLM task files
 cognianalysis dev finalize .      # aggregate, validate contracts and render the HTML report
 cognianalysis dev audit-report .  # return non-zero if the visible report is not Codex-authored/current
@@ -436,7 +439,7 @@ cognianalysis prepare .           # compatibility alias for dev prepare
 cognianalysis finalize .          # compatibility alias for dev finalize
 ```
 
-The direct compatibility aliases remain available for existing automation, but new users should start with `analyze`, `status` and `open`.
+The direct compatibility aliases remain available for existing automation, but new users should start with `analyze`, `status`, `open` and `eval`.
 
 For the bundled demo, the regression gate is:
 
