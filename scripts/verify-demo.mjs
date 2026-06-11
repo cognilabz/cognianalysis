@@ -210,7 +210,16 @@ try {
   for (const file of expectedHarnessFiles) {
     assert(existsSync(join(harnessTarget, file)), `init-harness --harness all must write ${file}`);
   }
-  assert(readFileSync(join(harnessTarget, 'CLAUDE.md'), 'utf8').includes('Codex, as the active in-session LLM, performs the semantic extraction'), 'Claude adapter must forbid direct API/provider extraction wording');
+  const claudeHarness = readFileSync(join(harnessTarget, 'CLAUDE.md'), 'utf8');
+  const cursorHarness = readFileSync(join(harnessTarget, '.cursor/rules/cognianalysis/RULE.md'), 'utf8');
+  const windsurfHarness = readFileSync(join(harnessTarget, '.devin/rules/cognianalysis.md'), 'utf8');
+  const copilotHarness = readFileSync(join(harnessTarget, '.github/copilot-instructions.md'), 'utf8');
+  const aiderHarness = readFileSync(join(harnessTarget, 'CONVENTIONS.md'), 'utf8');
+  const genericHarness = readFileSync(join(harnessTarget, 'COGNIANALYSIS_HARNESS.md'), 'utf8');
+  assert(claudeHarness.includes('Claude Code, as the active in-session LLM, performs the semantic extraction'), 'Claude adapter must use Claude Code as the in-session LLM executor');
+  for (const [name, text] of [['CLAUDE.md', claudeHarness], ['Cursor rule', cursorHarness], ['Windsurf rule', windsurfHarness], ['Copilot instructions', copilotHarness], ['Aider conventions', aiderHarness], ['Generic harness', genericHarness]]) {
+    assert(!text.includes('Codex itself executes'), `${name} must not claim Codex executes non-Codex workpacks`);
+  }
   assert(readFileSync(join(harnessTarget, '.cursor/rules/cognianalysis/RULE.md'), 'utf8').includes('alwaysApply: true'), 'Cursor adapter must be an always-on project rule');
   assert(readFileSync(join(harnessTarget, '.devin/rules/cognianalysis.md'), 'utf8').includes('trigger: always_on'), 'Windsurf adapter must be an always-on workspace rule');
   assert(readFileSync(join(harnessTarget, '.github/copilot-instructions.md'), 'utf8').includes('Cognianalysis for GitHub Copilot'), 'Copilot adapter must be repository instructions');

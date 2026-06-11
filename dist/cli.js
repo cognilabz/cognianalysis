@@ -1144,14 +1144,21 @@ function copyAsset(src, dst, force, written, skipped) {
     (0, utils_1.copyRecursive)(src, dst, force);
     written.push(dst);
 }
-function harnessBody(harness, agentsText) {
+function agentInstructionsForHarness(agentsText, executorName) {
+    return agentsText
+        .replace(/Codex itself executes/g, `${executorName} executes`)
+        .replace(/Codex, as the active in-session LLM/g, `${executorName}, as the active in-session LLM`)
+        .replace(/Codex must still/g, `${executorName} must still`)
+        .replace(/Codex-authored/g, `${executorName}-authored`);
+}
+function harnessBody(harness, agentsText, executorName) {
     return `# Cognianalysis for ${harness}
 
 This file connects ${harness} to the same Cognianalysis workflow used by other agent harnesses.
 
-Use the rules below as the operational contract. The CLI prepares context and validates artifacts; Codex, as the active in-session LLM, authors the semantic extraction JSON and final report. Do not use a direct LLM API runner for that work.
+Use the rules below as the operational contract. The CLI prepares context and validates artifacts; ${executorName}, as the active in-session LLM, authors the semantic extraction JSON and final report. Do not use a direct LLM API runner for that work.
 
-${agentsText.trim()}
+${agentInstructionsForHarness(agentsText, executorName).trim()}
 `;
 }
 function cursorRule(agentsText) {
@@ -1160,7 +1167,7 @@ description: "Run Cognianalysis LLM-first repository assessment workflow."
 alwaysApply: true
 ---
 
-${harnessBody('Cursor', agentsText)}`;
+${harnessBody('Cursor', agentsText, 'Cursor')}`;
 }
 function windsurfRule(agentsText) {
     return `---
@@ -1168,7 +1175,7 @@ trigger: always_on
 description: "Run Cognianalysis LLM-first repository assessment workflow."
 ---
 
-${harnessBody('Windsurf or Devin Desktop', agentsText)}`;
+${harnessBody('Windsurf or Devin Desktop', agentsText, 'Windsurf or Devin Desktop')}`;
 }
 function installHarnessAssets(target, harnesses, args) {
     const force = (0, utils_1.hasFlag)(args, '--force');
@@ -1183,7 +1190,7 @@ function installHarnessAssets(target, harnesses, args) {
         copyAsset(utils_1.Path.join(root, 'agents'), utils_1.Path.join(target, '.agents'), force, written, skipped);
     for (const harness of harnesses) {
         if (harness === 'claude') {
-            writeTemplate(utils_1.Path.join(target, 'CLAUDE.md'), harnessBody('Claude Code', agentsText), force, written, skipped);
+            writeTemplate(utils_1.Path.join(target, 'CLAUDE.md'), harnessBody('Claude Code', agentsText, 'Claude Code'), force, written, skipped);
         }
         else if (harness === 'cursor') {
             writeTemplate(utils_1.Path.join(target, '.cursor', 'rules', 'cognianalysis', 'RULE.md'), cursorRule(agentsText), force, written, skipped);
@@ -1192,14 +1199,14 @@ function installHarnessAssets(target, harnesses, args) {
             writeTemplate(utils_1.Path.join(target, '.devin', 'rules', 'cognianalysis.md'), windsurfRule(agentsText), force, written, skipped);
         }
         else if (harness === 'copilot') {
-            writeTemplate(utils_1.Path.join(target, '.github', 'copilot-instructions.md'), harnessBody('GitHub Copilot', agentsText), force, written, skipped);
+            writeTemplate(utils_1.Path.join(target, '.github', 'copilot-instructions.md'), harnessBody('GitHub Copilot', agentsText, 'GitHub Copilot'), force, written, skipped);
         }
         else if (harness === 'aider') {
-            writeTemplate(utils_1.Path.join(target, 'CONVENTIONS.md'), harnessBody('Aider', agentsText), force, written, skipped);
+            writeTemplate(utils_1.Path.join(target, 'CONVENTIONS.md'), harnessBody('Aider', agentsText, 'Aider'), force, written, skipped);
             writeTemplate(utils_1.Path.join(target, '.aider.conf.yml'), 'read: CONVENTIONS.md\n', force, written, skipped);
         }
         else if (harness === 'generic') {
-            writeTemplate(utils_1.Path.join(target, 'COGNIANALYSIS_HARNESS.md'), harnessBody('generic agent harnesses', agentsText), force, written, skipped);
+            writeTemplate(utils_1.Path.join(target, 'COGNIANALYSIS_HARNESS.md'), harnessBody('generic agent harnesses', agentsText, 'the active agent harness'), force, written, skipped);
         }
     }
     return { written, skipped };
