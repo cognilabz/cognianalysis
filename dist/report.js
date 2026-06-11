@@ -59,7 +59,8 @@ function chips(values) {
 }
 let evidenceRenderCounter = 0;
 function evidenceLabel(ev) {
-    return `${ev?.path || ''}:${ev?.line || 1}`;
+    const line = ev?.line === undefined || ev?.line === null || ev?.line === '' ? 1 : ev.line;
+    return `${ev?.path || ''}:${line}`;
 }
 function evidenceHtml(items) {
     if (!Array.isArray(items) || !items.length)

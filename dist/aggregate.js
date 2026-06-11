@@ -1136,6 +1136,12 @@ function evidenceKey(ev) {
     const line = ev?.line === undefined || ev?.line === null || ev?.line === '' ? 1 : Number(ev.line);
     return `${String(ev?.path || '')}:${Number.isInteger(line) && line >= 1 ? line : 'invalid'}`;
 }
+function evidenceLineSortValue(ev) {
+    if (ev?.line === undefined || ev?.line === null || ev?.line === '')
+        return 1;
+    const line = Number(ev.line);
+    return Number.isFinite(line) ? line : Number.POSITIVE_INFINITY;
+}
 function artifactEvidenceRows(artifact, artifactPath) {
     const rows = [];
     function walk(value) {
@@ -2473,7 +2479,7 @@ function dedupeEvidence(items) {
         seen.add(key);
         out.push(e);
     }
-    return out.sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')) || Number(a.line || 1) - Number(b.line || 1));
+    return out.sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')) || evidenceLineSortValue(a) - evidenceLineSortValue(b));
 }
 function coveragePathsFromItems(items, kind, inventoryPaths) {
     const paths = new Set();

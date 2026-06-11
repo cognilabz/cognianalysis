@@ -58,7 +58,8 @@ function chips(values: any): string {
 let evidenceRenderCounter = 0;
 
 function evidenceLabel(ev: any): string {
-  return `${ev?.path || ''}:${ev?.line || 1}`;
+  const line = ev?.line === undefined || ev?.line === null || ev?.line === '' ? 1 : ev.line;
+  return `${ev?.path || ''}:${line}`;
 }
 
 function evidenceHtml(items: any): string {

@@ -348,6 +348,7 @@ const forbiddenSemanticRuntimeSnippets = [
   'fixedShellLabels',
   'Syntax error in text',
   'mermaid version',
+  'ev?.line || 1',
   'schemaForTitle',
   'title.includes'
 ];

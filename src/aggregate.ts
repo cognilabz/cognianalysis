@@ -1156,6 +1156,12 @@ function evidenceKey(ev: any): string {
   return `${String(ev?.path || '')}:${Number.isInteger(line) && line >= 1 ? line : 'invalid'}`;
 }
 
+function evidenceLineSortValue(ev: any): number {
+  if (ev?.line === undefined || ev?.line === null || ev?.line === '') return 1;
+  const line = Number(ev.line);
+  return Number.isFinite(line) ? line : Number.POSITIVE_INFINITY;
+}
+
 function artifactEvidenceRows(artifact: any, artifactPath: string): any[] {
   const rows: any[] = [];
   function walk(value: any): void {
@@ -2458,7 +2464,7 @@ function dedupeEvidence(items: any[]): any[] {
     seen.add(key);
     out.push(e);
   }
-  return out.sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')) || Number(a.line || 1) - Number(b.line || 1));
+  return out.sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')) || evidenceLineSortValue(a) - evidenceLineSortValue(b));
 }
 
 function coveragePathsFromItems(items: any, kind: 'inspected' | 'deferred', inventoryPaths: Set<string>): any {
