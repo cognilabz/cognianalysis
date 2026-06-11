@@ -60,6 +60,9 @@ function readJsonObject(file) {
 function rowSnippet(row) {
     return String(row?.artifact_snippet || row?.snippet || row?.evidence_text || row?.matched_text || '').trim();
 }
+function idSetFrom(value) {
+    return new Set(asList(value).map((item) => String(item?.id || '').trim()).filter(Boolean));
+}
 function validateRowsBoundToArtifact(rows, artifactText, label) {
     const errors = [];
     rows.forEach((row, index) => {
@@ -93,13 +96,29 @@ function validateBaselineMetricDerivation(parsed, comparisonTargetFile, artifact
     errors.push(...validateRowsBoundToArtifact(decisionRows, artifactText, 'decision'));
     if (comparisonTargetFile && utils_1.FS.existsSync(comparisonTargetFile)) {
         const target = readJsonObject(comparisonTargetFile);
-        const expectedFactIds = new Set(asList(target?.facts).map((fact) => String(fact?.id || '').trim()).filter(Boolean));
-        if (expectedFactIds.size > 0) {
-            for (const row of factRows) {
-                const id = String(row?.id || '').trim();
-                if (id && !expectedFactIds.has(id))
-                    errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
-            }
+        const expectedFactIds = idSetFrom(target?.facts || target?.expected_facts);
+        const expectedClaimIds = idSetFrom(target?.claims || target?.expected_claims);
+        const expectedDecisionIds = idSetFrom(target?.decisions || target?.expected_decisions);
+        if (factRows.length > 0 && expectedFactIds.size === 0)
+            errors.push('comparison target fact expectations are required for baseline fact derivation');
+        if (claimRows.length > 0 && expectedClaimIds.size === 0)
+            errors.push('comparison target claim expectations are required for baseline claim derivation');
+        if (decisionRows.length > 0 && expectedDecisionIds.size === 0)
+            errors.push('comparison target decision expectations are required for baseline decision derivation');
+        for (const row of factRows) {
+            const id = String(row?.id || '').trim();
+            if (id && expectedFactIds.size > 0 && !expectedFactIds.has(id))
+                errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
+        }
+        for (const row of claimRows) {
+            const id = String(row?.id || '').trim();
+            if (id && expectedClaimIds.size > 0 && !expectedClaimIds.has(id))
+                errors.push(`metric_derivation claim row ${id} is not present in comparison target claims`);
+        }
+        for (const row of decisionRows) {
+            const id = String(row?.id || '').trim();
+            if (id && expectedDecisionIds.size > 0 && !expectedDecisionIds.has(id))
+                errors.push(`metric_derivation decision row ${id} is not present in comparison target decisions`);
         }
     }
     if (factRows.length > 0) {

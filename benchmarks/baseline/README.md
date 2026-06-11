@@ -45,3 +45,4 @@ Each file should include:
 ```
 
 Run `npm run verify:baseline` after adding baseline artifacts. The command fails until required baseline kinds are present, passing and shaped with required metrics, provenance and comparison target fields.
+The comparison target JSON must expose `facts[]`, `claims[]`, and `decisions[]` IDs referenced by `metric_derivation` rows.

@@ -181,7 +181,9 @@ function missingIds(result) {
         benchmark: `repo-${i}`,
         repo: `fixtures/repo-${i}`,
         facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
-        minimums: { fact_recall: 1 }
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
+      minimums: { fact_recall: 1 }
       });
       results.push({
         benchmark: `repo-${i}`,
@@ -255,7 +257,9 @@ function missingIds(result) {
         benchmark: `repo-${i}`,
         repo,
         facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
-        minimums: { fact_recall: 1 }
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
+      minimums: { fact_recall: 1 }
       });
       writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), result);
       results.push({
@@ -302,6 +306,8 @@ function missingIds(result) {
       benchmark: 'repo-1',
       repo: 'fixtures/repo-1',
       facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
       minimums: { fact_recall: 1 }
     });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
@@ -364,6 +370,8 @@ function missingIds(result) {
       benchmark: 'repo-1',
       repo: 'fixtures/repo-1',
       facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
       minimums: { fact_recall: 1 }
     });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
@@ -427,6 +435,8 @@ function missingIds(result) {
       benchmark: 'repo-1',
       repo: 'fixtures/repo-1',
       facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
       minimums: { fact_recall: 1 }
     });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
@@ -487,6 +497,8 @@ function missingIds(result) {
       benchmark: 'repo-1',
       repo: 'fixtures/repo-1',
       facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
       minimums: { fact_recall: 1 }
     });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
@@ -550,6 +562,8 @@ function missingIds(result) {
       benchmark: 'repo-1',
       repo: 'fixtures/repo-1',
       facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      claims: [{ id: 'claim-1', expected: 'supported claim' }],
+      decisions: [{ id: 'decision-1', expected: 'useful decision' }],
       minimums: { fact_recall: 1 }
     });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
@@ -576,9 +590,9 @@ function missingIds(result) {
           target: 'benchmarks/golden/repo-1.expected.json'
         },
         metric_derivation: {
-          fact_rows: [{ id: 'missing-fact', found: true, evidence_present: true, artifact_snippet: 'not in artifact' }],
-          claim_rows: [{ id: 'claim-1', unsupported: false, artifact_snippet: 'not in artifact' }],
-          decision_rows: [{ id: 'decision-1', useful: true, artifact_snippet: 'not in artifact' }]
+          fact_rows: [{ id: 'fact', found: true, evidence_present: true, artifact_snippet: 'baseline output' }],
+          claim_rows: [{ id: 'missing-claim', unsupported: false, artifact_snippet: 'baseline output' }],
+          decision_rows: [{ id: 'missing-decision', useful: true, artifact_snippet: 'baseline output' }]
         }
       });
     }
@@ -596,9 +610,9 @@ function missingIds(result) {
       baselines: []
     });
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
-    assert.equal(status.baselineProofReady, false, 'baseline derivation rows not bound to target/artifact content must not be proof-ready');
-    assert(status.strictFailures.some(item => item.includes('artifact_snippet is absent from provenance artifact')), 'strict failures must reject derivation snippets absent from provenance artifact');
-    assert(status.strictFailures.some(item => item.includes('is not present in comparison target facts')), 'strict failures must reject fact rows absent from comparison target facts');
+    assert.equal(status.baselineProofReady, false, 'baseline claim/decision derivation rows not bound to target IDs must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('is not present in comparison target claims')), 'strict failures must reject claim rows absent from comparison target claims');
+    assert(status.strictFailures.some(item => item.includes('is not present in comparison target decisions')), 'strict failures must reject decision rows absent from comparison target decisions');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
