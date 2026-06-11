@@ -65,7 +65,7 @@ function hasEvidence(value) {
 }
 function traceCoveredWithEvidence(bundle, needle, statuses = ['covered']) {
     const row = traceRow(bundle, needle);
-    return statuses.includes(String(row?.status || '').toLowerCase()) && hasEvidence(row);
+    return statuses.includes(String(row?.status || '').toLowerCase()) && hasDirectEvidence(row);
 }
 function evidenceBackedExamples(bundle) {
     const interfaces = asList(bundle?.interfaces).flatMap((item) => asList(item?.examples));

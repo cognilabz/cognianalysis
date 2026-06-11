@@ -83,7 +83,7 @@ function hasEvidence(value: any): boolean {
 
 function traceCoveredWithEvidence(bundle: any, needle: string, statuses = ['covered']): boolean {
   const row = traceRow(bundle, needle);
-  return statuses.includes(String(row?.status || '').toLowerCase()) && hasEvidence(row);
+  return statuses.includes(String(row?.status || '').toLowerCase()) && hasDirectEvidence(row);
 }
 
 function evidenceBackedExamples(bundle: any): any[] {

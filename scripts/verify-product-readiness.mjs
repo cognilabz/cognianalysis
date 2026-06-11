@@ -160,6 +160,19 @@ function missingIds(result) {
 {
   const bundle = baseBundle();
   bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Reverse Engineering & Documentation')
+    .concat({
+      label: 'Reverse Engineering & Documentation',
+      status: 'covered',
+      open_questions: [{ question: 'Which flow is authoritative?', evidence: [ev] }]
+    });
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('reverse_engineering_documentation'), 'nested open-question evidence must not satisfy trace-row coverage evidence');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
     .filter(item => item.label !== 'Functional View')
     .concat(trace('Non-functional Quality', 'covered', [ev]));
   bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'functional');
