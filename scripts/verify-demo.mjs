@@ -117,6 +117,18 @@ const doctorMarketStrict = run(['dev', 'doctor', demo, '--market-proof', '--stri
 const doctorMarketStrictOutput = `${doctorMarketStrict.stdout || ''}\n${doctorMarketStrict.stderr || ''}`;
 assert(doctorMarketStrictOutput.includes('Strict market proof: not_ready'), 'doctor --market-proof --strict must fail until multi-repo/baseline proof exists');
 assert(doctorMarketStrictOutput.includes('STRICT-MISSING'), 'strict market proof must explain missing proof dimensions');
+const evalOutput = run(['eval', demo], { capture: true }).stdout || '';
+assert(evalOutput.includes('Original product readiness:'), 'eval must expose original product readiness');
+assert(evalOutput.includes('Verdict: PARTIALLY_READY'), 'eval must not claim full product readiness for the single demo suite');
+assert(evalOutput.includes('Core ideas covered:'), 'eval must answer whether original ideas are covered');
+assert(evalOutput.includes('Core features implemented: partly'), 'eval must answer whether original features are implemented');
+assert(evalOutput.includes('Perfectly simplified: no'), 'eval must answer whether the product is perfectly simplified');
+assert(evalOutput.includes('PRODUCT-MISSING multi_repo_benchmark'), 'eval must surface missing multi-repo golden proof');
+assert(evalOutput.includes('PRODUCT-MISSING thin_artifact_model'), 'eval must surface missing simplified artifact model proof');
+const evalStrict = run(['eval', demo, '--strict'], { capture: true, expectFailure: true });
+const evalStrictOutput = `${evalStrict.stdout || ''}\n${evalStrict.stderr || ''}`;
+assert(evalStrictOutput.includes('Original product readiness:'), 'eval --strict failure must still print product readiness');
+assert(evalStrictOutput.includes('PRODUCT-MISSING'), 'eval --strict must explain missing product readiness dimensions');
 const auditOutput = run(['dev', 'audit-report', demo], { capture: true }).stdout || '';
 assert(auditOutput.includes('Source inventory:'), 'Audit output must use source inventory accounting wording');
 assert(auditOutput.includes('Report quality lint: passed'), 'Audit output must expose deterministic report quality lint');

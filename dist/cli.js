@@ -11,6 +11,7 @@ const mcp_1 = require("./mcp");
 const readiness_1 = require("./readiness");
 const sourceTiers_1 = require("./sourceTiers");
 const skillWorkbenches_1 = require("./skillWorkbenches");
+const productReadiness_1 = require("./productReadiness");
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive', 'complete']);
@@ -730,8 +731,15 @@ function cmdEval(args) {
     console.log('Cognianalysis eval');
     console.log(`Repo: ${repo}`);
     console.log(`Analysis: ${analysis}`);
+    const bundle = utils_1.FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
     const marketProof = printMarketProofStatus(analysis);
-    return (0, utils_1.hasFlag)(args, '--strict') && marketProof.strictReady !== true ? 1 : 0;
+    const productReadiness = (0, productReadiness_1.computeProductReadiness)(repo, analysis, bundle, marketProof);
+    console.log('Original product readiness:');
+    for (const line of (0, productReadiness_1.productReadinessBrief)(productReadiness))
+        console.log(line);
+    for (const item of productReadiness.missing.slice(0, 12))
+        console.log(`  PRODUCT-MISSING ${item.id}: ${item.next_action}`);
+    return (0, utils_1.hasFlag)(args, '--strict') && (marketProof.strictReady !== true || productReadiness.ready !== true) ? 1 : 0;
 }
 function cmdRepair(args) {
     const repo = repoArg(args);

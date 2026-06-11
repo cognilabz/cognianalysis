@@ -8,6 +8,7 @@ import { startMcpLikeServer } from './mcp';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
 import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
 import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
+import { computeProductReadiness, productReadinessBrief } from './productReadiness';
 
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
@@ -721,8 +722,13 @@ function cmdEval(args: string[]): number {
   console.log('Cognianalysis eval');
   console.log(`Repo: ${repo}`);
   console.log(`Analysis: ${analysis}`);
+  const bundle = FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
   const marketProof = printMarketProofStatus(analysis);
-  return hasFlag(args, '--strict') && marketProof.strictReady !== true ? 1 : 0;
+  const productReadiness = computeProductReadiness(repo, analysis, bundle, marketProof);
+  console.log('Original product readiness:');
+  for (const line of productReadinessBrief(productReadiness)) console.log(line);
+  for (const item of productReadiness.missing.slice(0, 12)) console.log(`  PRODUCT-MISSING ${item.id}: ${item.next_action}`);
+  return hasFlag(args, '--strict') && (marketProof.strictReady !== true || productReadiness.ready !== true) ? 1 : 0;
 }
 
 function cmdRepair(args: string[]): number {

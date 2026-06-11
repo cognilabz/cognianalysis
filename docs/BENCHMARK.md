@@ -39,10 +39,11 @@ It must not claim "best on the market" until the same protocol covers multiple r
 Use:
 
 ```bash
+cognianalysis eval . --strict
 cognianalysis dev doctor . --market-proof --strict
 ```
 
-Strict market proof fails until at least five golden suites pass and baseline comparison proof is present.
+Strict `eval` combines market proof with the original-product readiness contract. It fails until at least five golden suites pass, baseline comparison proof is present, the decision-document outputs cover the entry-question feature set and the product has a proven thin artifact/orchestration model instead of only documentation or a single demo.
 
 ## Required Expansion
 

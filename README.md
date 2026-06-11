@@ -412,7 +412,7 @@ cognianalysis analyze . --scope critical-path --scope-files 1200
 cognianalysis analyze . --scope representative --scope-files 400
 cognianalysis status .        # product-language progress, readiness and next action
 cognianalysis open .          # print the rendered report path and browser URL
-cognianalysis eval .          # benchmark/market-proof status; use --strict for claim-gating CI
+cognianalysis eval .          # original-product readiness + benchmark/market-proof status; use --strict for claim-gating CI
 ```
 
 Debug/CI commands:
@@ -453,6 +453,8 @@ npm run verify:baseline
 `verify:demo` runs the positive demo flow against an ignored temp copy, then checks negative regressions: if `llm/detail-agent-plan.json` is removed, if a pre-final building-block output such as `llm/flows-mermaid.json` is missing, if the final Codex-authored `report_quality_review` is absent, if the Codex-authored review verdict is `partial`, if a `decision_ready` Codex-authored review omits accepted-limitation rationale for `partial`/`open` requirements, if the structured Codex-authored LLM requirements trace artifact is missing, if the executive decision layer/consistency review/evidence-strength artifacts are incomplete, or if deterministic no-seed fallbacks create scored semantic target rows, `cognianalysis dev audit-report`/verification must block readiness. A repo-specific trace vocabulary, repo-specific report-quality review vocabulary and visible business-need/business-use narrative fields must pass when the artifacts are structured and the Codex-authored quality verdict is decision-ready.
 
 `verify:llm-boundary` is the fast guard for the LLM-first product line. It checks that runtime code still exposes inventory-only maps, unscored target context, LLM-owned semantic verdicts and deterministic artifact contracts, and that hardcoded semantic/report shortcuts do not reappear in runtime source.
+
+`cognianalysis eval` prints two separate gates: benchmark/market-proof status and original-product readiness. Original-product readiness answers whether the entry-question vision is actually implemented and simplified: evidence-backed decision documents, functional and technical/API views, examples, bugs/security/quality, process analysis, refactoring/modernization roadmap, representative golden proof, baseline comparison proof, a thin artifact model and productized parallel/caching orchestration. Strict mode fails until both gates are ready; this prevents the project from claiming "fully covered" or "perfectly simplified" from a single demo report or documentation-only change.
 
 `verify:golden` runs the golden benchmark protocol described in `docs/BENCHMARK.md`. It discovers `benchmarks/golden/**/*.expected.json`, scores expected fact recall, evidence precision, unsupported-claim rate, decision readiness and report completeness, and writes fresh result JSON under an ignored temp workspace by default so verification does not dirty the checkout. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` when intentionally refreshing the tracked `benchmarks/golden/results.json` snapshot. This is proof scaffolding, not a market-superiority claim.
 

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.computeTargetCoverage = exports.TARGET_CAPABILITIES = exports.writeSkillWorkbenchTasksFromLlmStrategy = exports.writeSourceTierContext = exports.writeNextSourceTierContexts = exports.sourceTierBacklogArtifact = exports.writeLlmTasks = exports.buildHtml = exports.renderReport = exports.loadBundle = exports.aggregate = exports.prepareAnalysis = exports.buildRepoMap = void 0;
+exports.productReadinessBrief = exports.computeProductReadiness = exports.computeTargetCoverage = exports.TARGET_CAPABILITIES = exports.writeSkillWorkbenchTasksFromLlmStrategy = exports.writeSourceTierContext = exports.writeNextSourceTierContexts = exports.sourceTierBacklogArtifact = exports.writeLlmTasks = exports.buildHtml = exports.renderReport = exports.loadBundle = exports.aggregate = exports.prepareAnalysis = exports.buildRepoMap = void 0;
 var repoMap_1 = require("./repoMap");
 Object.defineProperty(exports, "buildRepoMap", { enumerable: true, get: function () { return repoMap_1.buildRepoMap; } });
 var aggregate_1 = require("./aggregate");
@@ -21,3 +21,6 @@ Object.defineProperty(exports, "writeSkillWorkbenchTasksFromLlmStrategy", { enum
 var targetCoverage_1 = require("./targetCoverage");
 Object.defineProperty(exports, "TARGET_CAPABILITIES", { enumerable: true, get: function () { return targetCoverage_1.TARGET_CAPABILITIES; } });
 Object.defineProperty(exports, "computeTargetCoverage", { enumerable: true, get: function () { return targetCoverage_1.computeTargetCoverage; } });
+var productReadiness_1 = require("./productReadiness");
+Object.defineProperty(exports, "computeProductReadiness", { enumerable: true, get: function () { return productReadiness_1.computeProductReadiness; } });
+Object.defineProperty(exports, "productReadinessBrief", { enumerable: true, get: function () { return productReadiness_1.productReadinessBrief; } });

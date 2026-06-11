@@ -1,0 +1,157 @@
+import { Path, writeJson } from './utils';
+
+export interface ProductReadinessMarketProof {
+  goldenExpected?: string[];
+  passedGoldenRepos?: number;
+  totalGoldenRepos?: number;
+  baselineAggregate?: any;
+  strictReady?: boolean;
+  strictFailures?: string[];
+}
+
+interface ProductReadinessCheck {
+  id: string;
+  label: string;
+  ready: boolean;
+  evidence: string;
+  missing?: string;
+}
+
+function asList(value: any): any[] {
+  if (value === null || value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function traceStatus(bundle: any, needle: string): string {
+  const lower = needle.toLowerCase();
+  const rows = asList(bundle?.analysis_document_requirements_trace_contract?.requirements);
+  const row = rows.find((item: any) => String(item.label || '').toLowerCase().includes(lower));
+  return String(row?.status || '').toLowerCase();
+}
+
+function hasReportBlock(bundle: any, type: string): boolean {
+  return asList(bundle?.analysis_document?.sections)
+    .some((section: any) => asList(section?.blocks)
+      .some((block: any) => String(block?.type || '').toLowerCase() === type));
+}
+
+function hasEvidenceBackedItems(bundle: any, key: string): boolean {
+  return asList(bundle?.[key]).some((item: any) => asList(item?.evidence).length > 0);
+}
+
+function check(id: string, label: string, ready: boolean, evidence: string, missing: string): ProductReadinessCheck {
+  return ready ? { id, label, ready, evidence } : { id, label, ready, evidence, missing };
+}
+
+export function computeProductReadiness(
+  repo: string,
+  analysis: string,
+  bundle: any | null,
+  marketProof: ProductReadinessMarketProof
+): any {
+  const finalReady = bundle?.final_llm_readiness?.state === 'ready';
+  const requirementsTraceReady = bundle?.analysis_document_requirements_trace_contract?.complete === true
+    && bundle?.analysis_goal_trace_alignment?.complete === true;
+  const functionalReady = traceStatus(bundle, 'functional') === 'covered' || hasReportBlock(bundle, 'flow');
+  const technicalReady = traceStatus(bundle, 'technical') === 'covered' || hasReportBlock(bundle, 'boundary_map');
+  const examplesReady = hasEvidenceBackedItems(bundle, 'interfaces')
+    || asList(bundle?.documentation?.request_response_examples).some((item: any) => asList(item?.evidence).length > 0);
+  const qualityReady = traceStatus(bundle, 'quality') === 'covered' || hasEvidenceBackedItems(bundle, 'findings');
+  const processReady = traceStatus(bundle, 'process') === 'covered' || !!bundle?.process;
+  const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered'
+    || hasReportBlock(bundle, 'roadmap')
+    || hasEvidenceBackedItems(bundle, 'refactoring')
+    || hasEvidenceBackedItems(bundle, 'modernization');
+  const decisionReady = bundle?.analysis_document_executive_decision_layer?.complete === true
+    && bundle?.analysis_document_quality_review?.complete === true;
+  const evidenceReady = bundle?.analysis_document_evidence_strength?.complete === true
+    && Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0) === 0
+    && asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length === 0;
+  const benchmarkReady = Number(marketProof.passedGoldenRepos || 0) >= 5
+    && Number(marketProof.totalGoldenRepos || 0) >= 5
+    && asList(marketProof.goldenExpected).length >= 5;
+  const baselineReady = marketProof.baselineAggregate?.verdict === 'pass';
+  const simplifiedHarnessReady = bundle?.simplified_harness_contract?.complete === true;
+  const orchestrationReady = bundle?.parallel_orchestration_contract?.complete === true;
+  const artifactModelReady = bundle?.product_artifact_model?.model === 'thin_llm_first_harness'
+    && bundle?.product_artifact_model?.complete === true;
+
+  const checks = [
+    check('decision_report_ready', 'Decision report generated and LLM-marked ready', finalReady, String(bundle?.final_llm_readiness?.state || 'missing'), 'Run/complete the LLM analysis until final_llm_readiness.state is ready.'),
+    check('original_requirements_trace', 'Original entry-question requirements are traced', requirementsTraceReady, `requirements=${bundle?.analysis_document_requirements_trace_contract?.complete === true}, goal_alignment=${bundle?.analysis_goal_trace_alignment?.complete === true}`, 'Complete analysis_document.requirements_trace with goal_contract_refs and passing goal alignment.'),
+    check('functional_reverse_engineering', 'Functional/reverse-engineering view is covered', functionalReady, `trace=${traceStatus(bundle, 'functional') || 'missing'}, flow_block=${hasReportBlock(bundle, 'flow')}`, 'Produce a functional view with capabilities/user flows and evidence.'),
+    check('technical_architecture_view', 'Technical/API/interface/architecture view is covered', technicalReady, `trace=${traceStatus(bundle, 'technical') || 'missing'}, boundary_map=${hasReportBlock(bundle, 'boundary_map')}`, 'Produce technical/API/interface/architecture sections with evidence.'),
+    check('examples_view', 'Examples are extracted or explicitly inferred', examplesReady, `interfaces=${asList(bundle?.interfaces).length}, request_response_examples=${asList(bundle?.documentation?.request_response_examples).length}`, 'Extract request/response, OpenAPI, SOAP, CLI, event or inferred examples with provenance.'),
+    check('quality_security_view', 'Bugs/security/code-quality findings are covered', qualityReady, `trace=${traceStatus(bundle, 'quality') || 'missing'}, findings=${asList(bundle?.findings).length}`, 'Cover bugs, security and quality findings with evidence and optional scanner imports.'),
+    check('process_view', 'Process/readiness optimization view is covered', processReady, `trace=${traceStatus(bundle, 'process') || 'missing'}, process=${!!bundle?.process}`, 'Cover process analysis and optimization potential.'),
+    check('refactoring_modernization', 'Refactoring and modernization roadmap is covered', refactoringReady, `trace=${traceStatus(bundle, 'refactoring') || 'missing'}, roadmap=${hasReportBlock(bundle, 'roadmap')}`, 'Cover refactoring and modernization roadmap toward target architecture or tech stack.'),
+    check('decision_basis', 'Decision basis and recommendations are covered', decisionReady, `executive=${bundle?.analysis_document_executive_decision_layer?.complete === true}, quality_review=${bundle?.analysis_document_quality_review?.complete === true}`, 'Complete executive decision layer, recommendations and report quality review.'),
+    check('evidence_backed', 'Visible claims are evidence-backed', evidenceReady, `unsupported=${Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0)}, invalid_evidence=${asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length}`, 'Resolve unsupported claims and invalid evidence references.'),
+    check('multi_repo_benchmark', 'Representative golden benchmark proof exists', benchmarkReady, `passed=${Number(marketProof.passedGoldenRepos || 0)}/${Number(marketProof.totalGoldenRepos || 0)}, expected=${asList(marketProof.goldenExpected).length}`, 'Add and pass at least five representative golden suites.'),
+    check('baseline_comparison', 'Baseline comparison proof exists', baselineReady, String(marketProof.baselineAggregate?.verdict || 'missing'), 'Add passing raw-agent/scanner/manual baseline comparison artifacts.'),
+    check('thin_artifact_model', 'Artifact model is simplified to a thin harness', artifactModelReady, String(bundle?.product_artifact_model?.model || 'missing'), 'Collapse user-facing artifacts around run, plan, facts, reviews and report.'),
+    check('simplified_harness_contract', 'Workflow is proven simplified', simplifiedHarnessReady, String(bundle?.simplified_harness_contract?.complete ?? 'missing'), 'Provide a simplified harness contract and remove/hide nonessential product workflow concepts.'),
+    check('parallel_orchestration', 'Parallel/caching orchestration is productized', orchestrationReady, String(bundle?.parallel_orchestration_contract?.complete ?? 'missing'), 'Implement or prove parallel worker execution, caching and fast orchestration as the core path.')
+  ];
+
+  const missing = checks.filter(row => !row.ready).map(row => ({ id: row.id, label: row.label, next_action: row.missing }));
+  const coreIds = new Set([
+    'decision_report_ready',
+    'original_requirements_trace',
+    'functional_reverse_engineering',
+    'technical_architecture_view',
+    'examples_view',
+    'quality_security_view',
+    'process_view',
+    'refactoring_modernization',
+    'decision_basis',
+    'evidence_backed'
+  ]);
+  const simplificationIds = new Set(['thin_artifact_model', 'simplified_harness_contract', 'parallel_orchestration']);
+  const coreChecks = checks.filter(row => coreIds.has(row.id));
+  const simplificationChecks = checks.filter(row => simplificationIds.has(row.id));
+  const proofChecks = checks.filter(row => row.id === 'multi_repo_benchmark' || row.id === 'baseline_comparison');
+  const coreReadyCount = coreChecks.filter(row => row.ready).length;
+
+  const coreIdeasCovered = coreReadyCount === coreChecks.length ? 'yes' : coreReadyCount > 0 ? 'partly' : 'no';
+  const coreFeaturesImplemented = coreChecks.every(row => row.ready) && proofChecks.every(row => row.ready) ? 'yes' : coreReadyCount > 0 ? 'partly' : 'no';
+  const perfectlySimplified = simplificationChecks.every(row => row.ready) ? 'yes' : 'no';
+  const ready = checks.every(row => row.ready);
+
+  const result = {
+    schemaVersion: '1.0',
+    contract_kind: 'original_product_readiness_contract',
+    generated_at: new Date().toISOString(),
+    repo,
+    analysis,
+    verdict: ready ? 'PRODUCT_READY' : coreReadyCount > 0 ? 'PARTIALLY_READY' : 'NOT_PRODUCT_READY',
+    core_ideas_covered: coreIdeasCovered,
+    core_features_implemented: coreFeaturesImplemented,
+    perfectly_simplified: perfectlySimplified,
+    ready,
+    summary: ready
+      ? 'Original entry-question product contract is fully implemented and simplified.'
+      : 'Original entry-question product contract is not fully implemented or perfectly simplified yet.',
+    checks,
+    missing,
+    next_best_action: missing[0]?.next_action || 'Keep benchmark suites and baseline comparisons current.'
+  };
+
+  try {
+    writeJson(Path.join(analysis, 'data', 'product-readiness.json'), result);
+  } catch {
+    // Eval should still be printable on read-only or missing workspaces.
+  }
+  return result;
+}
+
+export function productReadinessBrief(readiness: any): string[] {
+  return [
+    `- Verdict: ${readiness.verdict}`,
+    `- Core ideas covered: ${readiness.core_ideas_covered}`,
+    `- Core features implemented: ${readiness.core_features_implemented}`,
+    `- Perfectly simplified: ${readiness.perfectly_simplified}`,
+    `- Missing checks: ${readiness.missing.length}`,
+    `- Next best action: ${readiness.next_best_action}`
+  ];
+}
