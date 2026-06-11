@@ -16,7 +16,7 @@ For code or agent-behavior changes that are intended to land:
 
 - Verify locally first, then commit and push to GitHub `main` unless the user explicitly asks for another branch or no publish.
 - The live ChatGPT/code-review coworker is `https://chatgpt.com/c/6a2add04-a458-83eb-b2f3-bf642114b325`.
-- After each push, ask that coworker to review the pushed commit or diff using ChatGPT 5.5 Pro Extended. Select or verify ChatGPT 5.5 Pro Extended before submitting the review request when the UI exposes model choice; if that model or the review path is unavailable, report the limitation instead of pretending the review happened.
+- After each push, ask that coworker to review the pushed commit or diff using ChatGPT 5.5 Pro Extended. Start each review request as a fresh run, include the repo, commit SHA/URL and patch or diff, and explicitly tell the coworker not to rely on any previous approval, `NO_CHANGES`, or recheck answer in the conversation. Select or verify ChatGPT 5.5 Pro Extended before submitting the review request when the UI exposes model choice; if that model or the review path is unavailable, report the limitation instead of pretending the review happened.
 - Treat the live review as an external reviewer, not as proof by itself. Implement actionable feedback, verify locally, commit and push again, then request another live review.
 - Do not stop on the first approval, `NO_CHANGES`, or equivalent stop event. Ask for one focused recheck for missed improvements, regressions, stop-event mistakes and uncovered edge cases.
 - Stop only after that recheck also finds no actionable improvements. If the live ChatGPT review path or requested model is unavailable, report that limitation instead of pretending the review happened.
