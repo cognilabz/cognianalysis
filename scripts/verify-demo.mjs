@@ -49,6 +49,15 @@ function callMcpTool(name, args = {}) {
   return JSON.parse(text);
 }
 
+function callMcpToolExpectError(name, args = {}) {
+  try {
+    callMcpTool(name, args);
+  } catch (err) {
+    return String(err?.message || err);
+  }
+  throw new Error(`Expected MCP tool to fail: ${name}`);
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -1059,6 +1068,12 @@ try {
   const missingCompatibilityRun = run(['run', missingRunRepo], { capture: true, expectFailure: true });
   assert(String(missingCompatibilityRun.stderr || missingCompatibilityRun.stdout || '').includes('Repository path does not exist'), 'Compatibility run must reject missing repo paths before prepare fallback');
   assert(!existsSync(missingRunRepo), 'Compatibility run must not create a missing repo directory before validation');
+  for (const tool of ['prepare', 'aggregate', 'finalize', 'audit-report']) {
+    const missingMcpRepo = join(tempBoundaryRoot, `missing-mcp-${tool}`);
+    const mcpError = callMcpToolExpectError(tool, { repo: missingMcpRepo });
+    assert(mcpError.includes('Repository path does not exist'), `MCP ${tool} must reject missing repo paths`);
+    assert(!existsSync(missingMcpRepo), `MCP ${tool} must not create a missing repo directory before validation`);
+  }
   const readyRequestRoot = mkdtempSync(join(tmpdir(), 'cognianalysis-request-refresh-'));
   const readyRequestRepo = join(readyRequestRoot, 'demo-repo');
   cpSync(demo, readyRequestRepo, { recursive: true });

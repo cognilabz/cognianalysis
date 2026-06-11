@@ -38,6 +38,8 @@ function renderReportAndRefreshBundle(repo, analysis, out, title) {
 async function callTool(name, args) {
     const repo = utils_1.Path.resolve(args?.repo || '.');
     const analysis = utils_1.Path.resolve(args?.analysis || utils_1.Path.join(repo, '.analysis'));
+    if (!utils_1.FS.existsSync(repo) || !utils_1.FS.statSync(repo).isDirectory())
+        throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
     if (name === 'prepare') {
         const codeMap = (0, repoMap_1.buildRepoMap)(repo, { maxFileSize: args?.maxFileSize, capsuleLimit: args?.capsules, capsuleChars: args?.capsuleChars });
         (0, aggregate_2.prepareAnalysis)(repo, analysis, codeMap);
