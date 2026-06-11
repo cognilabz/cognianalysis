@@ -529,6 +529,11 @@ writeJson(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), {
     }
   ]
 });
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Proof files must be incomplete until they declare and match the exact harness logs');
+assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('generated_from_orchestration_execution_log'), 'Parallel proof must declare orchestration execution log lineage');
+assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('generated_from_cache_ledger'), 'Cache proof must declare cache ledger lineage');
 const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));

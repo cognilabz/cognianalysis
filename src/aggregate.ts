@@ -505,6 +505,8 @@ function validateParallelExecutionProof(bundle: any): any {
     .filter((entry: [string, any]) => entry[0]);
   const tasksById = new Map<string, any>(taskEntries);
   const tasks = asList(proof.worker_tasks || proof.tasks);
+  const logTasks = asList(bundle.orchestration_execution_log?.worker_tasks || bundle.orchestration_execution_log?.tasks);
+  const generatedFrom = asList(proof.generated_from).map(String);
   const workerIds = new Set(tasks.map((task: any) => String(task?.worker_id || '').trim()).filter(Boolean));
   const taskIds = new Set(tasks.map((task: any) => String(task?.task_id || '').trim()).filter(Boolean));
   const missing = [
@@ -514,6 +516,7 @@ function validateParallelExecutionProof(bundle: any): any {
     ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
     ...(graphNodeFresh(bundle, 'parallel_execution_proof') ? [] : ['proof_node_fresh']),
     ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
+    ...(generatedFrom.includes('data/orchestration-execution-log.json') || generatedFrom.includes('orchestration-execution-log.json') ? [] : ['generated_from_orchestration_execution_log']),
     ...(executionLogValidation.valid ? [] : ['orchestration_execution_log']),
     ...(Number(proof.worker_count || 0) >= 2 ? [] : ['worker_count']),
     ...(tasks.length >= 2 ? [] : ['worker_tasks']),
@@ -533,6 +536,21 @@ function validateParallelExecutionProof(bundle: any): any {
     return !!expectedHash && proofHash === expectedHash;
   });
   if (!taskHashes.length || !taskHashesMatchOutputs) missing.push('worker_task_artifact_hashes');
+  const proofTasksMatchLog = tasks.length > 0 && tasks.every((task: any) => {
+    const workerId = String(task?.worker_id || '').trim();
+    const taskId = String(task?.task_id || '').trim();
+    const startedAt = String(task?.started_at || '').trim();
+    const endedAt = String(task?.ended_at || '').trim();
+    const artifactHash = String(task?.artifact_hash || task?.output_hash || '').trim();
+    return logTasks.some((row: any) =>
+      String(row?.worker_id || '').trim() === workerId
+      && String(row?.task_id || '').trim() === taskId
+      && String(row?.started_at || '').trim() === startedAt
+      && String(row?.ended_at || '').trim() === endedAt
+      && String(row?.artifact_hash || row?.output_hash || '').trim() === artifactHash
+    );
+  });
+  if (!proofTasksMatchLog) missing.push('worker_tasks_match_orchestration_execution_log');
   return {
     valid: missing.length === 0,
     missing,
@@ -588,6 +606,8 @@ function validateCacheReuseProof(bundle: any): any {
   const cacheLedgerValidation = validateCacheLedger(bundle);
   const hashesByPath = artifactHashesByPath(bundle);
   const entries = asList(proof.cache_entries || proof.entries || proof.cache_keys);
+  const ledgerEntries = asList(bundle.cache_ledger?.cache_entries || bundle.cache_ledger?.entries);
+  const generatedFrom = asList(proof.generated_from).map(String);
   const hitEntries = entries.filter((entry: any) => entry?.hit === true || entry?.cache_hit === true);
   const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
   const missing = [
@@ -597,6 +617,7 @@ function validateCacheReuseProof(bundle: any): any {
     ...(String(proof.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['source_commit']),
     ...(graphNodeFresh(bundle, 'cache_reuse_proof') ? [] : ['proof_node_fresh']),
     ...(asList(proof.generated_from).length > 0 ? [] : ['generated_from']),
+    ...(generatedFrom.includes('data/cache-ledger.json') || generatedFrom.includes('cache-ledger.json') ? [] : ['generated_from_cache_ledger']),
     ...(cacheLedgerValidation.valid ? [] : ['cache_ledger']),
     ...(Number(proof.cache_hits || 0) > 0 ? [] : ['cache_hits']),
     ...(hitEntries.length > 0 ? [] : ['cache_hit_entries']),
@@ -616,6 +637,18 @@ function validateCacheReuseProof(bundle: any): any {
     return !!key && !!path && !!hash && key === sha1Short(`${bundle.analysis_run?.analysis_run_id || ''}|${bundle.analysis_run?.source_commit || ''}|${requestHash}|${path}|${hash}`, 20);
   });
   if (!keysValid) missing.push('cache_entry_keys');
+  const proofEntriesMatchLedger = hitEntries.length > 0 && hitEntries.every((entry: any) => {
+    const key = String(entry?.cache_key || entry?.key || '').trim();
+    const path = String(entry?.artifact_path || entry?.path || '').trim();
+    const hash = String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim();
+    return ledgerEntries.some((row: any) =>
+      (row?.hit === true || row?.cache_hit === true)
+      && String(row?.cache_key || row?.key || '').trim() === key
+      && String(row?.artifact_path || row?.path || '').trim() === path
+      && String(row?.artifact_hash || row?.source_hash || row?.content_hash || '').trim() === hash
+    );
+  });
+  if (!proofEntriesMatchLedger) missing.push('cache_entries_match_cache_ledger');
   return {
     valid: missing.length === 0,
     missing,
