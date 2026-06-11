@@ -25,6 +25,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify LLM authority boundary
+        run: npm run verify:llm-boundary
+
       - name: Verify demo regression suite
         run: npm run verify:demo
 
