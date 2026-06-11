@@ -10,6 +10,16 @@ Use the cognianalysis skill.
 
 In other agent harnesses, read this file as the project instruction file and execute the same workflow below.
 
+## Post-Push Review Loop
+
+For code or agent-behavior changes that are intended to land:
+
+- Verify locally first, then commit and push to GitHub `main` unless the user explicitly asks for another branch or no publish.
+- After each push, ask the live ChatGPT/code-review coworker to review the pushed commit or diff using ChatGPT 5.5 Pro Extended when that model is available.
+- Treat the live review as an external reviewer, not as proof by itself. Implement actionable feedback, verify locally, commit and push again, then request another live review.
+- Do not stop on the first approval, `NO_CHANGES`, or equivalent stop event. Ask for one focused recheck for missed improvements, regressions, stop-event mistakes and uncovered edge cases.
+- Stop only after that recheck also finds no actionable improvements. If the live ChatGPT review path or requested model is unavailable, report that limitation instead of pretending the review happened.
+
 ## Rules
 
 - Keep production source files read-only unless the user explicitly asks for changes.
