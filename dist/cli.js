@@ -535,6 +535,24 @@ function analysisScopeChanged(analysis, request) {
     }
     return false;
 }
+function argsWithRequestScope(args, request) {
+    const scoped = [];
+    for (let i = 0; i < args.length; i += 1) {
+        const arg = args[i];
+        if (arg === '--scope' || arg === '--scope-files') {
+            i += 1;
+            continue;
+        }
+        scoped.push(arg);
+    }
+    const requested = request?.analysis_scope_request || {};
+    const requestedMode = String(requested.mode || 'complete');
+    scoped.push('--scope', requestedMode);
+    if (requestedMode !== 'complete' && Number(requested.scope_files || 0) > 0) {
+        scoped.push('--scope-files', String(Number(requested.scope_files)));
+    }
+    return scoped;
+}
 function writeProductAnalysisRequest(repo, analysis, args) {
     const requestPath = utils_1.Path.join(analysis, 'data', 'product-analysis-request.json');
     const previous = (0, utils_1.loadJson)(requestPath, null);
@@ -579,7 +597,7 @@ function cmdAnalyze(args) {
     const scopeChanged = analysisScopeChanged(analysis, request);
     if (scopeChanged) {
         console.log('Cognianalysis analyze: requested scope differs from existing analysis; rebuilding repository index and task guide.');
-        const rc = cmdPrepare(args);
+        const rc = cmdPrepare(argsWithRequestScope(args, request));
         if (rc !== 0)
             return rc;
     }
