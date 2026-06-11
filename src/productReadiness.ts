@@ -17,6 +17,15 @@ interface ProductReadinessCheck {
   missing?: string;
 }
 
+const TRACE_MATCHERS: Record<string, { refs: string[]; labels: string[] }> = {
+  code: { refs: ['required_levels.code_analysis'], labels: ['code analysis'] },
+  process: { refs: ['required_levels.process_analysis'], labels: ['process analysis'] },
+  refactoring: { refs: ['required_levels.refactoring_target_architecture'], labels: ['refactoring target architecture'] },
+  functional: { refs: ['required_views.functional_view'], labels: ['functional view'] },
+  technical: { refs: ['required_views.technical_view'], labels: ['technical view'] },
+  security: { refs: [], labels: ['security', 'security assessment', 'security coverage'] }
+};
+
 function asList(value: any): any[] {
   if (value === null || value === undefined) return [];
   return Array.isArray(value) ? value : [value];
@@ -28,9 +37,19 @@ function traceStatus(bundle: any, needle: string): string {
 }
 
 function traceRow(bundle: any, needle: string): any {
-  const lower = needle.toLowerCase();
+  const matcher = TRACE_MATCHERS[needle] || { refs: [], labels: [needle] };
   const rows = asList(bundle?.analysis_document_requirements_trace_contract?.requirements);
-  return rows.find((item: any) => String(item.label || '').toLowerCase().includes(lower));
+  const byRef = rows.find((item: any) => asList(item?.goal_contract_refs)
+    .some((ref: any) => matcher.refs.includes(String(ref || ''))));
+  if (byRef) return byRef;
+  return rows.find((item: any) => {
+    const label = normalizeTraceLabel(item?.label || item?.requirement);
+    return matcher.labels.some(expected => label === normalizeTraceLabel(expected));
+  });
+}
+
+function normalizeTraceLabel(value: any): string {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
 
 function hasReportBlock(bundle: any, type: string): boolean {

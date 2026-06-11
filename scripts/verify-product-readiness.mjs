@@ -150,6 +150,16 @@ function missingIds(result) {
 {
   const bundle = baseBundle();
   bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Functional View')
+    .concat(trace('Non-functional Quality', 'covered', [ev]));
+  bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'functional');
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('functional_reverse_engineering'), 'non-functional trace must not satisfy functional_reverse_engineering');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
     .filter(item => item.label !== 'Technical View')
     .concat(trace('Technical View', 'open', []));
   bundle.analysis_document.sections = [{ id: 'technical', blocks: [{ type: 'boundary_map' }] }];
