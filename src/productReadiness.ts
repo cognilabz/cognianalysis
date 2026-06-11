@@ -5,6 +5,8 @@ export interface ProductReadinessMarketProof {
   passedGoldenRepos?: number;
   totalGoldenRepos?: number;
   baselineAggregate?: any;
+  goldenProofReady?: boolean;
+  baselineProofReady?: boolean;
   strictReady?: boolean;
   strictFailures?: string[];
 }
@@ -194,10 +196,11 @@ export function computeProductReadiness(
     && Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0) === 0
     && unsupportedMajorClaimCount(bundle) === 0
     && asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length === 0;
-  const benchmarkReady = Number(marketProof.passedGoldenRepos || 0) >= 5
+  const benchmarkReady = marketProof.goldenProofReady === true
+    && Number(marketProof.passedGoldenRepos || 0) >= 5
     && Number(marketProof.totalGoldenRepos || 0) >= 5
     && asList(marketProof.goldenExpected).length >= 5;
-  const baselineReady = marketProof.baselineAggregate?.verdict === 'pass';
+  const baselineReady = marketProof.baselineProofReady === true;
   const simplifiedHarnessReady = bundle?.simplified_harness_contract?.complete === true;
   const orchestrationReady = bundle?.parallel_orchestration_contract?.complete === true;
   const artifactModelReady = bundle?.product_artifact_model?.model === 'thin_llm_first_harness'
@@ -215,8 +218,8 @@ export function computeProductReadiness(
     check('refactoring_modernization', 'Refactoring and modernization roadmap is covered', refactoringReady, `trace=${traceStatus(bundle, 'refactoring') || 'missing'}, roadmap=${hasEvidenceBackedReportBlock(bundle, 'roadmap')}`, 'Cover refactoring and modernization roadmap toward target architecture or tech stack.'),
     check('decision_basis', 'Decision basis and recommendations are covered', decisionReady, `executive=${bundle?.analysis_document_executive_decision_layer?.complete === true}, quality_review=${bundle?.analysis_document_quality_review?.complete === true}`, 'Complete executive decision layer, recommendations and report quality review.'),
     check('evidence_backed', 'Visible claims are evidence-backed', evidenceReady, `unsupported=${Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0)}, unsupported_major=${unsupportedMajorClaimCount(bundle)}, invalid_evidence=${asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length}`, 'Resolve unsupported claims and invalid evidence references.'),
-    check('multi_repo_benchmark', 'Representative golden benchmark proof exists', benchmarkReady, `passed=${Number(marketProof.passedGoldenRepos || 0)}/${Number(marketProof.totalGoldenRepos || 0)}, expected=${asList(marketProof.goldenExpected).length}`, 'Add and pass at least five representative golden suites.'),
-    check('baseline_comparison', 'Baseline comparison proof exists', baselineReady, String(marketProof.baselineAggregate?.verdict || 'missing'), 'Add passing raw-agent/scanner/manual baseline comparison artifacts.'),
+    check('multi_repo_benchmark', 'Representative golden benchmark proof exists', benchmarkReady, `validated=${Number(marketProof.passedGoldenRepos || 0)}/${Number(marketProof.totalGoldenRepos || 0)}, expected=${asList(marketProof.goldenExpected).length}, proof=${marketProof.goldenProofReady === true}`, 'Add and pass at least five representative golden suites with verifier-produced per-suite artifacts.'),
+    check('baseline_comparison', 'Baseline comparison proof exists', baselineReady, `aggregate=${String(marketProof.baselineAggregate?.verdict || 'missing')}, proof=${marketProof.baselineProofReady === true}`, 'Add passing raw-agent/scanner/manual baseline comparison artifacts.'),
     check('thin_artifact_model', 'Artifact model is simplified to a thin harness', artifactModelReady, String(bundle?.product_artifact_model?.model || 'missing'), 'Collapse user-facing artifacts around run, plan, facts, reviews and report.'),
     check('simplified_harness_contract', 'Workflow is proven simplified', simplifiedHarnessReady, String(bundle?.simplified_harness_contract?.complete ?? 'missing'), 'Provide a simplified harness contract and remove/hide nonessential product workflow concepts.'),
     check('parallel_orchestration', 'Parallel/caching orchestration is productized', orchestrationReady, String(bundle?.parallel_orchestration_contract?.complete ?? 'missing'), 'Implement or prove parallel worker execution, caching and fast orchestration as the core path.')

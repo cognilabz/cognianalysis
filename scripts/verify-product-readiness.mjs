@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { computeProductReadiness } from '../dist/productReadiness.js';
+import { marketProofStatusForRoot } from '../dist/marketProof.js';
 
 const ev = { path: 'src/example.ts', line: 1 };
 const evRef = 'src/example.ts:1';
@@ -8,9 +12,16 @@ const marketProof = {
   passedGoldenRepos: 5,
   totalGoldenRepos: 5,
   baselineAggregate: { verdict: 'pass' },
+  goldenProofReady: true,
+  baselineProofReady: true,
   strictReady: true,
   strictFailures: []
 };
+
+function writeJson(file, value) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
+}
 
 function trace(label, status = 'covered', evidence = [ev]) {
   return { label, status, evidence };
@@ -88,6 +99,107 @@ function missingIds(result) {
   const result = readiness(baseBundle());
   assert.equal(result.ready, true, 'complete synthetic bundle should satisfy product readiness');
   assert.equal(result.verdict, 'PRODUCT_READY');
+}
+
+{
+  const forgedMarketProof = {
+    goldenExpected: ['api', 'ui', 'cli', 'infra', 'library'],
+    passedGoldenRepos: 5,
+    totalGoldenRepos: 5,
+    baselineAggregate: { verdict: 'pass' },
+    goldenProofReady: false,
+    baselineProofReady: false,
+    strictReady: false,
+    strictFailures: ['forged aggregate']
+  };
+  const result = computeProductReadiness('/repo', '/repo/.analysis', baseBundle(), forgedMarketProof);
+  assert(missingIds(result).includes('multi_repo_benchmark'), 'golden aggregate counts without validated proof must not satisfy multi_repo_benchmark');
+  assert(missingIds(result).includes('baseline_comparison'), 'baseline aggregate pass without validated artifacts must not satisfy baseline_comparison');
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-market-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      total_baselines: 0,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis);
+    assert.equal(status.baselineProofReady, false, 'forged passing baseline aggregate without baseline artifacts must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('missing validated baseline artifact for raw_agent_prompt')), 'strict failures must name missing raw-agent baseline artifact');
+    assert(status.strictFailures.some(item => item.includes('missing validated baseline artifact for scanner_report')), 'strict failures must name missing scanner baseline artifact');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-golden-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) {
+      const expectedFile = `benchmarks/golden/repo-${i}.expected.json`;
+      writeJson(join(root, expectedFile), {
+        benchmark: `repo-${i}`,
+        repo: `fixtures/repo-${i}`,
+        facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+        minimums: { fact_recall: 1 }
+      });
+      results.push({
+        benchmark: `repo-${i}`,
+        repo: `fixtures/repo-${i}`,
+        expected_file: expectedFile,
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_readiness: 1,
+          report_completeness: 1,
+          invalid_evidence: 0
+        },
+        failures: []
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'golden', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'golden-suite',
+      generated_by: 'scripts/verify-golden.mjs',
+      total_repos: 5,
+      passed_repos: 5,
+      failed_repos: 0,
+      minimum_market_proof_repos: 5,
+      market_proof_ready: true,
+      verdict: 'pass',
+      results
+    });
+    const status = marketProofStatusForRoot(root, analysis);
+    assert.equal(status.goldenProofReady, false, 'forged golden aggregate without per-suite verifier artifacts must not be proof-ready');
+    assert.equal(status.passedGoldenRepos, 0, 'validated passing golden count must come from per-suite result artifacts');
+    assert(status.strictFailures.some(item => item.includes('missing verifier result artifact')), 'strict failures must name missing per-suite golden artifacts');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 }
 
 {

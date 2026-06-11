@@ -12,6 +12,7 @@ const readiness_1 = require("./readiness");
 const sourceTiers_1 = require("./sourceTiers");
 const skillWorkbenches_1 = require("./skillWorkbenches");
 const productReadiness_1 = require("./productReadiness");
+const marketProof_1 = require("./marketProof");
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive', 'complete']);
@@ -368,39 +369,7 @@ function listFilesRecursive(dir, predicate) {
     return out.sort();
 }
 function marketProofStatus(analysis) {
-    const root = packageRoot();
-    const benchmarkDoc = utils_1.Path.join(root, 'docs', 'BENCHMARK.md');
-    const goldenDir = utils_1.Path.join(root, 'benchmarks', 'golden');
-    const goldenExpected = listFilesRecursive(goldenDir, file => file.endsWith('.expected.json'));
-    const goldenScript = utils_1.Path.join(root, 'scripts', 'verify-golden.mjs');
-    const goldenAggregate = (0, utils_1.loadJson)(utils_1.Path.join(goldenDir, 'results.json'), null);
-    const result = (0, utils_1.loadJson)(utils_1.Path.join(analysis, 'data', 'golden-benchmark.json'), null);
-    const baselineScript = utils_1.Path.join(root, 'scripts', 'verify-baseline.mjs');
-    const baselineAggregate = (0, utils_1.loadJson)(utils_1.Path.join(root, 'benchmarks', 'baseline', 'results.json'), null);
-    const passedGoldenRepos = Number(goldenAggregate?.passed_repos || (result?.verdict === 'pass' ? 1 : 0));
-    const totalGoldenRepos = Number(goldenAggregate?.total_repos || goldenExpected.length);
-    const strictFailures = [
-        ...(!utils_1.FS.existsSync(benchmarkDoc) ? ['missing benchmark protocol doc'] : []),
-        ...(!utils_1.FS.existsSync(goldenScript) ? ['missing golden verifier'] : []),
-        ...(goldenExpected.length < 5 ? [`need at least 5 golden repos, found ${goldenExpected.length}`] : []),
-        ...(passedGoldenRepos < 5 ? [`need at least 5 passing golden repos, found ${passedGoldenRepos}`] : []),
-        ...(!utils_1.FS.existsSync(baselineScript) ? ['missing baseline verifier'] : []),
-        ...(baselineAggregate?.verdict !== 'pass' ? ['missing passing baseline comparison'] : [])
-    ];
-    return {
-        benchmarkDoc,
-        goldenDir,
-        goldenExpected,
-        goldenScript,
-        goldenAggregate,
-        result,
-        baselineScript,
-        baselineAggregate,
-        totalGoldenRepos,
-        passedGoldenRepos,
-        strictReady: strictFailures.length === 0,
-        strictFailures
-    };
+    return (0, marketProof_1.marketProofStatusForRoot)(packageRoot(), analysis);
 }
 function printMarketProofStatus(analysis) {
     const status = marketProofStatus(analysis);
@@ -408,7 +377,7 @@ function printMarketProofStatus(analysis) {
     console.log(`- Benchmark protocol doc: ${utils_1.FS.existsSync(status.benchmarkDoc) ? 'present' : 'missing'} · ${status.benchmarkDoc}`);
     console.log(`- Golden expected suites: ${status.goldenExpected.length} · ${status.goldenDir}`);
     console.log(`- Golden verifier: ${utils_1.FS.existsSync(status.goldenScript) ? 'present' : 'missing'} · ${status.goldenScript}`);
-    console.log(`- Golden aggregate: ${status.goldenAggregate?.verdict || 'missing'} · passed=${status.passedGoldenRepos}/${status.totalGoldenRepos}`);
+    console.log(`- Golden aggregate: ${status.goldenAggregate?.verdict || 'missing'} · validated=${status.passedGoldenRepos}/${status.totalGoldenRepos} · proof=${status.goldenProofReady ? 'ready' : 'not_ready'}`);
     if (!status.result) {
         console.log('- Golden result: missing · run npm run verify:golden');
     }
@@ -418,7 +387,7 @@ function printMarketProofStatus(analysis) {
         console.log(`- Fact recall: ${metrics.fact_recall ?? 'unknown'} · Evidence precision: ${metrics.evidence_precision ?? 'unknown'} · Unsupported claim rate: ${metrics.unsupported_claim_rate ?? 'unknown'} · Decision readiness: ${metrics.decision_readiness ?? 'unknown'}`);
     }
     console.log(`- Baseline verifier: ${utils_1.FS.existsSync(status.baselineScript) ? 'present' : 'missing'} · ${status.baselineScript}`);
-    console.log(`- Baseline aggregate: ${status.baselineAggregate?.verdict || 'missing'} · ${utils_1.Path.join(packageRoot(), 'benchmarks', 'baseline', 'results.json')}`);
+    console.log(`- Baseline aggregate: ${status.baselineAggregate?.verdict || 'missing'} · proof=${status.baselineProofReady ? 'ready' : 'not_ready'} · ${utils_1.Path.join(packageRoot(), 'benchmarks', 'baseline', 'results.json')}`);
     console.log(`- Strict market proof: ${status.strictReady ? 'ready' : 'not_ready'}`);
     for (const failure of status.strictFailures)
         console.log(`  STRICT-MISSING ${failure}`);

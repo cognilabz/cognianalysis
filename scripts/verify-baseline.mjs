@@ -1,8 +1,10 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const baselineRoot = join(root, 'benchmarks', 'baseline');
+const verifierId = 'scripts/verify-baseline.mjs';
 const verifyRoot = mkdtempSync(join(root, '.verify-tmp-baseline-'));
 const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
   ? root
@@ -21,6 +23,15 @@ function walk(dir, predicate, out = []) {
 }
 
 const REQUIRED_METRICS = ['fact_recall', 'evidence_precision', 'unsupported_claim_rate', 'decision_usefulness'];
+
+function gitCommit() {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe'
+  });
+  return result.status === 0 ? result.stdout.trim() : '';
+}
 
 function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -69,6 +80,8 @@ const failed = baselines.filter(item => item.verdict !== 'pass' || item.validati
 const result = {
   schemaVersion: '1.0',
   benchmark: 'baseline-comparison',
+  generated_by: verifierId,
+  source_commit: gitCommit(),
   generated_at: new Date().toISOString(),
   total_baselines: baselines.length,
   required_baseline_kinds: [...requiredKinds],

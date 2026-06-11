@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 const root = resolve(new URL('..', import.meta.url).pathname);
 const cli = join(root, 'dist', 'cli.js');
 const goldenRoot = join(root, 'benchmarks', 'golden');
+const verifierId = 'scripts/verify-golden.mjs';
 const verifyRoot = mkdtempSync(join(root, '.verify-tmp-golden-'));
 const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
   ? root
@@ -32,6 +33,15 @@ function run(args) {
     throw new Error(`Command failed with exit ${result.status}: cognianalysis ${args.join(' ')}\n${result.stdout || ''}\n${result.stderr || ''}`);
   }
   return result;
+}
+
+function gitCommit() {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe'
+  });
+  return result.status === 0 ? result.stdout.trim() : '';
 }
 
 function asList(value) {
@@ -107,6 +117,8 @@ function scoreExpected(expectedPath) {
   const result = {
     schemaVersion: '1.0',
     benchmark: expected.benchmark || relative(goldenRoot, expectedPath).replace(/\.expected\.json$/, ''),
+    generated_by: verifierId,
+    source_commit: sourceCommit,
     expected_file: relative(root, expectedPath),
     repo: expected.repo,
     generated_at: new Date().toISOString(),
@@ -150,11 +162,14 @@ if (!expectedFiles.length) {
   process.exit(1);
 }
 
+const sourceCommit = gitCommit();
 const results = expectedFiles.map(scoreExpected);
 const failed = results.filter(result => result.verdict !== 'pass');
 const aggregate = {
   schemaVersion: '1.0',
   benchmark: 'golden-suite',
+  generated_by: verifierId,
+  source_commit: sourceCommit,
   generated_at: new Date().toISOString(),
   total_repos: results.length,
   passed_repos: results.length - failed.length,
