@@ -63,11 +63,11 @@ function runtimeSourceFiles(dir) {
 }
 
 rmSync(join(demo, '.analysis'), { recursive: true, force: true });
-run(['prepare', demo]);
-run(['finalize', demo]);
-run(['audit-report', demo]);
+const analyzeReadyOutput = run(['analyze', demo, '--goal', 'Create a decision report for the demo onboarding service.'], { capture: true }).stdout || '';
+assert(analyzeReadyOutput.includes('Product mode complete.'), 'Analyze must be the positive product-mode entrypoint for a ready seeded workspace');
+run(['dev', 'audit-report', demo]);
 const runOutput = run(['run', demo], { capture: true }).stdout || '';
-assert(runOutput.includes('Product mode complete.'), 'Product-mode run must finalize a ready analysis workspace');
+assert(runOutput.includes('Product mode complete.'), 'Compatibility run alias must still finalize a ready analysis workspace');
 const openOutput = run(['open', demo], { capture: true }).stdout || '';
 assert(openOutput.includes('report/index.html'), 'open command must print the rendered report path');
 const statusOutput = run(['status', demo], { capture: true }).stdout || '';
@@ -78,13 +78,16 @@ assert(statusOutput.includes('Executive decision layer complete'), 'status comma
 assert(statusOutput.includes('Consistency review complete'), 'status command must include consistency review state');
 assert(statusOutput.includes('Open questions structured'), 'status command must include structured open-question state');
 assert(statusOutput.includes('Next action:'), 'status command must print a next action');
+assert(!statusOutput.includes('cognianalysis run'), 'Product status must not recommend the run compatibility alias');
+assert(!statusOutput.includes('cognianalysis tier-next'), 'Product status must not recommend bare tier-next outside the dev namespace');
+assert(!statusOutput.includes('cognianalysis audit-report'), 'Product status must not recommend bare audit-report outside the dev namespace');
 const repairOutput = run(['repair', demo], { capture: true }).stdout || '';
 assert(repairOutput.includes('Repair report:'), 'repair command must write a repair report');
 assert(repairOutput.includes('Broken JSON: 0'), 'repair command must report broken JSON count');
 const resumeOutput = run(['resume', demo], { capture: true }).stdout || '';
 assert(resumeOutput.includes('Detected existing analysis.'), 'resume command must detect an existing analysis');
 assert(resumeOutput.includes('Skipping: ✓ Repository indexed'), 'resume command must print completed product stages');
-const doctorOutput = run(['doctor', demo], { capture: true }).stdout || '';
+const doctorOutput = run(['dev', 'doctor', demo], { capture: true }).stdout || '';
 assert(doctorOutput.includes('Report lint:'), 'doctor command must expose report lint state');
 assert(doctorOutput.includes('Analysis scope:'), 'doctor command must expose scope state');
 assert(doctorOutput.includes('Analysis freshness:'), 'doctor command must expose staleness state');
@@ -92,18 +95,18 @@ assert(doctorOutput.includes('Executive decision layer:'), 'doctor command must 
 assert(doctorOutput.includes('Consistency review:'), 'doctor command must expose consistency review state');
 assert(doctorOutput.includes('Evidence strength:'), 'doctor command must expose evidence-strength state');
 assert(doctorOutput.includes('Open questions:'), 'doctor command must expose open-question state');
-const doctorMarketOutput = run(['doctor', demo, '--market-proof'], { capture: true }).stdout || '';
+const doctorMarketOutput = run(['dev', 'doctor', demo, '--market-proof'], { capture: true }).stdout || '';
 assert(doctorMarketOutput.includes('Market proof:'), 'doctor --market-proof must expose benchmark proof state');
-const doctorMarketStrict = run(['doctor', demo, '--market-proof', '--strict'], { capture: true, expectFailure: true });
+const doctorMarketStrict = run(['dev', 'doctor', demo, '--market-proof', '--strict'], { capture: true, expectFailure: true });
 const doctorMarketStrictOutput = `${doctorMarketStrict.stdout || ''}\n${doctorMarketStrict.stderr || ''}`;
 assert(doctorMarketStrictOutput.includes('Strict market proof: not_ready'), 'doctor --market-proof --strict must fail until multi-repo/baseline proof exists');
 assert(doctorMarketStrictOutput.includes('STRICT-MISSING'), 'strict market proof must explain missing proof dimensions');
-const auditOutput = run(['audit-report', demo], { capture: true }).stdout || '';
+const auditOutput = run(['dev', 'audit-report', demo], { capture: true }).stdout || '';
 assert(auditOutput.includes('Source inventory:'), 'Audit output must use source inventory accounting wording');
 assert(auditOutput.includes('Report quality lint: passed'), 'Audit output must expose deterministic report quality lint');
 assert(auditOutput.includes('Open questions: structured'), 'Audit output must expose structured open-question state');
 assert(!auditOutput.includes('Source coverage:'), 'Audit output must not expose source coverage as a visible verdict label');
-const coverageOutput = run(['coverage', demo], { capture: true }).stdout || '';
+const coverageOutput = run(['dev', 'coverage', demo], { capture: true }).stdout || '';
 assert(coverageOutput.includes('Source inventory accounting:'), 'Coverage output must expose source inventory accounting wording');
 assert(coverageOutput.includes('Tier 1 task backlog:'), 'Coverage output must expose Tier 1 task backlog wording');
 assert(!coverageOutput.includes('Source coverage:'), 'Coverage output must not expose source coverage as a visible verdict label');
@@ -153,6 +156,7 @@ const helpOutput = run(['--help'], { capture: true }).stdout || '';
 assert(helpOutput.includes('analyze [repo]'), 'CLI help must expose product-mode analyze');
 assert(helpOutput.includes('--mode brief|blueprint|deep-dive'), 'CLI help must expose product analysis modes');
 assert(helpOutput.includes('--goal text'), 'CLI help must expose goal-first product input');
+assert(helpOutput.includes('--flow name') && helpOutput.includes('--module path') && helpOutput.includes('--api name'), 'CLI help must expose deep-dive target flags');
 assert(helpOutput.includes('resume [repo]'), 'CLI help must expose product-mode resume');
 assert(helpOutput.includes('dev prepare [repo]'), 'CLI help must expose internal prepare under dev namespace');
 assert(helpOutput.includes('--scope complete|critical-path|representative'), 'CLI help must expose deliberate scope modes');
@@ -166,7 +170,7 @@ const scopedTarget = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-scope-'));
 const scopedRepo = join(scopedTarget, 'demo-repo');
 cpSync(demo, scopedRepo, { recursive: true });
 rmSync(join(scopedRepo, '.analysis'), { recursive: true, force: true });
-run(['prepare', scopedRepo, '--scope', 'representative', '--scope-files', '5']);
+run(['analyze', scopedRepo, '--scope', 'representative', '--scope-files', '5', '--no-seed', '--no-html']);
 const scopedAnalysisScope = JSON.parse(readFileSync(join(scopedRepo, '.analysis', 'data', 'analysis-scope.json'), 'utf8'));
 assert(scopedAnalysisScope.mode === 'representative', `Scoped prepare must persist representative mode, got ${scopedAnalysisScope.mode}`);
 assert(scopedAnalysisScope.selected_files === 5, `Scoped prepare must select requested file count, got ${scopedAnalysisScope.selected_files}`);
@@ -252,13 +256,13 @@ assert(bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_f
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_analysis_strategy' && stage.semantic_authority === true), 'Demo pipeline must include an LLM-authored analysis strategy stage');
 assert(bundle.analysis_pipeline?.stages?.some(stage => stage.id === 'llm_skill_workbench_reviews' && stage.semantic_authority === true), 'Demo pipeline must include LLM-planned skill workbench reviews');
 assert(bundle.semantic_authority?.analysis_pipeline_contract_complete === true, 'Demo semantic authority must expose the completed analysis pipeline contract');
-for (const command of ['analyze', 'status', 'open', 'resume', 'repair']) {
+for (const command of ['analyze', 'status', 'open', 'resume', 'repair', 'init-harness', 'init-codex', 'mcp']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }
-for (const command of ['dev prepare', 'dev finalize', 'dev audit-report', 'dev tier-status', 'dev tier-next']) {
+for (const command of ['dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
   assert(bundle.tooling?.internal_cli_commands?.includes(command), `Demo tooling contract must expose internal dev command: ${command}`);
 }
-for (const command of ['run', 'prepare', 'finalize']) {
+for (const command of ['run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio']) {
   assert(bundle.tooling?.compatibility_cli_commands?.includes(command), `Demo tooling contract must preserve compatibility command: ${command}`);
 }
 assert(bundle.tooling?.product_mode_available === true, 'Demo tooling contract must expose product mode availability');
@@ -459,9 +463,9 @@ assert(bundle.source_tier_coverage?.missing_tier1_files === 0, 'Demo must not mi
 assert(bundle.source_tier_coverage?.invalid_file_cards === 0, 'Demo Tier 1 file cards must be structurally valid');
 assert(bundle.source_tier_backlog?.complete === true, 'Demo bundle must expose complete Tier 1 task backlog');
 assert(demoSourceTierBacklog.complete === true, 'Demo must write complete source-tier-backlog.json');
-const tierStatusOutput = run(['tier-status', demo, '--limit', '2'], { capture: true }).stdout || '';
+const tierStatusOutput = run(['dev', 'tier-status', demo, '--limit', '2'], { capture: true }).stdout || '';
 assert(tierStatusOutput.includes('Tier 1 execution backlog: complete'), 'tier-status must report complete backlog for demo');
-const tierNextOutput = run(['tier-next', demo, '--limit', '1', '--max-chars', '200'], { capture: true }).stdout || '';
+const tierNextOutput = run(['dev', 'tier-next', demo, '--limit', '1', '--max-chars', '200'], { capture: true }).stdout || '';
 assert(tierNextOutput.includes('Prepared 0 Tier 1 source contexts'), 'tier-next must not select tasks when demo Tier 1 backlog is complete');
 const cliSource = readFileSync(join(root, 'src', 'cli.ts'), 'utf8');
 assert(!cliSource.includes('tier-run-openai'), 'Cognianalysis must not expose a direct LLM API runner; Codex executes Tier 1 workpacks');
@@ -561,7 +565,7 @@ try {
   assert(existsSync(planPath), 'Positive demo setup did not produce detail-agent-plan.json');
   rmSync(planPath);
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('missing required pre-final Codex-authored detail-agent plan artifact'), 'Missing-plan audit did not fail for the required reason');
   assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Missing-plan audit did not block final synthesis readiness');
@@ -577,7 +581,7 @@ try {
   assert(existsSync(blockPath), 'Positive demo setup did not produce flows-mermaid.json');
   rmSync(blockPath);
 
-  const positive = run(['audit-report', tempDemo], { capture: true });
+  const positive = run(['dev', 'audit-report', tempDemo], { capture: true });
   const output = `${positive.stdout || ''}\n${positive.stderr || ''}`;
   assert(output.includes('Report audit: passed'), 'Missing optional capability-template output must not fail final readiness');
   const refreshedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
@@ -595,7 +599,7 @@ try {
   assert(existsSync(skillReviewPath), 'Positive demo setup did not produce flow-mermaid-analysis skill review');
   rmSync(skillReviewPath);
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-planned skill workbench execution incomplete'), 'Missing skill-review audit did not fail the Codex-planned skill workbench contract');
   assert(output.includes('Skill workbenches: partial'), 'Missing skill-review audit did not surface partial skill workbench execution');
@@ -613,7 +617,7 @@ try {
   delete document.analysis_document.skill_workbench_synthesis;
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('skill-workbench synthesis stale'), 'Missing skill-workbench synthesis audit did not fail final report freshness');
   assert(output.includes('Skill workbench synthesis: stale'), 'Missing skill-workbench synthesis audit did not surface stale synthesis status');
@@ -631,7 +635,7 @@ try {
   delete document.analysis_document.report_quality_review;
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-authored report quality review artifact incomplete'), 'Missing quality-review audit did not fail for the required reason');
   assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Missing quality-review audit did not block final synthesis readiness');
@@ -653,11 +657,11 @@ try {
   ];
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-authored report quality review verdict is not decision_ready: partial'), 'Partial Codex-authored quality verdict did not control final readiness');
   assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Partial Codex-authored quality verdict did not block final synthesis readiness');
-  const finalizeNegative = run(['finalize', tempDemo], { capture: true, expectFailure: true });
+  const finalizeNegative = run(['dev', 'finalize', tempDemo], { capture: true, expectFailure: true });
   const finalizeOutput = `${finalizeNegative.stdout || ''}\n${finalizeNegative.stderr || ''}`;
   assert(finalizeOutput.includes('Final Codex-authored analysis readiness: partial'), 'Finalize did not surface partial Codex-authored analysis readiness');
   assert(finalizeOutput.includes('Codex-authored report quality review verdict is not decision_ready: partial'), 'Finalize did not honor the Codex-authored quality verdict');
@@ -675,7 +679,7 @@ try {
   delete document.analysis_document.report_quality_review.partial_requirement_rationale;
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-authored report quality review artifact incomplete'), 'Missing partial rationale audit did not fail the Codex-authored report-quality contract');
   assert(output.includes('partial_requirement_rationale'), 'Missing partial rationale audit did not name the missing LLM rationale');
@@ -693,7 +697,7 @@ try {
   delete document.analysis_document.requirements_trace;
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-authored requirements trace contract incomplete'), 'Missing requirements trace audit did not fail the Codex-authored trace contract');
   assert(!output.includes('target capability context missing/partial'), 'Target capability context must not be the semantic readiness fail-gate');
@@ -720,7 +724,7 @@ try {
   completeness.analysis_coverage.deferred_files.push({ path: globPath, reason: 'Glob must not count as an included source-inventory file.' });
   writeFileSync(completenessPath, JSON.stringify(completeness, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('source inventory accounting incomplete'), 'Invalid analysis_coverage entries did not fail source inventory accounting');
   assert(output.includes('invalid coverage items'), 'Invalid analysis_coverage failure did not name invalid coverage items');
@@ -741,7 +745,7 @@ try {
   delete plan.detail_agent_plan.no_detail_reviews_needed;
   writeFileSync(planPath, JSON.stringify(plan, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('source-family detail review coverage missing_detail_review_decision'), 'Missing detail-review decision audit did not block the Codex planning contract');
   assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
@@ -765,7 +769,7 @@ try {
   plan.detail_agent_plan.no_detail_reviews_needed = true;
   writeFileSync(planPath, JSON.stringify(plan, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('source-family detail review coverage unexpected_detail_reviews'), 'Unexpected detail review audit did not fail the Codex-planned detail review contract');
   assert(output.includes('final Codex-authored report is not synthesized after completed detail reviews'), 'Unexpected detail review audit did not block final synthesis readiness');
@@ -786,7 +790,7 @@ try {
   });
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('Codex-authored goal trace reference contract incomplete'), 'Missing goal refs audit did not fail the explicit Codex-authored goal trace contract');
   assert(output.includes('Goal trace references: partial'), 'Missing goal refs audit did not show partial explicit goal trace references');
@@ -808,7 +812,7 @@ try {
   });
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const negative = run(['audit-report', tempDemo], { capture: true, expectFailure: true });
+  const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
   assert(output.includes('analysis document component contract incomplete'), 'Empty Codex-authored report block did not block the renderer component contract');
   assert(output.includes('block_render_content_contract'), 'Empty Codex-authored report block contract output did not name the render-content contract');
@@ -831,8 +835,8 @@ try {
     technical_drilldown: 'The technical drilldown follows the REST controller, onboarding service and KYC client evidence.'
   });
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
-  run(['finalize', tempDemo]);
-  run(['audit-report', tempDemo]);
+  run(['dev', 'finalize', tempDemo]);
+  run(['dev', 'audit-report', tempDemo]);
   const html = readFileSync(join(tempDemo, '.analysis', 'report', 'index.html'), 'utf8');
   assert(html.includes('Business needs a controlled onboarding decision before account activation.'), 'Business-need narrative field did not render');
   assert(html.includes('Operations uses the flow to validate, accept and track a customer onboarding request.'), 'Business-use narrative field did not render');
@@ -877,8 +881,8 @@ try {
     }
   }
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
-  run(['finalize', tempDemo]);
-  run(['audit-report', tempDemo]);
+  run(['dev', 'finalize', tempDemo]);
+  run(['dev', 'audit-report', tempDemo]);
   const html = readFileSync(join(tempDemo, '.analysis', 'report', 'index.html'), 'utf8');
   for (const label of [
     'Customer-facing ingress',
@@ -909,7 +913,7 @@ try {
   writeFileSync(join(tempDemo, '.analysis', 'data', 'report-component-library.json'), JSON.stringify({ library_kind: 'stale_component_contract' }, null, 2) + '\n');
   writeFileSync(join(tempDemo, '.analysis', 'data', 'analysis-skill-catalog.json'), JSON.stringify({ catalog_kind: 'stale_skill_catalog' }, null, 2) + '\n');
   writeFileSync(join(tempDemo, '.analysis', 'analysis-pipeline.json'), JSON.stringify({ pipeline_kind: 'stale_pipeline' }, null, 2) + '\n');
-  run(['finalize', tempDemo]);
+  run(['dev', 'finalize', tempDemo]);
   const refreshedGoal = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'analysis-goal-contract.json'), 'utf8'));
   const refreshedLibrary = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'report-component-library.json'), 'utf8'));
   const refreshedCatalog = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'analysis-skill-catalog.json'), 'utf8'));
@@ -932,7 +936,7 @@ try {
   const core = JSON.parse(readFileSync(corePath, 'utf8'));
   delete core.assessment.repository_wide_view;
   writeFileSync(corePath, JSON.stringify(core, null, 2) + '\n');
-  run(['aggregate', tempDemo]);
+  run(['dev', 'aggregate', tempDemo]);
   const modifiedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
   const row = (modifiedBundle.target_artifact_contract_coverage || modifiedBundle.target_coverage || []).find(item => item.id === 'whole-repository-documentation');
   assert(row?.output_status === 'not_scored', 'Missing concrete repository_wide_view must not create a deterministic target-row status');
@@ -962,7 +966,7 @@ try {
   }));
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const positive = run(['audit-report', tempDemo], { capture: true });
+  const positive = run(['dev', 'audit-report', tempDemo], { capture: true });
   const output = `${positive.stdout || ''}\n${positive.stderr || ''}`;
   assert(output.includes('Report audit: passed'), 'Custom LLM requirements trace labels should pass when the trace contract is structured');
   assert(output.includes('Requirements trace contract: structured'), 'Custom LLM requirements trace labels should still produce a structured trace contract');
@@ -990,7 +994,7 @@ try {
   ];
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
-  const positive = run(['audit-report', tempDemo], { capture: true });
+  const positive = run(['dev', 'audit-report', tempDemo], { capture: true });
   const output = `${positive.stdout || ''}\n${positive.stderr || ''}`;
   assert(output.includes('Report audit: passed'), 'Repo-specific LLM report-quality review vocabulary should pass');
   assert(output.includes('Report quality review: structured · decision_ready'), 'Custom LLM report-quality checks should still produce a structured LLM verdict');
@@ -1021,6 +1025,24 @@ try {
   const productRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
   assert(productRequest.mode === 'blueprint', `Analyze must persist requested product mode, got ${productRequest.mode}`);
   assert(productRequest.goal === 'Create a rebuild decision brief.', 'Analyze must persist the goal-first product request');
+  const tempTaskGuide = readFileSync(join(tempRepo, '.analysis', 'TASK.md'), 'utf8');
+  const tempStrategyTask = readFileSync(join(tempRepo, '.analysis', 'llm_tasks', '00-analysis-strategy.md'), 'utf8');
+  const tempFinalTask = readFileSync(join(tempRepo, '.analysis', 'llm_tasks', '12-analysis-document.md'), 'utf8');
+  assert(tempTaskGuide.includes('Product Analysis Request'), 'Analyze-generated TASK.md must expose the product analysis request');
+  assert(tempTaskGuide.includes('Create a rebuild decision brief.'), 'TASK.md must include the requested product goal');
+  assert(tempStrategyTask.includes('product-analysis-request.json'), 'Strategy task must tell Codex to read the product request');
+  assert(tempStrategyTask.includes('blueprint'), 'Strategy task must include the selected product mode in hints');
+  assert(tempFinalTask.includes('depth_policy'), 'Final report task must carry the product depth policy');
+  const deepDive = run(['analyze', tempRepo, '--mode', 'deep-dive', '--flow', 'onboarding', '--no-seed', '--no-html'], { capture: true });
+  assert((deepDive.stdout || '').includes('Cognianalysis analyze: mode=deep-dive'), 'Analyze must accept a targeted deep-dive mode');
+  const deepDiveRequest = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'product-analysis-request.json'), 'utf8'));
+  assert(deepDiveRequest.target?.flow === 'onboarding', 'Deep-dive analyze must persist the requested flow target');
+  const missingTarget = run(['analyze', tempRepo, '--mode', 'deep-dive', '--no-seed', '--no-html'], { capture: true, expectFailure: true });
+  assert(String(missingTarget.stderr || missingTarget.stdout || '').includes('Deep-dive mode requires --goal'), 'Deep-dive without a target or goal must fail closed');
+  const missingRepo = join(tempBoundaryRoot, 'missing-repo');
+  const missingRepoRun = run(['analyze', missingRepo, '--mode', 'brief'], { capture: true, expectFailure: true });
+  assert(String(missingRepoRun.stderr || missingRepoRun.stdout || '').includes('Repository path does not exist'), 'Analyze must reject missing repo paths before writing analysis data');
+  assert(!existsSync(missingRepo), 'Analyze must not create a missing repo directory before validation');
   assert(analyzePendingOutput.includes('00-analysis-strategy.md'), 'Analyze pending output must describe the LLM analysis strategy step');
   assert(analyzePendingOutput.includes('skill_workbench_tasks'), 'Analyze pending output must describe LLM-planned skill workbench materialization');
   assert(analyzePendingOutput.includes('capability_templates'), 'Analyze pending output must describe optional capability templates');
@@ -1028,7 +1050,7 @@ try {
   assert(analyzePendingOutput.includes('12-analysis-document.md'), 'Analyze pending output must describe final report authoring after detail reviews');
   assert(analyzePendingOutput.includes('--allow-partial'), 'Analyze pending output must describe the partial finalize step that materializes detail tasks');
   assert(!analyzePendingOutput.includes('execute .analysis/llm_tasks/*.md, write .analysis/llm/*.json'), 'Analyze pending output must not describe the old flat task workflow');
-  const preparePending = run(['prepare', tempRepo, '--no-seed'], { capture: true });
+  const preparePending = run(['dev', 'prepare', tempRepo, '--no-seed'], { capture: true });
   const preparePendingOutput = `${preparePending.stdout || ''}\n${preparePending.stderr || ''}`;
   assert(preparePendingOutput.includes('00-analysis-strategy.md'), 'Prepare output must describe the LLM analysis strategy step');
   assert(preparePendingOutput.includes('skill_workbench_tasks'), 'Prepare output must describe LLM-planned skill workbench materialization');
@@ -1036,7 +1058,7 @@ try {
   assert(preparePendingOutput.includes('11-detail-agent-plan.md'), 'Prepare output must describe the staged LLM detail-agent plan step');
   assert(preparePendingOutput.includes('12-analysis-document.md'), 'Prepare output must describe final report authoring after detail reviews');
   assert(!preparePendingOutput.includes('execute .analysis/llm_tasks/*.md, write .analysis/llm/*.json'), 'Prepare output must not describe the old flat task workflow');
-  run(['aggregate', tempRepo]);
+  run(['dev', 'aggregate', tempRepo]);
   const codeMap = JSON.parse(readFileSync(join(tempRepo, '.analysis', 'data', 'code-map.json'), 'utf8'));
   assert(!(codeMap.files || []).some(file => String(file.path || '').includes('.venvs/')), 'Code map must ignore local virtual-environment directories such as .venvs');
   const moduleNames = new Set((codeMap.modules || []).map(m => m.name));

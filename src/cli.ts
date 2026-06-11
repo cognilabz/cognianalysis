@@ -12,6 +12,28 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive']);
+const OPTION_VALUE_FLAGS = new Set([
+  '--analysis',
+  '--capsules',
+  '--capsule-chars',
+  '--decision',
+  '--flow',
+  '--goal',
+  '--harness',
+  '--limit',
+  '--max-chars',
+  '--max-file-size',
+  '--mode',
+  '--module',
+  '--out',
+  '--repos',
+  '--risk',
+  '--scope',
+  '--scope-files',
+  '--task',
+  '--title',
+  '--api'
+]);
 
 function analysisPath(repo: string, value?: string): string {
   if (value) return Path.resolve(value);
@@ -89,7 +111,7 @@ function usage(): void {
   console.log(`Cognianalysis v${VERSION} · LLM-first source-code analysis
 
 Usage:
-  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive] [--goal text] [--scope complete|critical-path|representative] [--scope-files N]
+  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} status [repo] [--analysis .analysis]
   ${CLI_NAME} open [repo] [--analysis .analysis]
   ${CLI_NAME} resume [repo] [--analysis .analysis]
@@ -119,6 +141,7 @@ function devUsage(): void {
   ${CLI_NAME} dev audit-report [repo]
   ${CLI_NAME} dev tier-status [repo]
   ${CLI_NAME} dev tier-next [repo]
+  ${CLI_NAME} dev tier-context [repo]
   ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
 
 Use ${CLI_NAME} analyze . for the normal product flow.`);
@@ -126,6 +149,20 @@ Use ${CLI_NAME} analyze . for the normal product flow.`);
 
 function stagedLlmWorkflowMessage(): string {
   return `Next step for Codex, as the active in-session LLM: author llm_tasks/00-analysis-strategy.md first, execute source_tier_tasks/*.md to create Tier 1 file cards for every included file, run ${CLI_NAME} dev finalize . --allow-partial to materialize Codex-planned skill_workbench_tasks from the strategy, execute skill_workbench_tasks into skill_reviews, optionally use capability_templates/*.md only when the Codex-authored strategy or skill reviews need that output shape, then author 11-detail-agent-plan.md, run ${CLI_NAME} dev finalize . --allow-partial to materialize detail_tasks, execute detail_tasks, then author 12-analysis-document.md and run ${CLI_NAME} analyze . plus ${CLI_NAME} dev audit-report .`;
+}
+
+function positionalArgs(args: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const value = args[i];
+    if (OPTION_VALUE_FLAGS.has(value)) {
+      i += 1;
+      continue;
+    }
+    if (value.startsWith('--')) continue;
+    out.push(value);
+  }
+  return out;
 }
 
 const REQUIRED_WORKFLOW_ARTIFACTS = [
@@ -215,12 +252,12 @@ function productStatusRows(analysis: string, bundle: any | null, statuses: any[]
 }
 
 function nextProductAction(repo: string, analysis: string, bundle: any | null, statuses: any[]): string {
-  if (!FS.existsSync(analysis) || !FS.existsSync(Path.join(analysis, 'data', 'code-map.json'))) return `Run ${CLI_NAME} run ${repo}`;
-  if (bundle?.analysis_staleness?.stale === true) return `Repository changed after analysis; rerun ${CLI_NAME} run ${repo} to refresh the decision report.`;
+  if (!FS.existsSync(analysis) || !FS.existsSync(Path.join(analysis, 'data', 'code-map.json'))) return `Run ${CLI_NAME} analyze ${repo}`;
+  if (bundle?.analysis_staleness?.stale === true) return `Repository changed after analysis; rerun ${CLI_NAME} analyze ${repo} to refresh the decision report.`;
   if (!FS.existsSync(Path.join(analysis, 'TASK.md'))) return `Run ${CLI_NAME} repair ${repo} to rebuild the task guide.`;
   const missingWorkflow = statuses.find(row => !row.ready);
   if (missingWorkflow?.path === 'llm/analysis-strategy.json') return 'Open .analysis/TASK.md and complete "Analysis Strategy".';
-  if (bundle?.source_tier_coverage?.complete !== true) return `Run ${CLI_NAME} tier-next ${repo} --limit 1, complete the next Tier 1 workpack, then rerun status.`;
+  if (bundle?.source_tier_coverage?.complete !== true) return `Run ${CLI_NAME} dev tier-next ${repo} --limit 1, complete the next Tier 1 workpack, then rerun status.`;
   if (missingWorkflow?.path === 'llm/detail-agent-plan.json') return 'Open .analysis/TASK.md and complete "Detail Agent Plan".';
   if (missingWorkflow?.path === 'llm/analysis-document.json') return 'Open .analysis/TASK.md and complete "Final Analysis Document".';
   if (bundle?.analysis_document_executive_decision_layer?.complete !== true) return 'Update the final report with a visible executive decision section and executive_decision_basis.';
@@ -371,7 +408,7 @@ function printProductNextStep(analysis: string, statuses: any[]): void {
 }
 
 function repoArg(args: string[], fallback = '.'): string {
-  const first = args.find(a => !a.startsWith('--'));
+  const first = positionalArgs(args)[0];
   return Path.resolve(first || fallback);
 }
 
@@ -415,11 +452,23 @@ function productAnalysisRequest(args: string[]): any {
   const mode = String(argValue(args, '--mode', 'brief') || 'brief').trim().toLowerCase();
   if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint or deep-dive.`);
   const goal = String(argValue(args, '--goal', '') || '').trim();
+  const target = {
+    flow: String(argValue(args, '--flow', '') || '').trim(),
+    module: String(argValue(args, '--module', '') || '').trim(),
+    api: String(argValue(args, '--api', '') || '').trim(),
+    risk: String(argValue(args, '--risk', '') || '').trim(),
+    decision: String(argValue(args, '--decision', '') || '').trim()
+  };
+  const hasTarget = Object.values(target).some(Boolean);
+  if (mode === 'deep-dive' && !hasTarget && !goal) {
+    throw new Error('Deep-dive mode requires --goal or at least one target flag: --flow, --module, --api, --risk or --decision.');
+  }
   return {
     contract_kind: 'product_analysis_request',
     entrypoint: 'analyze',
     mode,
     goal,
+    target,
     generated_at: new Date().toISOString(),
     public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
     internal_work_area: '.analysis',
@@ -443,8 +492,11 @@ function writeProductAnalysisRequest(repo: string, analysis: string, args: strin
 
 function cmdAnalyze(args: string[]): number {
   const repo = repoArg(args);
+  if (!FS.existsSync(repo) || !FS.statSync(repo).isDirectory()) throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const request = writeProductAnalysisRequest(repo, analysis, args);
+  const codeMapPath = Path.join(analysis, 'data', 'code-map.json');
+  if (FS.existsSync(codeMapPath)) writeLlmTasks(analysis, loadJson<any>(codeMapPath, {}));
   console.log(`Cognianalysis analyze: mode=${request.mode}${request.goal ? ` · goal=${request.goal}` : ''}`);
   return cmdRun(args);
 }
@@ -496,7 +548,7 @@ function cmdOpen(args: string[]): number {
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   if (!FS.existsSync(analysis)) {
     console.log(`No analysis workspace found at ${analysis}`);
-    console.log(`Run ${CLI_NAME} run ${repo}`);
+    console.log(`Run ${CLI_NAME} analyze ${repo}`);
     return 1;
   }
   let report = reportPathForAnalysis(analysis);
@@ -506,7 +558,7 @@ function cmdOpen(args: string[]): number {
   }
   if (!FS.existsSync(report)) {
     console.log(`No rendered report found at ${report}`);
-    console.log(`Run ${CLI_NAME} run ${repo}`);
+    console.log(`Run ${CLI_NAME} analyze ${repo}`);
     return 1;
   }
   console.log(`Report: ${report}`);
@@ -591,7 +643,7 @@ function cmdDoctor(args: string[]): number {
   console.log(`Analysis: ${analysis}`);
   if (!FS.existsSync(analysis)) {
     console.log('Workspace: missing');
-    console.log(`Next action: ${CLI_NAME} run ${repo}`);
+    console.log(`Next action: ${CLI_NAME} analyze ${repo}`);
     return 0;
   }
   console.log(`Workspace: present`);
@@ -901,8 +953,8 @@ const KNOWN_HARNESSES = ['codex', 'claude', 'cursor', 'windsurf', 'copilot', 'ai
 type HarnessName = typeof KNOWN_HARNESSES[number];
 
 function targetArg(args: string[], fallback = '.'): string {
-  const first = args[0];
-  return Path.resolve(first && !first.startsWith('--') ? first : fallback);
+  const first = positionalArgs(args)[0];
+  return Path.resolve(first || fallback);
 }
 
 function selectedHarnesses(args: string[], fallback: HarnessName[] = [...KNOWN_HARNESSES]): HarnessName[] {

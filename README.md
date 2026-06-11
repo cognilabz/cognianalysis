@@ -88,7 +88,7 @@ The goal is not only documentation generation. The pack is designed to produce a
 | Non-authoritative code map | Signals are broad navigation hints, never final entrypoint facts |
 | Whole-codebase source inventory accounting | `source-inventory.json`, `analysis_coverage`, embedded audit data and the `cognianalysis dev finalize` inventory-accounting contract. Deferred files stay visible as gaps and do not count as completed analysis. |
 | Tiered whole-codebase analysis | `.analysis/source_tier_tasks/*.md` and `.analysis/source_tiers/*.json` create mandatory Tier 1 LLM-authored file cards for every included file before Tier 2-4 module, behavior, quality and refactoring depth is selected. |
-| Deliberate large-repo scope strategy | `run`/`prepare --scope complete|critical-path|representative`, `--scope-files N` and `.analysis/data/analysis-scope.json`; non-complete scope is disclosed with deferred-file count and confidence impact instead of pretending to be whole-repo complete. |
+| Deliberate large-repo scope strategy | `analyze`/`dev prepare --scope complete|critical-path|representative`, `--scope-files N` and `.analysis/data/analysis-scope.json`; non-complete scope is disclosed with deferred-file count and confidence impact instead of pretending to be whole-repo complete. |
 | LLM-planned skill workbenches | `analysis_strategy.skill_application_plan[]` is materialized into `.analysis/skill_workbench_tasks/*.md`; executed `.analysis/skill_reviews/*.json` are synthesized by the final report |
 | Whole-repository overview first | LLM-planned skill workbenches, Tier 1 file cards, source-family inventory context and LLM-authored source-family sections |
 | LLM-authored visible report | `12-analysis-document.md`, required workflow artifacts, executed skill/detail reviews, `analysis_document.sections[]`, `analysis_document.report_quality_review`, component renderer, `report_mode.llm_authored` and `report_mode.final_synthesis_ready` |
@@ -127,7 +127,7 @@ The goal is not only documentation generation. The pack is designed to produce a
 | Tool alternative positioning | LLM-authored positioning against consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, with automation strengths and handoff boundaries |
 | Evidence-first governance | `cognianalysis dev finalize`, embedded evidence index and validated file:line references |
 | Interactive static HTML report | `cognianalysis dev finalize`, LLM-authored sections rendered through the stable component library |
-| Portfolio mode | `cognianalysis portfolio --repos repos.txt --out portfolio-analysis` |
+| Portfolio mode | `cognianalysis dev portfolio --repos repos.txt --out portfolio-analysis` |
 | Harness portability | `init-harness`, portable `AGENTS.md`, tool-native instruction files, CLI and optional `cognianalysis mcp` bridge |
 
 The target picture is represented directly in the tool as unscored LLM trace context. `cognianalysis dev finalize .` writes the target rows into the embedded audit data so the LLM-authored `requirements_trace` can reference the original goal without the CLI deciding whether any target is satisfied.
@@ -414,7 +414,7 @@ cognianalysis repair .        # rebuild task/manifests and report malformed or s
 cognianalysis open .          # print the rendered report path and browser URL
 cognianalysis init-harness .  # install AGENTS.md, .agents/skills and common harness adapter files
 cognianalysis init-codex .    # compatibility alias for Codex-only assets
-cognianalysis mcp             # optional stdio-style bridge for prepare/finalize/audit-report contract commands
+cognianalysis mcp             # optional stdio-style bridge for prepare/finalize/audit-report contract tools
 ```
 
 Debug/CI commands:
@@ -460,7 +460,7 @@ npm run verify:baseline
 Prepare report workspaces for many local repositories:
 
 ```bash
-cognianalysis portfolio --repos repos.txt --out portfolio-analysis
+cognianalysis dev portfolio --repos repos.txt --out portfolio-analysis
 ```
 
 `repos.txt` contains one local repository path per line.

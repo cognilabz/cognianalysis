@@ -276,8 +276,8 @@ export function loadBundle(analysisDir: string): any {
 function computeToolingCapabilities(): any {
   return {
     public_cli_commands: ['analyze', 'status', 'open', 'resume', 'repair', 'init-harness', 'init-codex', 'mcp'],
-    internal_cli_commands: ['dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev doctor', 'dev portfolio'],
-    compatibility_cli_commands: ['run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'doctor', 'portfolio'],
+    internal_cli_commands: ['dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
+    compatibility_cli_commands: ['run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio'],
     portfolio_mode_available: true,
     harness_portability_available: true,
     product_mode_available: true,

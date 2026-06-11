@@ -48,6 +48,7 @@ function writeLlmTasks(analysisDir, codeMap) {
     const goalContract = (0, analysisGoal_1.analysisGoalContractArtifact)();
     const toolPositioningReferences = (0, toolPositioningReferences_1.toolPositioningReferencesArtifact)();
     const tierManifest = (0, sourceTiers_1.writeSourceTierTasks)(analysisDir, codeMap);
+    const productRequest = (0, utils_1.loadJson)(utils_2.Path.join(dataDir, 'product-analysis-request.json'), null);
     const expectedTaskFiles = new Set(WORKFLOW_TASKS.map(task => task.filename));
     for (const file of utils_1.FS.readdirSync(tasksDir).filter((name) => name.endsWith('.md'))) {
         if (!expectedTaskFiles.has(file))
@@ -58,7 +59,7 @@ function writeLlmTasks(analysisDir, codeMap) {
         if (!expectedTemplateFiles.has(file))
             utils_1.FS.unlinkSync(utils_2.Path.join(templatesDir, file));
     }
-    (0, utils_1.writeText)(utils_2.Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest));
+    (0, utils_1.writeText)(utils_2.Path.join(analysisDir, 'llm_instructions.md'), overview(profile, modules, signals, glossary, capsules, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest, productRequest));
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'source-family-inventory.json'), sourceFamilyInventory(codeMap));
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'analysis-goal-contract.json'), goalContract);
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'tool-positioning-references.json'), toolPositioningReferences);
@@ -67,13 +68,13 @@ function writeLlmTasks(analysisDir, codeMap) {
         utils_1.FS.unlinkSync(legacyWorkplan);
     const taskDefs = [];
     for (const task of WORKFLOW_TASKS) {
-        const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest);
+        const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest, productRequest);
         (0, utils_1.writeText)(utils_2.Path.join(tasksDir, task.filename), body);
         taskDefs.push({ id: task.id, title: task.title, task_kind: 'workflow_task', required_for_final: true, task_file: `llm_tasks/${task.filename}`, expected_output: `llm/${task.output}`, status: 'pending' });
     }
     const templateDefs = [];
     for (const task of CAPABILITY_TEMPLATES) {
-        const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest);
+        const body = taskBody(task, profile, modules, signals, capsules, glossary, artifactCandidates, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest, productRequest);
         (0, utils_1.writeText)(utils_2.Path.join(templatesDir, task.filename), body);
         templateDefs.push({ id: task.id, title: task.title, task_kind: 'capability_template', required_for_final: false, template_file: `capability_templates/${task.filename}`, suggested_output: `llm/${task.output}`, status: 'available_when_llm_strategy_selects' });
     }
@@ -90,11 +91,29 @@ function writeLlmTasks(analysisDir, codeMap) {
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'analysis-pipeline.json'), pipeline);
     (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'capability-template-manifest.json'), capabilityTemplateManifest);
     (0, utils_1.writeJson)(utils_2.Path.join(dataDir, 'capability-template-manifest.json'), capabilityTemplateManifest);
-    (0, utils_1.writeText)(utils_2.Path.join(analysisDir, 'TASK.md'), singleTaskGuide(profile, tierManifest, taskDefs, templateDefs));
-    (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first_workflow_tasks', implementation_language: 'TypeScript', single_task_file: 'TASK.md', pipeline, source_tier_tasks: tierManifest.tasks, capability_templates: templateDefs, tasks: taskDefs });
+    (0, utils_1.writeText)(utils_2.Path.join(analysisDir, 'TASK.md'), singleTaskGuide(profile, tierManifest, taskDefs, templateDefs, productRequest));
+    (0, utils_1.writeJson)(utils_2.Path.join(analysisDir, 'task-manifest.json'), { mode: 'llm_first_workflow_tasks', implementation_language: 'TypeScript', single_task_file: 'TASK.md', pipeline, product_analysis_request: stableProductRequest(productRequest), source_tier_tasks: tierManifest.tasks, capability_templates: templateDefs, tasks: taskDefs });
     return taskDefs;
 }
-function singleTaskGuide(profile, tierManifest, taskDefs, templateDefs) {
+function productRequestBlock(productRequest) {
+    if (!productRequest)
+        return `No product-analysis request has been recorded yet. When the user starts with \`cognianalysis analyze . --goal "..."\`, read \`.analysis/data/product-analysis-request.json\` and use its mode, goal, target and depth_policy to shape the strategy and final report.`;
+    const stableRequest = stableProductRequest(productRequest);
+    return `Read \`.analysis/data/product-analysis-request.json\` and use it as the user-facing product request for this run.
+
+\`\`\`json
+${JSON.stringify(stableRequest, null, 2)}
+\`\`\`
+
+The selected mode, goal, target fields and depth_policy must influence the analysis strategy, detail-agent plan and final report. Do not treat them as metadata only.`;
+}
+function stableProductRequest(productRequest) {
+    if (!productRequest)
+        return null;
+    const { generated_at: _generatedAt, repo: _repo, ...stableRequest } = productRequest;
+    return stableRequest;
+}
+function singleTaskGuide(profile, tierManifest, taskDefs, templateDefs, productRequest) {
     return `# Cognianalysis Task
 
 This is the single human-facing workpack for this repository. The detailed task files remain available for harnesses, batching and CI, but this file is the path a user should read first.
@@ -102,6 +121,10 @@ This is the single human-facing workpack for this repository. The detailed task 
 ## Goal
 
 Produce a Codex-authored LLM, decision-grade source-code analysis report for \`${profile.repo_name || 'this repository'}\`.
+
+## Product Analysis Request
+
+${productRequestBlock(productRequest)}
 
 The TypeScript CLI prepares context, validates contracts, checks evidence references and renders HTML. Codex is the in-session LLM executor and authors all semantic understanding, report structure, findings, examples, flows, recommendations and readiness verdicts. Do not call a direct LLM API or require API credentials.
 
@@ -376,7 +399,7 @@ function sourceFamilyInventory(codeMap) {
         inventory_partitions: partitions
     };
 }
-function overview(profile, modules, signals, glossary, capsules, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest) {
+function overview(profile, modules, signals, glossary, capsules, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest, productRequest) {
     return `# Cognianalysis · LLM-first Instructions
 
 This repository must be analyzed semantically by Codex as the in-session LLM executor. The generated code map is a navigation aid, not the source of final truth.
@@ -435,6 +458,10 @@ This preserves the original product objective for Codex. It is context, not a de
 \`\`\`json
 ${JSON.stringify(goalContract, null, 2)}
 \`\`\`
+
+## Product analysis request
+
+${productRequestBlock(productRequest)}
 
 ## Tiered whole-codebase analysis model
 
@@ -506,7 +533,7 @@ The full included file inventory is in \`.analysis/data/source-inventory.json\`.
 Generic templates live in \`.analysis/capability_templates/*.md\`. They are reusable prompts for common output shapes only. Do not execute all templates by default. The Codex-authored LLM analysis strategy and skill workbench findings decide whether a template output is useful for this repository.
 `;
 }
-function taskBody(task, profile, modules, signals, capsules, glossary, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest) {
+function taskBody(task, profile, modules, signals, capsules, glossary, importantDocs, componentLibrary, skillCatalog, goalContract, toolPositioningReferences, tierManifest, productRequest) {
     const isCapabilityTemplate = task.task_kind === 'capability_template';
     const hints = {
         repo: profile,
@@ -520,6 +547,7 @@ function taskBody(task, profile, modules, signals, capsules, glossary, important
         artifact_navigation_candidates: importantDocs.slice(0, 38),
         important_docs: importantDocs.slice(0, 38),
         report_component_library: componentLibrary,
+        product_analysis_request: stableProductRequest(productRequest),
         analysis_skill_catalog: skillCatalog,
         analysis_goal_contract: goalContract,
         source_tier_model: tierManifest?.model,
@@ -557,6 +585,7 @@ Read these files first:
 	- \`.analysis/skill-workbench-task-manifest.json\` when it exists
 	- all completed \`.analysis/skill_reviews/*.json\` outputs
 - \`.analysis/capability-template-manifest.json\` only as optional template context; it is not the semantic plan
+- \`.analysis/data/product-analysis-request.json\` when it exists; use mode, goal, target and depth_policy as the user-facing analysis request
 - \`.analysis/data/analysis-goal-contract.json\`
 - \`.analysis/data/tool-positioning-references.json\`
 - \`.analysis/data/navigation-artifact-candidates.json\` (or legacy \`.analysis/data/important-docs.json\`)
@@ -590,6 +619,7 @@ General rules:
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
 - When using navigation partitions, Codex must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
+- Preserve the product analysis request. The selected \`mode\`, \`goal\`, \`target\` and \`depth_policy\` from \`.analysis/data/product-analysis-request.json\` must shape the strategy, detail-agent plan and final report. If \`mode\` is \`brief\`, default to a concise decision report with a visible deep-dive backlog. If \`mode\` is \`blueprint\`, include modernization/rebuild planning. If \`mode\` is \`deep-dive\`, keep the review focused on the requested target or goal while still disclosing whole-repository context and boundaries.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
 	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.

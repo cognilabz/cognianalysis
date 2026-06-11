@@ -39,7 +39,7 @@ It must not claim "best on the market" until the same protocol covers multiple r
 Use:
 
 ```bash
-cognianalysis doctor . --market-proof --strict
+cognianalysis dev doctor . --market-proof --strict
 ```
 
 Strict market proof fails until at least five golden suites pass and baseline comparison proof is present.
