@@ -47,6 +47,14 @@ cognianalysis dev doctor . --market-proof --strict
 
 Strict `eval` combines market proof with the original-product readiness contract. It fails until at least five golden suites pass, baseline comparison proof is present, the decision-document outputs cover the entry-question feature set and the product has a proven thin artifact/orchestration model instead of only documentation or a single demo.
 
+Parallel/caching readiness is proven with:
+
+```bash
+cognianalysis dev prove-orchestration .
+```
+
+That command refuses one-workpack or stale analyses. It writes proof only after concurrent artifact-hash workers validate at least two completed source-tier workpack outputs and a deterministic cache-hit key can be derived from the current run id, source commit, product request hash, artifact path and artifact hash.
+
 ## Required Expansion
 
 Before using market-superiority language, add golden suites for at least:

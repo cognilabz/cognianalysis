@@ -69,6 +69,10 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function writeJson(file, value) {
+  writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
+}
+
 function runtimeSourceFiles(dir) {
   return readdirSync(dir)
     .flatMap(name => {
@@ -407,10 +411,62 @@ assert(fakeProofBundle.parallel_orchestration_contract?.cache_reuse_proof_valida
 rmSync(join(demo, '.analysis', 'data', 'parallel-execution-proof.json'), { force: true });
 rmSync(join(demo, '.analysis', 'data', 'cache-reuse-proof.json'), { force: true });
 run(['dev', 'aggregate', demo], { capture: true });
+const oneWorkpackProof = run(['dev', 'prove-orchestration', demo], { capture: true, expectFailure: true });
+const oneWorkpackProofOutput = `${oneWorkpackProof.stdout || ''}\n${oneWorkpackProof.stderr || ''}`;
+assert(oneWorkpackProofOutput.includes('Need at least two complete source-tier workpacks'), 'Proof command must refuse to self-certify one-workpack analyses as parallel execution');
+
+const orchestrationRepo = join(verifyRoot, 'orchestration-proof-repo');
+cpSync(demo, orchestrationRepo, { recursive: true });
+const orchestrationAnalysis = join(orchestrationRepo, '.analysis');
+const sourceTierManifestPath = join(orchestrationAnalysis, 'source-tier-task-manifest.json');
+const sourceTierDataManifestPath = join(orchestrationAnalysis, 'data', 'source-tier-task-manifest.json');
+const sourceTierManifest = JSON.parse(readFileSync(sourceTierManifestPath, 'utf8'));
+const sourceTierSeed = JSON.parse(readFileSync(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), 'utf8'));
+const sourceTierCards = sourceTierSeed.source_file_tier_review.files;
+const firstCards = sourceTierCards.slice(0, Math.ceil(sourceTierCards.length / 2));
+const secondCards = sourceTierCards.slice(Math.ceil(sourceTierCards.length / 2));
+function splitTask(base, id, cards) {
+  return {
+    ...base,
+    id,
+    task_file: `source_tier_tasks/${id}.md`,
+    expected_output: `source_tiers/${id}.json`,
+    file_count: cards.length,
+    file_paths: cards.map(card => card.path),
+    first_path: cards[0]?.path || '',
+    last_path: cards.at(-1)?.path || '',
+    status: 'pending'
+  };
+}
+function splitTierArtifact(id, cards) {
+  return {
+    ...sourceTierSeed,
+    source_file_tier_review: {
+      ...sourceTierSeed.source_file_tier_review,
+      task_id: id,
+      files: cards
+    }
+  };
+}
+sourceTierManifest.batch_size = firstCards.length;
+sourceTierManifest.task_count = 2;
+sourceTierManifest.tasks = [
+  splitTask(sourceTierManifest.tasks[0], 'source-tier-0001', firstCards),
+  splitTask(sourceTierManifest.tasks[0], 'source-tier-0002', secondCards)
+];
+writeJson(sourceTierManifestPath, sourceTierManifest);
+writeJson(sourceTierDataManifestPath, sourceTierManifest);
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
+assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
+const orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === true, `Generated orchestration proof should satisfy the contract: ${(orchestrationBundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }
-for (const command of ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
+for (const command of ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
   assert(bundle.tooling?.internal_cli_commands?.includes(command), `Demo tooling contract must expose internal dev command: ${command}`);
 }
 for (const command of ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio']) {
