@@ -553,6 +553,11 @@ function argsWithRequestScope(args, request) {
     }
     return scoped;
 }
+function argsWithPersistedRequestScope(args, analysis) {
+    const requestPath = utils_1.Path.join(analysis, 'data', 'product-analysis-request.json');
+    const request = (0, utils_1.loadJson)(requestPath, null);
+    return request ? argsWithRequestScope(args, request) : args;
+}
 function writeProductAnalysisRequest(repo, analysis, args) {
     const requestPath = utils_1.Path.join(analysis, 'data', 'product-analysis-request.json');
     const previous = (0, utils_1.loadJson)(requestPath, null);
@@ -612,7 +617,7 @@ function cmdRun(args) {
     const analysis = analysisPath(repo, (0, utils_1.argValue)(args, '--analysis'));
     const needsPrepare = !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'llm_tasks')) || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'TASK.md'));
     if (needsPrepare) {
-        const rc = cmdPrepare(args);
+        const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
         if (rc !== 0)
             return rc;
     }
@@ -696,7 +701,7 @@ function cmdRepair(args) {
         || !utils_1.FS.existsSync(utils_1.Path.join(analysis, 'source-tier-task-manifest.json'));
     if (needsPrepare) {
         console.log('Repair: rebuilding repository index, task guide and manifests.');
-        const rc = cmdPrepare(args);
+        const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
         if (rc !== 0)
             return rc;
     }

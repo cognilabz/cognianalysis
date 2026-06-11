@@ -546,6 +546,12 @@ function argsWithRequestScope(args: string[], request: any): string[] {
   return scoped;
 }
 
+function argsWithPersistedRequestScope(args: string[], analysis: string): string[] {
+  const requestPath = Path.join(analysis, 'data', 'product-analysis-request.json');
+  const request = loadJson<any | null>(requestPath, null);
+  return request ? argsWithRequestScope(args, request) : args;
+}
+
 function writeProductAnalysisRequest(repo: string, analysis: string, args: string[]): any {
   const requestPath = Path.join(analysis, 'data', 'product-analysis-request.json');
   const previous = loadJson<any | null>(requestPath, null);
@@ -602,7 +608,7 @@ function cmdRun(args: string[]): number {
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const needsPrepare = !FS.existsSync(Path.join(analysis, 'llm_tasks')) || !FS.existsSync(Path.join(analysis, 'TASK.md'));
   if (needsPrepare) {
-    const rc = cmdPrepare(args);
+    const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
     if (rc !== 0) return rc;
   }
   const statuses = workflowArtifactStatuses(analysis);
@@ -685,7 +691,7 @@ function cmdRepair(args: string[]): number {
     || !FS.existsSync(Path.join(analysis, 'source-tier-task-manifest.json'));
   if (needsPrepare) {
     console.log('Repair: rebuilding repository index, task guide and manifests.');
-    const rc = cmdPrepare(args);
+    const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
     if (rc !== 0) return rc;
   }
 
