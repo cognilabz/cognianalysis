@@ -23,10 +23,14 @@ function asList(value: any): any[] {
 }
 
 function traceStatus(bundle: any, needle: string): string {
+  const row = traceRow(bundle, needle);
+  return String(row?.status || '').toLowerCase();
+}
+
+function traceRow(bundle: any, needle: string): any {
   const lower = needle.toLowerCase();
   const rows = asList(bundle?.analysis_document_requirements_trace_contract?.requirements);
-  const row = rows.find((item: any) => String(item.label || '').toLowerCase().includes(lower));
-  return String(row?.status || '').toLowerCase();
+  return rows.find((item: any) => String(item.label || '').toLowerCase().includes(lower));
 }
 
 function hasReportBlock(bundle: any, type: string): boolean {
@@ -37,6 +41,74 @@ function hasReportBlock(bundle: any, type: string): boolean {
 
 function hasEvidenceBackedItems(bundle: any, key: string): boolean {
   return asList(bundle?.[key]).some((item: any) => asList(item?.evidence).length > 0);
+}
+
+function hasEvidence(value: any): boolean {
+  if (!value) return false;
+  if (Array.isArray(value)) return value.some(item => hasEvidence(item));
+  if (typeof value !== 'object') return false;
+  if (asList(value.evidence).length > 0) return true;
+  return Object.keys(value).some(key => key !== 'evidence' && hasEvidence(value[key]));
+}
+
+function traceCoveredWithEvidence(bundle: any, needle: string, statuses = ['covered']): boolean {
+  const row = traceRow(bundle, needle);
+  return statuses.includes(String(row?.status || '').toLowerCase()) && hasEvidence(row);
+}
+
+function evidenceBackedExamples(bundle: any): any[] {
+  const interfaces = asList(bundle?.interfaces).flatMap((item: any) => asList(item?.examples));
+  const flows = asList(bundle?.flows).flatMap((item: any) => asList(item?.examples));
+  return [
+    ...asList(bundle?.documentation?.request_response_examples),
+    ...asList(bundle?.documentation?.function_examples),
+    ...asList(bundle?.documentation?.business_logic_examples),
+    ...asList(bundle?.documentation?.openapi),
+    ...asList(bundle?.documentation?.soap),
+    ...asList(bundle?.documentation?.contract_examples),
+    ...interfaces,
+    ...flows
+  ].filter(item => hasEvidence(item));
+}
+
+function hasProcessEvidence(bundle: any): boolean {
+  const process = bundle?.process;
+  if (!process || typeof process !== 'object') return false;
+  return traceCoveredWithEvidence(bundle, 'process', ['covered', 'partial']) || hasEvidence(process);
+}
+
+function evidenceTextMatches(value: any, needles: string[]): boolean {
+  if (!value) return false;
+  if (Array.isArray(value)) return value.some(item => evidenceTextMatches(item, needles));
+  if (typeof value !== 'object') return false;
+  const text = [
+    value.id,
+    value.category,
+    value.kind,
+    value.title,
+    value.summary,
+    value.description,
+    value.intent,
+    value.recommendation
+  ].map(item => String(item || '').toLowerCase()).join(' ');
+  const selfMatches = hasEvidence(value) && needles.some(needle => text.includes(needle));
+  return selfMatches || Object.keys(value).some(key => evidenceTextMatches(value[key], needles));
+}
+
+function hasExplicitSecurityCoverage(bundle: any): boolean {
+  return traceCoveredWithEvidence(bundle, 'security', ['covered', 'partial'])
+    || evidenceTextMatches(bundle?.quality, ['security', 'vulnerab', 'auth'])
+    || evidenceTextMatches(bundle?.findings, ['security', 'vulnerab', 'auth'])
+    || evidenceTextMatches(bundle?.analysis_document?.sections, ['security', 'vulnerab', 'auth']);
+}
+
+function hasQualityEvidence(bundle: any): boolean {
+  return traceCoveredWithEvidence(bundle, 'code', ['covered', 'partial'])
+    && (hasEvidence(bundle?.quality) || hasEvidenceBackedItems(bundle, 'findings'));
+}
+
+function unsupportedMajorClaimCount(bundle: any): number {
+  return asList(bundle?.analysis_document_evidence_strength?.unsupported_major_claims).length;
 }
 
 function check(id: string, label: string, ready: boolean, evidence: string, missing: string): ProductReadinessCheck {
@@ -54,10 +126,10 @@ export function computeProductReadiness(
     && bundle?.analysis_goal_trace_alignment?.complete === true;
   const functionalReady = traceStatus(bundle, 'functional') === 'covered' || hasReportBlock(bundle, 'flow');
   const technicalReady = traceStatus(bundle, 'technical') === 'covered' || hasReportBlock(bundle, 'boundary_map');
-  const examplesReady = hasEvidenceBackedItems(bundle, 'interfaces')
-    || asList(bundle?.documentation?.request_response_examples).some((item: any) => asList(item?.evidence).length > 0);
-  const qualityReady = traceStatus(bundle, 'quality') === 'covered' || hasEvidenceBackedItems(bundle, 'findings');
-  const processReady = traceStatus(bundle, 'process') === 'covered' || !!bundle?.process;
+  const exampleCount = evidenceBackedExamples(bundle).length;
+  const examplesReady = exampleCount > 0;
+  const qualityReady = hasQualityEvidence(bundle) && hasExplicitSecurityCoverage(bundle);
+  const processReady = hasProcessEvidence(bundle);
   const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered'
     || hasReportBlock(bundle, 'roadmap')
     || hasEvidenceBackedItems(bundle, 'refactoring')
@@ -66,6 +138,7 @@ export function computeProductReadiness(
     && bundle?.analysis_document_quality_review?.complete === true;
   const evidenceReady = bundle?.analysis_document_evidence_strength?.complete === true
     && Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0) === 0
+    && unsupportedMajorClaimCount(bundle) === 0
     && asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length === 0;
   const benchmarkReady = Number(marketProof.passedGoldenRepos || 0) >= 5
     && Number(marketProof.totalGoldenRepos || 0) >= 5
@@ -81,12 +154,12 @@ export function computeProductReadiness(
     check('original_requirements_trace', 'Original entry-question requirements are traced', requirementsTraceReady, `requirements=${bundle?.analysis_document_requirements_trace_contract?.complete === true}, goal_alignment=${bundle?.analysis_goal_trace_alignment?.complete === true}`, 'Complete analysis_document.requirements_trace with goal_contract_refs and passing goal alignment.'),
     check('functional_reverse_engineering', 'Functional/reverse-engineering view is covered', functionalReady, `trace=${traceStatus(bundle, 'functional') || 'missing'}, flow_block=${hasReportBlock(bundle, 'flow')}`, 'Produce a functional view with capabilities/user flows and evidence.'),
     check('technical_architecture_view', 'Technical/API/interface/architecture view is covered', technicalReady, `trace=${traceStatus(bundle, 'technical') || 'missing'}, boundary_map=${hasReportBlock(bundle, 'boundary_map')}`, 'Produce technical/API/interface/architecture sections with evidence.'),
-    check('examples_view', 'Examples are extracted or explicitly inferred', examplesReady, `interfaces=${asList(bundle?.interfaces).length}, request_response_examples=${asList(bundle?.documentation?.request_response_examples).length}`, 'Extract request/response, OpenAPI, SOAP, CLI, event or inferred examples with provenance.'),
-    check('quality_security_view', 'Bugs/security/code-quality findings are covered', qualityReady, `trace=${traceStatus(bundle, 'quality') || 'missing'}, findings=${asList(bundle?.findings).length}`, 'Cover bugs, security and quality findings with evidence and optional scanner imports.'),
-    check('process_view', 'Process/readiness optimization view is covered', processReady, `trace=${traceStatus(bundle, 'process') || 'missing'}, process=${!!bundle?.process}`, 'Cover process analysis and optimization potential.'),
+    check('examples_view', 'Examples are extracted or explicitly inferred', examplesReady, `evidence_backed_examples=${exampleCount}, request_response_examples=${asList(bundle?.documentation?.request_response_examples).length}`, 'Extract request/response, OpenAPI, SOAP, CLI, event or inferred examples with provenance.'),
+    check('quality_security_view', 'Bugs/security/code-quality findings are covered', qualityReady, `code_trace=${traceStatus(bundle, 'code') || 'missing'}, quality_evidence=${hasQualityEvidence(bundle)}, explicit_security=${hasExplicitSecurityCoverage(bundle)}, findings=${asList(bundle?.findings).length}`, 'Cover bugs, security and quality findings with evidence or explicit evidence-backed no-finding statements.'),
+    check('process_view', 'Process/readiness optimization view is covered', processReady, `trace=${traceStatus(bundle, 'process') || 'missing'}, process_evidence=${hasEvidence(bundle?.process)}`, 'Cover process analysis and optimization potential with evidence.'),
     check('refactoring_modernization', 'Refactoring and modernization roadmap is covered', refactoringReady, `trace=${traceStatus(bundle, 'refactoring') || 'missing'}, roadmap=${hasReportBlock(bundle, 'roadmap')}`, 'Cover refactoring and modernization roadmap toward target architecture or tech stack.'),
     check('decision_basis', 'Decision basis and recommendations are covered', decisionReady, `executive=${bundle?.analysis_document_executive_decision_layer?.complete === true}, quality_review=${bundle?.analysis_document_quality_review?.complete === true}`, 'Complete executive decision layer, recommendations and report quality review.'),
-    check('evidence_backed', 'Visible claims are evidence-backed', evidenceReady, `unsupported=${Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0)}, invalid_evidence=${asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length}`, 'Resolve unsupported claims and invalid evidence references.'),
+    check('evidence_backed', 'Visible claims are evidence-backed', evidenceReady, `unsupported=${Number(bundle?.analysis_document_report_lint?.unsupported_claim_count || 0)}, unsupported_major=${unsupportedMajorClaimCount(bundle)}, invalid_evidence=${asList(bundle?.evidence_index).filter((item: any) => item?.valid === false).length}`, 'Resolve unsupported claims and invalid evidence references.'),
     check('multi_repo_benchmark', 'Representative golden benchmark proof exists', benchmarkReady, `passed=${Number(marketProof.passedGoldenRepos || 0)}/${Number(marketProof.totalGoldenRepos || 0)}, expected=${asList(marketProof.goldenExpected).length}`, 'Add and pass at least five representative golden suites.'),
     check('baseline_comparison', 'Baseline comparison proof exists', baselineReady, String(marketProof.baselineAggregate?.verdict || 'missing'), 'Add passing raw-agent/scanner/manual baseline comparison artifacts.'),
     check('thin_artifact_model', 'Artifact model is simplified to a thin harness', artifactModelReady, String(bundle?.product_artifact_model?.model || 'missing'), 'Collapse user-facing artifacts around run, plan, facts, reviews and report.'),

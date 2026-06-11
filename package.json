@@ -31,6 +31,7 @@
     "demo-report": "node dist/cli.js render examples/demo-repo",
     "audit-demo": "node dist/cli.js audit-report examples/demo-repo",
     "verify:demo": "npm run build && node scripts/verify-demo.mjs",
+    "verify:product-readiness": "npm run build && node scripts/verify-product-readiness.mjs",
     "verify:llm-boundary": "npm run build && node scripts/verify-llm-boundary.mjs",
     "verify:golden": "npm run build && node scripts/verify-golden.mjs",
     "verify:baseline": "npm run build && node scripts/verify-baseline.mjs"
