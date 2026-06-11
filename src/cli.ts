@@ -606,7 +606,11 @@ function cmdAnalyze(args: string[]): number {
 function cmdRun(args: string[]): number {
   const repo = repoArg(args);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
-  const needsPrepare = !FS.existsSync(Path.join(analysis, 'llm_tasks')) || !FS.existsSync(Path.join(analysis, 'TASK.md'));
+  const needsPrepare = !FS.existsSync(analysis)
+    || !FS.existsSync(Path.join(analysis, 'data', 'code-map.json'))
+    || !FS.existsSync(Path.join(analysis, 'llm_tasks'))
+    || !FS.existsSync(Path.join(analysis, 'TASK.md'))
+    || !FS.existsSync(Path.join(analysis, 'source-tier-task-manifest.json'));
   if (needsPrepare) {
     const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
     if (rc !== 0) return rc;
