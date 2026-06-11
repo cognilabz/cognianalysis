@@ -32,13 +32,13 @@ Each file should include:
   },
   "metric_derivation": {
     "fact_rows": [
-      { "id": "fact-1", "found": false, "evidence_present": false }
+      { "id": "fact-1", "found": false, "evidence_present": false, "artifact_snippet": "text from baseline-output.md" }
     ],
     "claim_rows": [
-      { "id": "claim-1", "unsupported": false }
+      { "id": "claim-1", "unsupported": false, "artifact_snippet": "text from baseline-output.md" }
     ],
     "decision_rows": [
-      { "id": "decision-1", "useful": false }
+      { "id": "decision-1", "useful": false, "artifact_snippet": "text from baseline-output.md" }
     ]
   }
 }

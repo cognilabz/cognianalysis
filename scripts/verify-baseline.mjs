@@ -56,7 +56,30 @@ function resolveInsideRoot(relativePath) {
   return resolved === root || resolved.startsWith(`${root}/`) ? resolved : '';
 }
 
-function validateMetricDerivation(parsed) {
+function readJsonObject(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function rowSnippet(row) {
+  return String(row?.artifact_snippet || row?.snippet || row?.evidence_text || row?.matched_text || '').trim();
+}
+
+function validateRowsBoundToArtifact(rows, artifactText, label) {
+  const errors = [];
+  rows.forEach((row, index) => {
+    if (!String(row?.id || '').trim()) errors.push(`metric_derivation ${label} row ${index + 1} id is required`);
+    const snippet = rowSnippet(row);
+    if (!snippet) errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is required`);
+    else if (!artifactText.includes(snippet)) errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is absent from provenance artifact`);
+  });
+  return errors;
+}
+
+function validateMetricDerivation(parsed, comparisonTargetFile, artifactFile) {
   const errors = [];
   const metrics = parsed.metrics || {};
   const derivation = parsed.metric_derivation || parsed.metricDerivation || {};
@@ -67,6 +90,20 @@ function validateMetricDerivation(parsed) {
   if (factRows.length === 0) errors.push('metric_derivation fact rows are required');
   if (claimRows.length === 0) errors.push('metric_derivation claim rows are required');
   if (decisionRows.length === 0) errors.push('metric_derivation decision rows are required');
+  const artifactText = artifactFile && existsSync(artifactFile) ? readFileSync(artifactFile, 'utf8') : '';
+  errors.push(...validateRowsBoundToArtifact(factRows, artifactText, 'fact'));
+  errors.push(...validateRowsBoundToArtifact(claimRows, artifactText, 'claim'));
+  errors.push(...validateRowsBoundToArtifact(decisionRows, artifactText, 'decision'));
+  if (comparisonTargetFile && existsSync(comparisonTargetFile)) {
+    const target = readJsonObject(comparisonTargetFile);
+    const expectedFactIds = new Set(asList(target?.facts).map(fact => String(fact?.id || '').trim()).filter(Boolean));
+    if (expectedFactIds.size > 0) {
+      for (const row of factRows) {
+        const id = String(row?.id || '').trim();
+        if (id && !expectedFactIds.has(id)) errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
+      }
+    }
+  }
   if (factRows.length > 0) {
     const foundRows = factRows.filter(row => row?.found === true);
     const evidenceRows = foundRows.filter(row => row?.evidence_present === true || row?.has_evidence === true);
@@ -122,7 +159,7 @@ function validateBaseline(parsed, sourceCommit) {
   const resolvedComparison = comparisonTarget ? resolveInsideRoot(comparisonTarget) : '';
   if (comparisonTarget && !resolvedComparison) errors.push('comparison target must stay inside repository root');
   if (resolvedComparison && !existsSync(resolvedComparison)) errors.push(`comparison target does not exist: ${comparisonTarget}`);
-  errors.push(...validateMetricDerivation(parsed));
+  errors.push(...validateMetricDerivation(parsed, resolvedComparison, resolvedArtifact));
   return errors;
 }
 

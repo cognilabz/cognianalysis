@@ -49,7 +49,31 @@ function resolveInsideRoot(root, relativePath) {
     const normalizedRoot = utils_1.Path.resolve(root);
     return resolved === normalizedRoot || resolved.startsWith(`${normalizedRoot}${utils_1.Path.sep}`) ? resolved : '';
 }
-function validateBaselineMetricDerivation(parsed) {
+function readJsonObject(file) {
+    try {
+        return JSON.parse(utils_1.FS.readFileSync(file, 'utf8'));
+    }
+    catch {
+        return {};
+    }
+}
+function rowSnippet(row) {
+    return String(row?.artifact_snippet || row?.snippet || row?.evidence_text || row?.matched_text || '').trim();
+}
+function validateRowsBoundToArtifact(rows, artifactText, label) {
+    const errors = [];
+    rows.forEach((row, index) => {
+        if (!String(row?.id || '').trim())
+            errors.push(`metric_derivation ${label} row ${index + 1} id is required`);
+        const snippet = rowSnippet(row);
+        if (!snippet)
+            errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is required`);
+        else if (!artifactText.includes(snippet))
+            errors.push(`metric_derivation ${label} row ${row?.id || index + 1} artifact_snippet is absent from provenance artifact`);
+    });
+    return errors;
+}
+function validateBaselineMetricDerivation(parsed, comparisonTargetFile, artifactFile) {
     const errors = [];
     const metrics = parsed?.metrics || {};
     const derivation = parsed?.metric_derivation || parsed?.metricDerivation || {};
@@ -63,6 +87,21 @@ function validateBaselineMetricDerivation(parsed) {
         errors.push('metric_derivation claim rows are required');
     if (decisionRows.length === 0)
         errors.push('metric_derivation decision rows are required');
+    const artifactText = artifactFile && utils_1.FS.existsSync(artifactFile) ? utils_1.FS.readFileSync(artifactFile, 'utf8') : '';
+    errors.push(...validateRowsBoundToArtifact(factRows, artifactText, 'fact'));
+    errors.push(...validateRowsBoundToArtifact(claimRows, artifactText, 'claim'));
+    errors.push(...validateRowsBoundToArtifact(decisionRows, artifactText, 'decision'));
+    if (comparisonTargetFile && utils_1.FS.existsSync(comparisonTargetFile)) {
+        const target = readJsonObject(comparisonTargetFile);
+        const expectedFactIds = new Set(asList(target?.facts).map((fact) => String(fact?.id || '').trim()).filter(Boolean));
+        if (expectedFactIds.size > 0) {
+            for (const row of factRows) {
+                const id = String(row?.id || '').trim();
+                if (id && !expectedFactIds.has(id))
+                    errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
+            }
+        }
+    }
     if (factRows.length > 0) {
         const foundRows = factRows.filter((row) => row?.found === true);
         const evidenceRows = foundRows.filter((row) => row?.evidence_present === true || row?.has_evidence === true);
@@ -142,7 +181,7 @@ function validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateS
         errors.push('comparison target must stay inside repository root');
     if (resolvedComparison && !utils_1.FS.existsSync(resolvedComparison))
         errors.push(`comparison target does not exist: ${comparisonTarget}`);
-    errors.push(...validateBaselineMetricDerivation(parsed));
+    errors.push(...validateBaselineMetricDerivation(parsed, resolvedComparison, resolvedArtifact));
     return errors;
 }
 function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)(root)) {
