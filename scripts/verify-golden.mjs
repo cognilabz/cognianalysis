@@ -146,7 +146,10 @@ function scoreExpected(expectedPath) {
       evidence_backed_found_fact_count: evidenceCount,
       report_fact_count: facts.length,
       unsupported_claim_count: unsupportedClaimCount,
-      invalid_evidence_count: invalidEvidence
+      invalid_evidence_count: invalidEvidence,
+      final_llm_readiness_state: String(bundle.final_llm_readiness?.state || ''),
+      report_lint_complete: bundle.analysis_document_report_lint?.complete === true,
+      component_coverage_complete: bundle.analysis_document_component_coverage?.complete === true
     },
     minimums: expected.minimums,
     facts: scoredFacts,

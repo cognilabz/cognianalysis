@@ -41,7 +41,7 @@ function perfectMetricDerivation() {
   };
 }
 
-function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit') {
+function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit', options = {}) {
   const repo = `fixtures/repo-${index}`;
   const expectedFile = `benchmarks/golden/repo-${index}.expected.json`;
   const metrics = {
@@ -60,7 +60,7 @@ function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit') {
     decisions: [{ id: 'decision-1', expected: 'useful decision' }],
     minimums: { fact_recall: 1 }
   });
-  writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), {
+  const resultArtifact = {
     schemaVersion: '1.0',
     benchmark: `repo-${index}`,
     generated_by: 'scripts/verify-golden.mjs',
@@ -70,7 +70,25 @@ function writePerfectGoldenSuite(root, index, sourceCommit = 'current-commit') {
     verdict: 'pass',
     metrics,
     failures: []
-  });
+  };
+  if (options.includeProofRows === true) {
+    resultArtifact.facts = [{ id: 'fact', expected: 'fact', found: true, matched_text: 'fact', source: 'fixture', evidence_present: true }];
+    resultArtifact.unsupported_claims = [];
+    resultArtifact.metric_derivation = {
+      expected_fact_count: 1,
+      found_fact_count: 1,
+      evidence_backed_found_fact_count: 1,
+      report_fact_count: 1,
+      unsupported_claim_count: 0,
+      invalid_evidence_count: 0
+    };
+    if (options.includeReadinessProof !== false) {
+      resultArtifact.metric_derivation.final_llm_readiness_state = 'ready';
+      resultArtifact.metric_derivation.report_lint_complete = true;
+      resultArtifact.metric_derivation.component_coverage_complete = true;
+    }
+  }
+  writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), resultArtifact);
   return {
     benchmark: `repo-${index}`,
     repo,
@@ -366,6 +384,39 @@ function missingIds(result) {
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.goldenProofReady, false, 'five manifest-complete golden suites without fact rows must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('golden fact rows are required')), 'strict failures must reject self-attested golden result artifacts without fact rows');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-golden-readiness-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const categories = ['rest_openapi_service', 'soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith'];
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) results.push(writePerfectGoldenSuite(root, i, 'current-commit', { includeProofRows: true, includeReadinessProof: false }));
+    writeJson(join(root, 'benchmarks', 'golden', 'manifest.json'), {
+      schemaVersion: '1.0',
+      minimum_representative_suites: 5,
+      required_categories: categories,
+      suites: results.map((result, index) => ({
+        expected_file: result.expected_file,
+        repo: result.repo,
+        category: categories[index],
+        rationale: 'Representative category fixture.'
+      }))
+    });
+    writePerfectGoldenAggregate(root, results);
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'golden suites with forged readiness/completeness metrics but no derivation proof must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('final_llm_readiness_state is required')), 'strict failures must reject missing decision readiness derivation');
+    assert(status.strictFailures.some(item => item.includes('report_lint_complete must be boolean')), 'strict failures must reject missing report completeness derivation');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

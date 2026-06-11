@@ -483,6 +483,12 @@ function validateGoldenMetricDerivation(parsed: any, expected: any): string[] {
   if (finiteNumber(derivation.unsupported_claim_count) && derivation.unsupported_claim_count !== unsupportedClaimCount) errors.push('metric_derivation.unsupported_claim_count must match unsupported_claims');
   if (finiteNumber(derivation.invalid_evidence_count) && !numbersEqual(metrics.invalid_evidence, derivation.invalid_evidence_count)) errors.push('metrics.invalid_evidence must match metric_derivation.invalid_evidence_count');
   if (finiteNumber(derivation.report_fact_count) && reportFactCount <= 0) errors.push('metric_derivation.report_fact_count must be greater than 0');
+  const readinessState = String(derivation.final_llm_readiness_state || '').trim();
+  if (!readinessState) errors.push('metric_derivation.final_llm_readiness_state is required');
+  const reportLintComplete = derivation.report_lint_complete;
+  const componentCoverageComplete = derivation.component_coverage_complete;
+  if (typeof reportLintComplete !== 'boolean') errors.push('metric_derivation.report_lint_complete must be boolean');
+  if (typeof componentCoverageComplete !== 'boolean') errors.push('metric_derivation.component_coverage_complete must be boolean');
 
   if (expectedFacts.length > 0) {
     const factRecall = foundRows.length / expectedFacts.length;
@@ -497,6 +503,14 @@ function validateGoldenMetricDerivation(parsed: any, expected: any): string[] {
   if (reportFactCount > 0) {
     const unsupportedClaimRate = unsupportedClaimCount / reportFactCount;
     if (!numbersEqual(metrics.unsupported_claim_rate, unsupportedClaimRate)) errors.push('metrics.unsupported_claim_rate must match metric_derivation report facts and unsupported_claims');
+  }
+  if (readinessState) {
+    const decisionReadiness = readinessState === 'ready' ? 1 : 0;
+    if (!numbersEqual(metrics.decision_readiness, decisionReadiness)) errors.push('metrics.decision_readiness must match metric_derivation.final_llm_readiness_state');
+  }
+  if (typeof reportLintComplete === 'boolean' && typeof componentCoverageComplete === 'boolean') {
+    const reportCompleteness = reportLintComplete === true && componentCoverageComplete === true ? 1 : 0;
+    if (!numbersEqual(metrics.report_completeness, reportCompleteness)) errors.push('metrics.report_completeness must match metric_derivation report_lint/component_coverage completeness');
   }
   return errors;
 }
