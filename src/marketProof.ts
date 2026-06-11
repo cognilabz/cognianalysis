@@ -78,6 +78,22 @@ function validateRowsBoundToArtifact(rows: any[], artifactText: string, label: s
   return errors;
 }
 
+function validateRowIdCoverage(rows: any[], expectedIds: Set<string>, label: string): string[] {
+  const errors: string[] = [];
+  if (expectedIds.size === 0) return errors;
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const id = String(row?.id || '').trim();
+    if (!id) continue;
+    if (seen.has(id)) errors.push(`metric_derivation ${label} row ${id} is duplicated`);
+    seen.add(id);
+  }
+  for (const id of expectedIds) {
+    if (!seen.has(id)) errors.push(`metric_derivation ${label} row ${id} is missing`);
+  }
+  return errors;
+}
+
 function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: string, artifactFile: string): string[] {
   const errors: string[] = [];
   const metrics = parsed?.metrics || {};
@@ -105,14 +121,17 @@ function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: str
       const id = String(row?.id || '').trim();
       if (id && expectedFactIds.size > 0 && !expectedFactIds.has(id)) errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
     }
+    errors.push(...validateRowIdCoverage(factRows, expectedFactIds, 'fact'));
     for (const row of claimRows) {
       const id = String(row?.id || '').trim();
       if (id && expectedClaimIds.size > 0 && !expectedClaimIds.has(id)) errors.push(`metric_derivation claim row ${id} is not present in comparison target claims`);
     }
+    errors.push(...validateRowIdCoverage(claimRows, expectedClaimIds, 'claim'));
     for (const row of decisionRows) {
       const id = String(row?.id || '').trim();
       if (id && expectedDecisionIds.size > 0 && !expectedDecisionIds.has(id)) errors.push(`metric_derivation decision row ${id} is not present in comparison target decisions`);
     }
+    errors.push(...validateRowIdCoverage(decisionRows, expectedDecisionIds, 'decision'));
   }
   if (factRows.length > 0) {
     const foundRows = factRows.filter((row: any) => row?.found === true);

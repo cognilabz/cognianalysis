@@ -619,6 +619,81 @@ function missingIds(result) {
 }
 
 {
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-subset-baseline-derivation-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'golden', 'repo-1.expected.json'), {
+      benchmark: 'repo-1',
+      repo: 'fixtures/repo-1',
+      facts: [
+        { id: 'fact', expected: 'fact', evidence_required: true },
+        { id: 'missed-fact', expected: 'missed fact', evidence_required: true }
+      ],
+      claims: [
+        { id: 'claim-1', expected: 'supported claim' },
+        { id: 'missed-claim', expected: 'unsupported claim' }
+      ],
+      decisions: [
+        { id: 'decision-1', expected: 'useful decision' },
+        { id: 'missed-decision', expected: 'weak decision' }
+      ],
+      minimums: { fact_recall: 1 }
+    });
+    for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      const artifactText = `${kind} baseline output\n`;
+      writeFixture(join(root, 'artifacts', `${kind}.md`), artifactText);
+      writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
+        schemaVersion: '1.0',
+        repo: 'fixtures/repo-1',
+        baseline_kind: kind,
+        source_commit: 'current-commit',
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_usefulness: 1
+        },
+        provenance: {
+          generated_by: kind,
+          artifact: `artifacts/${kind}.md`,
+          artifact_sha1: sha1(artifactText)
+        },
+        comparison: {
+          target: 'benchmarks/golden/repo-1.expected.json'
+        },
+        metric_derivation: perfectMetricDerivation()
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'current-commit',
+      total_baselines: 2,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.baselineProofReady, false, 'baseline derivation rows must cover every target fact/claim/decision ID');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation fact row missed-fact is missing')), 'strict failures must reject missing fact derivation rows');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation claim row missed-claim is missing')), 'strict failures must reject missing claim derivation rows');
+    assert(status.strictFailures.some(item => item.includes('metric_derivation decision row missed-decision is missing')), 'strict failures must reject missing decision derivation rows');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
   const bundle = baseBundle();
   bundle.product_artifact_model = { model: 'expanded_debug_harness', complete: true };
   const result = readiness(bundle);
