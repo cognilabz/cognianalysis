@@ -67,6 +67,16 @@ function idSetFrom(value: any): Set<string> {
   return new Set(asList(value).map((item: any) => String(item?.id || '').trim()).filter(Boolean));
 }
 
+function textByIdFrom(value: any): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const item of asList(value)) {
+    const id = String(item?.id || '').trim();
+    const text = String(item?.expected || item?.text || item?.title || item?.description || item?.decision || '').trim();
+    if (id && text) out.set(id, text);
+  }
+  return out;
+}
+
 function validateRowsBoundToArtifact(rows: any[], artifactText: string, label: string): string[] {
   const errors: string[] = [];
   rows.forEach((row: any, index: number) => {
@@ -94,6 +104,19 @@ function validateRowIdCoverage(rows: any[], expectedIds: Set<string>, label: str
   return errors;
 }
 
+function validateRowTextBinding(rows: any[], expectedText: Map<string, string>, label: string): string[] {
+  const errors: string[] = [];
+  for (const row of rows) {
+    const id = String(row?.id || '').trim();
+    const expected = expectedText.get(id);
+    const snippet = rowSnippet(row);
+    if (id && expected && snippet && !snippet.includes(expected)) {
+      errors.push(`metric_derivation ${label} row ${id} artifact_snippet must include comparison target text`);
+    }
+  }
+  return errors;
+}
+
 function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: string, artifactFile: string): string[] {
   const errors: string[] = [];
   const metrics = parsed?.metrics || {};
@@ -114,6 +137,9 @@ function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: str
     const expectedFactIds = idSetFrom(target?.facts || target?.expected_facts);
     const expectedClaimIds = idSetFrom(target?.claims || target?.expected_claims);
     const expectedDecisionIds = idSetFrom(target?.decisions || target?.expected_decisions);
+    const expectedFactText = textByIdFrom(target?.facts || target?.expected_facts);
+    const expectedClaimText = textByIdFrom(target?.claims || target?.expected_claims);
+    const expectedDecisionText = textByIdFrom(target?.decisions || target?.expected_decisions);
     if (factRows.length > 0 && expectedFactIds.size === 0) errors.push('comparison target fact expectations are required for baseline fact derivation');
     if (claimRows.length > 0 && expectedClaimIds.size === 0) errors.push('comparison target claim expectations are required for baseline claim derivation');
     if (decisionRows.length > 0 && expectedDecisionIds.size === 0) errors.push('comparison target decision expectations are required for baseline decision derivation');
@@ -122,16 +148,19 @@ function validateBaselineMetricDerivation(parsed: any, comparisonTargetFile: str
       if (id && expectedFactIds.size > 0 && !expectedFactIds.has(id)) errors.push(`metric_derivation fact row ${id} is not present in comparison target facts`);
     }
     errors.push(...validateRowIdCoverage(factRows, expectedFactIds, 'fact'));
+    errors.push(...validateRowTextBinding(factRows, expectedFactText, 'fact'));
     for (const row of claimRows) {
       const id = String(row?.id || '').trim();
       if (id && expectedClaimIds.size > 0 && !expectedClaimIds.has(id)) errors.push(`metric_derivation claim row ${id} is not present in comparison target claims`);
     }
     errors.push(...validateRowIdCoverage(claimRows, expectedClaimIds, 'claim'));
+    errors.push(...validateRowTextBinding(claimRows, expectedClaimText, 'claim'));
     for (const row of decisionRows) {
       const id = String(row?.id || '').trim();
       if (id && expectedDecisionIds.size > 0 && !expectedDecisionIds.has(id)) errors.push(`metric_derivation decision row ${id} is not present in comparison target decisions`);
     }
     errors.push(...validateRowIdCoverage(decisionRows, expectedDecisionIds, 'decision'));
+    errors.push(...validateRowTextBinding(decisionRows, expectedDecisionText, 'decision'));
   }
   if (factRows.length > 0) {
     const foundRows = factRows.filter((row: any) => row?.found === true);
