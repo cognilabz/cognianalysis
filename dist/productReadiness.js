@@ -4,6 +4,7 @@ exports.computeProductReadiness = computeProductReadiness;
 exports.productReadinessBrief = productReadinessBrief;
 const utils_1 = require("./utils");
 const TRACE_MATCHERS = {
+    reverse_engineering: { refs: ['required_levels.reverse_engineering_documentation'], labels: ['reverse engineering documentation'] },
     code: { refs: ['required_levels.code_analysis'], labels: ['code analysis'] },
     process: { refs: ['required_levels.process_analysis'], labels: ['process analysis'] },
     refactoring: { refs: ['required_levels.refactoring_target_architecture'], labels: ['refactoring target architecture'] },
@@ -128,6 +129,7 @@ function computeProductReadiness(repo, analysis, bundle, marketProof) {
     const finalReady = bundle?.final_llm_readiness?.state === 'ready';
     const requirementsTraceReady = bundle?.analysis_document_requirements_trace_contract?.complete === true
         && bundle?.analysis_goal_trace_alignment?.complete === true;
+    const reverseEngineeringReady = traceCoveredWithEvidence(bundle, 'reverse_engineering');
     const functionalReady = traceCoveredWithEvidence(bundle, 'functional') || hasEvidenceBackedReportBlock(bundle, 'flow');
     const technicalReady = traceCoveredWithEvidence(bundle, 'technical') || hasEvidenceBackedReportBlock(bundle, 'boundary_map');
     const exampleCount = evidenceBackedExamples(bundle).length;
@@ -155,7 +157,8 @@ function computeProductReadiness(repo, analysis, bundle, marketProof) {
     const checks = [
         check('decision_report_ready', 'Decision report generated and LLM-marked ready', finalReady, String(bundle?.final_llm_readiness?.state || 'missing'), 'Run/complete the LLM analysis until final_llm_readiness.state is ready.'),
         check('original_requirements_trace', 'Original entry-question requirements are traced', requirementsTraceReady, `requirements=${bundle?.analysis_document_requirements_trace_contract?.complete === true}, goal_alignment=${bundle?.analysis_goal_trace_alignment?.complete === true}`, 'Complete analysis_document.requirements_trace with goal_contract_refs and passing goal alignment.'),
-        check('functional_reverse_engineering', 'Functional/reverse-engineering view is covered', functionalReady, `trace=${traceStatus(bundle, 'functional') || 'missing'}, flow_block=${hasEvidenceBackedReportBlock(bundle, 'flow')}`, 'Produce a functional view with capabilities/user flows and evidence.'),
+        check('reverse_engineering_documentation', 'Reverse-engineering/documentation level is covered', reverseEngineeringReady, `trace=${traceStatus(bundle, 'reverse_engineering') || 'missing'}`, 'Cover reverse engineering and documentation with evidence.'),
+        check('functional_reverse_engineering', 'Functional/user-flow view is covered', functionalReady, `trace=${traceStatus(bundle, 'functional') || 'missing'}, flow_block=${hasEvidenceBackedReportBlock(bundle, 'flow')}`, 'Produce a functional view with capabilities/user flows and evidence.'),
         check('technical_architecture_view', 'Technical/API/interface/architecture view is covered', technicalReady, `trace=${traceStatus(bundle, 'technical') || 'missing'}, boundary_map=${hasEvidenceBackedReportBlock(bundle, 'boundary_map')}`, 'Produce technical/API/interface/architecture sections with evidence.'),
         check('examples_view', 'Examples are extracted or explicitly inferred', examplesReady, `evidence_backed_examples=${exampleCount}, request_response_examples=${asList(bundle?.documentation?.request_response_examples).length}`, 'Extract request/response, OpenAPI, SOAP, CLI, event or inferred examples with provenance.'),
         check('quality_security_view', 'Bugs/security/code-quality findings are covered', qualityReady, `code_trace=${traceStatus(bundle, 'code') || 'missing'}, quality_evidence=${hasQualityEvidence(bundle)}, explicit_security=${hasExplicitSecurityCoverage(bundle)}, findings=${asList(bundle?.findings).length}`, 'Cover bugs, security and quality findings with evidence or explicit evidence-backed no-finding statements.'),
@@ -173,6 +176,7 @@ function computeProductReadiness(repo, analysis, bundle, marketProof) {
     const coreIds = new Set([
         'decision_report_ready',
         'original_requirements_trace',
+        'reverse_engineering_documentation',
         'functional_reverse_engineering',
         'technical_architecture_view',
         'examples_view',

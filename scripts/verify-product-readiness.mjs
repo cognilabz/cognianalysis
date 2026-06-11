@@ -26,6 +26,7 @@ function baseBundle() {
     analysis_document_requirements_trace_contract: {
       complete: true,
       requirements: [
+        trace('Reverse Engineering & Documentation'),
         trace('Functional View'),
         trace('Technical View'),
         trace('Code Analysis'),
@@ -150,6 +151,15 @@ function missingIds(result) {
 {
   const bundle = baseBundle();
   bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Reverse Engineering & Documentation')
+    .concat(trace('Reverse Engineering & Documentation', 'open', []));
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('reverse_engineering_documentation'), 'functional evidence must not satisfy missing reverse-engineering/documentation coverage');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
     .filter(item => item.label !== 'Functional View')
     .concat(trace('Non-functional Quality', 'covered', [ev]));
   bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'functional');
@@ -194,6 +204,7 @@ function missingIds(result) {
 {
   const bundle = baseBundle();
   bundle.analysis_document_requirements_trace_contract.requirements = [
+    traceRef('Reverse Engineering & Documentation'),
     traceRef('Functional View'),
     traceRef('Technical View'),
     traceRef('Code Analysis'),
