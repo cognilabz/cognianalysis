@@ -167,6 +167,8 @@ function listFileInventory(root, maxFileSize) {
         for (const entry of entries) {
             if (ignored.has(entry.name))
                 continue;
+            if (entry.name.startsWith('.verify-tmp-'))
+                continue;
             const full = path.join(dir, entry.name);
             if (entry.isDirectory()) {
                 walk(full);

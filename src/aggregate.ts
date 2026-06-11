@@ -2422,7 +2422,7 @@ function validateNested(repo: string, value: any): any {
 function validateEvidence(repo: string, ev: any): any {
   if (!ev || typeof ev !== 'object') return { path: String(ev), line: 1, valid: false, reason: 'invalid evidence object' };
   const relativePath = String(ev.path || '');
-  const line = Number(ev.line || 1);
+  const line = ev.line === undefined || ev.line === null || ev.line === '' ? 1 : Number(ev.line);
   const repoRoot = Path.resolve(repo);
   const full = Path.resolve(repoRoot, relativePath);
   const fs = require('node:fs');

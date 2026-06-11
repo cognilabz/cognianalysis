@@ -756,16 +756,36 @@ try {
   const sourceInventory = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'source-inventory.json'), 'utf8'));
   const evidencePath = (sourceInventory.included_files || []).map(item => item.path).find(Boolean);
   assert(evidencePath, 'Positive demo setup did not produce an inventory path for invalid evidence testing');
-  document.analysis_document.report_quality_review.evidence = [{ path: evidencePath, line: 999999 }];
+  document.analysis_document.report_quality_review.evidence = [
+    { path: evidencePath, line: 0 },
+    { path: evidencePath, line: 999999 }
+  ];
   writeFileSync(documentPath, JSON.stringify(document, null, 2) + '\n');
 
   const negative = run(['dev', 'audit-report', tempDemo], { capture: true, expectFailure: true });
   const output = `${negative.stdout || ''}\n${negative.stderr || ''}`;
-  assert(output.includes('invalid evidence'), 'Out-of-range file:line evidence did not fail audit-report');
+  assert(output.includes('invalid evidence'), 'Invalid file:line evidence did not fail audit-report');
   const refreshedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
+  assert((refreshedBundle.evidence_index || []).some(item => item.valid === false && item.reason === 'invalid line'), 'Line zero evidence was not marked invalid in the evidence index');
   assert((refreshedBundle.evidence_index || []).some(item => item.valid === false && item.reason === 'line out of range'), 'Out-of-range evidence line was not marked invalid in the evidence index');
 } finally {
   rmSync(tempRootInvalidEvidenceLine, { recursive: true, force: true });
+}
+
+const tempRootIgnoredVerifyTmp = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-ignored-verify-tmp-'));
+try {
+  const tempDemo = join(tempRootIgnoredVerifyTmp, 'demo-repo');
+  cpSync(demo, tempDemo, { recursive: true });
+  rmSync(join(tempDemo, '.analysis'), { recursive: true, force: true });
+  const leftoverDir = join(tempDemo, '.verify-tmp-leftover');
+  mkdirSync(leftoverDir, { recursive: true });
+  writeFileSync(join(leftoverDir, 'generated.ts'), 'export const leaked = true;\n');
+  run(['analyze', tempDemo, '--no-seed', '--no-html'], { capture: true });
+  const sourceInventory = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'source-inventory.json'), 'utf8'));
+  const leaked = (sourceInventory.included_files || []).map(item => item.path).filter(path => String(path).startsWith('.verify-tmp-'));
+  assert(leaked.length === 0, `.verify-tmp-* directories must not enter source inventory: ${leaked.join(', ')}`);
+} finally {
+  rmSync(tempRootIgnoredVerifyTmp, { recursive: true, force: true });
 }
 
 const tempRootMissingDetailDecision = mkdtempSync(join(tmpdir(), 'cognianalysis-demo-missing-detail-decision-'));

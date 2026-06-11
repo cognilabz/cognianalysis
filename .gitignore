@@ -2,3 +2,4 @@
 .agents/
 .memory-harness.json
 .verify-tmp-*/
+examples/demo-repo/.analysis/
