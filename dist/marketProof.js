@@ -68,7 +68,7 @@ function validateBaselineArtifact(parsed) {
         errors.push('comparison target/golden_benchmark/report is required');
     return errors;
 }
-function baselineProofStatus(root) {
+function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)(root)) {
     const baselineRoot = utils_1.Path.join(root, 'benchmarks', 'baseline');
     const aggregate = (0, utils_1.loadJson)(utils_1.Path.join(baselineRoot, 'results.json'), null);
     const files = listFilesRecursive(baselineRoot, file => file.endsWith('.baseline.json'));
@@ -99,6 +99,12 @@ function baselineProofStatus(root) {
             aggregateErrors.push(`baseline aggregate generated_by must be ${exports.BASELINE_VERIFIER_ID}`);
         if (aggregate.verdict !== 'pass')
             aggregateErrors.push('baseline aggregate verdict must be pass');
+        if (!expectedSourceCommit)
+            aggregateErrors.push('current source commit is unavailable for baseline freshness validation');
+        if (!String(aggregate.source_commit || '').trim())
+            aggregateErrors.push('baseline aggregate source_commit is required');
+        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit)
+            aggregateErrors.push(`baseline aggregate source_commit must match current HEAD ${expectedSourceCommit}`);
         if (Number(aggregate.total_baselines) !== baselines.length)
             aggregateErrors.push('baseline aggregate total_baselines must match baseline artifacts');
         for (const kind of REQUIRED_BASELINE_KINDS) {
@@ -129,13 +135,21 @@ function baselineProofStatus(root) {
         failures
     };
 }
-function validateGoldenResultArtifact(parsed, expected, expectedFile) {
+function validateGoldenResultArtifact(parsed, expected, expectedFile, expectedSourceCommit, aggregateSourceCommit) {
     const errors = [];
     const metrics = parsed?.metrics || {};
     if (parsed?.schemaVersion !== '1.0')
         errors.push('schemaVersion must be 1.0');
     if (parsed?.generated_by !== exports.GOLDEN_VERIFIER_ID)
         errors.push(`generated_by must be ${exports.GOLDEN_VERIFIER_ID}`);
+    if (!expectedSourceCommit)
+        errors.push('current source commit is unavailable for golden freshness validation');
+    if (!String(parsed?.source_commit || '').trim())
+        errors.push('source_commit is required');
+    if (expectedSourceCommit && parsed?.source_commit !== expectedSourceCommit)
+        errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
+    if (aggregateSourceCommit && parsed?.source_commit !== aggregateSourceCommit)
+        errors.push('source_commit must match golden aggregate source_commit');
     if (parsed?.expected_file !== expectedFile)
         errors.push(`expected_file must be ${expectedFile}`);
     if (parsed?.repo !== expected.repo)
@@ -158,7 +172,7 @@ function validateGoldenResultArtifact(parsed, expected, expectedFile) {
         errors.push('failures must be empty');
     return errors;
 }
-function goldenProofStatus(root, analysis) {
+function goldenProofStatus(root, analysis, expectedSourceCommit = (0, utils_1.gitCommit)(root)) {
     const goldenDir = utils_1.Path.join(root, 'benchmarks', 'golden');
     const expectedFiles = listFilesRecursive(goldenDir, file => file.endsWith('.expected.json'));
     const aggregate = (0, utils_1.loadJson)(utils_1.Path.join(goldenDir, 'results.json'), null);
@@ -172,7 +186,7 @@ function goldenProofStatus(root, analysis) {
             ...(!String(parsed.repo || '').trim() ? ['expected repo is required'] : []),
             ...(!Array.isArray(parsed.facts) || parsed.facts.length === 0 ? ['expected facts are required'] : []),
             ...(!parsed.minimums || typeof parsed.minimums !== 'object' ? ['expected minimums are required'] : []),
-            ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(result, parsed, expected_file))
+            ...(!result ? [`missing verifier result artifact ${parsed.repo || '<missing repo>'}/.analysis/data/golden-benchmark.json`] : validateGoldenResultArtifact(result, parsed, expected_file, expectedSourceCommit, String(aggregate?.source_commit || '')))
         ];
         const aggregateRow = asList(aggregate?.results).find((item) => item?.expected_file === expected_file);
         if (!aggregateRow)
@@ -205,6 +219,12 @@ function goldenProofStatus(root, analysis) {
             aggregateErrors.push('golden aggregate benchmark must be golden-suite');
         if (aggregate.generated_by !== exports.GOLDEN_VERIFIER_ID)
             aggregateErrors.push(`golden aggregate generated_by must be ${exports.GOLDEN_VERIFIER_ID}`);
+        if (!expectedSourceCommit)
+            aggregateErrors.push('current source commit is unavailable for golden freshness validation');
+        if (!String(aggregate.source_commit || '').trim())
+            aggregateErrors.push('golden aggregate source_commit is required');
+        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit)
+            aggregateErrors.push(`golden aggregate source_commit must match current HEAD ${expectedSourceCommit}`);
         if (aggregate.verdict !== 'pass')
             aggregateErrors.push('golden aggregate verdict must be pass');
         if (Number(aggregate.total_repos) !== expectedFiles.length)
@@ -238,12 +258,12 @@ function goldenProofStatus(root, analysis) {
         failures
     };
 }
-function marketProofStatusForRoot(root, analysis) {
+function marketProofStatusForRoot(root, analysis, currentSourceCommit = (0, utils_1.gitCommit)(root)) {
     const benchmarkDoc = utils_1.Path.join(root, 'docs', 'BENCHMARK.md');
     const goldenScript = utils_1.Path.join(root, exports.GOLDEN_VERIFIER_ID);
     const baselineScript = utils_1.Path.join(root, exports.BASELINE_VERIFIER_ID);
-    const golden = goldenProofStatus(root, analysis);
-    const baseline = baselineProofStatus(root);
+    const golden = goldenProofStatus(root, analysis, currentSourceCommit);
+    const baseline = baselineProofStatus(root, currentSourceCommit);
     const strictFailures = [
         ...(!utils_1.FS.existsSync(benchmarkDoc) ? ['missing benchmark protocol doc'] : []),
         ...(!utils_1.FS.existsSync(goldenScript) ? ['missing golden verifier'] : []),
@@ -265,6 +285,7 @@ function marketProofStatusForRoot(root, analysis) {
         baselineProofReady: baseline.ready,
         baselineProofFailures: baseline.failures,
         baselineArtifacts: baseline.baselines,
+        currentSourceCommit,
         totalGoldenRepos: golden.total,
         passedGoldenRepos: golden.passed,
         strictReady: strictFailures.length === 0,

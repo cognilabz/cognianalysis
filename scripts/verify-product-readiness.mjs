@@ -203,6 +203,126 @@ function missingIds(result) {
 }
 
 {
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-stale-golden-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) {
+      const repo = `fixtures/repo-${i}`;
+      const expectedFile = `benchmarks/golden/repo-${i}.expected.json`;
+      const result = {
+        schemaVersion: '1.0',
+        benchmark: `repo-${i}`,
+        generated_by: 'scripts/verify-golden.mjs',
+        source_commit: 'old-commit',
+        expected_file: expectedFile,
+        repo,
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_readiness: 1,
+          report_completeness: 1,
+          invalid_evidence: 0
+        },
+        failures: []
+      };
+      writeJson(join(root, expectedFile), {
+        benchmark: `repo-${i}`,
+        repo,
+        facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+        minimums: { fact_recall: 1 }
+      });
+      writeJson(join(root, repo, '.analysis', 'data', 'golden-benchmark.json'), result);
+      results.push({
+        benchmark: result.benchmark,
+        repo,
+        expected_file: expectedFile,
+        verdict: 'pass',
+        metrics: result.metrics,
+        failures: []
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'golden', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'golden-suite',
+      generated_by: 'scripts/verify-golden.mjs',
+      source_commit: 'old-commit',
+      total_repos: 5,
+      passed_repos: 5,
+      failed_repos: 0,
+      minimum_market_proof_repos: 5,
+      market_proof_ready: true,
+      verdict: 'pass',
+      results
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'otherwise-valid stale golden proof must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('golden aggregate source_commit must match current HEAD current-commit')), 'strict failures must reject stale golden aggregate source_commit');
+    assert(status.strictFailures.some(item => item.includes('source_commit must match current HEAD current-commit')), 'strict failures must reject stale per-suite golden source_commit');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-stale-baseline-proof-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
+        schemaVersion: '1.0',
+        repo: 'fixtures/repo-1',
+        baseline_kind: kind,
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_usefulness: 1
+        },
+        provenance: {
+          generated_by: kind,
+          artifact: `artifacts/${kind}.md`
+        },
+        comparison: {
+          target: 'benchmarks/golden/repo-1.expected.json'
+        }
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'old-commit',
+      total_baselines: 2,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.baselineProofReady, false, 'otherwise-valid stale baseline aggregate must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('baseline aggregate source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline aggregate source_commit');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
   const bundle = baseBundle();
   bundle.product_artifact_model = { model: 'expanded_debug_harness', complete: true };
   const result = readiness(bundle);
