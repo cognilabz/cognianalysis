@@ -37,13 +37,18 @@ function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function validateBaseline(parsed) {
+function validateBaseline(parsed, sourceCommit) {
   const errors = [];
   const metrics = parsed.metrics || {};
   if (parsed.schemaVersion !== '1.0') errors.push('schemaVersion must be 1.0');
   if (!String(parsed.repo || '').trim()) errors.push('repo is required');
   if (!String(parsed.baseline_kind || parsed.kind || '').trim()) errors.push('baseline_kind is required');
   if (parsed.verdict !== 'pass') errors.push('verdict must be pass');
+  const provenance = parsed.provenance || parsed.baseline_provenance || {};
+  const artifactSourceCommit = String(parsed.source_commit || provenance.source_commit || provenance.sourceCommit || '').trim();
+  if (!sourceCommit) errors.push('current source commit is unavailable');
+  if (!artifactSourceCommit) errors.push('source_commit is required');
+  if (sourceCommit && artifactSourceCommit !== sourceCommit) errors.push(`source_commit must match current HEAD ${sourceCommit}`);
   for (const metric of REQUIRED_METRICS) {
     if (!isFiniteNumber(metrics[metric])) errors.push(`metrics.${metric} must be a finite number`);
   }
@@ -51,7 +56,6 @@ function validateBaseline(parsed) {
     if (isFiniteNumber(metrics[metric]) && (metrics[metric] < 0 || metrics[metric] > 1)) errors.push(`metrics.${metric} must be between 0 and 1`);
   }
   if (isFiniteNumber(metrics.unsupported_claim_rate) && metrics.unsupported_claim_rate < 0) errors.push('metrics.unsupported_claim_rate must be >= 0');
-  const provenance = parsed.provenance || parsed.baseline_provenance || {};
   if (!String(provenance.generated_by || provenance.tool || '').trim()) errors.push('provenance.generated_by or provenance.tool is required');
   if (!String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim()) errors.push('provenance.artifact/artifact_path/source is required');
   const comparison = parsed.comparison || parsed.compared_to || {};
@@ -59,10 +63,11 @@ function validateBaseline(parsed) {
   return errors;
 }
 
+const sourceCommit = gitCommit();
 const baselineFiles = walk(baselineRoot, file => file.endsWith('.baseline.json'));
 const baselines = baselineFiles.map(file => {
   const parsed = JSON.parse(readFileSync(file, 'utf8'));
-  const validation_errors = validateBaseline(parsed);
+  const validation_errors = validateBaseline(parsed, sourceCommit);
   return {
     file: relative(root, file),
     repo: parsed.repo || '',
@@ -81,7 +86,7 @@ const result = {
   schemaVersion: '1.0',
   benchmark: 'baseline-comparison',
   generated_by: verifierId,
-  source_commit: gitCommit(),
+  source_commit: sourceCommit,
   generated_at: new Date().toISOString(),
   total_baselines: baselines.length,
   required_baseline_kinds: [...requiredKinds],

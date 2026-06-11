@@ -37,7 +37,7 @@ function listFilesRecursive(dir, predicate) {
 function sameMetrics(left, right, keys) {
     return keys.every(key => left?.[key] === right?.[key]);
 }
-function validateBaselineArtifact(parsed) {
+function validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceCommit) {
     const errors = [];
     const metrics = parsed?.metrics || {};
     if (parsed?.schemaVersion !== '1.0')
@@ -48,6 +48,16 @@ function validateBaselineArtifact(parsed) {
         errors.push('baseline_kind is required');
     if (parsed?.verdict !== 'pass')
         errors.push('verdict must be pass');
+    const provenance = parsed?.provenance || parsed?.baseline_provenance || {};
+    const sourceCommit = String(parsed?.source_commit || provenance.source_commit || provenance.sourceCommit || '').trim();
+    if (!expectedSourceCommit)
+        errors.push('current source commit is unavailable for baseline artifact freshness validation');
+    if (!sourceCommit)
+        errors.push('source_commit is required');
+    if (expectedSourceCommit && sourceCommit !== expectedSourceCommit)
+        errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
+    if (aggregateSourceCommit && sourceCommit !== aggregateSourceCommit)
+        errors.push('source_commit must match baseline aggregate source_commit');
     for (const metric of REQUIRED_BASELINE_METRICS) {
         if (!finiteNumber(metrics[metric]))
             errors.push(`metrics.${metric} must be a finite number`);
@@ -58,7 +68,6 @@ function validateBaselineArtifact(parsed) {
     }
     if (finiteNumber(metrics.unsupported_claim_rate) && metrics.unsupported_claim_rate < 0)
         errors.push('metrics.unsupported_claim_rate must be >= 0');
-    const provenance = parsed?.provenance || parsed?.baseline_provenance || {};
     if (!String(provenance.generated_by || provenance.tool || '').trim())
         errors.push('provenance.generated_by or provenance.tool is required');
     if (!String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim())
@@ -71,10 +80,11 @@ function validateBaselineArtifact(parsed) {
 function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)(root)) {
     const baselineRoot = utils_1.Path.join(root, 'benchmarks', 'baseline');
     const aggregate = (0, utils_1.loadJson)(utils_1.Path.join(baselineRoot, 'results.json'), null);
+    const aggregateSourceCommit = String(aggregate?.source_commit || '').trim();
     const files = listFilesRecursive(baselineRoot, file => file.endsWith('.baseline.json'));
     const baselines = files.map(file => {
         const parsed = (0, utils_1.loadJson)(file, {});
-        const validation_errors = validateBaselineArtifact(parsed);
+        const validation_errors = validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceCommit);
         return {
             file: posixRelative(root, file),
             repo: parsed.repo || '',

@@ -285,6 +285,7 @@ function missingIds(result) {
         schemaVersion: '1.0',
         repo: 'fixtures/repo-1',
         baseline_kind: kind,
+        source_commit: 'old-commit',
         verdict: 'pass',
         metrics: {
           fact_recall: 1,
@@ -317,6 +318,59 @@ function missingIds(result) {
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.baselineProofReady, false, 'otherwise-valid stale baseline aggregate must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('baseline aggregate source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline aggregate source_commit');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-stale-baseline-artifacts-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
+        schemaVersion: '1.0',
+        repo: 'fixtures/repo-1',
+        baseline_kind: kind,
+        source_commit: 'old-commit',
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_usefulness: 1
+        },
+        provenance: {
+          generated_by: kind,
+          artifact: `artifacts/${kind}.md`
+        },
+        comparison: {
+          target: 'benchmarks/golden/repo-1.expected.json'
+        }
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'current-commit',
+      total_baselines: 2,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.baselineProofReady, false, 'current aggregate with stale baseline artifacts must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline artifact source_commit');
+    assert(status.strictFailures.some(item => item.includes('source_commit must match baseline aggregate source_commit')), 'strict failures must reject baseline artifact/aggregate source mismatch');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

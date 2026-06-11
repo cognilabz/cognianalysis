@@ -14,6 +14,7 @@ Each file should include:
   "schemaVersion": "1.0",
   "repo": "examples/demo-repo",
   "baseline_kind": "raw_agent_prompt",
+  "source_commit": "git commit analyzed by this baseline",
   "verdict": "pass",
   "metrics": {
     "fact_recall": 0.0,
