@@ -1185,9 +1185,16 @@ function artifactEvidenceRows(artifact: any, artifactPath: string): any[] {
   return rows;
 }
 
+function allowsPathOnlyEvidenceFallback(ev: any): boolean {
+  if (!ev || typeof ev !== 'object') return false;
+  if (ev.line === undefined || ev.line === null || ev.line === '') return true;
+  const line = Number(ev.line);
+  return Number.isInteger(line) && line >= 1;
+}
+
 function supportingArtifactPathsForEvidence(bundle: any, evidence: any[]): string[] {
   const wanted = new Set(asList(evidence).map(evidenceKey));
-  const wantedPaths = new Set(asList(evidence).map((ev: any) => String(ev?.path || '')).filter(Boolean));
+  const wantedPaths = new Set(asList(evidence).filter(allowsPathOnlyEvidenceFallback).map((ev: any) => String(ev?.path || '')).filter(Boolean));
   if (!wanted.size && !wantedPaths.size) return [];
   const artifacts: any[] = [
     ...asList(bundle.source_file_tier_reviews).map((artifact: any) => ({ artifact, path: `source_tiers/${artifact.task_id || 'source-tier'}.json` })),

@@ -789,6 +789,11 @@ try {
   const sourceInventory = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'source-inventory.json'), 'utf8'));
   const evidencePath = (sourceInventory.included_files || []).map(item => item.path).find(Boolean);
   assert(evidencePath, 'Positive demo setup did not produce an inventory path for invalid evidence testing');
+  const firstStatementList = document.analysis_document.sections
+    .flatMap(section => section.blocks || [])
+    .find(block => block.type === 'statement_list');
+  assert(firstStatementList?.items?.[0], 'Positive demo setup did not produce a statement-list item for semantic-lineage invalid-evidence testing');
+  firstStatementList.items[0].evidence = [{ path: evidencePath, line: 0 }];
   document.analysis_document.report_quality_review.evidence = [
     { path: evidencePath, line: 0 },
     { path: evidencePath, line: 999999 }
@@ -801,6 +806,10 @@ try {
   const refreshedBundle = JSON.parse(readFileSync(join(tempDemo, '.analysis', 'data', 'bundle.json'), 'utf8'));
   assert((refreshedBundle.evidence_index || []).some(item => item.valid === false && item.reason === 'invalid line'), 'Line zero evidence was not marked invalid in the evidence index');
   assert((refreshedBundle.evidence_index || []).some(item => item.valid === false && item.reason === 'line out of range'), 'Out-of-range evidence line was not marked invalid in the evidence index');
+  const invalidLineage = (refreshedBundle.analysis_document_semantic_lineage?.lineage || []).find(item => item.label === firstStatementList.items[0].title);
+  assert(invalidLineage, 'Invalid-evidence statement-list item was not represented in semantic lineage');
+  assert((invalidLineage.supporting_artifacts || []).length === 0, 'Invalid line zero evidence must not infer semantic-lineage support from path-only overlap');
+  assert((invalidLineage.missing || []).includes('supporting_artifacts'), 'Invalid line zero evidence must leave semantic-lineage support incomplete');
 } finally {
   rmSync(tempRootInvalidEvidenceLine, { recursive: true, force: true });
 }

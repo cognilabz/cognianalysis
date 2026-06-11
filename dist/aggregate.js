@@ -1170,9 +1170,17 @@ function artifactEvidenceRows(artifact, artifactPath) {
     walk(artifact);
     return rows;
 }
+function allowsPathOnlyEvidenceFallback(ev) {
+    if (!ev || typeof ev !== 'object')
+        return false;
+    if (ev.line === undefined || ev.line === null || ev.line === '')
+        return true;
+    const line = Number(ev.line);
+    return Number.isInteger(line) && line >= 1;
+}
 function supportingArtifactPathsForEvidence(bundle, evidence) {
     const wanted = new Set((0, utils_1.asList)(evidence).map(evidenceKey));
-    const wantedPaths = new Set((0, utils_1.asList)(evidence).map((ev) => String(ev?.path || '')).filter(Boolean));
+    const wantedPaths = new Set((0, utils_1.asList)(evidence).filter(allowsPathOnlyEvidenceFallback).map((ev) => String(ev?.path || '')).filter(Boolean));
     if (!wanted.size && !wantedPaths.size)
         return [];
     const artifacts = [
