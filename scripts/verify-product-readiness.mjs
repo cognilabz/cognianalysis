@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { computeProductReadiness } from '../dist/productReadiness.js';
 import { marketProofStatusForRoot } from '../dist/marketProof.js';
 
@@ -21,6 +22,15 @@ const marketProof = {
 function writeJson(file, value) {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
+}
+
+function writeFixture(file, text) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, text);
+}
+
+function sha1(value) {
+  return createHash('sha1').update(value).digest('hex');
 }
 
 function trace(label, status = 'covered', evidence = [ev]) {
@@ -280,7 +290,15 @@ function missingIds(result) {
     writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
     writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
     writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'golden', 'repo-1.expected.json'), {
+      benchmark: 'repo-1',
+      repo: 'fixtures/repo-1',
+      facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      minimums: { fact_recall: 1 }
+    });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      const artifactText = `${kind} baseline output\n`;
+      writeFixture(join(root, 'artifacts', `${kind}.md`), artifactText);
       writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
         schemaVersion: '1.0',
         repo: 'fixtures/repo-1',
@@ -295,7 +313,8 @@ function missingIds(result) {
         },
         provenance: {
           generated_by: kind,
-          artifact: `artifacts/${kind}.md`
+          artifact: `artifacts/${kind}.md`,
+          artifact_sha1: sha1(artifactText)
         },
         comparison: {
           target: 'benchmarks/golden/repo-1.expected.json'
@@ -332,7 +351,15 @@ function missingIds(result) {
     writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
     writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
     writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'golden', 'repo-1.expected.json'), {
+      benchmark: 'repo-1',
+      repo: 'fixtures/repo-1',
+      facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      minimums: { fact_recall: 1 }
+    });
     for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      const artifactText = `${kind} baseline output\n`;
+      writeFixture(join(root, 'artifacts', `${kind}.md`), artifactText);
       writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
         schemaVersion: '1.0',
         repo: 'fixtures/repo-1',
@@ -347,7 +374,8 @@ function missingIds(result) {
         },
         provenance: {
           generated_by: kind,
-          artifact: `artifacts/${kind}.md`
+          artifact: `artifacts/${kind}.md`,
+          artifact_sha1: sha1(artifactText)
         },
         comparison: {
           target: 'benchmarks/golden/repo-1.expected.json'
@@ -371,6 +399,65 @@ function missingIds(result) {
     assert.equal(status.baselineProofReady, false, 'current aggregate with stale baseline artifacts must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline artifact source_commit');
     assert(status.strictFailures.some(item => item.includes('source_commit must match baseline aggregate source_commit')), 'strict failures must reject baseline artifact/aggregate source mismatch');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-missing-baseline-provenance-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), '');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), '');
+    writeJson(join(root, 'benchmarks', 'golden', 'repo-1.expected.json'), {
+      benchmark: 'repo-1',
+      repo: 'fixtures/repo-1',
+      facts: [{ id: 'fact', expected: 'fact', evidence_required: true }],
+      minimums: { fact_recall: 1 }
+    });
+    for (const kind of ['raw_agent_prompt', 'scanner_report']) {
+      writeJson(join(root, 'benchmarks', 'baseline', `${kind}.baseline.json`), {
+        schemaVersion: '1.0',
+        repo: 'fixtures/repo-1',
+        baseline_kind: kind,
+        source_commit: 'current-commit',
+        verdict: 'pass',
+        metrics: {
+          fact_recall: 1,
+          evidence_precision: 1,
+          unsupported_claim_rate: 0,
+          decision_usefulness: 1
+        },
+        provenance: {
+          generated_by: kind,
+          artifact: `artifacts/missing-${kind}.md`,
+          artifact_sha1: sha1(`${kind} missing artifact\n`)
+        },
+        comparison: {
+          target: 'benchmarks/golden/repo-1.expected.json'
+        }
+      });
+    }
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'current-commit',
+      total_baselines: 2,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.baselineProofReady, false, 'baseline artifacts with missing provenance output must not be proof-ready');
+    assert(status.strictFailures.some(item => item.includes('provenance artifact does not exist')), 'strict failures must reject missing baseline provenance artifacts');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

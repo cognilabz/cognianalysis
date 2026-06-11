@@ -5,6 +5,7 @@ exports.baselineProofStatus = baselineProofStatus;
 exports.goldenProofStatus = goldenProofStatus;
 exports.marketProofStatusForRoot = marketProofStatusForRoot;
 const utils_1 = require("./utils");
+const Crypto = require('node:crypto');
 exports.GOLDEN_VERIFIER_ID = 'scripts/verify-golden.mjs';
 exports.BASELINE_VERIFIER_ID = 'scripts/verify-baseline.mjs';
 const REQUIRED_BASELINE_KINDS = ['raw_agent_prompt', 'scanner_report'];
@@ -37,7 +38,15 @@ function listFilesRecursive(dir, predicate) {
 function sameMetrics(left, right, keys) {
     return keys.every(key => left?.[key] === right?.[key]);
 }
-function validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceCommit) {
+function fileSha1(file) {
+    return Crypto.createHash('sha1').update(utils_1.FS.readFileSync(file)).digest('hex');
+}
+function resolveInsideRoot(root, relativePath) {
+    const resolved = utils_1.Path.resolve(root, relativePath);
+    const normalizedRoot = utils_1.Path.resolve(root);
+    return resolved === normalizedRoot || resolved.startsWith(`${normalizedRoot}${utils_1.Path.sep}`) ? resolved : '';
+}
+function validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateSourceCommit) {
     const errors = [];
     const metrics = parsed?.metrics || {};
     if (parsed?.schemaVersion !== '1.0')
@@ -58,6 +67,19 @@ function validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceC
         errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
     if (aggregateSourceCommit && sourceCommit !== aggregateSourceCommit)
         errors.push('source_commit must match baseline aggregate source_commit');
+    const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
+    const artifactHash = String(provenance.artifact_sha1 || provenance.artifact_hash || provenance.content_hash || provenance.sha1 || '').trim();
+    if (!artifactPath)
+        errors.push('provenance artifact path is required');
+    const resolvedArtifact = artifactPath ? resolveInsideRoot(root, artifactPath) : '';
+    if (artifactPath && !resolvedArtifact)
+        errors.push('provenance artifact path must stay inside repository root');
+    if (resolvedArtifact && !utils_1.FS.existsSync(resolvedArtifact))
+        errors.push(`provenance artifact does not exist: ${artifactPath}`);
+    if (!artifactHash)
+        errors.push('provenance artifact sha1/hash is required');
+    if (resolvedArtifact && utils_1.FS.existsSync(resolvedArtifact) && artifactHash && fileSha1(resolvedArtifact) !== artifactHash)
+        errors.push('provenance artifact hash does not match');
     for (const metric of REQUIRED_BASELINE_METRICS) {
         if (!finiteNumber(metrics[metric]))
             errors.push(`metrics.${metric} must be a finite number`);
@@ -70,11 +92,15 @@ function validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceC
         errors.push('metrics.unsupported_claim_rate must be >= 0');
     if (!String(provenance.generated_by || provenance.tool || '').trim())
         errors.push('provenance.generated_by or provenance.tool is required');
-    if (!String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim())
-        errors.push('provenance.artifact/artifact_path/source is required');
     const comparison = parsed?.comparison || parsed?.compared_to || {};
-    if (!String(comparison.target || comparison.golden_benchmark || comparison.report || '').trim())
+    const comparisonTarget = String(comparison.target || comparison.golden_benchmark || comparison.report || '').trim();
+    if (!comparisonTarget)
         errors.push('comparison target/golden_benchmark/report is required');
+    const resolvedComparison = comparisonTarget ? resolveInsideRoot(root, comparisonTarget) : '';
+    if (comparisonTarget && !resolvedComparison)
+        errors.push('comparison target must stay inside repository root');
+    if (resolvedComparison && !utils_1.FS.existsSync(resolvedComparison))
+        errors.push(`comparison target does not exist: ${comparisonTarget}`);
     return errors;
 }
 function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)(root)) {
@@ -84,7 +110,7 @@ function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)
     const files = listFilesRecursive(baselineRoot, file => file.endsWith('.baseline.json'));
     const baselines = files.map(file => {
         const parsed = (0, utils_1.loadJson)(file, {});
-        const validation_errors = validateBaselineArtifact(parsed, expectedSourceCommit, aggregateSourceCommit);
+        const validation_errors = validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateSourceCommit);
         return {
             file: posixRelative(root, file),
             repo: parsed.repo || '',

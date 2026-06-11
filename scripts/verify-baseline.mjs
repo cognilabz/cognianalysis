@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const baselineRoot = join(root, 'benchmarks', 'baseline');
@@ -37,6 +38,15 @@ function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function fileSha1(file) {
+  return createHash('sha1').update(readFileSync(file)).digest('hex');
+}
+
+function resolveInsideRoot(relativePath) {
+  const resolved = resolve(root, relativePath);
+  return resolved === root || resolved.startsWith(`${root}/`) ? resolved : '';
+}
+
 function validateBaseline(parsed, sourceCommit) {
   const errors = [];
   const metrics = parsed.metrics || {};
@@ -49,6 +59,14 @@ function validateBaseline(parsed, sourceCommit) {
   if (!sourceCommit) errors.push('current source commit is unavailable');
   if (!artifactSourceCommit) errors.push('source_commit is required');
   if (sourceCommit && artifactSourceCommit !== sourceCommit) errors.push(`source_commit must match current HEAD ${sourceCommit}`);
+  const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
+  const artifactHash = String(provenance.artifact_sha1 || provenance.artifact_hash || provenance.content_hash || provenance.sha1 || '').trim();
+  if (!artifactPath) errors.push('provenance artifact path is required');
+  const resolvedArtifact = artifactPath ? resolveInsideRoot(artifactPath) : '';
+  if (artifactPath && !resolvedArtifact) errors.push('provenance artifact path must stay inside repository root');
+  if (resolvedArtifact && !existsSync(resolvedArtifact)) errors.push(`provenance artifact does not exist: ${artifactPath}`);
+  if (!artifactHash) errors.push('provenance artifact sha1/hash is required');
+  if (resolvedArtifact && existsSync(resolvedArtifact) && artifactHash && fileSha1(resolvedArtifact) !== artifactHash) errors.push('provenance artifact hash does not match');
   for (const metric of REQUIRED_METRICS) {
     if (!isFiniteNumber(metrics[metric])) errors.push(`metrics.${metric} must be a finite number`);
   }
@@ -57,9 +75,12 @@ function validateBaseline(parsed, sourceCommit) {
   }
   if (isFiniteNumber(metrics.unsupported_claim_rate) && metrics.unsupported_claim_rate < 0) errors.push('metrics.unsupported_claim_rate must be >= 0');
   if (!String(provenance.generated_by || provenance.tool || '').trim()) errors.push('provenance.generated_by or provenance.tool is required');
-  if (!String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim()) errors.push('provenance.artifact/artifact_path/source is required');
   const comparison = parsed.comparison || parsed.compared_to || {};
-  if (!String(comparison.target || comparison.golden_benchmark || comparison.report || '').trim()) errors.push('comparison target/golden_benchmark/report is required');
+  const comparisonTarget = String(comparison.target || comparison.golden_benchmark || comparison.report || '').trim();
+  if (!comparisonTarget) errors.push('comparison target/golden_benchmark/report is required');
+  const resolvedComparison = comparisonTarget ? resolveInsideRoot(comparisonTarget) : '';
+  if (comparisonTarget && !resolvedComparison) errors.push('comparison target must stay inside repository root');
+  if (resolvedComparison && !existsSync(resolvedComparison)) errors.push(`comparison target does not exist: ${comparisonTarget}`);
   return errors;
 }
 

@@ -24,7 +24,8 @@ Each file should include:
   },
   "provenance": {
     "generated_by": "tool or human reviewer name",
-    "artifact": "relative/path/to/baseline-output.md"
+    "artifact": "relative/path/to/baseline-output.md",
+    "artifact_sha1": "sha1 of the referenced artifact"
   },
   "comparison": {
     "target": "benchmarks/golden/demo-repo.expected.json"
