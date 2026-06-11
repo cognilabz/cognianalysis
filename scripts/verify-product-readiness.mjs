@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { computeProductReadiness } from '../dist/productReadiness.js';
 
 const ev = { path: 'src/example.ts', line: 1 };
+const evRef = 'src/example.ts:1';
 const marketProof = {
   goldenExpected: ['api', 'ui', 'cli', 'infra', 'library'],
   passedGoldenRepos: 5,
@@ -13,6 +14,10 @@ const marketProof = {
 
 function trace(label, status = 'covered', evidence = [ev]) {
   return { label, status, evidence };
+}
+
+function traceRef(label, status = 'covered', evidence_refs = [evRef]) {
+  return { label, status, evidence_refs };
 }
 
 function baseBundle() {
@@ -109,6 +114,81 @@ function missingIds(result) {
   bundle.analysis_document.sections = bundle.analysis_document.sections.filter(section => section.id !== 'quality');
   const result = readiness(bundle);
   assert(missingIds(result).includes('quality_security_view'), 'quality evidence without explicit security coverage must not satisfy quality_security_view');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.quality = { risks: [{ title: 'Maintainability issue', evidence: [ev] }] };
+  bundle.findings = [{ category: 'maintainability', title: 'Duplication risk', evidence: [ev] }];
+  bundle.analysis_document.sections = [
+    { id: 'quality', intent: 'Security and quality findings', blocks: [{ type: 'statement_list', items: [{ title: 'Duplication risk', evidence: [ev] }] }] }
+  ];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('quality_security_view'), 'parent section security wording with only nested maintainability evidence must not satisfy quality_security_view');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Functional View')
+    .concat(trace('Functional View', 'open', []));
+  bundle.analysis_document.sections = [{ id: 'functional', blocks: [{ type: 'flow' }] }];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('functional_reverse_engineering'), 'flow block without evidence must not satisfy functional_reverse_engineering');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Technical View')
+    .concat(trace('Technical View', 'open', []));
+  bundle.analysis_document.sections = [{ id: 'technical', blocks: [{ type: 'boundary_map' }] }];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('technical_architecture_view'), 'boundary_map block without evidence must not satisfy technical_architecture_view');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = bundle.analysis_document_requirements_trace_contract.requirements
+    .filter(item => item.label !== 'Refactoring / Target Architecture')
+    .concat(trace('Refactoring / Target Architecture', 'open', []));
+  bundle.refactoring = [];
+  bundle.modernization = [];
+  bundle.analysis_document.sections = [{ id: 'roadmap', blocks: [{ type: 'roadmap' }] }];
+  const result = readiness(bundle);
+  assert(missingIds(result).includes('refactoring_modernization'), 'roadmap block without evidence must not satisfy refactoring_modernization');
+}
+
+{
+  const bundle = baseBundle();
+  bundle.analysis_document_requirements_trace_contract.requirements = [
+    traceRef('Functional View'),
+    traceRef('Technical View'),
+    traceRef('Code Analysis'),
+    traceRef('Process Analysis'),
+    traceRef('Refactoring / Target Architecture')
+  ];
+  bundle.documentation = {
+    request_response_examples: [{ title: 'Example by reference', evidence_refs: [evRef] }]
+  };
+  bundle.process = {
+    tests: { status: 'partial', evidence_refs: [evRef] }
+  };
+  bundle.quality = {
+    risks: [{ title: 'Authentication gap', evidence_refs: [evRef] }]
+  };
+  bundle.findings = [
+    { category: 'security', title: 'Authentication gap', evidence_refs: [evRef] }
+  ];
+  bundle.refactoring = [{ title: 'Extract boundary', evidence_refs: [evRef] }];
+  bundle.analysis_document.sections = [
+    { id: 'functional', blocks: [{ type: 'flow', evidence_refs: [evRef] }] },
+    { id: 'technical', blocks: [{ type: 'boundary_map', evidence_refs: [evRef] }] },
+    { id: 'quality', blocks: [{ type: 'statement_list', items: [{ title: 'Authentication gap', evidence_refs: [evRef] }] }] },
+    { id: 'roadmap', blocks: [{ type: 'roadmap', evidence_refs: [evRef] }] }
+  ];
+  const result = readiness(bundle);
+  assert.equal(result.ready, true, 'evidence_refs-only bundle should satisfy product readiness');
 }
 
 {
