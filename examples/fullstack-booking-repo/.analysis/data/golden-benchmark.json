@@ -2,10 +2,118 @@
   "schemaVersion": "1.0",
   "benchmark": "fullstack-booking-repo",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "c0dbf7329a216d153f56d4dd32187396c43dca22",
+  "source_commit": "b34064b6210223db4a1d1a821934a72f3edef50a",
+  "tool_fingerprint": {
+    "schemaVersion": "1.0",
+    "algorithm": "sha1",
+    "scope": "cognianalysis-market-proof-tooling",
+    "paths": [
+      {
+        "path": "package.json",
+        "sha1": "90251f62df213d2c5d5b48a9c25c8dd0fb74efa2"
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "sha1": "5d75240899a7758341003008452e437cd021dc53"
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "sha1": "57db17bcce233c0287537b3a9e7eb248bba81c52"
+      },
+      {
+        "path": "scripts/verify-product-readiness.mjs",
+        "sha1": "aa2739c8f616a4ab451b00e2749765f03071c3d2"
+      },
+      {
+        "path": "src/aggregate.ts",
+        "sha1": "cd4d93d4db14df779e5fecd9a1d9a0294224b46c"
+      },
+      {
+        "path": "src/analysisGoal.ts",
+        "sha1": "51fa03873c706176e2535ea4b105d0ee388ec297"
+      },
+      {
+        "path": "src/analysisPipeline.ts",
+        "sha1": "1bb3dcf39bbe7f466827f8852368932abf6e9660"
+      },
+      {
+        "path": "src/analysisSkills.ts",
+        "sha1": "31d1da25639768895d0e4ca374660ae33ed5a123"
+      },
+      {
+        "path": "src/cli.ts",
+        "sha1": "ad0deaec372ff4e2cccf178239db128cc702a02f"
+      },
+      {
+        "path": "src/index.ts",
+        "sha1": "36156fceb5096e684d3d9cf1cf0a3e6c5dcc233f"
+      },
+      {
+        "path": "src/marketProof.ts",
+        "sha1": "8838cdaa77e23d912387de9bdf057b71c2c5b5db"
+      },
+      {
+        "path": "src/mcp.ts",
+        "sha1": "34aabcc9fa1da101a9aab615cb9e174f55d9d0cf"
+      },
+      {
+        "path": "src/node-globals.d.ts",
+        "sha1": "47cc525a420c73e1fd0979e4cc0e103a1258b07e"
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "sha1": "9ee8d84c32b81bd5ce4981b2b424a00b37144699"
+      },
+      {
+        "path": "src/readiness.ts",
+        "sha1": "4bd0765fe10188d48250894575c4602e336e1098"
+      },
+      {
+        "path": "src/repoMap.ts",
+        "sha1": "d2b007906b0da3734a4c4adb6141627210397632"
+      },
+      {
+        "path": "src/report.ts",
+        "sha1": "81510b79649040d2f674d9edd608ff8c1d04133e"
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "sha1": "fff74fbdd886ed8fbdec07fbd18a740db54943ab"
+      },
+      {
+        "path": "src/skillWorkbenches.ts",
+        "sha1": "029d5eee54ff26066777c82af4ce4431741239ac"
+      },
+      {
+        "path": "src/sourceTiers.ts",
+        "sha1": "b208a37cd1554810dd41ce1ee9dbf1a30c641f5d"
+      },
+      {
+        "path": "src/targetCoverage.ts",
+        "sha1": "f3688b129a14840bcc4e72edea42dce61d4dfd75"
+      },
+      {
+        "path": "src/tasks.ts",
+        "sha1": "d09eb7f7f29fed32a132447cff41610be60e96f5"
+      },
+      {
+        "path": "src/toolPositioningReferences.ts",
+        "sha1": "95a99ba3032601e6f858ae829bc8559303f98e50"
+      },
+      {
+        "path": "src/types.ts",
+        "sha1": "835e1d388722a8bcb4c251922451e8db484d703a"
+      },
+      {
+        "path": "src/utils.ts",
+        "sha1": "ff1b321c10e80ed034d08f22c2dcd28bac886308"
+      }
+    ],
+    "hash": "5c9ebb49eb54527af29b5267e2b71cf3ce01713d"
+  },
   "expected_file": "benchmarks/golden/fullstack-booking-repo.expected.json",
   "repo": "examples/fullstack-booking-repo",
-  "generated_at": "2026-06-12T00:14:48.198Z",
+  "generated_at": "2026-06-12T00:30:42.123Z",
   "metrics": {
     "fact_recall": 1,
     "evidence_precision": 1,

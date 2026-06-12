@@ -6,6 +6,12 @@ import { createHash } from 'node:crypto';
 const root = resolve(new URL('..', import.meta.url).pathname);
 const baselineRoot = join(root, 'benchmarks', 'baseline');
 const verifierId = 'scripts/verify-baseline.mjs';
+const toolStaticPaths = [
+  'package.json',
+  'scripts/verify-baseline.mjs',
+  'scripts/verify-golden.mjs',
+  'scripts/verify-product-readiness.mjs'
+];
 const verifyRoot = mkdtempSync(join(root, '.verify-tmp-baseline-'));
 const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
   ? root
@@ -68,6 +74,28 @@ function numbersEqual(left, right) {
 
 function fileSha1(file) {
   return createHash('sha1').update(readFileSync(file)).digest('hex');
+}
+
+function sha1Text(text) {
+  return createHash('sha1').update(text).digest('hex');
+}
+
+function marketProofToolFingerprint() {
+  const sourceFiles = walk(join(root, 'src'), file => file.endsWith('.ts')).map(file => relative(root, file).replace(/\\/g, '/'));
+  const paths = [...new Set([...toolStaticPaths, ...sourceFiles])].sort().map(path => {
+    const full = join(root, path);
+    return {
+      path,
+      sha1: existsSync(full) && statSync(full).isFile() ? fileSha1(full) : ''
+    };
+  });
+  return {
+    schemaVersion: '1.0',
+    algorithm: 'sha1',
+    scope: 'cognianalysis-market-proof-tooling',
+    paths,
+    hash: sha1Text(JSON.stringify(paths))
+  };
 }
 
 function resolveInsideRoot(relativePath) {
@@ -295,6 +323,7 @@ const result = {
   benchmark: 'baseline-comparison',
   generated_by: verifierId,
   source_commit: sourceCommitCurrent,
+  tool_fingerprint: marketProofToolFingerprint(),
   generated_at: new Date().toISOString(),
   total_baselines: baselines.length,
   required_baseline_kinds: [...requiredKinds],

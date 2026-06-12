@@ -5,6 +5,12 @@ const ChildProcess = require('node:child_process');
 
 export const GOLDEN_VERIFIER_ID = 'scripts/verify-golden.mjs';
 export const BASELINE_VERIFIER_ID = 'scripts/verify-baseline.mjs';
+const MARKET_PROOF_TOOL_STATIC_PATHS = [
+  'package.json',
+  'scripts/verify-baseline.mjs',
+  'scripts/verify-golden.mjs',
+  'scripts/verify-product-readiness.mjs'
+];
 
 const REQUIRED_BASELINE_KINDS = ['raw_agent_prompt', 'scanner_report'];
 const REQUIRED_BASELINE_METRICS = ['fact_recall', 'evidence_precision', 'unsupported_claim_rate', 'decision_usefulness'];
@@ -45,6 +51,49 @@ function numbersEqual(left: any, right: any): boolean {
 
 function fileSha1(file: string): string {
   return Crypto.createHash('sha1').update(FS.readFileSync(file)).digest('hex');
+}
+
+function sha1Text(text: string): string {
+  return Crypto.createHash('sha1').update(text).digest('hex');
+}
+
+function marketProofToolPaths(root: string): string[] {
+  const sourceFiles = listFilesRecursive(Path.join(root, 'src'), file => file.endsWith('.ts')).map(file => posixRelative(root, file));
+  return [...new Set([...MARKET_PROOF_TOOL_STATIC_PATHS, ...sourceFiles])].sort();
+}
+
+export function marketProofToolFingerprint(root: string): any {
+  const paths = marketProofToolPaths(root).map(path => {
+    const full = Path.join(root, path);
+    return {
+      path,
+      sha1: FS.existsSync(full) && FS.statSync(full).isFile() ? fileSha1(full) : ''
+    };
+  });
+  return {
+    schemaVersion: '1.0',
+    algorithm: 'sha1',
+    scope: 'cognianalysis-market-proof-tooling',
+    paths,
+    hash: sha1Text(JSON.stringify(paths))
+  };
+}
+
+function validateToolFingerprint(root: string, parsed: any, label: string): string[] {
+  const errors: string[] = [];
+  const current = marketProofToolFingerprint(root);
+  const fingerprint = parsed?.tool_fingerprint || parsed?.toolFingerprint || {};
+  const hash = String(fingerprint?.hash || '').trim();
+  if (!hash) errors.push(`${label} tool_fingerprint.hash is required`);
+  else if (hash !== current.hash) errors.push(`${label} tool_fingerprint.hash must match current verifier/runtime code`);
+  const paths = asList(fingerprint?.paths);
+  if (paths.length === 0) errors.push(`${label} tool_fingerprint.paths are required`);
+  const byPath = new Map(paths.map((item: any) => [String(item?.path || '').trim(), String(item?.sha1 || '').trim()]));
+  for (const item of current.paths) {
+    if (!byPath.has(item.path)) errors.push(`${label} tool_fingerprint missing path ${item.path}`);
+    else if (byPath.get(item.path) !== item.sha1) errors.push(`${label} tool_fingerprint path ${item.path} must match current sha1`);
+  }
+  return errors;
 }
 
 function resolveInsideRoot(root: string, relativePath: string): string {
@@ -421,6 +470,7 @@ export function baselineProofStatus(root: string, expectedSourceCommit: string |
     if (aggregate.schemaVersion !== '1.0') aggregateErrors.push('baseline aggregate schemaVersion must be 1.0');
     if (aggregate.benchmark !== 'baseline-comparison') aggregateErrors.push('baseline aggregate benchmark must be baseline-comparison');
     if (aggregate.generated_by !== BASELINE_VERIFIER_ID) aggregateErrors.push(`baseline aggregate generated_by must be ${BASELINE_VERIFIER_ID}`);
+    aggregateErrors.push(...validateToolFingerprint(root, aggregate, 'baseline aggregate'));
     if (aggregate.verdict !== 'pass') aggregateErrors.push('baseline aggregate verdict must be pass');
     if (!expectedSourceCommit) aggregateErrors.push('current source commit is unavailable for baseline freshness validation');
     if (!String(aggregate.source_commit || '').trim()) aggregateErrors.push('baseline aggregate source_commit is required');
@@ -465,6 +515,7 @@ function validateGoldenResultArtifact(root: string, parsed: any, expected: any, 
   if (parsed?.generated_by !== GOLDEN_VERIFIER_ID) errors.push(`generated_by must be ${GOLDEN_VERIFIER_ID}`);
   if (!expectedSourceCommit) errors.push('current source commit is unavailable for golden freshness validation');
   if (!String(parsed?.source_commit || '').trim()) errors.push('source_commit is required');
+  errors.push(...validateToolFingerprint(root, parsed, 'golden result'));
   if (expectedSourceCommit && parsed?.source_commit !== expectedSourceCommit) {
     const changed = changedBaselineSubjectPathsSince(root, String(parsed?.source_commit || ''), expectedSourceCommit, [expected.repo, expectedFile]);
     if (changed.length) errors.push(`golden result subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
@@ -655,6 +706,7 @@ export function goldenProofStatus(root: string, analysis: string, expectedSource
     if (aggregate.schemaVersion !== '1.0') aggregateErrors.push('golden aggregate schemaVersion must be 1.0');
     if (aggregate.benchmark !== 'golden-suite') aggregateErrors.push('golden aggregate benchmark must be golden-suite');
     if (aggregate.generated_by !== GOLDEN_VERIFIER_ID) aggregateErrors.push(`golden aggregate generated_by must be ${GOLDEN_VERIFIER_ID}`);
+    aggregateErrors.push(...validateToolFingerprint(root, aggregate, 'golden aggregate'));
     if (!expectedSourceCommit) aggregateErrors.push('current source commit is unavailable for golden freshness validation');
     if (!String(aggregate.source_commit || '').trim()) aggregateErrors.push('golden aggregate source_commit is required');
     if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit) {

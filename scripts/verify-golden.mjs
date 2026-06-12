@@ -1,12 +1,19 @@
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const cli = join(root, 'dist', 'cli.js');
 const goldenRoot = join(root, 'benchmarks', 'golden');
 const manifestPath = join(goldenRoot, 'manifest.json');
 const verifierId = 'scripts/verify-golden.mjs';
+const toolStaticPaths = [
+  'package.json',
+  'scripts/verify-baseline.mjs',
+  'scripts/verify-golden.mjs',
+  'scripts/verify-product-readiness.mjs'
+];
 const verifyRoot = mkdtempSync(join(root, '.verify-tmp-golden-'));
 const resultRoot = process.env.COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS === '1'
   ? root
@@ -57,6 +64,32 @@ function readJsonObject(file, fallback = {}) {
   } catch {
     return fallback;
   }
+}
+
+function fileSha1(file) {
+  return createHash('sha1').update(readFileSync(file)).digest('hex');
+}
+
+function sha1Text(text) {
+  return createHash('sha1').update(text).digest('hex');
+}
+
+function marketProofToolFingerprint() {
+  const sourceFiles = walk(join(root, 'src'), file => file.endsWith('.ts')).map(file => relative(root, file).replace(/\\/g, '/'));
+  const paths = [...new Set([...toolStaticPaths, ...sourceFiles])].sort().map(path => {
+    const full = join(root, path);
+    return {
+      path,
+      sha1: existsSync(full) && statSync(full).isFile() ? fileSha1(full) : ''
+    };
+  });
+  return {
+    schemaVersion: '1.0',
+    algorithm: 'sha1',
+    scope: 'cognianalysis-market-proof-tooling',
+    paths,
+    hash: sha1Text(JSON.stringify(paths))
+  };
 }
 
 function hasEvidence(item) {
@@ -129,6 +162,7 @@ function scoreExpected(expectedPath) {
     benchmark: expected.benchmark || relative(goldenRoot, expectedPath).replace(/\.expected\.json$/, ''),
     generated_by: verifierId,
     source_commit: sourceCommit,
+    tool_fingerprint: marketProofToolFingerprint(),
     expected_file: relative(root, expectedPath),
     repo: expected.repo,
     generated_at: new Date().toISOString(),
@@ -288,6 +322,7 @@ const aggregate = {
   benchmark: 'golden-suite',
   generated_by: verifierId,
   source_commit: sourceCommit,
+  tool_fingerprint: marketProofToolFingerprint(),
   generated_at: new Date().toISOString(),
   total_repos: results.length,
   passed_repos: results.length - failed.length,
