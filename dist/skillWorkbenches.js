@@ -18,13 +18,22 @@ function taskIdFor(row, index) {
     const id = (0, utils_1.cleanId)(String(raw));
     return id === 'item' ? `skill-workbench-${index + 1}` : id;
 }
+function removeIfPresent(file) {
+    try {
+        utils_1.FS.unlinkSync(file);
+    }
+    catch (err) {
+        if (err?.code !== 'ENOENT')
+            throw err;
+    }
+}
 function writeSkillWorkbenchTasksFromLlmStrategy(analysisDir, strategyDoc) {
     const tasksDir = utils_1.Path.join(analysisDir, 'skill_workbench_tasks');
     const reviewsDir = utils_1.Path.join(analysisDir, 'skill_reviews');
     (0, utils_1.ensureDir)(tasksDir);
     (0, utils_1.ensureDir)(reviewsDir);
     for (const file of utils_1.FS.readdirSync(tasksDir).filter((name) => name.endsWith('.md'))) {
-        utils_1.FS.unlinkSync(utils_1.Path.join(tasksDir, file));
+        removeIfPresent(utils_1.Path.join(tasksDir, file));
     }
     const rows = plannedSkillRows(strategyDoc);
     const seen = new Set();

@@ -19,13 +19,21 @@ function taskIdFor(row: any, index: number): string {
   return id === 'item' ? `skill-workbench-${index + 1}` : id;
 }
 
+function removeIfPresent(file: string): void {
+  try {
+    FS.unlinkSync(file);
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') throw err;
+  }
+}
+
 export function writeSkillWorkbenchTasksFromLlmStrategy(analysisDir: string, strategyDoc: any): any {
   const tasksDir = Path.join(analysisDir, 'skill_workbench_tasks');
   const reviewsDir = Path.join(analysisDir, 'skill_reviews');
   ensureDir(tasksDir);
   ensureDir(reviewsDir);
   for (const file of FS.readdirSync(tasksDir).filter((name: string) => name.endsWith('.md'))) {
-    FS.unlinkSync(Path.join(tasksDir, file));
+    removeIfPresent(Path.join(tasksDir, file));
   }
 
   const rows = plannedSkillRows(strategyDoc);

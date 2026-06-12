@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "event-inventory-repo",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "4c12f45511c18778262c13035916a7cfb2d24026",
+  "source_commit": "fe127f4c9269dbaea8e4b777d1de62744ccf9135",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -62,7 +62,7 @@
       },
       {
         "path": "dist/skillWorkbenches.js",
-        "sha1": "af441b4449f176a462e32998f772a917cf0e3126"
+        "sha1": "4d0fb622afaf921e9d875de653a2e75fc6b5d4bf"
       },
       {
         "path": "dist/sourceTiers.js",
@@ -74,7 +74,7 @@
       },
       {
         "path": "dist/tasks.js",
-        "sha1": "f936534853b94d2c40f04295a5165ffe92a1dae1"
+        "sha1": "4cceece8974eddea49ed0c69c7b41aa8f927dd81"
       },
       {
         "path": "dist/toolPositioningReferences.js",
@@ -162,7 +162,7 @@
       },
       {
         "path": "src/skillWorkbenches.ts",
-        "sha1": "029d5eee54ff26066777c82af4ce4431741239ac"
+        "sha1": "f22e8f3a9fb7d0c88ac209f2c32f2aa74c3a10e3"
       },
       {
         "path": "src/sourceTiers.ts",
@@ -174,7 +174,7 @@
       },
       {
         "path": "src/tasks.ts",
-        "sha1": "d09eb7f7f29fed32a132447cff41610be60e96f5"
+        "sha1": "6799af439b0e7494ef9d7eeb7def8d4d654035be"
       },
       {
         "path": "src/toolPositioningReferences.ts",
@@ -189,11 +189,11 @@
         "sha1": "ff1b321c10e80ed034d08f22c2dcd28bac886308"
       }
     ],
-    "hash": "166e49bffb9e85cc1648d290d9fd43d554ec9095"
+    "hash": "2e6e2dc7c98d9802dcbd344f956d401e2bdae08b"
   },
   "expected_file": "benchmarks/golden/event-inventory-repo.expected.json",
   "repo": "examples/event-inventory-repo",
-  "generated_at": "2026-06-12T01:20:00.142Z",
+  "generated_at": "2026-06-12T01:41:02.240Z",
   "metrics": {
     "fact_recall": 1,
     "evidence_precision": 1,

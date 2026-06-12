@@ -230,7 +230,11 @@ export function writeDetailTasksFromLlmPlan(analysisDir: string, plan: any): any
   ensureDir(tasksDir);
   ensureDir(reviewsDir);
   for (const file of FS.readdirSync(tasksDir).filter((name: string) => name.endsWith('.md'))) {
-    FS.unlinkSync(Path.join(tasksDir, file));
+    try {
+      FS.unlinkSync(Path.join(tasksDir, file));
+    } catch (err: any) {
+      if (err?.code !== 'ENOENT') throw err;
+    }
   }
   const planTasks = plan?.tasks || [];
   const usedIds = new Set<string>();

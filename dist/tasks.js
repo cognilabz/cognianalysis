@@ -203,7 +203,13 @@ function writeDetailTasksFromLlmPlan(analysisDir, plan) {
     (0, utils_1.ensureDir)(tasksDir);
     (0, utils_1.ensureDir)(reviewsDir);
     for (const file of utils_1.FS.readdirSync(tasksDir).filter((name) => name.endsWith('.md'))) {
-        utils_1.FS.unlinkSync(utils_2.Path.join(tasksDir, file));
+        try {
+            utils_1.FS.unlinkSync(utils_2.Path.join(tasksDir, file));
+        }
+        catch (err) {
+            if (err?.code !== 'ENOENT')
+                throw err;
+        }
     }
     const planTasks = plan?.tasks || [];
     const usedIds = new Set();
