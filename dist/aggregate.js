@@ -282,7 +282,7 @@ function loadBundle(analysisDir) {
 function computeToolingCapabilities() {
     return {
         public_cli_commands: ['analyze', 'status', 'open', 'eval'],
-        internal_cli_commands: ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
+        internal_cli_commands: ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev run-orchestration', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
         compatibility_cli_commands: ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio'],
         portfolio_mode_available: true,
         harness_portability_available: true,
@@ -440,6 +440,7 @@ function hasOverlappingWorkerWindows(tasks) {
 }
 function validateOrchestrationExecutionLog(bundle) {
     const log = bundle.orchestration_execution_log || {};
+    const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
     const hashesByPath = artifactHashesByPath(bundle);
     const sourceTierTasks = (0, utils_1.asList)(bundle.source_tier_task_manifest?.tasks);
     const tasksById = new Map(sourceTierTasks
@@ -451,6 +452,7 @@ function validateOrchestrationExecutionLog(bundle) {
     const missing = [
         ...(log.schemaVersion === '1.0' ? [] : ['orchestration_execution_log.schemaVersion']),
         ...(String(log.execution_kind || '') === 'source_tier_workpack_execution' ? [] : ['orchestration_execution_log.execution_kind']),
+        ...(String(log.generated_by || '') === runnerGeneratedBy ? [] : ['orchestration_execution_log.generated_by']),
         ...(String(log.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['orchestration_execution_log.analysis_run_id']),
         ...(String(log.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['orchestration_execution_log.source_commit']),
         ...(graphNodeFresh(bundle, 'orchestration_execution_log') ? [] : ['orchestration_execution_log_node_fresh']),
@@ -547,6 +549,7 @@ function validateParallelExecutionProof(bundle) {
 }
 function validateCacheLedger(bundle) {
     const ledger = bundle.cache_ledger || {};
+    const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
     const hashesByPath = artifactHashesByPath(bundle);
     const entries = (0, utils_1.asList)(ledger.cache_entries || ledger.entries);
     const hitEntries = entries.filter((entry) => entry?.hit === true || entry?.cache_hit === true);
@@ -554,6 +557,7 @@ function validateCacheLedger(bundle) {
     const missing = [
         ...(ledger.schemaVersion === '1.0' ? [] : ['cache_ledger.schemaVersion']),
         ...(String(ledger.ledger_kind || '') === 'artifact_cache_ledger' ? [] : ['cache_ledger.ledger_kind']),
+        ...(String(ledger.generated_by || '') === runnerGeneratedBy ? [] : ['cache_ledger.generated_by']),
         ...(String(ledger.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['cache_ledger.analysis_run_id']),
         ...(String(ledger.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['cache_ledger.source_commit']),
         ...(graphNodeFresh(bundle, 'cache_ledger') ? [] : ['cache_ledger_node_fresh']),

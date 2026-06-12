@@ -526,6 +526,7 @@ secondOutputHash = hashByPath.get('source_tiers/source-tier-0002.json');
 writeJson(join(orchestrationAnalysis, 'data', 'orchestration-execution-log.json'), {
   schemaVersion: '1.0',
   execution_kind: 'source_tier_workpack_execution',
+  generated_by: 'cognianalysis dev run-orchestration',
   analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
   source_commit: orchestrationBundle.analysis_run.source_commit,
   worker_tasks: [
@@ -537,6 +538,7 @@ cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orch
 writeJson(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), {
   schemaVersion: '1.0',
   ledger_kind: 'artifact_cache_ledger',
+  generated_by: 'cognianalysis dev run-orchestration',
   analysis_run_id: orchestrationBundle.analysis_run.analysis_run_id,
   source_commit: orchestrationBundle.analysis_run.source_commit,
   cache_entries: [
@@ -582,6 +584,7 @@ orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data'
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Proof files with correct lineage but mismatched log/ledger rows must not complete orchestration');
 assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_tasks_match_orchestration_execution_log'), 'Parallel proof rows must match the exact orchestration execution log rows');
 assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entries_match_cache_ledger'), 'Cache proof rows must match the exact cache ledger rows');
+run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
 const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
@@ -589,7 +592,7 @@ assert(orchestrationBundle.parallel_orchestration_contract?.complete === true, `
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }
-for (const command of ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
+for (const command of ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev run-orchestration', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init']) {
   assert(bundle.tooling?.internal_cli_commands?.includes(command), `Demo tooling contract must expose internal dev command: ${command}`);
 }
 for (const command of ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio']) {

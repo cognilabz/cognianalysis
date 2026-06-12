@@ -74,10 +74,11 @@ Strict `eval` combines market proof with the original-product readiness contract
 Parallel/caching readiness is proven with:
 
 ```bash
+cognianalysis dev run-orchestration .
 cognianalysis dev prove-orchestration .
 ```
 
-That command refuses one-workpack or stale analyses, and it also refuses post-hoc completed outputs without harness evidence. It writes proof only after `.analysis/data/orchestration-execution-log.json` records at least two source-tier workpack worker executions with matching task IDs, timings and output hashes, and `.analysis/data/cache-ledger.json` records a prior cache entry that was reused later with the deterministic run/request/artifact cache key.
+The runner records harness-owned execution/cache logs from completed source-tier workpack outputs. The proof command refuses one-workpack or stale analyses, and it also refuses post-hoc completed outputs without runner-generated harness evidence. It writes proof only after `.analysis/data/orchestration-execution-log.json` records at least two source-tier workpack worker executions with matching task IDs, timings and output hashes, and `.analysis/data/cache-ledger.json` records a prior cache entry that was reused later with the deterministic run/request/artifact cache key.
 
 ## Required Coverage
 

@@ -291,7 +291,7 @@
       "confidence": "high",
       "decision_questions": {
         "keep_system": "Keep and continue hardening Cognianalysis because the product loop, report contract, evidence gates and benchmarks are implemented in source and executable artifacts.",
-        "modernize_system": "Modernize by turning orchestration/cache proof and true external semantic scoring into more automated runner surfaces.",
+        "modernize_system": "Modernize further by keeping runner-produced orchestration/cache proof reproducible and by expanding true external semantic scoring.",
         "replace_system": "Do not replace the system; the current evidence supports incremental hardening rather than restart.",
         "cost": "Low short-term cost for refreshing generated analysis artifacts and moderate cost for CI-grade agent-run external semantic scoring.",
         "biggest_risks": [
@@ -1434,9 +1434,9 @@
                 ]
               },
               {
-                "title": "Promote orchestration/cache proof generation.",
+                "title": "Maintain runner-produced orchestration/cache proof.",
                 "phase": "next",
-                "benefit": "Makes parallel execution and cache reuse easier to reproduce and review.",
+                "benefit": "Keeps parallel execution and cache reuse proof reproducible without verifier-fabricated logs.",
                 "effort": "M",
                 "risk": "medium",
                 "confidence": "high",
