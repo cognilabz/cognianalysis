@@ -2,8 +2,8 @@
   "profile": {
     "repo_name": "fullstack-booking-repo",
     "root": "examples/fullstack-booking-repo",
-    "analyzed_at": "2026-06-12T03:17:13Z",
-    "commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+    "analyzed_at": "2026-06-12T03:40:04Z",
+    "commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
     "repo_type": "source-inventory",
     "languages": {
       "TypeScript": 9
@@ -946,7 +946,7 @@
       "mode": "representative",
       "scope_files": 400
     },
-    "generated_at": "2026-06-12T03:17:13.200Z",
+    "generated_at": "2026-06-12T03:40:04.813Z",
     "public_outputs": [
       ".analysis/report/index.html",
       ".analysis/data/bundle.json",
@@ -1181,9 +1181,9 @@
   },
   "analysis_run": {
     "contract_kind": "analysis_run_identity",
-    "analysis_run_id": "run-3c7d5c15107a6bf0",
-    "prepared_at": "2026-06-12T03:17:13Z",
-    "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+    "analysis_run_id": "run-e848a11ad575db79",
+    "prepared_at": "2026-06-12T03:40:04Z",
+    "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
     "repo_root": "examples/fullstack-booking-repo",
     "analysis_dir": "examples/fullstack-booking-repo/.analysis",
     "scope_mode": "representative",
@@ -3272,7 +3272,7 @@
     "analysis_data_json_path": "examples/fullstack-booking-repo/.analysis/report/analysis-data.json",
     "index_html": true,
     "analysis_data_json": true,
-    "generated_at": "2026-06-12T03:17:13Z",
+    "generated_at": "2026-06-12T03:40:04Z",
     "renderer": "src/report.ts"
   },
   "llm_output_presence": {
@@ -4958,8 +4958,8 @@
   "analysis_staleness": {
     "contract_kind": "analysis_staleness",
     "deterministic_contract_scope": "Compares the commit captured when the analysis code map was prepared with the current repository commit. Uncommitted working-tree drift is not included in this deterministic check.",
-    "analysis_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
-    "current_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+    "analysis_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
+    "current_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
     "comparable": true,
     "stale": false,
     "summary": "Repository commit matches the prepared analysis commit."
@@ -5206,8 +5206,8 @@
   },
   "analysis_run_provenance": {
     "contract_kind": "analysis_run_provenance",
-    "analysis_run_id": "run-3c7d5c15107a6bf0",
-    "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+    "analysis_run_id": "run-e848a11ad575db79",
+    "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
     "deterministic_contract_scope": "Records artifact IDs, content hashes, generated_from parents and optional declared analysis_run_id matches. It does not judge semantic quality.",
     "complete": true,
     "artifact_count": 7,
@@ -5216,26 +5216,26 @@
         "path": "data/code-map.json",
         "exists": true,
         "size_bytes": 13922,
-        "mtime_ms": 1781234233223.827,
-        "content_hash": "af04ec3bf78af75c",
+        "mtime_ms": 1781235604836.1882,
+        "content_hash": "570a76a0f5960825",
         "artifact_id": "data-code-map",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": []
       },
       {
         "path": "data/product-analysis-request.json",
         "exists": true,
         "size_bytes": 904,
-        "mtime_ms": 1781234233201.8542,
-        "content_hash": "9e3337549c8e7fa7",
+        "mtime_ms": 1781235604814.6846,
+        "content_hash": "b26f7030658d3832",
         "artifact_id": "data-product-analysis-request",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "data/code-map.json"
         ]
@@ -5244,13 +5244,13 @@
         "path": "llm/analysis-strategy.json",
         "exists": true,
         "size_bytes": 3116,
-        "mtime_ms": 1781234233229.8398,
+        "mtime_ms": 1781235604842.298,
         "content_hash": "80b1c8ed3ffd1b3b",
         "artifact_id": "llm-analysis-strategy",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "data/code-map.json",
           "data/source-inventory.json",
@@ -5261,13 +5261,13 @@
         "path": "source_tiers/source-tier-0001.json",
         "exists": true,
         "size_bytes": 4065,
-        "mtime_ms": 1781234233230.283,
+        "mtime_ms": 1781235604842.6519,
         "content_hash": "c363de0841afd966",
         "artifact_id": "source-tiers-source-tier-0001",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "llm/analysis-strategy.json",
           "source-tier-task-manifest.json"
@@ -5277,13 +5277,13 @@
         "path": "llm/detail-agent-plan.json",
         "exists": true,
         "size_bytes": 2584,
-        "mtime_ms": 1781234233229.9502,
+        "mtime_ms": 1781235604842.387,
         "content_hash": "a06ececa47c8f598",
         "artifact_id": "llm-detail-agent-plan",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "llm/analysis-strategy.json",
           "skill_reviews/*.json",
@@ -5295,13 +5295,13 @@
         "path": "detail_reviews/main-flow.json",
         "exists": true,
         "size_bytes": 1781,
-        "mtime_ms": 1781234233230.1348,
+        "mtime_ms": 1781235604842.5354,
         "content_hash": "4ffe33df9199dbe6",
         "artifact_id": "detail-reviews-main-flow",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "llm/detail-agent-plan.json",
           "detail-task-manifest.json"
@@ -5311,13 +5311,13 @@
         "path": "llm/analysis-document.json",
         "exists": true,
         "size_bytes": 14743,
-        "mtime_ms": 1781234233229.5957,
+        "mtime_ms": 1781235604841.7786,
         "content_hash": "462ae448ab3a3a69",
         "artifact_id": "llm-analysis-document",
-        "analysis_run_id": "run-3c7d5c15107a6bf0",
+        "analysis_run_id": "run-e848a11ad575db79",
         "declared_analysis_run_id": null,
         "run_match": true,
-        "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+        "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
         "generated_from": [
           "llm/analysis-strategy.json",
           "llm/detail-agent-plan.json",
@@ -5330,11 +5330,11 @@
     ],
     "missing_required_artifacts": [],
     "mismatched_run_artifacts": [],
-    "summary": "Analysis run provenance is anchored to run-3c7d5c15107a6bf0."
+    "summary": "Analysis run provenance is anchored to run-e848a11ad575db79."
   },
   "artifact_dependency_graph": {
     "contract_kind": "artifact_dependency_graph",
-    "analysis_run_id": "run-3c7d5c15107a6bf0",
+    "analysis_run_id": "run-e848a11ad575db79",
     "deterministic_contract_scope": "Artifact existence and dependency/freshness metadata only; mtime stale nodes are advisory because seeded harnesses may copy authored artifacts out of authoring order. Product-request hash freshness is tracked separately as a blocking readiness contract.",
     "complete": true,
     "node_count": 10,
@@ -5355,8 +5355,8 @@
         "path": "data/code-map.json",
         "kind": "deterministic_context",
         "exists": true,
-        "mtime_ms": 1781234233223.827,
-        "content_hash": "af04ec3bf78af75c",
+        "mtime_ms": 1781235604836.1882,
+        "content_hash": "570a76a0f5960825",
         "depends_on": [],
         "missing_parents": [],
         "stale_from_parents": [],
@@ -5367,7 +5367,7 @@
         "path": "data/source-inventory.json",
         "kind": "deterministic_context",
         "exists": true,
-        "mtime_ms": 1781234233223.9075,
+        "mtime_ms": 1781235604836.2703,
         "content_hash": "2cd0f284a9f5bcfb",
         "depends_on": [
           "code_map"
@@ -5381,8 +5381,8 @@
         "path": "data/product-analysis-request.json",
         "kind": "product_request",
         "exists": true,
-        "mtime_ms": 1781234233201.8542,
-        "content_hash": "9e3337549c8e7fa7",
+        "mtime_ms": 1781235604814.6846,
+        "content_hash": "b26f7030658d3832",
         "depends_on": [
           "code_map"
         ],
@@ -5397,7 +5397,7 @@
         "path": "llm/analysis-strategy.json",
         "kind": "llm_strategy",
         "exists": true,
-        "mtime_ms": 1781234233229.8398,
+        "mtime_ms": 1781235604842.298,
         "content_hash": "80b1c8ed3ffd1b3b",
         "depends_on": [
           "code_map",
@@ -5413,7 +5413,7 @@
         "path": "source_tiers/source-tier-0001.json",
         "kind": "llm_source_file_tier_review",
         "exists": true,
-        "mtime_ms": 1781234233230.283,
+        "mtime_ms": 1781235604842.6519,
         "content_hash": "c363de0841afd966",
         "depends_on": [
           "analysis_strategy"
@@ -5427,7 +5427,7 @@
         "path": "skill-workbench-task-manifest.json",
         "kind": "deterministic_task_materialization",
         "exists": true,
-        "mtime_ms": 1781234233259.051,
+        "mtime_ms": 1781235604870.8894,
         "content_hash": "059800f11caf0021",
         "depends_on": [
           "analysis_strategy",
@@ -5442,7 +5442,7 @@
         "path": "llm/detail-agent-plan.json",
         "kind": "llm_detail_plan",
         "exists": true,
-        "mtime_ms": 1781234233229.9502,
+        "mtime_ms": 1781235604842.387,
         "content_hash": "a06ececa47c8f598",
         "depends_on": [
           "analysis_strategy",
@@ -5460,7 +5460,7 @@
         "path": "detail-task-manifest.json",
         "kind": "deterministic_task_materialization",
         "exists": true,
-        "mtime_ms": 1781234233280.2688,
+        "mtime_ms": 1781235604894.0293,
         "content_hash": "745111e8a09eac01",
         "depends_on": [
           "detail_agent_plan"
@@ -5474,7 +5474,7 @@
         "path": "detail_reviews/main-flow.json",
         "kind": "llm_detail_review",
         "exists": true,
-        "mtime_ms": 1781234233230.1348,
+        "mtime_ms": 1781235604842.5354,
         "content_hash": "4ffe33df9199dbe6",
         "depends_on": [
           "detail_agent_plan"
@@ -5488,7 +5488,7 @@
         "path": "llm/analysis-document.json",
         "kind": "llm_final_report",
         "exists": true,
-        "mtime_ms": 1781234233229.5957,
+        "mtime_ms": 1781235604841.7786,
         "content_hash": "462ae448ab3a3a69",
         "depends_on": [
           "analysis_strategy",
@@ -5523,7 +5523,7 @@
     "previous_request_hash": null,
     "marker_request_hash": "dff06903a65f04a9",
     "marker_hash_mismatch": false,
-    "request_mtime_ms": 1781234233201.8542,
+    "request_mtime_ms": 1781235604814.6846,
     "stale_outputs": [],
     "summary": "Product analysis request is current for required LLM artifacts."
   },
@@ -5901,6 +5901,7 @@
           "cache_ledger.generated_by",
           "cache_ledger.analysis_run_id",
           "cache_ledger.source_commit",
+          "cache_ledger.product_request_hash",
           "cache_ledger_node_fresh",
           "cache_ledger.hit_entries"
         ],

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "legacy-billing-repo",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
+  "source_commit": "0adc6b823f4e715945a0de90a0dbb21e6efd0730",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -10,7 +10,7 @@
     "paths": [
       {
         "path": "dist/aggregate.js",
-        "sha1": "747c534984dc80c983291ce42f8d9a41717e1ca4"
+        "sha1": "e7b9ae7ae21fdd657ecac5e10d289753c85de749"
       },
       {
         "path": "dist/analysisGoal.js",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "88cef76694c6e497a2b270dc8c4c3dabc37eafa5"
+        "sha1": "25246072b87b189790e2ff59ddaabb53d9a70ff0"
       },
       {
         "path": "dist/index.js",
@@ -106,7 +106,7 @@
       },
       {
         "path": "src/aggregate.ts",
-        "sha1": "8a80fd3441139a34c59f0992331454f26a1313df"
+        "sha1": "95714d961e1f8e17d3598c53b40858cfc7367acf"
       },
       {
         "path": "src/analysisGoal.ts",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "c1d2701b195c49e22b64e8d0be3248b8bd06f4ae"
+        "sha1": "34877cc55c897435a143fb1ba980f84dcfb9d914"
       },
       {
         "path": "src/index.ts",
@@ -189,11 +189,11 @@
         "sha1": "209bd3c9822c2dacd20d503a8c51537af4a3bc69"
       }
     ],
-    "hash": "6e7194b03028ec3778f10d553230a2a4082d0fc5"
+    "hash": "d787ec4b752b3ad197b4d7b3d938f584d600e425"
   },
   "expected_file": "benchmarks/golden/legacy-billing-repo.expected.json",
   "repo": "examples/legacy-billing-repo",
-  "generated_at": "2026-06-12T03:17:13.707Z",
+  "generated_at": "2026-06-12T03:40:05.315Z",
   "metrics": {
     "fact_recall": 1,
     "evidence_precision": 1,
