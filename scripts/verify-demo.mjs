@@ -184,6 +184,10 @@ const demoAnalysisStaleness = JSON.parse(readFileSync(join(demo, '.analysis', 'd
 const demoRepairReport = JSON.parse(readFileSync(join(demo, '.analysis', 'data', 'repair-report.json'), 'utf8'));
 const demoPipeline = JSON.parse(readFileSync(join(demo, '.analysis', 'analysis-pipeline.json'), 'utf8'));
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const packageFiles = Array.isArray(packageJson.files) ? packageJson.files : [];
+function packagePublishesPath(relativePath) {
+  return packageFiles.some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`));
+}
 const demoTaskManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'task-manifest.json'), 'utf8'));
 const demoCapabilityTemplateManifest = JSON.parse(readFileSync(join(demo, '.analysis', 'capability-template-manifest.json'), 'utf8'));
 const instructions = readFileSync(join(demo, '.analysis', 'llm_instructions.md'), 'utf8');
@@ -614,8 +618,20 @@ assert(packageJson.bin?.cognianalysis === 'dist/cli.js', 'Package must expose th
 assert(packageJson.scripts?.['verify:golden'] === 'npm run build && node scripts/verify-golden.mjs', 'Package must expose the golden benchmark verifier');
 assert(packageJson.scripts?.['verify:baseline'] === 'npm run build && node scripts/verify-baseline.mjs', 'Package must expose the baseline benchmark verifier');
 assert(packageJson.scripts?.['verify:external'] === 'npm run build && node scripts/verify-external-repos.mjs', 'Package must expose the external repository smoke verifier');
+assert(packageJson.scripts?.['verify:external-semantic'] === 'npm run build && node scripts/verify-external-semantic.mjs', 'Package must expose the external semantic benchmark verifier');
 assert(packageJson.files?.includes('benchmarks'), 'Package must publish benchmark fixtures');
 assert(packageJson.files?.includes('scripts'), 'Package must publish benchmark verification scripts');
+assert(packagePublishesPath('scripts/verify-external-semantic.mjs'), 'Package file allowlist must publish the external semantic verifier script');
+for (const fixturePath of [
+  'benchmarks/external/semantic/manifest.json',
+  'benchmarks/external/semantic/octocat-hello-world/.analysis-seed/llm/analysis-strategy.json',
+  'benchmarks/external/semantic/octocat-hello-world/.analysis-seed/llm/detail-agent-plan.json',
+  'benchmarks/external/semantic/octocat-hello-world/.analysis-seed/llm/analysis-document.json',
+  'benchmarks/external/semantic/octocat-hello-world/.analysis-seed/source_tiers/source-tier-0001.json'
+]) {
+  assert(existsSync(join(root, fixturePath)), `External semantic package fixture must exist: ${fixturePath}`);
+  assert(packagePublishesPath(fixturePath), `Package file allowlist must publish external semantic fixture: ${fixturePath}`);
+}
 assert(!Object.prototype.hasOwnProperty.call(packageJson.bin || {}, 'cba'), 'Package must not expose the legacy cba CLI alias');
 assert(!packageJson.files?.includes('examples'), 'Package must not publish generated demo .analysis artifacts through the broad examples folder');
 assert(packageJson.files?.includes('examples/demo-repo/.analysis-seed'), 'Package must publish reusable demo seed data');
