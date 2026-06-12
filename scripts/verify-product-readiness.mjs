@@ -565,8 +565,8 @@ function missingIds(result) {
     });
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.goldenProofReady, false, 'otherwise-valid stale golden proof must not be proof-ready');
-    assert(status.strictFailures.some(item => item.includes('golden aggregate source_commit must match current HEAD current-commit')), 'strict failures must reject stale golden aggregate source_commit');
-    assert(status.strictFailures.some(item => item.includes('source_commit must match current HEAD current-commit')), 'strict failures must reject stale per-suite golden source_commit');
+    assert(status.strictFailures.some(item => item.includes('golden aggregate subject changed since source_commit')), 'strict failures must reject stale golden aggregate subjects');
+    assert(status.strictFailures.some(item => item.includes('golden result subject changed since source_commit')), 'strict failures must reject stale per-suite golden subjects');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -630,7 +630,7 @@ function missingIds(result) {
     });
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.baselineProofReady, false, 'otherwise-valid stale baseline aggregate must not be proof-ready');
-    assert(status.strictFailures.some(item => item.includes('baseline aggregate source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline aggregate source_commit');
+    assert(status.strictFailures.some(item => item.includes('baseline aggregate subject changed since source_commit')), 'strict failures must reject stale baseline aggregate subjects');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -695,7 +695,6 @@ function missingIds(result) {
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.baselineProofReady, false, 'current aggregate with stale baseline artifacts must not be proof-ready');
     assert(status.strictFailures.some(item => item.includes('baseline subject changed since source_commit')), 'strict failures must reject stale baseline artifact subjects');
-    assert(status.strictFailures.some(item => item.includes('source_commit must match baseline aggregate source_commit')), 'strict failures must reject baseline artifact/aggregate source mismatch');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

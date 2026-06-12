@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "event-inventory-repo",
+  "generated_by": "scripts/verify-golden.mjs",
+  "source_commit": "c0dbf7329a216d153f56d4dd32187396c43dca22",
+  "expected_file": "benchmarks/golden/event-inventory-repo.expected.json",
+  "repo": "examples/event-inventory-repo",
+  "generated_at": "2026-06-12T00:14:47.886Z",
+  "metrics": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1,
+    "invalid_evidence": 0
+  },
+  "metric_derivation": {
+    "expected_fact_count": 5,
+    "found_fact_count": 5,
+    "evidence_backed_found_fact_count": 5,
+    "report_fact_count": 8,
+    "unsupported_claim_count": 0,
+    "invalid_evidence_count": 0,
+    "final_llm_readiness_state": "ready",
+    "report_lint_complete": true,
+    "component_coverage_complete": true
+  },
+  "minimums": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1
+  },
+  "facts": [
+    {
+      "id": "event-reservation-requested",
+      "category": "event",
+      "expected": "inventory.reservation.requested",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "inventory.reservation.requested",
+      "source": "system-boundary:boundary_map:entry",
+      "evidence_present": true
+    },
+    {
+      "id": "event-reservation-confirmed",
+      "category": "event",
+      "expected": "inventory.reservation.confirmed",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "inventory.reservation.confirmed",
+      "source": "system-boundary:boundary_map:exit",
+      "evidence_present": true
+    },
+    {
+      "id": "flow-reserve-inventory",
+      "category": "flow",
+      "expected": "Reserve inventory from requested event.",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Reserve inventory from requested event.",
+      "source": "functional-flow:flow:step",
+      "evidence_present": true
+    },
+    {
+      "id": "finding-manual-replay",
+      "category": "finding",
+      "expected": "Inventory replay is manual",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Inventory replay is manual",
+      "source": "quality-roadmap:statement_list:item",
+      "evidence_present": true
+    },
+    {
+      "id": "refactor-replay-automation",
+      "category": "refactoring",
+      "expected": "Automate inventory replay",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Automate inventory replay",
+      "source": "quality-roadmap:roadmap:item",
+      "evidence_present": true
+    }
+  ],
+  "unsupported_claims": [],
+  "verdict": "pass",
+  "failures": []
+}

@@ -1,18 +1,47 @@
 {
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
-  "generated_at": "2026-06-11T05:12:59.359Z",
-  "total_baselines": 0,
+  "generated_by": "scripts/verify-baseline.mjs",
+  "source_commit": "c0dbf7329a216d153f56d4dd32187396c43dca22",
+  "generated_at": "2026-06-12T00:14:46.807Z",
+  "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",
     "scanner_report"
   ],
-  "present_baseline_kinds": [],
-  "missing_baseline_kinds": [
+  "present_baseline_kinds": [
     "raw_agent_prompt",
     "scanner_report"
   ],
+  "missing_baseline_kinds": [],
   "failed_baselines": [],
-  "verdict": "missing_baselines",
-  "baselines": []
+  "verdict": "pass",
+  "baselines": [
+    {
+      "file": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+      "repo": "examples/demo-repo",
+      "baseline_kind": "raw_agent_prompt",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_usefulness": 1
+      },
+      "validation_errors": []
+    },
+    {
+      "file": "benchmarks/baseline/scanner_report.baseline.json",
+      "repo": "examples/demo-repo",
+      "baseline_kind": "scanner_report",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_usefulness": 1
+      },
+      "validation_errors": []
+    }
+  ]
 }

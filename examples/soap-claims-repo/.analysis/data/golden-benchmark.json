@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "soap-claims-repo",
+  "generated_by": "scripts/verify-golden.mjs",
+  "source_commit": "c0dbf7329a216d153f56d4dd32187396c43dca22",
+  "expected_file": "benchmarks/golden/soap-claims-repo.expected.json",
+  "repo": "examples/soap-claims-repo",
+  "generated_at": "2026-06-12T00:14:48.836Z",
+  "metrics": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1,
+    "invalid_evidence": 0
+  },
+  "metric_derivation": {
+    "expected_fact_count": 5,
+    "found_fact_count": 5,
+    "evidence_backed_found_fact_count": 5,
+    "report_fact_count": 8,
+    "unsupported_claim_count": 0,
+    "invalid_evidence_count": 0,
+    "final_llm_readiness_state": "ready",
+    "report_lint_complete": true,
+    "component_coverage_complete": true
+  },
+  "minimums": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1
+  },
+  "facts": [
+    {
+      "id": "soap-submit-claim-case",
+      "category": "interface",
+      "expected": "SubmitClaimCase",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "SubmitClaimCase",
+      "source": "system-boundary:boundary_map:entry",
+      "evidence_present": true
+    },
+    {
+      "id": "flow-claim-referral",
+      "category": "flow",
+      "expected": "Route high-value claim to manual referral.",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Route high-value claim to manual referral.",
+      "source": "functional-flow:flow:step",
+      "evidence_present": true
+    },
+    {
+      "id": "finding-threshold",
+      "category": "finding",
+      "expected": "Claim referral threshold is hard-coded",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Claim referral threshold is hard-coded",
+      "source": "quality-roadmap:statement_list:item",
+      "evidence_present": true
+    },
+    {
+      "id": "refactor-claim-policy",
+      "category": "refactoring",
+      "expected": "Extract claim decision policy",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Extract claim decision policy",
+      "source": "quality-roadmap:roadmap:item",
+      "evidence_present": true
+    },
+    {
+      "id": "decision-soap-gateway",
+      "category": "decision",
+      "expected": "Keep SOAP gateway with policy extraction?",
+      "evidence_required": true,
+      "found": true,
+      "matched_text": "Keep SOAP gateway with policy extraction?",
+      "source": "executive-decision:decision_matrix:decision",
+      "evidence_present": true
+    }
+  ],
+  "unsupported_claims": [],
+  "verdict": "pass",
+  "failures": []
+}

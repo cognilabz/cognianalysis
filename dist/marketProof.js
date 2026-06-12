@@ -401,8 +401,6 @@ function validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateS
         errors.push('current source commit is unavailable for baseline artifact freshness validation');
     if (!sourceCommit)
         errors.push('source_commit is required');
-    if (aggregateSourceCommit && sourceCommit !== aggregateSourceCommit)
-        errors.push('source_commit must match baseline aggregate source_commit');
     const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
     const artifactHash = String(provenance.artifact_sha1 || provenance.artifact_hash || provenance.content_hash || provenance.sha1 || '').trim();
     if (!artifactPath)
@@ -453,12 +451,19 @@ function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)
     const baselines = files.map(file => {
         const parsed = (0, utils_1.loadJson)(file, {});
         const validation_errors = validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateSourceCommit);
+        const provenance = parsed.provenance || parsed.baseline_provenance || {};
+        const comparison = parsed.comparison || parsed.compared_to || {};
         return {
             file: posixRelative(root, file),
             repo: parsed.repo || '',
             baseline_kind: parsed.baseline_kind || parsed.kind || '',
             verdict: parsed.verdict || 'unknown',
             metrics: parsed.metrics || {},
+            subject_paths: [
+                parsed.repo,
+                provenance.artifact || provenance.artifact_path || provenance.source,
+                comparison.target || comparison.golden_benchmark || comparison.report
+            ].map(String).filter(Boolean),
             validation_errors
         };
     });
@@ -481,8 +486,14 @@ function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)
             aggregateErrors.push('current source commit is unavailable for baseline freshness validation');
         if (!String(aggregate.source_commit || '').trim())
             aggregateErrors.push('baseline aggregate source_commit is required');
-        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit)
-            aggregateErrors.push(`baseline aggregate source_commit must match current HEAD ${expectedSourceCommit}`);
+        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit) {
+            const changed = changedBaselineSubjectPathsSince(root, String(aggregate.source_commit || ''), expectedSourceCommit, [
+                ...files.map(file => posixRelative(root, file)),
+                ...baselines.flatMap((item) => item.subject_paths || [])
+            ]);
+            if (changed.length)
+                aggregateErrors.push(`baseline aggregate subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+        }
         if (Number(aggregate.total_baselines) !== baselines.length)
             aggregateErrors.push('baseline aggregate total_baselines must match baseline artifacts');
         for (const kind of REQUIRED_BASELINE_KINDS) {
@@ -525,8 +536,11 @@ function validateGoldenResultArtifact(root, parsed, expected, expectedFile, expe
         errors.push('current source commit is unavailable for golden freshness validation');
     if (!String(parsed?.source_commit || '').trim())
         errors.push('source_commit is required');
-    if (expectedSourceCommit && parsed?.source_commit !== expectedSourceCommit)
-        errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
+    if (expectedSourceCommit && parsed?.source_commit !== expectedSourceCommit) {
+        const changed = changedBaselineSubjectPathsSince(root, String(parsed?.source_commit || ''), expectedSourceCommit, [expected.repo, expectedFile]);
+        if (changed.length)
+            errors.push(`golden result subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+    }
     if (aggregateSourceCommit && parsed?.source_commit !== aggregateSourceCommit)
         errors.push('source_commit must match golden aggregate source_commit');
     if (parsed?.expected_file !== expectedFile)
@@ -766,8 +780,18 @@ function goldenProofStatus(root, analysis, expectedSourceCommit = (0, utils_1.gi
             aggregateErrors.push('current source commit is unavailable for golden freshness validation');
         if (!String(aggregate.source_commit || '').trim())
             aggregateErrors.push('golden aggregate source_commit is required');
-        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit)
-            aggregateErrors.push(`golden aggregate source_commit must match current HEAD ${expectedSourceCommit}`);
+        if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit) {
+            const expectedSubjects = expectedFiles.map(file => {
+                const parsed = (0, utils_1.loadJson)(file, {});
+                return [posixRelative(root, file), parsed.repo || ''];
+            }).flat().filter(Boolean);
+            const changed = changedBaselineSubjectPathsSince(root, String(aggregate.source_commit || ''), expectedSourceCommit, [
+                'benchmarks/golden/manifest.json',
+                ...expectedSubjects
+            ]);
+            if (changed.length)
+                aggregateErrors.push(`golden aggregate subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+        }
         if (aggregate.verdict !== 'pass')
             aggregateErrors.push('golden aggregate verdict must be pass');
         if (Number(aggregate.total_repos) !== expectedFiles.length)

@@ -2,16 +2,16 @@
   "schemaVersion": "1.0",
   "benchmark": "golden-suite",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "a548f3e0184768378a5563237f43ea333ac6e21c",
-  "generated_at": "2026-06-11T23:20:44.621Z",
-  "total_repos": 1,
-  "passed_repos": 1,
+  "source_commit": "c0dbf7329a216d153f56d4dd32187396c43dca22",
+  "generated_at": "2026-06-12T00:14:48.838Z",
+  "total_repos": 5,
+  "passed_repos": 5,
   "failed_repos": 0,
   "minimum_market_proof_repos": 5,
   "representative_coverage": {
     "manifest_file": "benchmarks/golden/manifest.json",
     "valid_manifest": true,
-    "ready": false,
+    "ready": true,
     "minimum_representative_suites": 5,
     "required_categories": [
       "rest_openapi_service",
@@ -21,15 +21,14 @@
       "legacy_monolith"
     ],
     "covered_categories": [
-      "rest_openapi_service"
-    ],
-    "missing_categories": [
-      "soap_wsdl_service",
       "event_driven_service",
       "frontend_backend_app",
-      "legacy_monolith"
+      "legacy_monolith",
+      "rest_openapi_service",
+      "soap_wsdl_service"
     ],
-    "distinct_repositories": 1,
+    "missing_categories": [],
+    "distinct_repositories": 5,
     "suites": [
       {
         "expected_file": "benchmarks/golden/demo-repo.expected.json",
@@ -37,17 +36,105 @@
         "category": "rest_openapi_service",
         "verdict": "pass",
         "valid": true
+      },
+      {
+        "expected_file": "benchmarks/golden/soap-claims-repo.expected.json",
+        "repo": "examples/soap-claims-repo",
+        "category": "soap_wsdl_service",
+        "verdict": "pass",
+        "valid": true
+      },
+      {
+        "expected_file": "benchmarks/golden/event-inventory-repo.expected.json",
+        "repo": "examples/event-inventory-repo",
+        "category": "event_driven_service",
+        "verdict": "pass",
+        "valid": true
+      },
+      {
+        "expected_file": "benchmarks/golden/fullstack-booking-repo.expected.json",
+        "repo": "examples/fullstack-booking-repo",
+        "category": "frontend_backend_app",
+        "verdict": "pass",
+        "valid": true
+      },
+      {
+        "expected_file": "benchmarks/golden/legacy-billing-repo.expected.json",
+        "repo": "examples/legacy-billing-repo",
+        "category": "legacy_monolith",
+        "verdict": "pass",
+        "valid": true
       }
     ],
     "errors": []
   },
-  "market_proof_ready": false,
+  "market_proof_ready": true,
   "verdict": "pass",
   "results": [
     {
       "benchmark": "demo-repo",
       "repo": "examples/demo-repo",
       "expected_file": "benchmarks/golden/demo-repo.expected.json",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_readiness": 1,
+        "report_completeness": 1,
+        "invalid_evidence": 0
+      },
+      "failures": []
+    },
+    {
+      "benchmark": "event-inventory-repo",
+      "repo": "examples/event-inventory-repo",
+      "expected_file": "benchmarks/golden/event-inventory-repo.expected.json",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_readiness": 1,
+        "report_completeness": 1,
+        "invalid_evidence": 0
+      },
+      "failures": []
+    },
+    {
+      "benchmark": "fullstack-booking-repo",
+      "repo": "examples/fullstack-booking-repo",
+      "expected_file": "benchmarks/golden/fullstack-booking-repo.expected.json",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_readiness": 1,
+        "report_completeness": 1,
+        "invalid_evidence": 0
+      },
+      "failures": []
+    },
+    {
+      "benchmark": "legacy-billing-repo",
+      "repo": "examples/legacy-billing-repo",
+      "expected_file": "benchmarks/golden/legacy-billing-repo.expected.json",
+      "verdict": "pass",
+      "metrics": {
+        "fact_recall": 1,
+        "evidence_precision": 1,
+        "unsupported_claim_rate": 0,
+        "decision_readiness": 1,
+        "report_completeness": 1,
+        "invalid_evidence": 0
+      },
+      "failures": []
+    },
+    {
+      "benchmark": "soap-claims-repo",
+      "repo": "examples/soap-claims-repo",
+      "expected_file": "benchmarks/golden/soap-claims-repo.expected.json",
       "verdict": "pass",
       "metrics": {
         "fact_recall": 1,
