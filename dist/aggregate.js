@@ -623,6 +623,7 @@ function validateCacheLedger(bundle) {
     const entries = (0, utils_1.asList)(ledger.cache_entries || ledger.entries);
     const hitEntries = entries.filter((entry) => entry?.hit === true || entry?.cache_hit === true);
     const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
+    const workpackExecutions = (0, utils_1.asList)(bundle.source_tier_workpack_executions).filter((execution) => execution?.valid === true);
     const missing = [
         ...(ledger.schemaVersion === '1.0' ? [] : ['cache_ledger.schemaVersion']),
         ...(String(ledger.ledger_kind || '') === 'artifact_cache_ledger' ? [] : ['cache_ledger.ledger_kind']),
@@ -660,6 +661,18 @@ function validateCacheLedger(bundle) {
     });
     if (!storeProvenanceValid)
         missing.push('cache_ledger.cache_store_provenance');
+    const storeWorkpackReceiptsValid = hitEntries.every((entry) => {
+        const path = String(entry?.artifact_path || entry?.path || '').trim();
+        const taskId = String(entry?.task_id || '').trim();
+        const taskContextHash = String(entry?.task_context_hash || '').trim();
+        const receiptHash = String(entry?.execution_receipt_hash || '').trim();
+        return workpackExecutions.some((execution) => String(execution?.artifact_path || '').trim() === path
+            && String(execution?.task_id || '').trim() === taskId
+            && String(execution?.task_context_hash || '').trim() === taskContextHash
+            && String(execution?.receipt_hash || '').trim() === receiptHash);
+    });
+    if (!storeWorkpackReceiptsValid)
+        missing.push('cache_ledger.cache_store_workpack_receipts');
     const reuseTimingValid = hitEntries.every((entry) => {
         const created = Date.parse(String(entry?.created_at || ''));
         const reused = Date.parse(String(entry?.reused_at || entry?.hit_at || ''));

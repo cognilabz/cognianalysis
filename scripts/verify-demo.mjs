@@ -707,6 +707,15 @@ const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestratio
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === true, `Generated orchestration proof should satisfy the contract: ${(orchestrationBundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
+const validCacheLedger = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), 'utf8'));
+const forgedCacheLedger = JSON.parse(JSON.stringify(validCacheLedger));
+forgedCacheLedger.cache_entries[0].task_context_hash = 'forged-task-context-hash';
+forgedCacheLedger.cache_entries[0].execution_receipt_hash = 'forged-receipt-hash';
+writeJson(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), forgedCacheLedger);
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Forged cache ledger receipt identifiers must not complete orchestration');
+assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.cache_ledger_validation?.missing?.includes('cache_ledger.cache_store_workpack_receipts'), 'Cache ledger hits must bind to actual validated source-tier workpack receipts');
 for (const command of ['analyze', 'status', 'open', 'eval']) {
   assert(bundle.tooling?.public_cli_commands?.includes(command), `Demo tooling contract must expose public product command: ${command}`);
 }

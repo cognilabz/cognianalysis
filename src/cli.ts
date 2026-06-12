@@ -1052,6 +1052,7 @@ function validateSourceTierWorkpackExecution(analysis: string, task: any, artifa
 function validateCacheLedger(bundle: any, ledger: any): { hitEntries: any[], errors: string[] } {
   const hashes = artifactHashMap(bundle);
   const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
+  const workpackExecutions = (bundle.source_tier_workpack_executions || []).filter((execution: any) => execution?.valid === true);
   const entries = (ledger.cache_entries || ledger.entries || []).map((entry: any) => {
     const artifactPath = String(entry?.artifact_path || entry?.path || '').trim();
     const artifactHash = String(entry?.artifact_hash || entry?.content_hash || entry?.source_hash || '').trim();
@@ -1094,6 +1095,14 @@ function validateCacheLedger(bundle: any, ledger: any): { hitEntries: any[], err
       && entry.task_context_hash
       && entry.execution_receipt_hash
     ) ? [] : ['cache_ledger.cache_store_provenance']),
+    ...(hitEntries.every((entry: any) =>
+      workpackExecutions.some((execution: any) =>
+        String(execution?.artifact_path || '').trim() === entry.artifact_path
+        && String(execution?.task_id || '').trim() === entry.task_id
+        && String(execution?.task_context_hash || '').trim() === entry.task_context_hash
+        && String(execution?.receipt_hash || '').trim() === entry.execution_receipt_hash
+      )
+    ) ? [] : ['cache_ledger.cache_store_workpack_receipts']),
     ...(hitEntries.every((entry: any) => {
       const created = Date.parse(entry.created_at);
       const reused = Date.parse(entry.reused_at);
