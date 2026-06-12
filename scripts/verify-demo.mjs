@@ -10,7 +10,9 @@ const verifyRoot = mkdtempSync(join(root, '.verify-tmp-demo-'));
 const demo = join(verifyRoot, 'demo-repo');
 const cli = join(root, 'dist', 'cli.js');
 cpSync(demoFixture, demo, { recursive: true });
-process.on('exit', () => rmSync(verifyRoot, { recursive: true, force: true }));
+if (process.env.COGNIANALYSIS_KEEP_VERIFY_TMP !== '1') {
+  process.on('exit', () => rmSync(verifyRoot, { recursive: true, force: true }));
+}
 
 function run(args, options = {}) {
   const result = spawnSync(process.execPath, [cli, ...args], {
@@ -25,7 +27,7 @@ function run(args, options = {}) {
     return result;
   }
   if (result.status !== 0) {
-    throw new Error(`Command failed with exit ${result.status}: cognianalysis ${args.join(' ')}`);
+    throw new Error(`Command failed with exit ${result.status}: cognianalysis ${args.join(' ')}\n${result.stdout || ''}\n${result.stderr || ''}`);
   }
   return result;
 }
@@ -542,6 +544,11 @@ sourceTierManifest.tasks = [
 ];
 writeJson(sourceTierManifestPath, sourceTierManifest);
 writeJson(sourceTierDataManifestPath, sourceTierManifest);
+writeFileSync(
+  join(orchestrationAnalysis, 'source_tier_tasks', 'source-tier-0002.md'),
+  readFileSync(join(orchestrationAnalysis, 'source_tier_tasks', 'source-tier-0001.md'), 'utf8').replaceAll('source-tier-0001', 'source-tier-0002'),
+  'utf8'
+);
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
 writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
