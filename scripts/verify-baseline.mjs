@@ -48,7 +48,7 @@ function changedSubjectPathsSince(sourceCommit, currentCommit, relativePaths) {
   if (ancestor.status !== 0) return [`source_commit ${sourceCommit} is not an ancestor of current HEAD ${currentCommit}`];
   const paths = relativePaths.map(String).filter(Boolean);
   if (!paths.length) return [];
-  const diff = git(['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths]);
+  const diff = git(['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths, ':(exclude)**/.analysis/**']);
   if (diff.status !== 0) return [`could not compare baseline subject freshness from ${sourceCommit} to ${currentCommit}`];
   return diff.stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 }

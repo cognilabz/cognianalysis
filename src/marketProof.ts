@@ -63,7 +63,7 @@ function changedBaselineSubjectPathsSince(root: string, sourceCommit: string, cu
   if (ancestor.status !== 0) return [`source_commit ${sourceCommit} is not an ancestor of current HEAD ${currentCommit}`];
   const paths = relativePaths.map(String).filter(Boolean);
   if (!paths.length) return [];
-  const diff = ChildProcess.spawnSync('git', ['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths], {
+  const diff = ChildProcess.spawnSync('git', ['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths, ':(exclude)**/.analysis/**'], {
     cwd: root,
     encoding: 'utf8',
     stdio: 'pipe'
