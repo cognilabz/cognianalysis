@@ -1061,7 +1061,8 @@ function cacheStoreMatchesHit(store: any, entry: any, requestHash: string, bundl
     && String(store?.artifact_hash || '').trim() === entry.artifact_hash
     && String(store?.task_id || '').trim() === entry.task_id
     && String(store?.task_context_hash || '').trim() === entry.task_context_hash
-    && String(store?.execution_receipt_hash || '').trim() === entry.execution_receipt_hash;
+    && String(store?.execution_receipt_hash || '').trim() === entry.execution_receipt_hash
+    && String(store?.created_at || '').trim() === String(entry.created_at || '').trim();
 }
 
 function loadCacheStoreHit(analysis: string, cacheKeyValue: string): any {

@@ -705,7 +705,9 @@ function validateCacheLedger(bundle: any): any {
       && String(store?.artifact_hash || '').trim() === String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim()
       && String(store?.task_id || '').trim() === String(entry?.task_id || '').trim()
       && String(store?.task_context_hash || '').trim() === String(entry?.task_context_hash || '').trim()
-      && String(store?.execution_receipt_hash || '').trim() === String(entry?.execution_receipt_hash || '').trim();
+      && String(store?.execution_receipt_hash || '').trim() === String(entry?.execution_receipt_hash || '').trim()
+      && String(store?.created_at || '').trim() === String(entry?.created_at || '').trim()
+      && String(store?.cache_store_path || '').trim() === Path.join('cache', 'source-tier', `${key}.json`).replace(/\\/g, '/');
   });
   if (!storeFilesValid) missing.push('cache_ledger.cache_store_files');
   const reuseTimingValid = hitEntries.every((entry: any) => {
