@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
   "generated_by": "scripts/verify-baseline.mjs",
-  "source_commit": "dfdf86fc38c28a4ddcaaa7e37e5b49796e91cb21",
+  "source_commit": "388568b0ba7bd52ec240979c2b0b707bc9b1f8ac",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -191,7 +191,7 @@
     ],
     "hash": "25c7546e2b373fca3b73524440bba23d9bc94862"
   },
-  "generated_at": "2026-06-12T03:03:21.889Z",
+  "generated_at": "2026-06-12T03:04:42.527Z",
   "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",
