@@ -466,7 +466,7 @@ npm run verify:external
 
 `verify:baseline` checks externally or manually generated baseline comparison artifacts under `benchmarks/baseline/**/*.baseline.json`. It writes fresh result JSON under an ignored temp workspace by default and fails if required raw-agent and scanner-style baselines are missing, failing, or not shaped with metrics, provenance and comparison targets. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` only when intentionally refreshing the tracked baseline snapshot.
 
-`verify:external` is an optional networked smoke gate for real public repositories listed in `benchmarks/external/manifest.json`. It clones each repository into a temp workspace, runs the public `analyze`, `status`, `eval` and strict `eval` flow with `--no-seed`, and verifies that Cognianalysis prepares the product workspace while refusing to claim full readiness before Codex-authored LLM artifacts exist. It is real external-repo validation of the public entrypoints, not market-superiority proof and not a substitute for full semantic external reports.
+`verify:external` is an optional networked smoke gate for real public repositories listed in `benchmarks/external/manifest.json`. Each manifest row must pin a 40-character commit so the check is reproducible. The script fetches exactly that revision into a temp workspace, runs the public `analyze`, `status`, `eval` and strict `eval` flow with `--no-seed`, and verifies that Cognianalysis prepares the product workspace while refusing to claim full readiness before Codex-authored LLM artifacts exist. It is real external-repo validation of the public entrypoints, not market-superiority proof and not a substitute for full semantic external reports.
 
 ## Portfolio mode
 

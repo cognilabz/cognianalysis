@@ -26,7 +26,7 @@ External repository smoke proof is networked and optional:
 npm run verify:external
 ```
 
-That command clones the public repositories listed in `benchmarks/external/manifest.json` into a temp workspace, runs `analyze`, `status`, `eval` and strict `eval` with `--no-seed`, and verifies that the public workflow prepares real external source repositories while still blocking full readiness until Codex-authored LLM artifacts exist. It is a guard against fixture-only entrypoint confidence; it is not semantic external-report proof or a market-superiority claim.
+That command fetches the public repositories listed in `benchmarks/external/manifest.json` into a temp workspace at their pinned 40-character commits, runs `analyze`, `status`, `eval` and strict `eval` with `--no-seed`, and verifies that the public workflow prepares real external source repositories while still blocking full readiness until Codex-authored LLM artifacts exist. It fails before clone/analyze when a manifest row lacks a pinned commit. It is a guard against fixture-only entrypoint confidence; it is not semantic external-report proof or a market-superiority claim.
 
 Representative proof is also separate from simple suite correctness. `benchmarks/golden/manifest.json` lists the required representative categories and maps each expected suite to exactly one category and repository. Strict market proof requires at least five verifier-passing suites across five distinct repositories and all required categories: REST/OpenAPI service, SOAP/WSDL service, event-driven service, frontend/backend app and legacy monolith. The bundled suites now cover those five categories and `npm run verify:golden` must report `market-proof-ready=true`.
 

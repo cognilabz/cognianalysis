@@ -6,7 +6,9 @@ import { tmpdir } from 'node:os';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const cli = join(root, 'dist', 'cli.js');
-const manifestPath = join(root, 'benchmarks', 'external', 'manifest.json');
+const manifestPath = process.env.COGNIANALYSIS_EXTERNAL_MANIFEST
+  ? resolve(process.env.COGNIANALYSIS_EXTERNAL_MANIFEST)
+  : join(root, 'benchmarks', 'external', 'manifest.json');
 const workRoot = process.env.COGNIANALYSIS_EXTERNAL_WORKDIR
   ? resolve(process.env.COGNIANALYSIS_EXTERNAL_WORKDIR)
   : mkdtempSync(join(tmpdir(), 'cognianalysis-external-'));
@@ -39,22 +41,45 @@ function gitHead(repo) {
   return run('git', ['rev-parse', 'HEAD'], { cwd: repo }).stdout.trim();
 }
 
+function validateManifest(manifest) {
+  assert.equal(manifest.schemaVersion, '1.0', 'external manifest schemaVersion must be 1.0');
+  const repos = Array.isArray(manifest.repositories) ? manifest.repositories : [];
+  assert(repos.length >= Number(manifest.minimum_repositories || 1), 'external manifest must include the minimum repository count');
+  for (const entry of repos) {
+    const id = String(entry.id || '').trim();
+    const url = String(entry.url || '').trim();
+    const commit = String(entry.commit || entry.expected_commit || '').trim();
+    assert(id, 'external repository id is required');
+    assert(url.startsWith('https://'), `external repository ${id} must use an https URL`);
+    assert(/^[0-9a-f]{40}$/i.test(commit), `external repository ${id} must include a pinned 40-character commit`);
+  }
+  return repos;
+}
+
+assert.throws(
+  () => validateManifest({ schemaVersion: '1.0', minimum_repositories: 1, repositories: [{ id: 'missing-pin', url: 'https://example.com/repo.git' }] }),
+  /pinned 40-character commit/,
+  'external manifest validation must fail before clone/analyze when a repo lacks a pinned commit'
+);
+
 const manifest = readJson(manifestPath);
-assert.equal(manifest.schemaVersion, '1.0', 'external manifest schemaVersion must be 1.0');
-const repos = Array.isArray(manifest.repositories) ? manifest.repositories : [];
-assert(repos.length >= Number(manifest.minimum_repositories || 1), 'external manifest must include the minimum repository count');
+const repos = validateManifest(manifest);
 mkdirSync(workRoot, { recursive: true });
 
 const results = [];
 for (const entry of repos) {
   const id = String(entry.id || '').trim();
   const url = String(entry.url || '').trim();
-  assert(id, 'external repository id is required');
-  assert(url.startsWith('https://'), `external repository ${id} must use an https URL`);
+  const expectedCommit = String(entry.commit || entry.expected_commit || '').trim().toLowerCase();
   const repoDir = join(workRoot, id);
   rmSync(repoDir, { recursive: true, force: true });
-  run('git', ['clone', '--depth', '1', url, repoDir], { timeoutMs: 180000 });
+  mkdirSync(repoDir, { recursive: true });
+  run('git', ['init'], { cwd: repoDir, timeoutMs: 120000 });
+  run('git', ['remote', 'add', 'origin', url], { cwd: repoDir, timeoutMs: 120000 });
+  run('git', ['fetch', '--depth', '1', 'origin', expectedCommit], { cwd: repoDir, timeoutMs: 180000 });
+  run('git', ['checkout', '--detach', 'FETCH_HEAD'], { cwd: repoDir, timeoutMs: 120000 });
   const commit = gitHead(repoDir);
+  assert.equal(commit.toLowerCase(), expectedCommit, `${id} must checkout the pinned external commit`);
   const analyze = run(process.execPath, [
     cli,
     'analyze',
@@ -86,6 +111,7 @@ for (const entry of repos) {
   results.push({
     id,
     url,
+    expected_commit: expectedCommit,
     commit,
     analysis_prepared: true,
     status_checked: true,
