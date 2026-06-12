@@ -682,7 +682,23 @@ writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), 
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
 writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis));
 writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
-run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
+firstOutputHash = hashByPath.get('source_tiers/source-tier-0001.json');
+cacheKey = sha1Short(`${orchestrationBundle.analysis_run.analysis_run_id}|${orchestrationBundle.analysis_run.source_commit}|${orchestrationBundle.product_analysis_request.request_hash}|source_tiers/source-tier-0001.json|${firstOutputHash}`, 20);
+const preseededCacheDir = join(orchestrationAnalysis, 'cache', 'source-tier');
+mkdirSync(preseededCacheDir, { recursive: true });
+writeJson(join(preseededCacheDir, `${cacheKey}.json`), {
+  schemaVersion: '1.0',
+  cache_key: cacheKey,
+  artifact_path: 'source_tiers/source-tier-0001.json',
+  artifact_hash: firstOutputHash,
+  created_at: '2026-01-01T00:00:00.000Z'
+});
+const preseededCacheRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
+const preseededCacheOutput = `${preseededCacheRunner.stdout || ''}\n${preseededCacheRunner.stderr || ''}`;
+assert(preseededCacheOutput.includes('cache hits: 0'), 'Runner must not accept a matching preseeded cache file without cache-store provenance');
 const firstRunnerProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 const firstRunnerProofOutput = `${firstRunnerProof.stdout || ''}\n${firstRunnerProof.stderr || ''}`;
 assert(firstRunnerProofOutput.includes('cache_ledger.hit_entries') || firstRunnerProofOutput.includes('cache_ledger.prior_cache_reuse_timing'), 'First runner pass must not prove cache reuse before a prior cache entry exists');

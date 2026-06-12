@@ -926,6 +926,7 @@ function cacheKey(bundle: any, path: string, hash: string): string {
 const ORCHESTRATION_RUNNER_GENERATED_BY = 'cognianalysis dev run-orchestration';
 const SOURCE_TIER_WORKPACK_EXECUTION_KIND = 'codex_in_session_source_tier_workpack';
 const ORCHESTRATION_EXECUTION_MODE = 'codex_authored_workpack_receipt_validation';
+const CACHE_STORE_KIND = 'source_tier_artifact_cache_entry';
 
 function stableJson(value: any): string {
   if (Array.isArray(value)) return `[${value.map(item => stableJson(item)).join(',')}]`;
@@ -1050,6 +1051,7 @@ function validateSourceTierWorkpackExecution(analysis: string, task: any, artifa
 
 function validateCacheLedger(bundle: any, ledger: any): { hitEntries: any[], errors: string[] } {
   const hashes = artifactHashMap(bundle);
+  const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
   const entries = (ledger.cache_entries || ledger.entries || []).map((entry: any) => {
     const artifactPath = String(entry?.artifact_path || entry?.path || '').trim();
     const artifactHash = String(entry?.artifact_hash || entry?.content_hash || entry?.source_hash || '').trim();
@@ -1060,6 +1062,14 @@ function validateCacheLedger(bundle: any, ledger: any): { hitEntries: any[], err
       artifact_hash: artifactHash,
       created_at: String(entry?.created_at || '').trim(),
       reused_at: String(entry?.reused_at || entry?.hit_at || '').trim(),
+      cache_store_kind: String(entry?.cache_store_kind || '').trim(),
+      cache_store_generated_by: String(entry?.cache_store_generated_by || '').trim(),
+      analysis_run_id: String(entry?.analysis_run_id || '').trim(),
+      source_commit: String(entry?.source_commit || '').trim(),
+      product_request_hash: String(entry?.product_request_hash || '').trim(),
+      task_id: String(entry?.task_id || '').trim(),
+      task_context_hash: String(entry?.task_context_hash || '').trim(),
+      execution_receipt_hash: String(entry?.execution_receipt_hash || '').trim(),
       expected_hash: artifactPath ? hashes.get(artifactPath) || '' : ''
     };
   });
@@ -1070,9 +1080,20 @@ function validateCacheLedger(bundle: any, ledger: any): { hitEntries: any[], err
     ...(String(ledger.generated_by || '') === ORCHESTRATION_RUNNER_GENERATED_BY ? [] : ['cache_ledger.generated_by']),
     ...(String(ledger.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['cache_ledger.analysis_run_id']),
     ...(String(ledger.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['cache_ledger.source_commit']),
+    ...(String(ledger.product_request_hash || '') === requestHash ? [] : ['cache_ledger.product_request_hash']),
     ...(hitEntries.length > 0 ? [] : ['cache_ledger.hit_entries']),
     ...(hitEntries.every((entry: any) => entry.artifact_path && entry.artifact_hash && entry.expected_hash === entry.artifact_hash) ? [] : ['cache_ledger.artifact_hashes']),
     ...(hitEntries.every((entry: any) => entry.cache_key === cacheKey(bundle, entry.artifact_path, entry.artifact_hash)) ? [] : ['cache_ledger.cache_keys']),
+    ...(hitEntries.every((entry: any) =>
+      entry.cache_store_kind === CACHE_STORE_KIND
+      && entry.cache_store_generated_by === ORCHESTRATION_RUNNER_GENERATED_BY
+      && entry.analysis_run_id === String(bundle.analysis_run?.analysis_run_id || '')
+      && entry.source_commit === String(bundle.analysis_run?.source_commit || '')
+      && entry.product_request_hash === requestHash
+      && entry.task_id
+      && entry.task_context_hash
+      && entry.execution_receipt_hash
+    ) ? [] : ['cache_ledger.cache_store_provenance']),
     ...(hitEntries.every((entry: any) => {
       const created = Date.parse(entry.created_at);
       const reused = Date.parse(entry.reused_at);
@@ -1147,7 +1168,33 @@ async function cmdRunOrchestration(args: string[]): Promise<number> {
     const key = cacheKey(bundle, task.artifact_path, task.artifact_hash);
     const cacheFile = Path.join(cacheDir, `${key}.json`);
     const existing = loadJson<any>(cacheFile, null);
-    const hit = existing?.cache_key === key && existing?.artifact_hash === task.artifact_hash && existing?.artifact_path === task.artifact_path;
+    const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
+    const expectedStore = {
+      schemaVersion: '1.0',
+      cache_store_kind: CACHE_STORE_KIND,
+      cache_key: key,
+      generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
+      analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
+      source_commit: bundle.analysis_run?.source_commit || '',
+      product_request_hash: requestHash,
+      artifact_path: task.artifact_path,
+      artifact_hash: task.artifact_hash,
+      task_id: task.task_id,
+      task_context_hash: task.task_context_hash,
+      execution_receipt_hash: task.execution_receipt_hash
+    };
+    const hit = existing?.schemaVersion === expectedStore.schemaVersion
+      && existing?.cache_store_kind === expectedStore.cache_store_kind
+      && existing?.generated_by === expectedStore.generated_by
+      && existing?.analysis_run_id === expectedStore.analysis_run_id
+      && existing?.source_commit === expectedStore.source_commit
+      && existing?.product_request_hash === expectedStore.product_request_hash
+      && existing?.cache_key === expectedStore.cache_key
+      && existing?.artifact_hash === expectedStore.artifact_hash
+      && existing?.artifact_path === expectedStore.artifact_path
+      && existing?.task_id === expectedStore.task_id
+      && existing?.task_context_hash === expectedStore.task_context_hash
+      && existing?.execution_receipt_hash === expectedStore.execution_receipt_hash;
     const createdAt = hit ? String(existing.created_at || task.ended_at) : task.ended_at;
     const entry = {
       cache_key: key,
@@ -1155,17 +1202,19 @@ async function cmdRunOrchestration(args: string[]): Promise<number> {
       artifact_path: task.artifact_path,
       artifact_hash: task.artifact_hash,
       execution_receipt_hash: task.execution_receipt_hash,
+      cache_store_kind: hit ? String(existing.cache_store_kind || '') : expectedStore.cache_store_kind,
+      cache_store_generated_by: hit ? String(existing.generated_by || '') : '',
+      analysis_run_id: hit ? String(existing.analysis_run_id || '') : expectedStore.analysis_run_id,
+      source_commit: hit ? String(existing.source_commit || '') : expectedStore.source_commit,
+      product_request_hash: hit ? String(existing.product_request_hash || '') : expectedStore.product_request_hash,
+      task_id: task.task_id,
+      task_context_hash: task.task_context_hash,
       created_at: createdAt,
       reused_at: hit ? new Date(cacheCheckStarted + index + 1).toISOString() : ''
     };
     if (!hit) {
       writeText(cacheFile, JSON.stringify({
-        schemaVersion: '1.0',
-        cache_key: key,
-        generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
-        artifact_path: task.artifact_path,
-        artifact_hash: task.artifact_hash,
-        execution_receipt_hash: task.execution_receipt_hash,
+        ...expectedStore,
         created_at: task.ended_at
       }, null, 2) + '\n');
     }
@@ -1191,6 +1240,7 @@ async function cmdRunOrchestration(args: string[]): Promise<number> {
     generated_at: new Date(started).toISOString(),
     analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
     source_commit: bundle.analysis_run?.source_commit || '',
+    product_request_hash: bundle.product_analysis_request?.request_hash || '',
     cache_entries: cacheEntries
   }, null, 2) + '\n');
 

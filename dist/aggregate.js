@@ -618,6 +618,7 @@ function validateParallelExecutionProof(bundle) {
 function validateCacheLedger(bundle) {
     const ledger = bundle.cache_ledger || {};
     const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
+    const cacheStoreKind = 'source_tier_artifact_cache_entry';
     const hashesByPath = artifactHashesByPath(bundle);
     const entries = (0, utils_1.asList)(ledger.cache_entries || ledger.entries);
     const hitEntries = entries.filter((entry) => entry?.hit === true || entry?.cache_hit === true);
@@ -628,6 +629,7 @@ function validateCacheLedger(bundle) {
         ...(String(ledger.generated_by || '') === runnerGeneratedBy ? [] : ['cache_ledger.generated_by']),
         ...(String(ledger.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['cache_ledger.analysis_run_id']),
         ...(String(ledger.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['cache_ledger.source_commit']),
+        ...(String(ledger.product_request_hash || '') === requestHash ? [] : ['cache_ledger.product_request_hash']),
         ...(graphNodeFresh(bundle, 'cache_ledger') ? [] : ['cache_ledger_node_fresh']),
         ...(hitEntries.length > 0 ? [] : ['cache_ledger.hit_entries'])
     ];
@@ -646,6 +648,18 @@ function validateCacheLedger(bundle) {
     });
     if (!keysValid)
         missing.push('cache_ledger.cache_keys');
+    const storeProvenanceValid = hitEntries.every((entry) => {
+        return String(entry?.cache_store_kind || '').trim() === cacheStoreKind
+            && String(entry?.cache_store_generated_by || '').trim() === runnerGeneratedBy
+            && String(entry?.analysis_run_id || '').trim() === String(bundle.analysis_run?.analysis_run_id || '')
+            && String(entry?.source_commit || '').trim() === String(bundle.analysis_run?.source_commit || '')
+            && String(entry?.product_request_hash || '').trim() === requestHash
+            && !!String(entry?.task_id || '').trim()
+            && !!String(entry?.task_context_hash || '').trim()
+            && !!String(entry?.execution_receipt_hash || '').trim();
+    });
+    if (!storeProvenanceValid)
+        missing.push('cache_ledger.cache_store_provenance');
     const reuseTimingValid = hitEntries.every((entry) => {
         const created = Date.parse(String(entry?.created_at || ''));
         const reused = Date.parse(String(entry?.reused_at || entry?.hit_at || ''));
