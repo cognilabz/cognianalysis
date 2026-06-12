@@ -82,7 +82,8 @@ function sha1Text(text) {
 
 function marketProofToolFingerprint() {
   const sourceFiles = walk(join(root, 'src'), file => file.endsWith('.ts')).map(file => relative(root, file).replace(/\\/g, '/'));
-  const paths = [...new Set([...toolStaticPaths, ...sourceFiles])].sort().map(path => {
+  const distFiles = walk(join(root, 'dist'), file => file.endsWith('.js')).map(file => relative(root, file).replace(/\\/g, '/'));
+  const paths = [...new Set([...toolStaticPaths, ...sourceFiles, ...distFiles])].sort().map(path => {
     const full = join(root, path);
     return {
       path,

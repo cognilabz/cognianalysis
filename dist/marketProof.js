@@ -58,7 +58,8 @@ function sha1Text(text) {
 }
 function marketProofToolPaths(root) {
     const sourceFiles = listFilesRecursive(utils_1.Path.join(root, 'src'), file => file.endsWith('.ts')).map(file => posixRelative(root, file));
-    return [...new Set([...MARKET_PROOF_TOOL_STATIC_PATHS, ...sourceFiles])].sort();
+    const distFiles = listFilesRecursive(utils_1.Path.join(root, 'dist'), file => file.endsWith('.js')).map(file => posixRelative(root, file));
+    return [...new Set([...MARKET_PROOF_TOOL_STATIC_PATHS, ...sourceFiles, ...distFiles])].sort();
 }
 function marketProofToolFingerprint(root) {
     const paths = marketProofToolPaths(root).map(path => {

@@ -2,27 +2,107 @@
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
   "generated_by": "scripts/verify-baseline.mjs",
-  "source_commit": "b34064b6210223db4a1d1a821934a72f3edef50a",
+  "source_commit": "5cc91efdd585a2ba2a3a3eb5f8b35fde591af0fb",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
     "scope": "cognianalysis-market-proof-tooling",
     "paths": [
       {
+        "path": "dist/aggregate.js",
+        "sha1": "7956a613a31de5f964de2d131cc300dc2ece1c23"
+      },
+      {
+        "path": "dist/analysisGoal.js",
+        "sha1": "aa18bcb714a1df2c5b350c33a0ddd82c5aa4c1b1"
+      },
+      {
+        "path": "dist/analysisPipeline.js",
+        "sha1": "22098922200c0362fbb6b42e619babbffa408b94"
+      },
+      {
+        "path": "dist/analysisSkills.js",
+        "sha1": "5789bf87941b47659c0a67326e2913dc83d07bf9"
+      },
+      {
+        "path": "dist/cli.js",
+        "sha1": "b8dfe320fd634cc77043ffd76185e615bae2fd48"
+      },
+      {
+        "path": "dist/index.js",
+        "sha1": "c0365ff35f323322a2d3dca0f0f7005946074747"
+      },
+      {
+        "path": "dist/marketProof.js",
+        "sha1": "675f77ab081288a58a76a36626d75ddfe8eedb0e"
+      },
+      {
+        "path": "dist/mcp.js",
+        "sha1": "56bdfc504459956ecb8b522ff0e21c141071a21a"
+      },
+      {
+        "path": "dist/productReadiness.js",
+        "sha1": "fda049426f3df20ca9f2d1ebfabfd55fda523c03"
+      },
+      {
+        "path": "dist/readiness.js",
+        "sha1": "2b9a797ae6defbf88995c47ea69f1ad0802321f8"
+      },
+      {
+        "path": "dist/repoMap.js",
+        "sha1": "5caa80656e31e9ce001aa9b26612f66ddf1a908b"
+      },
+      {
+        "path": "dist/report.js",
+        "sha1": "f5dc77fd7de336e2107be3b268924902435997b2"
+      },
+      {
+        "path": "dist/reportComponents.js",
+        "sha1": "3ee7f2ee0096180af0b9c3f10963d16ccaaa0ad1"
+      },
+      {
+        "path": "dist/skillWorkbenches.js",
+        "sha1": "af441b4449f176a462e32998f772a917cf0e3126"
+      },
+      {
+        "path": "dist/sourceTiers.js",
+        "sha1": "b9ecf8bcd10592747e99d20eacbb50fbbfe2f507"
+      },
+      {
+        "path": "dist/targetCoverage.js",
+        "sha1": "f45c14de6efb3e3b20bae95109a33055e6a18f47"
+      },
+      {
+        "path": "dist/tasks.js",
+        "sha1": "f936534853b94d2c40f04295a5165ffe92a1dae1"
+      },
+      {
+        "path": "dist/toolPositioningReferences.js",
+        "sha1": "dac0c4951f57c138aa03e0d47da1c5190f4355e8"
+      },
+      {
+        "path": "dist/types.js",
+        "sha1": "b66edae489b6e4147ce7e1ec65a107e297219771"
+      },
+      {
+        "path": "dist/utils.js",
+        "sha1": "a1d66b0bebb85bd6f54f218e87f03f6fb0c8980c"
+      },
+      {
         "path": "package.json",
         "sha1": "90251f62df213d2c5d5b48a9c25c8dd0fb74efa2"
       },
       {
         "path": "scripts/verify-baseline.mjs",
-        "sha1": "5d75240899a7758341003008452e437cd021dc53"
+        "sha1": "db8888febdbef67a51ad79223bf94ea44fa80b90"
       },
       {
         "path": "scripts/verify-golden.mjs",
-        "sha1": "57db17bcce233c0287537b3a9e7eb248bba81c52"
+        "sha1": "18d57b8cde04362dae77488a544a0d3013f198e7"
       },
       {
         "path": "scripts/verify-product-readiness.mjs",
-        "sha1": "aa2739c8f616a4ab451b00e2749765f03071c3d2"
+        "sha1": "8e6597bb3477652ba9dc20a5cdbc8391f53b73e5"
       },
       {
         "path": "src/aggregate.ts",
@@ -50,7 +130,7 @@
       },
       {
         "path": "src/marketProof.ts",
-        "sha1": "8838cdaa77e23d912387de9bdf057b71c2c5b5db"
+        "sha1": "18ef3b518cca34c0a1d6e8fe835d96e7a515945d"
       },
       {
         "path": "src/mcp.ts",
@@ -109,9 +189,9 @@
         "sha1": "ff1b321c10e80ed034d08f22c2dcd28bac886308"
       }
     ],
-    "hash": "5c9ebb49eb54527af29b5267e2b71cf3ce01713d"
+    "hash": "24872b8c8ede51756a5bf7fda5545977ef045820"
   },
-  "generated_at": "2026-06-12T00:30:40.878Z",
+  "generated_at": "2026-06-12T00:35:46.332Z",
   "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",

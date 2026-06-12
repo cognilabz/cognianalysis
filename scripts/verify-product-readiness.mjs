@@ -567,6 +567,71 @@ function missingIds(result) {
 }
 
 {
+  const root = mkdtempSync(join(tmpdir(), 'cognianalysis-market-proof-dist-freshness-'));
+  try {
+    const analysis = join(root, 'repo', '.analysis');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    mkdirSync(join(root, 'dist'), { recursive: true });
+    writeFileSync(join(root, 'docs', 'BENCHMARK.md'), 'benchmark protocol\n');
+    writeFileSync(join(root, 'package.json'), '{"name":"fixture"}\n');
+    writeFileSync(join(root, 'scripts', 'verify-golden.mjs'), 'console.log("golden verifier")\n');
+    writeFileSync(join(root, 'scripts', 'verify-baseline.mjs'), 'console.log("baseline verifier")\n');
+    writeFileSync(join(root, 'scripts', 'verify-product-readiness.mjs'), 'console.log("readiness verifier")\n');
+    writeFileSync(join(root, 'dist', 'cli.js'), 'console.log("cli runtime v1")\n');
+    writeFileSync(join(root, 'dist', 'marketProof.js'), 'console.log("market proof runtime v1")\n');
+    const staleToolFingerprint = marketProofToolFingerprint(root);
+    const categories = ['rest_openapi_service', 'soap_wsdl_service', 'event_driven_service', 'frontend_backend_app', 'legacy_monolith'];
+    const results = [];
+    for (let i = 1; i <= 5; i += 1) {
+      results.push(writePerfectGoldenSuite(root, i, 'current-commit', {
+        includeProofRows: true,
+        toolFingerprint: staleToolFingerprint
+      }));
+    }
+    writeJson(join(root, 'benchmarks', 'golden', 'manifest.json'), {
+      schemaVersion: '1.0',
+      minimum_representative_suites: 5,
+      required_categories: categories,
+      suites: results.map((result, index) => ({
+        expected_file: result.expected_file,
+        repo: result.repo,
+        category: categories[index],
+        rationale: 'Representative category fixture.'
+      }))
+    });
+    writePerfectGoldenAggregate(root, results, 'current-commit', {
+      ready: true,
+      distinct_repositories: 5,
+      missing_categories: []
+    }, { toolFingerprint: staleToolFingerprint });
+    writeJson(join(root, 'benchmarks', 'baseline', 'results.json'), {
+      schemaVersion: '1.0',
+      benchmark: 'baseline-comparison',
+      generated_by: 'scripts/verify-baseline.mjs',
+      source_commit: 'current-commit',
+      tool_fingerprint: staleToolFingerprint,
+      total_baselines: 0,
+      required_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      present_baseline_kinds: ['raw_agent_prompt', 'scanner_report'],
+      missing_baseline_kinds: [],
+      failed_baselines: [],
+      verdict: 'pass',
+      baselines: []
+    });
+    writeFileSync(join(root, 'dist', 'marketProof.js'), 'console.log("market proof runtime v2")\n');
+    const status = marketProofStatusForRoot(root, analysis, 'current-commit');
+    assert.equal(status.goldenProofReady, false, 'golden proof must not stay ready after dist runtime changes');
+    assert.equal(status.baselineProofReady, false, 'baseline proof must not stay ready after dist runtime changes');
+    assert(status.strictFailures.some(item => item.includes('golden aggregate tool_fingerprint.hash must match current verifier/runtime code')), 'strict failures must reject stale golden aggregate dist fingerprints');
+    assert(status.strictFailures.some(item => item.includes('golden result tool_fingerprint.hash must match current verifier/runtime code')), 'strict failures must reject stale per-suite golden dist fingerprints');
+    assert(status.strictFailures.some(item => item.includes('baseline aggregate tool_fingerprint.hash must match current verifier/runtime code')), 'strict failures must reject stale baseline aggregate dist fingerprints');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+{
   const root = mkdtempSync(join(tmpdir(), 'cognianalysis-stale-golden-proof-'));
   try {
     const analysis = join(root, 'repo', '.analysis');
