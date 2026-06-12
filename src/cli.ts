@@ -1056,14 +1056,34 @@ async function cmdRunOrchestration(args: string[]): Promise<number> {
   }
 
   const cacheCheckStarted = Date.now();
-  const cacheEntries = workerTasks.map((task: any, index: number) => ({
-    cache_key: cacheKey(bundle, task.artifact_path, task.artifact_hash),
-    hit: true,
-    artifact_path: task.artifact_path,
-    artifact_hash: task.artifact_hash,
-    created_at: task.ended_at,
-    reused_at: new Date(cacheCheckStarted + index + 1).toISOString()
-  }));
+  const cacheDir = Path.join(analysis, 'cache', 'source-tier');
+  ensureDir(cacheDir);
+  const cacheEntries = workerTasks.map((task: any, index: number) => {
+    const key = cacheKey(bundle, task.artifact_path, task.artifact_hash);
+    const cacheFile = Path.join(cacheDir, `${key}.json`);
+    const existing = loadJson<any>(cacheFile, null);
+    const hit = existing?.cache_key === key && existing?.artifact_hash === task.artifact_hash && existing?.artifact_path === task.artifact_path;
+    const createdAt = hit ? String(existing.created_at || task.ended_at) : task.ended_at;
+    const entry = {
+      cache_key: key,
+      hit,
+      artifact_path: task.artifact_path,
+      artifact_hash: task.artifact_hash,
+      created_at: createdAt,
+      reused_at: hit ? new Date(cacheCheckStarted + index + 1).toISOString() : ''
+    };
+    if (!hit) {
+      writeText(cacheFile, JSON.stringify({
+        schemaVersion: '1.0',
+        cache_key: key,
+        generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
+        artifact_path: task.artifact_path,
+        artifact_hash: task.artifact_hash,
+        created_at: task.ended_at
+      }, null, 2) + '\n');
+    }
+    return entry;
+  });
 
   writeText(Path.join(analysis, 'data', 'orchestration-execution-log.json'), JSON.stringify({
     schemaVersion: '1.0',
@@ -1087,7 +1107,7 @@ async function cmdRunOrchestration(args: string[]): Promise<number> {
   }, null, 2) + '\n');
 
   console.log('Harness orchestration run: recorded');
-  console.log(`Workers: ${workerTasks.length} · cache hits: ${cacheEntries.length}`);
+  console.log(`Workers: ${workerTasks.length} · cache hits: ${cacheEntries.filter((entry: any) => entry.hit).length}`);
   console.log(`Execution log: ${Path.join(analysis, 'data', 'orchestration-execution-log.json')}`);
   console.log(`Cache ledger: ${Path.join(analysis, 'data', 'cache-ledger.json')}`);
   return 0;

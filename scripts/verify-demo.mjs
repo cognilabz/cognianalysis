@@ -587,6 +587,10 @@ assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 
 assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_tasks_match_orchestration_execution_log'), 'Parallel proof rows must match the exact orchestration execution log rows');
 assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entries_match_cache_ledger'), 'Cache proof rows must match the exact cache ledger rows');
 run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
+const firstRunnerProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
+const firstRunnerProofOutput = `${firstRunnerProof.stdout || ''}\n${firstRunnerProof.stderr || ''}`;
+assert(firstRunnerProofOutput.includes('cache_ledger.hit_entries') || firstRunnerProofOutput.includes('cache_ledger.prior_cache_reuse_timing'), 'First runner pass must not prove cache reuse before a prior cache entry exists');
+run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
 const orchestrationProofOutput = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true }).stdout || '';
 assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: complete'), 'Proof command must complete when two source-tier workpack outputs are available');
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));

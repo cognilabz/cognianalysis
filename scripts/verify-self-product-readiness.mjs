@@ -165,6 +165,10 @@ assert(fabricatedOutput.includes('execution_log.generated_by') || fabricatedOutp
 rmSync(join(cleanRepo, '.analysis', 'data', 'orchestration-execution-log.json'), { force: true });
 rmSync(join(cleanRepo, '.analysis', 'data', 'cache-ledger.json'), { force: true });
 run(['dev', 'run-orchestration', cleanRepo], { cliPath: cleanCli });
+const firstRunnerProof = run(['dev', 'prove-orchestration', cleanRepo], { cliPath: cleanCli, expectFailure: true });
+const firstRunnerOutput = `${firstRunnerProof.stdout || ''}\n${firstRunnerProof.stderr || ''}`;
+assert(firstRunnerOutput.includes('cache_ledger.hit_entries') || firstRunnerOutput.includes('cache_ledger.prior_cache_reuse_timing'), 'First runner pass must not prove cache reuse before a prior cache entry exists');
+run(['dev', 'run-orchestration', cleanRepo], { cliPath: cleanCli });
 run(['dev', 'prove-orchestration', cleanRepo], { cliPath: cleanCli });
 run(['dev', 'finalize', cleanRepo], { cliPath: cleanCli });
 runNodeScript(join(cleanRepo, 'scripts', 'verify-golden.mjs'), {

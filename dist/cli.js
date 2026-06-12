@@ -1062,14 +1062,34 @@ async function cmdRunOrchestration(args) {
         return 1;
     }
     const cacheCheckStarted = Date.now();
-    const cacheEntries = workerTasks.map((task, index) => ({
-        cache_key: cacheKey(bundle, task.artifact_path, task.artifact_hash),
-        hit: true,
-        artifact_path: task.artifact_path,
-        artifact_hash: task.artifact_hash,
-        created_at: task.ended_at,
-        reused_at: new Date(cacheCheckStarted + index + 1).toISOString()
-    }));
+    const cacheDir = utils_1.Path.join(analysis, 'cache', 'source-tier');
+    (0, utils_1.ensureDir)(cacheDir);
+    const cacheEntries = workerTasks.map((task, index) => {
+        const key = cacheKey(bundle, task.artifact_path, task.artifact_hash);
+        const cacheFile = utils_1.Path.join(cacheDir, `${key}.json`);
+        const existing = (0, utils_1.loadJson)(cacheFile, null);
+        const hit = existing?.cache_key === key && existing?.artifact_hash === task.artifact_hash && existing?.artifact_path === task.artifact_path;
+        const createdAt = hit ? String(existing.created_at || task.ended_at) : task.ended_at;
+        const entry = {
+            cache_key: key,
+            hit,
+            artifact_path: task.artifact_path,
+            artifact_hash: task.artifact_hash,
+            created_at: createdAt,
+            reused_at: hit ? new Date(cacheCheckStarted + index + 1).toISOString() : ''
+        };
+        if (!hit) {
+            (0, utils_1.writeText)(cacheFile, JSON.stringify({
+                schemaVersion: '1.0',
+                cache_key: key,
+                generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
+                artifact_path: task.artifact_path,
+                artifact_hash: task.artifact_hash,
+                created_at: task.ended_at
+            }, null, 2) + '\n');
+        }
+        return entry;
+    });
     (0, utils_1.writeText)(utils_1.Path.join(analysis, 'data', 'orchestration-execution-log.json'), JSON.stringify({
         schemaVersion: '1.0',
         execution_kind: 'source_tier_workpack_execution',
@@ -1091,7 +1111,7 @@ async function cmdRunOrchestration(args) {
         cache_entries: cacheEntries
     }, null, 2) + '\n');
     console.log('Harness orchestration run: recorded');
-    console.log(`Workers: ${workerTasks.length} · cache hits: ${cacheEntries.length}`);
+    console.log(`Workers: ${workerTasks.length} · cache hits: ${cacheEntries.filter((entry) => entry.hit).length}`);
     console.log(`Execution log: ${utils_1.Path.join(analysis, 'data', 'orchestration-execution-log.json')}`);
     console.log(`Cache ledger: ${utils_1.Path.join(analysis, 'data', 'cache-ledger.json')}`);
     return 0;

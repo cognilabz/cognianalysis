@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
   "generated_by": "scripts/verify-baseline.mjs",
-  "source_commit": "b016d82b62adec554c0fe93d00a78ae472c805f9",
+  "source_commit": "ef863712e83acee7d92bd37aca4677db223225b4",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "e50a48f77872830fc96c2f2291a359a40370b1a9"
+        "sha1": "6c2b2c6782a9771a1e0a853528d2f4aa136661b3"
       },
       {
         "path": "dist/index.js",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "805787925477edab9b2d3ff1c337ae5ab7c2c26f"
+        "sha1": "a169fdcc7abbae20bd49a7c85afe4f232645ec86"
       },
       {
         "path": "src/index.ts",
@@ -189,9 +189,9 @@
         "sha1": "209bd3c9822c2dacd20d503a8c51537af4a3bc69"
       }
     ],
-    "hash": "4ec1e08a1d7604f7f51b6fcf12e02e62cc70fd1d"
+    "hash": "7d80d39680437541d2450770ef4d834739d0009a"
   },
-  "generated_at": "2026-06-12T02:25:31.148Z",
+  "generated_at": "2026-06-12T02:35:17.299Z",
   "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",
