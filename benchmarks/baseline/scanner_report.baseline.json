@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "repo": "examples/demo-repo",
   "baseline_kind": "scanner_report",
-  "source_commit": "ae85c5deb110e83abbcc6d3264f761e07cc7b7c7",
+  "source_commit": "6ae3bdef253663c1f5e35d254438770dc522bc48",
   "verdict": "pass",
   "metrics": {
     "fact_recall": 1,
@@ -14,7 +14,7 @@
     "generated_by": "manual-static-scanner-style-report-2026-06-12",
     "artifact": "benchmarks/baseline/artifacts/scanner-report-demo.md",
     "artifact_sha1": "76a5c212bc11b1e229930de3cb689da16d862993",
-    "source_commit": "ae85c5deb110e83abbcc6d3264f761e07cc7b7c7"
+    "source_commit": "6ae3bdef253663c1f5e35d254438770dc522bc48"
   },
   "comparison": {
     "target": "benchmarks/baseline/targets/demo-baseline-target.json"

@@ -34,6 +34,25 @@ function gitCommit() {
   return result.status === 0 ? result.stdout.trim() : '';
 }
 
+function git(args) {
+  return spawnSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe'
+  });
+}
+
+function changedSubjectPathsSince(sourceCommit, currentCommit, relativePaths) {
+  if (!sourceCommit || !currentCommit || sourceCommit === currentCommit) return [];
+  const ancestor = git(['merge-base', '--is-ancestor', sourceCommit, currentCommit]);
+  if (ancestor.status !== 0) return [`source_commit ${sourceCommit} is not an ancestor of current HEAD ${currentCommit}`];
+  const paths = relativePaths.map(String).filter(Boolean);
+  if (!paths.length) return [];
+  const diff = git(['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths]);
+  if (diff.status !== 0) return [`could not compare baseline subject freshness from ${sourceCommit} to ${currentCommit}`];
+  return diff.stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+}
+
 function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -245,15 +264,19 @@ function validateBaseline(parsed, sourceCommit) {
   const resolvedComparison = comparisonTarget ? resolveInsideRoot(comparisonTarget) : '';
   if (comparisonTarget && !resolvedComparison) errors.push('comparison target must stay inside repository root');
   if (resolvedComparison && !existsSync(resolvedComparison)) errors.push(`comparison target does not exist: ${comparisonTarget}`);
+  if (sourceCommit && sourceCommit !== sourceCommitCurrent) {
+    const changed = changedSubjectPathsSince(sourceCommit, sourceCommitCurrent, [parsed.repo, artifactPath, comparisonTarget]);
+    if (changed.length) errors.push(`baseline subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+  }
   errors.push(...validateMetricDerivation(parsed, resolvedComparison, resolvedArtifact));
   return errors;
 }
 
-const sourceCommit = gitCommit();
+const sourceCommitCurrent = gitCommit();
 const baselineFiles = walk(baselineRoot, file => file.endsWith('.baseline.json'));
 const baselines = baselineFiles.map(file => {
   const parsed = JSON.parse(readFileSync(file, 'utf8'));
-  const validation_errors = validateBaseline(parsed, sourceCommit);
+  const validation_errors = validateBaseline(parsed, sourceCommitCurrent);
   return {
     file: relative(root, file),
     repo: parsed.repo || '',
@@ -272,7 +295,7 @@ const result = {
   schemaVersion: '1.0',
   benchmark: 'baseline-comparison',
   generated_by: verifierId,
-  source_commit: sourceCommit,
+  source_commit: sourceCommitCurrent,
   generated_at: new Date().toISOString(),
   total_baselines: baselines.length,
   required_baseline_kinds: [...requiredKinds],

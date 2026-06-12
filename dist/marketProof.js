@@ -6,6 +6,7 @@ exports.goldenProofStatus = goldenProofStatus;
 exports.marketProofStatusForRoot = marketProofStatusForRoot;
 const utils_1 = require("./utils");
 const Crypto = require('node:crypto');
+const ChildProcess = require('node:child_process');
 exports.GOLDEN_VERIFIER_ID = 'scripts/verify-golden.mjs';
 exports.BASELINE_VERIFIER_ID = 'scripts/verify-baseline.mjs';
 const REQUIRED_BASELINE_KINDS = ['raw_agent_prompt', 'scanner_report'];
@@ -49,6 +50,28 @@ function resolveInsideRoot(root, relativePath) {
     const resolved = utils_1.Path.resolve(root, relativePath);
     const normalizedRoot = utils_1.Path.resolve(root);
     return resolved === normalizedRoot || resolved.startsWith(`${normalizedRoot}${utils_1.Path.sep}`) ? resolved : '';
+}
+function changedBaselineSubjectPathsSince(root, sourceCommit, currentCommit, relativePaths) {
+    if (!sourceCommit || !currentCommit || sourceCommit === currentCommit)
+        return [];
+    const ancestor = ChildProcess.spawnSync('git', ['merge-base', '--is-ancestor', sourceCommit, currentCommit], {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: 'pipe'
+    });
+    if (ancestor.status !== 0)
+        return [`source_commit ${sourceCommit} is not an ancestor of current HEAD ${currentCommit}`];
+    const paths = relativePaths.map(String).filter(Boolean);
+    if (!paths.length)
+        return [];
+    const diff = ChildProcess.spawnSync('git', ['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths], {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: 'pipe'
+    });
+    if (diff.status !== 0)
+        return [`could not compare baseline subject freshness from ${sourceCommit} to ${currentCommit}`];
+    return String(diff.stdout || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 }
 function readJsonObject(file) {
     try {
@@ -378,8 +401,6 @@ function validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateS
         errors.push('current source commit is unavailable for baseline artifact freshness validation');
     if (!sourceCommit)
         errors.push('source_commit is required');
-    if (expectedSourceCommit && sourceCommit !== expectedSourceCommit)
-        errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
     if (aggregateSourceCommit && sourceCommit !== aggregateSourceCommit)
         errors.push('source_commit must match baseline aggregate source_commit');
     const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
@@ -416,6 +437,11 @@ function validateBaselineArtifact(parsed, root, expectedSourceCommit, aggregateS
         errors.push('comparison target must stay inside repository root');
     if (resolvedComparison && !utils_1.FS.existsSync(resolvedComparison))
         errors.push(`comparison target does not exist: ${comparisonTarget}`);
+    if (sourceCommit && expectedSourceCommit && sourceCommit !== expectedSourceCommit) {
+        const changed = changedBaselineSubjectPathsSince(root, sourceCommit, expectedSourceCommit, [parsed?.repo, artifactPath, comparisonTarget]);
+        if (changed.length)
+            errors.push(`baseline subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+    }
     errors.push(...validateBaselineMetricDerivation(parsed, resolvedComparison, resolvedArtifact));
     return errors;
 }

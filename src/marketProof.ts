@@ -1,6 +1,7 @@
 import { FS, Path, gitCommit, loadJson } from './utils';
 
 const Crypto = require('node:crypto');
+const ChildProcess = require('node:child_process');
 
 export const GOLDEN_VERIFIER_ID = 'scripts/verify-golden.mjs';
 export const BASELINE_VERIFIER_ID = 'scripts/verify-baseline.mjs';
@@ -50,6 +51,25 @@ function resolveInsideRoot(root: string, relativePath: string): string {
   const resolved = Path.resolve(root, relativePath);
   const normalizedRoot = Path.resolve(root);
   return resolved === normalizedRoot || resolved.startsWith(`${normalizedRoot}${Path.sep}`) ? resolved : '';
+}
+
+function changedBaselineSubjectPathsSince(root: string, sourceCommit: string, currentCommit: string, relativePaths: string[]): string[] {
+  if (!sourceCommit || !currentCommit || sourceCommit === currentCommit) return [];
+  const ancestor = ChildProcess.spawnSync('git', ['merge-base', '--is-ancestor', sourceCommit, currentCommit], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe'
+  });
+  if (ancestor.status !== 0) return [`source_commit ${sourceCommit} is not an ancestor of current HEAD ${currentCommit}`];
+  const paths = relativePaths.map(String).filter(Boolean);
+  if (!paths.length) return [];
+  const diff = ChildProcess.spawnSync('git', ['diff', '--name-only', `${sourceCommit}..${currentCommit}`, '--', ...paths], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe'
+  });
+  if (diff.status !== 0) return [`could not compare baseline subject freshness from ${sourceCommit} to ${currentCommit}`];
+  return String(diff.stdout || '').split(/\r?\n/).map((line: string) => line.trim()).filter(Boolean);
 }
 
 function readJsonObject(file: string): any {
@@ -338,7 +358,6 @@ function validateBaselineArtifact(parsed: any, root: string, expectedSourceCommi
   const sourceCommit = String(parsed?.source_commit || provenance.source_commit || provenance.sourceCommit || '').trim();
   if (!expectedSourceCommit) errors.push('current source commit is unavailable for baseline artifact freshness validation');
   if (!sourceCommit) errors.push('source_commit is required');
-  if (expectedSourceCommit && sourceCommit !== expectedSourceCommit) errors.push(`source_commit must match current HEAD ${expectedSourceCommit}`);
   if (aggregateSourceCommit && sourceCommit !== aggregateSourceCommit) errors.push('source_commit must match baseline aggregate source_commit');
   const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
   const artifactHash = String(provenance.artifact_sha1 || provenance.artifact_hash || provenance.content_hash || provenance.sha1 || '').trim();
@@ -362,6 +381,10 @@ function validateBaselineArtifact(parsed: any, root: string, expectedSourceCommi
   const resolvedComparison = comparisonTarget ? resolveInsideRoot(root, comparisonTarget) : '';
   if (comparisonTarget && !resolvedComparison) errors.push('comparison target must stay inside repository root');
   if (resolvedComparison && !FS.existsSync(resolvedComparison)) errors.push(`comparison target does not exist: ${comparisonTarget}`);
+  if (sourceCommit && expectedSourceCommit && sourceCommit !== expectedSourceCommit) {
+    const changed = changedBaselineSubjectPathsSince(root, sourceCommit, expectedSourceCommit, [parsed?.repo, artifactPath, comparisonTarget]);
+    if (changed.length) errors.push(`baseline subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);
+  }
   errors.push(...validateBaselineMetricDerivation(parsed, resolvedComparison, resolvedArtifact));
   return errors;
 }

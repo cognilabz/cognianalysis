@@ -694,7 +694,7 @@ function missingIds(result) {
     });
     const status = marketProofStatusForRoot(root, analysis, 'current-commit');
     assert.equal(status.baselineProofReady, false, 'current aggregate with stale baseline artifacts must not be proof-ready');
-    assert(status.strictFailures.some(item => item.includes('source_commit must match current HEAD current-commit')), 'strict failures must reject stale baseline artifact source_commit');
+    assert(status.strictFailures.some(item => item.includes('baseline subject changed since source_commit')), 'strict failures must reject stale baseline artifact subjects');
     assert(status.strictFailures.some(item => item.includes('source_commit must match baseline aggregate source_commit')), 'strict failures must reject baseline artifact/aggregate source mismatch');
   } finally {
     rmSync(root, { recursive: true, force: true });
