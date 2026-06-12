@@ -1,0 +1,45 @@
+{
+  "detail_agent_plan": {
+    "planning_stage": "post_overview_pre_final_report",
+    "planning_source": "llm/detail-agent-plan.json",
+    "summary": "No source-family detail review is needed for the pinned Hello-World fixture because the complete included inventory is one README line.",
+    "whole_repo_context": "The repository evidence supports only a README-only fixture interpretation. Any runtime, contract, security or architecture review would be unsupported.",
+    "tasks": [],
+    "no_detail_reviews_needed": true,
+    "not_planned": [
+      {
+        "source_family": "runtime",
+        "reason": "No runtime source files, contracts, tests or configuration are present in the included inventory.",
+        "evidence": [
+          {
+            "path": "README",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "README",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "The detail plan reviewed the complete one-file evidence basis and explicitly skipped deeper reviews.",
+    "inspected_files": [
+      {
+        "path": "README",
+        "reason": "Only source file and complete evidence basis.",
+        "evidence": [
+          {
+            "path": "README",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

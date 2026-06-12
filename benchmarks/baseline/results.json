@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
   "generated_by": "scripts/verify-baseline.mjs",
-  "source_commit": "41cb0cc1f18643fd819f862a089614e83d1bf1b7",
+  "source_commit": "acf2e6e58e05c7cd5978d9ea5d99249d7fdcc2a6",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "b8dfe320fd634cc77043ffd76185e615bae2fd48"
+        "sha1": "9293a387e7d0bc11e79a6d4ffd1de367773a72ad"
       },
       {
         "path": "dist/index.js",
@@ -90,7 +90,7 @@
       },
       {
         "path": "package.json",
-        "sha1": "743bf5dc086a65cbb4eee37c9c26c559d2f5f0e8"
+        "sha1": "45cf175be1f2569fb41f9eab59dddaa14d462f6e"
       },
       {
         "path": "scripts/verify-baseline.mjs",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "ad0deaec372ff4e2cccf178239db128cc702a02f"
+        "sha1": "138018a04885463b237001405ee5cc31dd517922"
       },
       {
         "path": "src/index.ts",
@@ -189,9 +189,9 @@
         "sha1": "ff1b321c10e80ed034d08f22c2dcd28bac886308"
       }
     ],
-    "hash": "77838e1002d8e1d89772cbbf95e0ee56bb102ec3"
+    "hash": "ed0a095fcf2fe8fdf903a62813c94aec92ccee86"
   },
-  "generated_at": "2026-06-12T00:43:28.073Z",
+  "generated_at": "2026-06-12T01:03:25.918Z",
   "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",

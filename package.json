@@ -69,7 +69,8 @@
     "verify:llm-boundary": "npm run build && node scripts/verify-llm-boundary.mjs",
     "verify:golden": "npm run build && node scripts/verify-golden.mjs",
     "verify:baseline": "npm run build && node scripts/verify-baseline.mjs",
-    "verify:external": "npm run build && node scripts/verify-external-repos.mjs"
+    "verify:external": "npm run build && node scripts/verify-external-repos.mjs",
+    "verify:external-semantic": "npm run build && node scripts/verify-external-semantic.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "external-repo-semantic",
+  "description": "Networked semantic validation against pinned public repositories with fixture-backed Codex-authored final reports. This exercises the normal finalize/audit/eval path and checks that the report stays evidence-backed, humble and free of invented architecture.",
+  "minimum_repositories": 1,
+  "repositories": [
+    {
+      "id": "octocat-hello-world-semantic",
+      "url": "https://github.com/octocat/Hello-World.git",
+      "commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+      "seed_path": "benchmarks/external/semantic/octocat-hello-world/.analysis-seed",
+      "scope": "complete",
+      "goal": "Create a concise decision report for this external repository without inventing behavior beyond source evidence.",
+      "expected": {
+        "source_fact": {
+          "path": "README",
+          "line": 1,
+          "text": "Hello World!"
+        },
+        "required_block_types": [
+          "source_family_map",
+          "four_level_assessment",
+          "decision_matrix",
+          "roadmap",
+          "open_questions"
+        ],
+        "forbidden_claim_terms": [
+          "rest endpoint",
+          "graphql",
+          "database",
+          "authentication",
+          "authorization",
+          "payment",
+          "queue",
+          "event bus",
+          "microservice",
+          "kubernetes",
+          "container image",
+          "vulnerability"
+        ]
+      }
+    }
+  ]
+}

@@ -1099,7 +1099,7 @@ function aggregateWithMaterializedDetailTasks(repo: string, analysis: string): a
     writeSkillWorkbenchTasksFromLlmStrategy(analysis, bundle.analysis_strategy);
     bundle = aggregate(repo, analysis);
   }
-  if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && (bundle.llm_detail_agent_plan?.tasks || []).length) {
+  if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && bundle.source_family_detail_review_coverage?.planning_decision_present === true) {
     writeDetailTasksFromLlmPlan(analysis, bundle.llm_detail_agent_plan);
     bundle = aggregate(repo, analysis);
   }

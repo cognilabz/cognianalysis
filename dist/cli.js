@@ -1104,7 +1104,7 @@ function aggregateWithMaterializedDetailTasks(repo, analysis) {
         (0, skillWorkbenches_1.writeSkillWorkbenchTasksFromLlmStrategy)(analysis, bundle.analysis_strategy);
         bundle = (0, aggregate_1.aggregate)(repo, analysis);
     }
-    if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && (bundle.llm_detail_agent_plan?.tasks || []).length) {
+    if (bundle.llm_detail_agent_plan?.uses_pre_final_plan_artifact === true && bundle.source_family_detail_review_coverage?.planning_decision_present === true) {
         (0, tasks_1.writeDetailTasksFromLlmPlan)(analysis, bundle.llm_detail_agent_plan);
         bundle = (0, aggregate_1.aggregate)(repo, analysis);
     }
