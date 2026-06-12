@@ -449,6 +449,7 @@ npm run verify:demo
 npm run verify:llm-boundary
 npm run verify:golden
 npm run verify:baseline
+npm run verify:external
 ```
 
 `verify:demo` runs the positive demo flow against an ignored temp copy, then checks negative regressions: if `llm/detail-agent-plan.json` is removed, if a pre-final building-block output such as `llm/flows-mermaid.json` is missing, if the final Codex-authored `report_quality_review` is absent, if the Codex-authored review verdict is `partial`, if a `decision_ready` Codex-authored review omits accepted-limitation rationale for `partial`/`open` requirements, if the structured Codex-authored LLM requirements trace artifact is missing, if the executive decision layer/consistency review/evidence-strength artifacts are incomplete, or if deterministic no-seed fallbacks create scored semantic target rows, `cognianalysis dev audit-report`/verification must block readiness. A repo-specific trace vocabulary, repo-specific report-quality review vocabulary and visible business-need/business-use narrative fields must pass when the artifacts are structured and the Codex-authored quality verdict is decision-ready.
@@ -464,6 +465,8 @@ npm run verify:baseline
 `benchmarks/golden/manifest.json` makes "representative" machine-checkable. Strict market proof requires five verifier-passing suites in five distinct repositories across the required categories: REST/OpenAPI service, SOAP/WSDL service, event-driven service, frontend/backend app and legacy monolith. A duplicated or single-domain golden suite cannot satisfy the product-readiness gate.
 
 `verify:baseline` checks externally or manually generated baseline comparison artifacts under `benchmarks/baseline/**/*.baseline.json`. It writes fresh result JSON under an ignored temp workspace by default and fails if required raw-agent and scanner-style baselines are missing, failing, or not shaped with metrics, provenance and comparison targets. Set `COGNIANALYSIS_UPDATE_BENCHMARK_RESULTS=1` only when intentionally refreshing the tracked baseline snapshot.
+
+`verify:external` is an optional networked smoke gate for real public repositories listed in `benchmarks/external/manifest.json`. It clones each repository into a temp workspace, runs the public `analyze`, `status`, `eval` and strict `eval` flow with `--no-seed`, and verifies that Cognianalysis prepares the product workspace while refusing to claim full readiness before Codex-authored LLM artifacts exist. It is real external-repo validation of the public entrypoints, not market-superiority proof and not a substitute for full semantic external reports.
 
 ## Portfolio mode
 

@@ -613,6 +613,7 @@ assert(packageJson.name === 'cognianalysis', 'Package name must be cognianalysis
 assert(packageJson.bin?.cognianalysis === 'dist/cli.js', 'Package must expose the cognianalysis CLI');
 assert(packageJson.scripts?.['verify:golden'] === 'npm run build && node scripts/verify-golden.mjs', 'Package must expose the golden benchmark verifier');
 assert(packageJson.scripts?.['verify:baseline'] === 'npm run build && node scripts/verify-baseline.mjs', 'Package must expose the baseline benchmark verifier');
+assert(packageJson.scripts?.['verify:external'] === 'npm run build && node scripts/verify-external-repos.mjs', 'Package must expose the external repository smoke verifier');
 assert(packageJson.files?.includes('benchmarks'), 'Package must publish benchmark fixtures');
 assert(packageJson.files?.includes('scripts'), 'Package must publish benchmark verification scripts');
 assert(!Object.prototype.hasOwnProperty.call(packageJson.bin || {}, 'cba'), 'Package must not expose the legacy cba CLI alias');

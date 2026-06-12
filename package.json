@@ -68,7 +68,8 @@
     "verify:product-readiness": "npm run build && node scripts/verify-product-readiness.mjs",
     "verify:llm-boundary": "npm run build && node scripts/verify-llm-boundary.mjs",
     "verify:golden": "npm run build && node scripts/verify-golden.mjs",
-    "verify:baseline": "npm run build && node scripts/verify-baseline.mjs"
+    "verify:baseline": "npm run build && node scripts/verify-baseline.mjs",
+    "verify:external": "npm run build && node scripts/verify-external-repos.mjs"
   },
   "engines": {
     "node": ">=18"

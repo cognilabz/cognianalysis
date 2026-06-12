@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "external-repo-smoke",
+  "description": "Networked smoke validation against real public repositories. This proves the public product entrypoints run honestly on external source, but it is not a semantic market-superiority proof.",
+  "minimum_repositories": 2,
+  "repositories": [
+    {
+      "id": "octocat-hello-world",
+      "url": "https://github.com/octocat/Hello-World.git",
+      "scope_files": 20,
+      "goal": "Create a concise decision report for this external repository."
+    },
+    {
+      "id": "githubtraining-hellogitworld",
+      "url": "https://github.com/githubtraining/hellogitworld.git",
+      "scope_files": 20,
+      "goal": "Create a concise decision report for this external repository."
+    }
+  ]
+}
