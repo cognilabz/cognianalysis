@@ -70,7 +70,8 @@
     "verify:golden": "npm run build && node scripts/verify-golden.mjs",
     "verify:baseline": "npm run build && node scripts/verify-baseline.mjs",
     "verify:external": "npm run build && node scripts/verify-external-repos.mjs",
-    "verify:external-semantic": "npm run build && node scripts/verify-external-semantic.mjs"
+    "verify:external-semantic": "npm run build && node scripts/verify-external-semantic.mjs",
+    "verify:external-autonomous": "npm run build && node scripts/verify-external-autonomous.mjs"
   },
   "engines": {
     "node": ">=18"

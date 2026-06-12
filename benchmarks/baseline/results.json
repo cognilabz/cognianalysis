@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "baseline-comparison",
   "generated_by": "scripts/verify-baseline.mjs",
-  "source_commit": "e8f4adb66ef712d1578d4e68227efb96d9362bce",
+  "source_commit": "4c12f45511c18778262c13035916a7cfb2d24026",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -90,7 +90,7 @@
       },
       {
         "path": "package.json",
-        "sha1": "45cf175be1f2569fb41f9eab59dddaa14d462f6e"
+        "sha1": "5f9f2e6f346848cfafaecf63bbfcb1160a9dc733"
       },
       {
         "path": "scripts/verify-baseline.mjs",
@@ -189,9 +189,9 @@
         "sha1": "ff1b321c10e80ed034d08f22c2dcd28bac886308"
       }
     ],
-    "hash": "ed0a095fcf2fe8fdf903a62813c94aec92ccee86"
+    "hash": "166e49bffb9e85cc1648d290d9fd43d554ec9095"
   },
-  "generated_at": "2026-06-12T01:11:40.418Z",
+  "generated_at": "2026-06-12T01:20:01.798Z",
   "total_baselines": 2,
   "required_baseline_kinds": [
     "raw_agent_prompt",

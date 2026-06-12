@@ -451,6 +451,7 @@ npm run verify:golden
 npm run verify:baseline
 npm run verify:external
 npm run verify:external-semantic
+npm run verify:external-autonomous
 ```
 
 `verify:demo` runs the positive demo flow against an ignored temp copy, then checks negative regressions: if `llm/detail-agent-plan.json` is removed, if a pre-final building-block output such as `llm/flows-mermaid.json` is missing, if the final Codex-authored `report_quality_review` is absent, if the Codex-authored review verdict is `partial`, if a `decision_ready` Codex-authored review omits accepted-limitation rationale for `partial`/`open` requirements, if the structured Codex-authored LLM requirements trace artifact is missing, if the executive decision layer/consistency review/evidence-strength artifacts are incomplete, or if deterministic no-seed fallbacks create scored semantic target rows, `cognianalysis dev audit-report`/verification must block readiness. A repo-specific trace vocabulary, repo-specific report-quality review vocabulary and visible business-need/business-use narrative fields must pass when the artifacts are structured and the Codex-authored quality verdict is decision-ready.
@@ -470,6 +471,8 @@ npm run verify:external-semantic
 `verify:external` is an optional networked smoke gate for real public repositories listed in `benchmarks/external/manifest.json`. Each manifest row must pin a 40-character commit so the check is reproducible. The script fetches exactly that revision into a temp workspace, runs the public `analyze`, `status`, `eval` and strict `eval` flow with `--no-seed`, and verifies that Cognianalysis prepares the product workspace while refusing to claim full readiness before Codex-authored LLM artifacts exist. It is real external-repo validation of the public entrypoints, not market-superiority proof and not a substitute for full semantic external reports.
 
 `verify:external-semantic` is an optional networked semantic-report gate for pinned real repositories listed in `benchmarks/external/semantic/manifest.json`. It fetches the exact revision, injects fixture-backed Codex-authored seed artifacts, runs the normal finalization/audit/eval path, and asserts that the final decision report is evidence-backed, goal-trace complete, partial/open rows are justified, and unsupported system claims are absent. The bundled suite checks `octocat/Hello-World` as a one-line README fixture, so the expected behavior is a humble decision report, not invented API, database, auth, queue or deployment analysis.
+
+`verify:external-autonomous` is an optional networked unseeded handoff gate for pinned real repositories listed in `benchmarks/external/autonomous/manifest.json`. It runs `analyze --no-seed`, checks that exact source evidence is available in the generated context and task guides, and verifies readiness stays blocked until Codex authors the required LLM artifacts. It is a no-false-positive/autonomous-handoff proof, not a deterministic semantic-quality scorer.
 
 ## Portfolio mode
 

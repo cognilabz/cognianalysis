@@ -619,9 +619,13 @@ assert(packageJson.scripts?.['verify:golden'] === 'npm run build && node scripts
 assert(packageJson.scripts?.['verify:baseline'] === 'npm run build && node scripts/verify-baseline.mjs', 'Package must expose the baseline benchmark verifier');
 assert(packageJson.scripts?.['verify:external'] === 'npm run build && node scripts/verify-external-repos.mjs', 'Package must expose the external repository smoke verifier');
 assert(packageJson.scripts?.['verify:external-semantic'] === 'npm run build && node scripts/verify-external-semantic.mjs', 'Package must expose the external semantic benchmark verifier');
+assert(packageJson.scripts?.['verify:external-autonomous'] === 'npm run build && node scripts/verify-external-autonomous.mjs', 'Package must expose the external autonomous handoff verifier');
 assert(packageJson.files?.includes('benchmarks'), 'Package must publish benchmark fixtures');
 assert(packageJson.files?.includes('scripts'), 'Package must publish benchmark verification scripts');
 assert(packagePublishesPath('scripts/verify-external-semantic.mjs'), 'Package file allowlist must publish the external semantic verifier script');
+assert(packagePublishesPath('scripts/verify-external-autonomous.mjs'), 'Package file allowlist must publish the external autonomous handoff verifier script');
+assert(existsSync(join(root, 'benchmarks/external/autonomous/manifest.json')), 'External autonomous package manifest must exist');
+assert(packagePublishesPath('benchmarks/external/autonomous/manifest.json'), 'Package file allowlist must publish external autonomous manifest');
 for (const fixturePath of [
   'benchmarks/external/semantic/manifest.json',
   'benchmarks/external/semantic/octocat-hello-world/.analysis-seed/llm/analysis-strategy.json',

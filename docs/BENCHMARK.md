@@ -36,6 +36,14 @@ npm run verify:external-semantic
 
 That command fetches the public repositories listed in `benchmarks/external/semantic/manifest.json` into a temp workspace at pinned 40-character commits, injects fixture-backed Codex-authored `.analysis-seed` artifacts, runs the normal `analyze`, `dev audit-report` and `eval` path, and verifies the final report contract against the live checked-out source. The first suite uses `octocat/Hello-World` at a pinned commit and asserts that the report cites `README:1`, passes final readiness, references every original goal-contract item, keeps partial/open requirement rows justified and does not invent unsupported claims such as APIs, databases, auth, queues or deployment infrastructure. This is semantic external-report proof for a tiny pinned repository; it is still not autonomous extraction proof or a market-superiority claim.
 
+Unseeded external handoff proof is also separate:
+
+```bash
+npm run verify:external-autonomous
+```
+
+That command fetches the public repositories listed in `benchmarks/external/autonomous/manifest.json` into a temp workspace at pinned 40-character commits, runs `analyze --no-seed`, verifies that no `.analysis-seed` or final report is used, checks that the exact source fact is present in source capsules and generated task context, and confirms strict `eval` blocks readiness until Codex authors the required LLM artifacts. This is an autonomous handoff/no-false-positive gate, not a semantic quality score; Codex remains the in-session LLM executor for the unseeded semantic extraction.
+
 Representative proof is also separate from simple suite correctness. `benchmarks/golden/manifest.json` lists the required representative categories and maps each expected suite to exactly one category and repository. Strict market proof requires at least five verifier-passing suites across five distinct repositories and all required categories: REST/OpenAPI service, SOAP/WSDL service, event-driven service, frontend/backend app and legacy monolith. The bundled suites now cover those five categories and `npm run verify:golden` must report `market-proof-ready=true`.
 
 ## Metrics
@@ -50,7 +58,7 @@ The seeded golden suites require perfect recall, perfect evidence precision, zer
 
 ## Market Claim Boundary
 
-Cognianalysis can claim a verified product architecture when `npm run verify:demo`, `npm run verify:golden`, `npm run verify:baseline`, `npm run verify:external` and `npm run verify:external-semantic` pass.
+Cognianalysis can claim a verified product architecture when `npm run verify:demo`, `npm run verify:golden`, `npm run verify:baseline`, `npm run verify:external`, `npm run verify:external-semantic` and `npm run verify:external-autonomous` pass.
 
 It must not claim "best on the market" from these fixture gates alone. The bundled baselines are provenance-bound comparison artifacts for the demo fixture; stronger market-superiority language still requires broader externally produced baselines, larger real-world repositories and repeated product-scale runs.
 

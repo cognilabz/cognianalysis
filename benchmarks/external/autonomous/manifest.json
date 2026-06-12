@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "external-repo-autonomous-handoff",
+  "description": "Networked unseeded validation against pinned public repositories. This proves the public workflow can prepare exact source evidence and Codex task handoff without .analysis-seed artifacts, while blocking semantic readiness until Codex authors the required LLM artifacts.",
+  "minimum_repositories": 1,
+  "repositories": [
+    {
+      "id": "octocat-hello-world-unseeded",
+      "url": "https://github.com/octocat/Hello-World.git",
+      "commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+      "scope": "complete",
+      "goal": "Create a concise decision report for this external repository from source evidence without seed artifacts.",
+      "expected": {
+        "source_fact": {
+          "path": "README",
+          "line": 1,
+          "text": "Hello World!"
+        },
+        "required_task_files": [
+          "TASK.md",
+          "llm_tasks/00-analysis-strategy.md",
+          "llm_tasks/11-detail-agent-plan.md",
+          "llm_tasks/12-analysis-document.md"
+        ],
+        "required_task_phrases": [
+          "Codex is the in-session LLM executor",
+          "analysis_document.requirements_trace",
+          "analysis_document.report_quality_review",
+          "file:line evidence"
+        ]
+      }
+    }
+  ]
+}
