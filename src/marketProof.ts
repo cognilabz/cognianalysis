@@ -477,7 +477,6 @@ export function baselineProofStatus(root: string, expectedSourceCommit: string |
     if (!String(aggregate.source_commit || '').trim()) aggregateErrors.push('baseline aggregate source_commit is required');
     if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit) {
       const changed = changedBaselineSubjectPathsSince(root, String(aggregate.source_commit || ''), expectedSourceCommit, [
-        ...files.map(file => posixRelative(root, file)),
         ...baselines.flatMap((item: any) => item.subject_paths || [])
       ]);
       if (changed.length) aggregateErrors.push(`baseline aggregate subject changed since source_commit: ${changed.slice(0, 8).join(', ')}`);

@@ -1014,6 +1014,9 @@ function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
     const receipt = sourceTierWorkpackReceipt(artifact);
     const filePaths = (task?.file_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort();
     const reviewedPaths = (review?.files || []).map((file) => String(file?.path || '').trim()).filter(Boolean).sort();
+    const receiptSourcePaths = (receipt?.source_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort();
+    const generatedFrom = (receipt?.generated_from || []).map((path) => String(path || '').trim()).filter(Boolean);
+    const taskFile = String(task?.task_file || '').trim();
     const reviewHash = hashStable(review);
     const receiptHash = hashStable(receipt);
     const taskContextHash = sourceTierWorkpackTaskContextHash(task);
@@ -1026,6 +1029,8 @@ function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
         ...(String(receipt?.artifact_path || '') === artifactPath ? [] : ['workpack_receipt.artifact_path']),
         ...(String(receipt?.task_context_hash || '') === taskContextHash ? [] : ['workpack_receipt.task_context_hash']),
         ...(String(receipt?.review_hash || '') === reviewHash ? [] : ['workpack_receipt.review_hash']),
+        ...(filePaths.length > 0 && filePaths.length === receiptSourcePaths.length && filePaths.every((path, index) => path === receiptSourcePaths[index]) ? [] : ['workpack_receipt.source_paths']),
+        ...(generatedFrom.includes('source-tier-task-manifest.json') && generatedFrom.includes(taskFile) ? [] : ['workpack_receipt.generated_from']),
         ...(String(review?.task_id || '') === String(task?.id || '') ? [] : ['source_file_tier_review.task_id']),
         ...(String(review?.review_status || '') === 'complete' ? [] : ['source_file_tier_review.review_status']),
         ...(filePaths.length > 0 && filePaths.length === reviewedPaths.length && filePaths.every((path, index) => path === reviewedPaths[index]) ? [] : ['source_file_tier_review.file_paths'])

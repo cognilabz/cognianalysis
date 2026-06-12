@@ -541,7 +541,6 @@ function baselineProofStatus(root, expectedSourceCommit = (0, utils_1.gitCommit)
             aggregateErrors.push('baseline aggregate source_commit is required');
         if (expectedSourceCommit && aggregate.source_commit !== expectedSourceCommit) {
             const changed = changedBaselineSubjectPathsSince(root, String(aggregate.source_commit || ''), expectedSourceCommit, [
-                ...files.map(file => posixRelative(root, file)),
                 ...baselines.flatMap((item) => item.subject_paths || [])
             ]);
             if (changed.length)

@@ -523,8 +523,16 @@ function validateOrchestrationExecutionLog(bundle: any): any {
     const taskId = String(task?.task_id || '').trim();
     const receipt = executionsByTask.get(taskId);
     const manifestTask = tasksById.get(taskId);
+    const expectedPaths = asList(manifestTask?.file_paths).map((path: any) => String(path || '').trim()).filter(Boolean).sort();
+    const receiptPaths = asList(receipt?.source_paths).map((path: any) => String(path || '').trim()).filter(Boolean).sort();
+    const generatedFrom = asList(receipt?.generated_from).map((path: any) => String(path || '').trim()).filter(Boolean);
     return receipt?.valid === true
-      && String(receipt.task_context_hash || '').trim() === sourceTierWorkpackTaskContextHash(manifestTask);
+      && String(receipt.task_context_hash || '').trim() === sourceTierWorkpackTaskContextHash(manifestTask)
+      && expectedPaths.length > 0
+      && expectedPaths.length === receiptPaths.length
+      && expectedPaths.every((path: string, index: number) => path === receiptPaths[index])
+      && generatedFrom.includes('source-tier-task-manifest.json')
+      && generatedFrom.includes(String(manifestTask?.task_file || '').trim());
   });
   if (!receiptsValid) missing.push('orchestration_execution_log.workpack_receipts_valid');
   const receiptsMatchArtifacts = tasks.every((task: any) => {

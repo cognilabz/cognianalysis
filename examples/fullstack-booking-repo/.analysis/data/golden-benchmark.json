@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "fullstack-booking-repo",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "847def962eec9cfa4ceb3d8870b54d6e08352032",
+  "source_commit": "dfdf86fc38c28a4ddcaaa7e37e5b49796e91cb21",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -10,7 +10,7 @@
     "paths": [
       {
         "path": "dist/aggregate.js",
-        "sha1": "252b1aa6052bd49643248ec3678f75f403b143e0"
+        "sha1": "a1241841bc33997c187cd8b2d428eadc2978d356"
       },
       {
         "path": "dist/analysisGoal.js",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "46235ab4c2c3cdaa4254e3e0e5dc7f4631ded8ba"
+        "sha1": "c1fde6a62dc4e49c81e503d9ac297bcdaa54e1d5"
       },
       {
         "path": "dist/index.js",
@@ -34,7 +34,7 @@
       },
       {
         "path": "dist/marketProof.js",
-        "sha1": "675f77ab081288a58a76a36626d75ddfe8eedb0e"
+        "sha1": "f3bad3912005779df2b8bca34d19785f66d06025"
       },
       {
         "path": "dist/mcp.js",
@@ -106,7 +106,7 @@
       },
       {
         "path": "src/aggregate.ts",
-        "sha1": "abf1c6e6fb3153438c9a7f0dc62e2f8efe00ddc3"
+        "sha1": "596f5a974a91347fc875a08a2e608df8b43eee7f"
       },
       {
         "path": "src/analysisGoal.ts",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "495d6041c13df90adf3fb20dabea3188eccf1578"
+        "sha1": "64f5bb733882638053b573ae91cd7ba2b8736aed"
       },
       {
         "path": "src/index.ts",
@@ -130,7 +130,7 @@
       },
       {
         "path": "src/marketProof.ts",
-        "sha1": "18ef3b518cca34c0a1d6e8fe835d96e7a515945d"
+        "sha1": "5fca2d553c6a5a3decc3a2938822f50b1c4e8f64"
       },
       {
         "path": "src/mcp.ts",
@@ -189,11 +189,11 @@
         "sha1": "209bd3c9822c2dacd20d503a8c51537af4a3bc69"
       }
     ],
-    "hash": "abb00f55f59c40b495a26e9aa63a8f62a92871f7"
+    "hash": "25c7546e2b373fca3b73524440bba23d9bc94862"
   },
   "expected_file": "benchmarks/golden/fullstack-booking-repo.expected.json",
   "repo": "examples/fullstack-booking-repo",
-  "generated_at": "2026-06-12T02:50:24.208Z",
+  "generated_at": "2026-06-12T03:02:06.416Z",
   "metrics": {
     "fact_recall": 1,
     "evidence_precision": 1,
