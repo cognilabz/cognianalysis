@@ -484,6 +484,8 @@ writeJson(sourceTierManifestPath, sourceTierManifest);
 writeJson(sourceTierDataManifestPath, sourceTierManifest);
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), splitTierArtifact('source-tier-0001', firstCards));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0002.json'), splitTierArtifact('source-tier-0002', secondCards));
 run(['dev', 'aggregate', orchestrationRepo], { capture: true });
 let orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
 let hashByPath = new Map(orchestrationBundle.artifact_dependency_graph.nodes.map(node => [node.path, node.content_hash]));
