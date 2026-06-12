@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "repo": "examples/demo-repo",
   "baseline_kind": "raw_agent_prompt",
-  "source_commit": "388568b0ba7bd52ec240979c2b0b707bc9b1f8ac",
+  "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
   "verdict": "pass",
   "metrics": {
     "fact_recall": 1,
@@ -14,7 +14,7 @@
     "generated_by": "manual-raw-agent-prompt-2026-06-12",
     "artifact": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
     "artifact_sha1": "e55f551740ee5f3a94db879f0bb8db4d6616cae0",
-    "source_commit": "388568b0ba7bd52ec240979c2b0b707bc9b1f8ac"
+    "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1"
   },
   "comparison": {
     "target": "benchmarks/baseline/targets/demo-baseline-target.json"

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "soap-claims-repo",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "388568b0ba7bd52ec240979c2b0b707bc9b1f8ac",
+  "source_commit": "ab34b2383a85b3a9da867feb573f5708c37aebd1",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -10,7 +10,7 @@
     "paths": [
       {
         "path": "dist/aggregate.js",
-        "sha1": "a1241841bc33997c187cd8b2d428eadc2978d356"
+        "sha1": "747c534984dc80c983291ce42f8d9a41717e1ca4"
       },
       {
         "path": "dist/analysisGoal.js",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "c1fde6a62dc4e49c81e503d9ac297bcdaa54e1d5"
+        "sha1": "88cef76694c6e497a2b270dc8c4c3dabc37eafa5"
       },
       {
         "path": "dist/index.js",
@@ -106,7 +106,7 @@
       },
       {
         "path": "src/aggregate.ts",
-        "sha1": "596f5a974a91347fc875a08a2e608df8b43eee7f"
+        "sha1": "8a80fd3441139a34c59f0992331454f26a1313df"
       },
       {
         "path": "src/analysisGoal.ts",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "64f5bb733882638053b573ae91cd7ba2b8736aed"
+        "sha1": "c1d2701b195c49e22b64e8d0be3248b8bd06f4ae"
       },
       {
         "path": "src/index.ts",
@@ -189,11 +189,11 @@
         "sha1": "209bd3c9822c2dacd20d503a8c51537af4a3bc69"
       }
     ],
-    "hash": "25c7546e2b373fca3b73524440bba23d9bc94862"
+    "hash": "6e7194b03028ec3778f10d553230a2a4082d0fc5"
   },
   "expected_file": "benchmarks/golden/soap-claims-repo.expected.json",
   "repo": "examples/soap-claims-repo",
-  "generated_at": "2026-06-12T03:04:41.736Z",
+  "generated_at": "2026-06-12T03:17:13.985Z",
   "metrics": {
     "fact_recall": 1,
     "evidence_precision": 1,
