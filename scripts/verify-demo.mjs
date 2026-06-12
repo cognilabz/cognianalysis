@@ -708,6 +708,14 @@ assert(orchestrationProofOutput.includes('Parallel/caching orchestration proof: 
 orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === true, `Generated orchestration proof should satisfy the contract: ${(orchestrationBundle.parallel_orchestration_contract?.missing || []).join(', ')}`);
 const validCacheLedger = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'cache-ledger.json'), 'utf8'));
+const firstCacheStorePath = join(orchestrationAnalysis, 'cache', 'source-tier', `${validCacheLedger.cache_entries[0].cache_key}.json`);
+const firstCacheStore = JSON.parse(readFileSync(firstCacheStorePath, 'utf8'));
+rmSync(firstCacheStorePath, { force: true });
+run(['dev', 'aggregate', orchestrationRepo], { capture: true });
+orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data', 'bundle.json'), 'utf8'));
+assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Missing cache-store files must not complete orchestration');
+assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.cache_ledger_validation?.missing?.includes('cache_ledger.cache_store_files'), 'Cache ledger hits must bind to existing runner-created cache-store files');
+writeJson(firstCacheStorePath, firstCacheStore);
 const forgedCacheLedger = JSON.parse(JSON.stringify(validCacheLedger));
 forgedCacheLedger.cache_entries[0].task_context_hash = 'forged-task-context-hash';
 forgedCacheLedger.cache_entries[0].execution_receipt_hash = 'forged-receipt-hash';

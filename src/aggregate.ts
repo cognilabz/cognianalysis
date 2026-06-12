@@ -129,6 +129,7 @@ export function aggregate(repo: string, analysisDir: string): any {
     analysis_scope: analysisScope,
     orchestration_execution_log: loadJson<any>(Path.join(dataDir, 'orchestration-execution-log.json'), {}),
     cache_ledger: loadJson<any>(Path.join(dataDir, 'cache-ledger.json'), {}),
+    cache_store_entries: loadCacheStoreEntries(analysisDir),
     parallel_execution_proof: loadJson<any>(Path.join(dataDir, 'parallel-execution-proof.json'), {}),
     cache_reuse_proof: loadJson<any>(Path.join(dataDir, 'cache-reuse-proof.json'), {}),
     source_tier_model: sourceTierModelArtifact(),
@@ -640,6 +641,9 @@ function validateCacheLedger(bundle: any): any {
   const hitEntries = entries.filter((entry: any) => entry?.hit === true || entry?.cache_hit === true);
   const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
   const workpackExecutions = asList(bundle.source_tier_workpack_executions).filter((execution: any) => execution?.valid === true);
+  const cacheStoreByKey = new Map(asList(bundle.cache_store_entries)
+    .map((entry: any) => [String(entry?.cache_key || '').trim(), entry])
+    .filter((entry: any[]) => entry[0]) as [string, any][]);
   const missing = [
     ...(ledger.schemaVersion === '1.0' ? [] : ['cache_ledger.schemaVersion']),
     ...(String(ledger.ledger_kind || '') === 'artifact_cache_ledger' ? [] : ['cache_ledger.ledger_kind']),
@@ -687,6 +691,23 @@ function validateCacheLedger(bundle: any): any {
     );
   });
   if (!storeWorkpackReceiptsValid) missing.push('cache_ledger.cache_store_workpack_receipts');
+  const storeFilesValid = hitEntries.every((entry: any) => {
+    const key = String(entry?.cache_key || entry?.key || '').trim();
+    const store = cacheStoreByKey.get(key);
+    return store?.schemaVersion === '1.0'
+      && String(store?.cache_store_kind || '').trim() === cacheStoreKind
+      && String(store?.generated_by || '').trim() === runnerGeneratedBy
+      && String(store?.cache_key || '').trim() === key
+      && String(store?.analysis_run_id || '').trim() === String(bundle.analysis_run?.analysis_run_id || '')
+      && String(store?.source_commit || '').trim() === String(bundle.analysis_run?.source_commit || '')
+      && String(store?.product_request_hash || '').trim() === requestHash
+      && String(store?.artifact_path || '').trim() === String(entry?.artifact_path || entry?.path || '').trim()
+      && String(store?.artifact_hash || '').trim() === String(entry?.artifact_hash || entry?.source_hash || entry?.content_hash || '').trim()
+      && String(store?.task_id || '').trim() === String(entry?.task_id || '').trim()
+      && String(store?.task_context_hash || '').trim() === String(entry?.task_context_hash || '').trim()
+      && String(store?.execution_receipt_hash || '').trim() === String(entry?.execution_receipt_hash || '').trim();
+  });
+  if (!storeFilesValid) missing.push('cache_ledger.cache_store_files');
   const reuseTimingValid = hitEntries.every((entry: any) => {
     const created = Date.parse(String(entry?.created_at || ''));
     const reused = Date.parse(String(entry?.reused_at || entry?.hit_at || ''));
@@ -2927,6 +2948,18 @@ function loadExternalFindings(analysisDir: string): any[] {
     }
   }
   return rows;
+}
+
+function loadCacheStoreEntries(analysisDir: string): any[] {
+  const cacheDir = Path.join(analysisDir, 'cache', 'source-tier');
+  if (!FS.existsSync(cacheDir)) return [];
+  return FS.readdirSync(cacheDir)
+    .filter((name: string) => name.endsWith('.json'))
+    .sort()
+    .map((name: string) => ({
+      ...loadJson<any>(Path.join(cacheDir, name), {}),
+      cache_store_path: Path.join('cache', 'source-tier', name).replace(/\\/g, '/')
+    }));
 }
 
 function computeExternalFindingsContract(findings: any[]): any {

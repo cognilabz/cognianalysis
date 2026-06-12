@@ -1053,7 +1053,26 @@ function validateSourceTierWorkpackExecution(analysis, task, artifactPath, artif
     ];
     return { errors, reviewHash, receiptHash, taskContextHash };
 }
-function validateCacheLedger(bundle, ledger) {
+function cacheStoreMatchesHit(store, entry, requestHash, bundle) {
+    return store?.schemaVersion === '1.0'
+        && String(store?.cache_store_kind || '').trim() === CACHE_STORE_KIND
+        && String(store?.generated_by || '').trim() === ORCHESTRATION_RUNNER_GENERATED_BY
+        && String(store?.cache_key || '').trim() === entry.cache_key
+        && String(store?.analysis_run_id || '').trim() === String(bundle.analysis_run?.analysis_run_id || '')
+        && String(store?.source_commit || '').trim() === String(bundle.analysis_run?.source_commit || '')
+        && String(store?.product_request_hash || '').trim() === requestHash
+        && String(store?.artifact_path || '').trim() === entry.artifact_path
+        && String(store?.artifact_hash || '').trim() === entry.artifact_hash
+        && String(store?.task_id || '').trim() === entry.task_id
+        && String(store?.task_context_hash || '').trim() === entry.task_context_hash
+        && String(store?.execution_receipt_hash || '').trim() === entry.execution_receipt_hash;
+}
+function loadCacheStoreHit(analysis, cacheKeyValue) {
+    if (!/^[a-f0-9]{20}$/i.test(cacheKeyValue))
+        return null;
+    return (0, utils_1.loadJson)(utils_1.Path.join(analysis, 'cache', 'source-tier', `${cacheKeyValue}.json`), null);
+}
+function validateCacheLedger(bundle, ledger, analysis) {
     const hashes = artifactHashMap(bundle);
     const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
     const workpackExecutions = (bundle.source_tier_workpack_executions || []).filter((execution) => execution?.valid === true);
@@ -1101,6 +1120,7 @@ function validateCacheLedger(bundle, ledger) {
             && String(execution?.task_id || '').trim() === entry.task_id
             && String(execution?.task_context_hash || '').trim() === entry.task_context_hash
             && String(execution?.receipt_hash || '').trim() === entry.execution_receipt_hash)) ? [] : ['cache_ledger.cache_store_workpack_receipts']),
+        ...(!analysis || hitEntries.every((entry) => cacheStoreMatchesHit(loadCacheStoreHit(analysis, entry.cache_key), entry, requestHash, bundle)) ? [] : ['cache_ledger.cache_store_files']),
         ...(hitEntries.every((entry) => {
             const created = Date.parse(entry.created_at);
             const reused = Date.parse(entry.reused_at);
@@ -1292,7 +1312,7 @@ async function cmdProveOrchestration(args) {
     const executionLog = (0, utils_1.loadJson)(executionLogPath, {});
     const cacheLedger = (0, utils_1.loadJson)(cacheLedgerPath, {});
     const executionValidation = validateExecutionLog(bundle, executionLog);
-    const cacheValidation = validateCacheLedger(bundle, cacheLedger);
+    const cacheValidation = validateCacheLedger(bundle, cacheLedger, analysis);
     const validationErrors = [...executionValidation.errors, ...cacheValidation.errors];
     if (validationErrors.length) {
         console.log('Parallel/caching orchestration proof: not written');
