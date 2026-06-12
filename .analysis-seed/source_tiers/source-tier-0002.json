@@ -1037,8 +1037,8 @@
     "executor": "codex-in-session",
     "task_id": "source-tier-0002",
     "artifact_path": "source_tiers/source-tier-0002.json",
-    "task_context_hash": "4829a1b1dc4f68db1a2a",
-    "task_file_sha1": "7ee178a3dd82b95350ae",
+    "task_context_hash": "8dd24020d80935b71a2a",
+    "task_file_sha1": "d5d5b0344b9dcfbe290b",
     "review_hash": "78cdcdf980a2bc23b50a",
     "source_paths": [
       ".gitignore",
