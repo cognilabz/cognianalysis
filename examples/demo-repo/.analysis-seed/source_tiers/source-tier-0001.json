@@ -4,77 +4,1101 @@
     "tier_model_version": "source-tier-v1",
     "review_status": "complete",
     "files": [
-      {"path":"README.md","tier":"tier1_file_card","analysis_depth":1,"summary":"Repository overview that frames the demo customer onboarding service, its main API and supporting documentation.","technical_role":"documentation","business_relevance":"Explains the onboarding domain and directs readers to API and flow evidence.","relationships":[{"target":"docs/business-flows.md","kind":"documents","description":"Points to business flow documentation used by the report."}],"confidence":"high","evidence":[{"path":"README.md","line":1}]},
-      {"path":"docs/api-examples.md","tier":"tier1_file_card","analysis_depth":1,"summary":"Human-readable REST examples for starting onboarding and checking status.","technical_role":"documentation","business_relevance":"Shows how consumers interact with the onboarding capability.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"documents","description":"Documents controller request and response behavior."}],"confidence":"high","evidence":[{"path":"docs/api-examples.md","line":1}]},
-      {"path":"docs/business-examples.md","tier":"tier1_file_card","analysis_depth":1,"summary":"Business-oriented examples for customer onboarding scenarios and outcomes.","technical_role":"documentation","business_relevance":"Provides non-code examples that help translate source behavior into management language.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"documents","description":"Explains service behavior through business examples."}],"confidence":"high","evidence":[{"path":"docs/business-examples.md","line":1}]},
-      {"path":"docs/business-flows.md","tier":"tier1_file_card","analysis_depth":1,"summary":"Business flow documentation describing the customer onboarding path and related status transitions.","technical_role":"documentation","business_relevance":"Supports the functional and E2E flow narrative for onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"documents","description":"Documents orchestration performed by the service."}],"confidence":"high","evidence":[{"path":"docs/business-flows.md","line":1}]},
-      {"path":"docs/examples/customer-verification-soap.xml","tier":"tier1_file_card","analysis_depth":1,"summary":"SOAP payload example for customer verification interactions.","technical_role":"contract","business_relevance":"Provides concrete payload evidence for external verification behavior.","relationships":[{"target":"docs/soap-kyc.wsdl","kind":"uses","description":"Example payload aligns with SOAP verification contract."}],"confidence":"high","evidence":[{"path":"docs/examples/customer-verification-soap.xml","line":1}]},
-      {"path":"docs/openapi.yml","tier":"tier1_file_card","analysis_depth":1,"summary":"OpenAPI contract documentation for the onboarding REST surface.","technical_role":"contract","business_relevance":"Defines consumer-facing API semantics for the onboarding capability.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"defines-contract","description":"Documents REST operations implemented by the controller."}],"confidence":"high","evidence":[{"path":"docs/openapi.yml","line":1}]},
-      {"path":"docs/soap-kyc.wsdl","tier":"tier1_file_card","analysis_depth":1,"summary":"SOAP/WSDL documentation for KYC or customer verification interaction.","technical_role":"contract","business_relevance":"Captures external verification integration shape used by onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"defines-contract","description":"Contract evidence for the KYC integration client."}],"confidence":"medium","evidence":[{"path":"docs/soap-kyc.wsdl","line":1}]},
-      {"path":"pom.xml","tier":"tier1_file_card","analysis_depth":1,"summary":"Build descriptor for the demo Java service.","technical_role":"configuration","business_relevance":"No direct business behavior; supports build and dependency context.","relationships":[{"target":"src/main/java/com/acme/onboarding","kind":"configures","description":"Configures the Java source project."}],"confidence":"high","evidence":[{"path":"pom.xml","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/Customer.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Customer domain object used by onboarding state and repository behavior.","technical_role":"data model","business_relevance":"Represents the customer being onboarded.","relationships":[{"target":"src/main/java/com/acme/onboarding/CustomerRepository.java","kind":"uses","description":"Repository stores and retrieves customer instances."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/Customer.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerNotFoundException.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Exception for missing customer lookup cases.","technical_role":"service support","business_relevance":"Supports error behavior when onboarding status cannot find a customer.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"uses","description":"Service can surface missing-customer behavior."}],"confidence":"medium","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerNotFoundException.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerRepository.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Repository abstraction for customer persistence or lookup.","technical_role":"data access","business_relevance":"Stores onboarding customer state needed by status and duplicate checks.","relationships":[{"target":"src/main/java/com/acme/onboarding/Customer.java","kind":"persists","description":"Persists or retrieves customer domain objects."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerRepository.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerStatus.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Enumeration or value object for customer onboarding states.","technical_role":"data model","business_relevance":"Represents lifecycle state used in onboarding decisions and responses.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingStatusResponse.java","kind":"uses","description":"Status responses expose customer state."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerStatus.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/DuplicateCustomerException.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Exception for duplicate onboarding attempts.","technical_role":"service support","business_relevance":"Supports business rule enforcement against duplicate customers.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"uses","description":"Service enforces duplicate-customer behavior."}],"confidence":"medium","evidence":[{"path":"src/main/java/com/acme/onboarding/DuplicateCustomerException.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycClient.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Client boundary for Know Your Customer or customer verification checks.","technical_role":"integration client","business_relevance":"Connects onboarding to external verification before completion.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycRequest.java","kind":"uses","description":"Sends KYC request data."},{"target":"src/main/java/com/acme/onboarding/KycResult.java","kind":"uses","description":"Receives verification result."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/KycClient.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycRequest.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Request DTO for KYC verification.","technical_role":"data model","business_relevance":"Carries customer data needed by verification.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"uses","description":"Used as input to the KYC client."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/KycRequest.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycResult.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Result DTO for KYC verification outcome.","technical_role":"data model","business_relevance":"Represents verification decision used by onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"uses","description":"Service reacts to KYC result."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/KycResult.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingController.java","tier":"tier1_file_card","analysis_depth":1,"summary":"REST controller exposing onboarding start and status operations.","technical_role":"controller","business_relevance":"Primary API entry point for customer onboarding consumers.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"calls","description":"Delegates business behavior to the service."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingController.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Publisher boundary for onboarding events.","technical_role":"event integration","business_relevance":"Emits onboarding events for downstream consumers or audit workflows.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingStartedEvent.java","kind":"uses","description":"Publishes the started event payload."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingRequest.java","tier":"tier1_file_card","analysis_depth":1,"summary":"REST request DTO for onboarding initiation.","technical_role":"data model","business_relevance":"Captures customer-provided input for onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"uses","description":"Controller accepts this request."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingRequest.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingResponse.java","tier":"tier1_file_card","analysis_depth":1,"summary":"REST response DTO for onboarding initiation.","technical_role":"data model","business_relevance":"Reports onboarding acceptance/result to API consumers.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"uses","description":"Controller returns this response."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingResponse.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingResult.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Internal or service-level result for onboarding execution.","technical_role":"data model","business_relevance":"Carries the outcome of onboarding orchestration.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"uses","description":"Service produces onboarding result."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingResult.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingService.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Core service orchestrating customer onboarding, duplicate checks, risk/KYC evaluation, persistence and event publication.","technical_role":"service","business_relevance":"Implements the main onboarding business capability.","relationships":[{"target":"src/main/java/com/acme/onboarding/CustomerRepository.java","kind":"uses","description":"Uses customer state."},{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"calls","description":"Calls verification boundary."},{"target":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","kind":"calls","description":"Emits onboarding event."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingService.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingStartedEvent.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Event payload indicating onboarding has started.","technical_role":"event model","business_relevance":"Communicates onboarding progress to downstream systems.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","kind":"uses","description":"Publisher emits this event."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingStartedEvent.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingStatusResponse.java","tier":"tier1_file_card","analysis_depth":1,"summary":"REST response DTO for onboarding status lookup.","technical_role":"data model","business_relevance":"Lets consumers observe customer onboarding progress.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"uses","description":"Controller returns status response."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingStatusResponse.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/RiskScoringService.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Service that evaluates risk signals during onboarding.","technical_role":"service","business_relevance":"Supports accept/reject or review decisions during customer onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"calls","description":"Main service uses risk scoring in onboarding decisions."}],"confidence":"high","evidence":[{"path":"src/main/java/com/acme/onboarding/RiskScoringService.java","line":1}]},
-      {"path":"src/main/resources/application.yml","tier":"tier1_file_card","analysis_depth":1,"summary":"Application configuration for the demo onboarding service.","technical_role":"configuration","business_relevance":"No direct business behavior; configures runtime properties used by the service.","relationships":[{"target":"src/main/java/com/acme/onboarding","kind":"configures","description":"Provides runtime configuration for the Java service."}],"confidence":"medium","evidence":[{"path":"src/main/resources/application.yml","line":1}]},
-      {"path":"src/main/resources/onboarding.wsdl","tier":"tier1_file_card","analysis_depth":1,"summary":"WSDL contract resource related to onboarding SOAP integration.","technical_role":"contract","business_relevance":"Documents SOAP-style contract semantics around onboarding or verification.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"defines-contract","description":"Supports external contract understanding for verification integration."}],"confidence":"medium","evidence":[{"path":"src/main/resources/onboarding.wsdl","line":1}]},
-      {"path":"src/main/resources/openapi.yaml","tier":"tier1_file_card","analysis_depth":1,"summary":"OpenAPI contract resource for the onboarding REST API.","technical_role":"contract","business_relevance":"Defines REST API behavior for onboarding consumers.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"defines-contract","description":"Contract resource for controller API."}],"confidence":"high","evidence":[{"path":"src/main/resources/openapi.yaml","line":1}]},
-      {"path":"src/main/resources/openapi/customer-onboarding.openapi.yaml","tier":"tier1_file_card","analysis_depth":1,"summary":"Specific OpenAPI contract for customer onboarding operations.","technical_role":"contract","business_relevance":"Gives API-level contract detail for the onboarding capability.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingController.java","kind":"defines-contract","description":"Documents controller operations and schemas."}],"confidence":"high","evidence":[{"path":"src/main/resources/openapi/customer-onboarding.openapi.yaml","line":1}]},
-      {"path":"src/main/resources/wsdl/customer-verification.wsdl","tier":"tier1_file_card","analysis_depth":1,"summary":"WSDL contract for customer verification integration.","technical_role":"contract","business_relevance":"Defines external verification contract used by onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"defines-contract","description":"KYC client boundary is informed by this contract."}],"confidence":"high","evidence":[{"path":"src/main/resources/wsdl/customer-verification.wsdl","line":1}]},
-      {"path":"src/main/resources/wsdl/kyc-status.wsdl","tier":"tier1_file_card","analysis_depth":1,"summary":"WSDL contract for KYC status interaction.","technical_role":"contract","business_relevance":"Defines status-oriented verification contract around customer onboarding.","relationships":[{"target":"src/main/java/com/acme/onboarding/KycClient.java","kind":"defines-contract","description":"Supports understanding of KYC integration outcomes."}],"confidence":"medium","evidence":[{"path":"src/main/resources/wsdl/kyc-status.wsdl","line":1}]},
-      {"path":"src/test/java/com/acme/onboarding/OnboardingServiceTest.java","tier":"tier1_file_card","analysis_depth":1,"summary":"Unit test covering onboarding service behavior.","technical_role":"test","business_relevance":"Provides executable evidence for onboarding decisions and regressions.","relationships":[{"target":"src/main/java/com/acme/onboarding/OnboardingService.java","kind":"tests","description":"Tests the main service behavior."}],"confidence":"high","evidence":[{"path":"src/test/java/com/acme/onboarding/OnboardingServiceTest.java","line":1}]}
+      {
+        "path": "README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Repository overview that frames the demo customer onboarding service, its main API and supporting documentation.",
+        "technical_role": "documentation",
+        "business_relevance": "Explains the onboarding domain and directs readers to API and flow evidence.",
+        "relationships": [
+          {
+            "target": "docs/business-flows.md",
+            "kind": "documents",
+            "description": "Points to business flow documentation used by the report."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/api-examples.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Human-readable REST examples for starting onboarding and checking status.",
+        "technical_role": "documentation",
+        "business_relevance": "Shows how consumers interact with the onboarding capability.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "documents",
+            "description": "Documents controller request and response behavior."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/business-examples.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Business-oriented examples for customer onboarding scenarios and outcomes.",
+        "technical_role": "documentation",
+        "business_relevance": "Provides non-code examples that help translate source behavior into management language.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "documents",
+            "description": "Explains service behavior through business examples."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/business-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/business-flows.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Business flow documentation describing the customer onboarding path and related status transitions.",
+        "technical_role": "documentation",
+        "business_relevance": "Supports the functional and E2E flow narrative for onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "documents",
+            "description": "Documents orchestration performed by the service."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/examples/customer-verification-soap.xml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "SOAP payload example for customer verification interactions.",
+        "technical_role": "contract",
+        "business_relevance": "Provides concrete payload evidence for external verification behavior.",
+        "relationships": [
+          {
+            "target": "docs/soap-kyc.wsdl",
+            "kind": "uses",
+            "description": "Example payload aligns with SOAP verification contract."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/examples/customer-verification-soap.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/openapi.yml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "OpenAPI contract documentation for the onboarding REST surface.",
+        "technical_role": "contract",
+        "business_relevance": "Defines consumer-facing API semantics for the onboarding capability.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "defines-contract",
+            "description": "Documents REST operations implemented by the controller."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/openapi.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/soap-kyc.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "SOAP/WSDL documentation for KYC or customer verification interaction.",
+        "technical_role": "contract",
+        "business_relevance": "Captures external verification integration shape used by onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "defines-contract",
+            "description": "Contract evidence for the KYC integration client."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "docs/soap-kyc.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "pom.xml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Build descriptor for the demo Java service.",
+        "technical_role": "configuration",
+        "business_relevance": "No direct business behavior; supports build and dependency context.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding",
+            "kind": "configures",
+            "description": "Configures the Java source project."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "pom.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/Customer.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Customer domain object used by onboarding state and repository behavior.",
+        "technical_role": "data model",
+        "business_relevance": "Represents the customer being onboarded.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "kind": "uses",
+            "description": "Repository stores and retrieves customer instances."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Exception for missing customer lookup cases.",
+        "technical_role": "service support",
+        "business_relevance": "Supports error behavior when onboarding status cannot find a customer.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "uses",
+            "description": "Service can surface missing-customer behavior."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Repository abstraction for customer persistence or lookup.",
+        "technical_role": "data access",
+        "business_relevance": "Stores onboarding customer state needed by status and duplicate checks.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/Customer.java",
+            "kind": "persists",
+            "description": "Persists or retrieves customer domain objects."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Enumeration or value object for customer onboarding states.",
+        "technical_role": "data model",
+        "business_relevance": "Represents lifecycle state used in onboarding decisions and responses.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "kind": "uses",
+            "description": "Status responses expose customer state."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Exception for duplicate onboarding attempts.",
+        "technical_role": "service support",
+        "business_relevance": "Supports business rule enforcement against duplicate customers.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "uses",
+            "description": "Service enforces duplicate-customer behavior."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycClient.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Client boundary for Know Your Customer or customer verification checks.",
+        "technical_role": "integration client",
+        "business_relevance": "Connects onboarding to external verification before completion.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycRequest.java",
+            "kind": "uses",
+            "description": "Sends KYC request data."
+          },
+          {
+            "target": "src/main/java/com/acme/onboarding/KycResult.java",
+            "kind": "uses",
+            "description": "Receives verification result."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Request DTO for KYC verification.",
+        "technical_role": "data model",
+        "business_relevance": "Carries customer data needed by verification.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "uses",
+            "description": "Used as input to the KYC client."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycResult.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Result DTO for KYC verification outcome.",
+        "technical_role": "data model",
+        "business_relevance": "Represents verification decision used by onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "uses",
+            "description": "Service reacts to KYC result."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "REST controller exposing onboarding start and status operations.",
+        "technical_role": "controller",
+        "business_relevance": "Primary API entry point for customer onboarding consumers.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "calls",
+            "description": "Delegates business behavior to the service."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Publisher boundary for onboarding events.",
+        "technical_role": "event integration",
+        "business_relevance": "Emits onboarding events for downstream consumers or audit workflows.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "kind": "uses",
+            "description": "Publishes the started event payload."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "REST request DTO for onboarding initiation.",
+        "technical_role": "data model",
+        "business_relevance": "Captures customer-provided input for onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "uses",
+            "description": "Controller accepts this request."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "REST response DTO for onboarding initiation.",
+        "technical_role": "data model",
+        "business_relevance": "Reports onboarding acceptance/result to API consumers.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "uses",
+            "description": "Controller returns this response."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Internal or service-level result for onboarding execution.",
+        "technical_role": "data model",
+        "business_relevance": "Carries the outcome of onboarding orchestration.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "uses",
+            "description": "Service produces onboarding result."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Core service orchestrating customer onboarding, duplicate checks, risk/KYC evaluation, persistence and event publication.",
+        "technical_role": "service",
+        "business_relevance": "Implements the main onboarding business capability.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "kind": "uses",
+            "description": "Uses customer state."
+          },
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "calls",
+            "description": "Calls verification boundary."
+          },
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "kind": "calls",
+            "description": "Emits onboarding event."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Event payload indicating onboarding has started.",
+        "technical_role": "event model",
+        "business_relevance": "Communicates onboarding progress to downstream systems.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "kind": "uses",
+            "description": "Publisher emits this event."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "REST response DTO for onboarding status lookup.",
+        "technical_role": "data model",
+        "business_relevance": "Lets consumers observe customer onboarding progress.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "uses",
+            "description": "Controller returns status response."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Service that evaluates risk signals during onboarding.",
+        "technical_role": "service",
+        "business_relevance": "Supports accept/reject or review decisions during customer onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "calls",
+            "description": "Main service uses risk scoring in onboarding decisions."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/application.yml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Application configuration for the demo onboarding service.",
+        "technical_role": "configuration",
+        "business_relevance": "No direct business behavior; configures runtime properties used by the service.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding",
+            "kind": "configures",
+            "description": "Provides runtime configuration for the Java service."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/onboarding.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "WSDL contract resource related to onboarding SOAP integration.",
+        "technical_role": "contract",
+        "business_relevance": "Documents SOAP-style contract semantics around onboarding or verification.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "defines-contract",
+            "description": "Supports external contract understanding for verification integration."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/resources/onboarding.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "OpenAPI contract resource for the onboarding REST API.",
+        "technical_role": "contract",
+        "business_relevance": "Defines REST API behavior for onboarding consumers.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "defines-contract",
+            "description": "Contract resource for controller API."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Specific OpenAPI contract for customer onboarding operations.",
+        "technical_role": "contract",
+        "business_relevance": "Gives API-level contract detail for the onboarding capability.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "kind": "defines-contract",
+            "description": "Documents controller operations and schemas."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/customer-verification.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "WSDL contract for customer verification integration.",
+        "technical_role": "contract",
+        "business_relevance": "Defines external verification contract used by onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "defines-contract",
+            "description": "KYC client boundary is informed by this contract."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/customer-verification.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "WSDL contract for KYC status interaction.",
+        "technical_role": "contract",
+        "business_relevance": "Defines status-oriented verification contract around customer onboarding.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/KycClient.java",
+            "kind": "defines-contract",
+            "description": "Supports understanding of KYC integration outcomes."
+          }
+        ],
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Unit test covering onboarding service behavior.",
+        "technical_role": "test",
+        "business_relevance": "Provides executable evidence for onboarding decisions and regressions.",
+        "relationships": [
+          {
+            "target": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "kind": "tests",
+            "description": "Tests the main service behavior."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1
+          }
+        ]
+      }
     ],
     "open_questions": []
   },
   "analysis_coverage": {
     "inspected_files": [
-      {"path":"README.md","reason":"Tier 1 file card authored.","evidence":[{"path":"README.md","line":1}]},
-      {"path":"docs/api-examples.md","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/api-examples.md","line":1}]},
-      {"path":"docs/business-examples.md","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/business-examples.md","line":1}]},
-      {"path":"docs/business-flows.md","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/business-flows.md","line":1}]},
-      {"path":"docs/examples/customer-verification-soap.xml","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/examples/customer-verification-soap.xml","line":1}]},
-      {"path":"docs/openapi.yml","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/openapi.yml","line":1}]},
-      {"path":"docs/soap-kyc.wsdl","reason":"Tier 1 file card authored.","evidence":[{"path":"docs/soap-kyc.wsdl","line":1}]},
-      {"path":"pom.xml","reason":"Tier 1 file card authored.","evidence":[{"path":"pom.xml","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/Customer.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/Customer.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerNotFoundException.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerNotFoundException.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerRepository.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerRepository.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/CustomerStatus.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/CustomerStatus.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/DuplicateCustomerException.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/DuplicateCustomerException.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycClient.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/KycClient.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycRequest.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/KycRequest.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/KycResult.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/KycResult.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingController.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingController.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingEventPublisher.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingRequest.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingRequest.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingResponse.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingResponse.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingResult.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingResult.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingService.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingService.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingStartedEvent.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingStartedEvent.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/OnboardingStatusResponse.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/OnboardingStatusResponse.java","line":1}]},
-      {"path":"src/main/java/com/acme/onboarding/RiskScoringService.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/java/com/acme/onboarding/RiskScoringService.java","line":1}]},
-      {"path":"src/main/resources/application.yml","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/application.yml","line":1}]},
-      {"path":"src/main/resources/onboarding.wsdl","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/onboarding.wsdl","line":1}]},
-      {"path":"src/main/resources/openapi.yaml","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/openapi.yaml","line":1}]},
-      {"path":"src/main/resources/openapi/customer-onboarding.openapi.yaml","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/openapi/customer-onboarding.openapi.yaml","line":1}]},
-      {"path":"src/main/resources/wsdl/customer-verification.wsdl","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/wsdl/customer-verification.wsdl","line":1}]},
-      {"path":"src/main/resources/wsdl/kyc-status.wsdl","reason":"Tier 1 file card authored.","evidence":[{"path":"src/main/resources/wsdl/kyc-status.wsdl","line":1}]},
-      {"path":"src/test/java/com/acme/onboarding/OnboardingServiceTest.java","reason":"Tier 1 file card authored.","evidence":[{"path":"src/test/java/com/acme/onboarding/OnboardingServiceTest.java","line":1}]}
+      {
+        "path": "README.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/api-examples.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/api-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/business-examples.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/business-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/business-flows.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/business-flows.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/examples/customer-verification-soap.xml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/examples/customer-verification-soap.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/openapi.yml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/openapi.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/soap-kyc.wsdl",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/soap-kyc.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "pom.xml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "pom.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/Customer.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/Customer.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycClient.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/KycResult.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/KycResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/RiskScoringService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/application.yml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/application.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/onboarding.wsdl",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/onboarding.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi.yaml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/customer-verification.wsdl",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/customer-verification.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1
+          }
+        ]
+      }
     ],
     "deferred_files": [],
     "open_questions": []
+  },
+  "source_tier_workpack_execution": {
+    "schemaVersion": "1.0",
+    "execution_kind": "codex_in_session_source_tier_workpack",
+    "execution_mode": "codex_authored_workpack_receipt_validation",
+    "executor": "codex-in-session",
+    "task_id": "source-tier-0001",
+    "artifact_path": "source_tiers/source-tier-0001.json",
+    "task_context_hash": "3b62522f9464aa10a569",
+    "review_hash": "16d01b7f6177e9345cae",
+    "source_paths": [
+      "README.md",
+      "docs/api-examples.md",
+      "docs/business-examples.md",
+      "docs/business-flows.md",
+      "docs/examples/customer-verification-soap.xml",
+      "docs/openapi.yml",
+      "docs/soap-kyc.wsdl",
+      "pom.xml",
+      "src/main/java/com/acme/onboarding/Customer.java",
+      "src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+      "src/main/java/com/acme/onboarding/CustomerRepository.java",
+      "src/main/java/com/acme/onboarding/CustomerStatus.java",
+      "src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+      "src/main/java/com/acme/onboarding/KycClient.java",
+      "src/main/java/com/acme/onboarding/KycRequest.java",
+      "src/main/java/com/acme/onboarding/KycResult.java",
+      "src/main/java/com/acme/onboarding/OnboardingController.java",
+      "src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+      "src/main/java/com/acme/onboarding/OnboardingRequest.java",
+      "src/main/java/com/acme/onboarding/OnboardingResponse.java",
+      "src/main/java/com/acme/onboarding/OnboardingResult.java",
+      "src/main/java/com/acme/onboarding/OnboardingService.java",
+      "src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+      "src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+      "src/main/java/com/acme/onboarding/RiskScoringService.java",
+      "src/main/resources/application.yml",
+      "src/main/resources/onboarding.wsdl",
+      "src/main/resources/openapi.yaml",
+      "src/main/resources/openapi/customer-onboarding.openapi.yaml",
+      "src/main/resources/wsdl/customer-verification.wsdl",
+      "src/main/resources/wsdl/kyc-status.wsdl",
+      "src/test/java/com/acme/onboarding/OnboardingServiceTest.java"
+    ],
+    "generated_from": [
+      "source-tier-task-manifest.json",
+      "source_tier_tasks/source-tier-0001.md"
+    ],
+    "authoring_boundary": "Codex authored the semantic Tier 1 file cards in-session; the CLI validates this receipt before recording orchestration proof."
   }
 }

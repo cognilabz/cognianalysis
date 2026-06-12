@@ -78,7 +78,7 @@ cognianalysis dev run-orchestration .
 cognianalysis dev prove-orchestration .
 ```
 
-The runner records harness-owned execution/cache logs from completed source-tier workpack outputs. The proof command refuses one-workpack or stale analyses, and it also refuses post-hoc completed outputs without runner-generated harness evidence. It writes proof only after `.analysis/data/orchestration-execution-log.json` records at least two source-tier workpack worker executions with matching task IDs, timings and output hashes, and `.analysis/data/cache-ledger.json` records a prior cache entry that was reused later with the deterministic run/request/artifact cache key.
+The runner records harness-owned execution/cache logs only after completed source-tier outputs include valid Codex-authored workpack execution receipts. Those receipts are bound to the task manifest, reviewed source paths and review hash, and the runner never reads `.analysis-seed` as orchestration input. The proof command refuses one-workpack or stale analyses, receiptless completed outputs, and post-hoc completed outputs without runner-generated harness evidence. It writes proof only after `.analysis/data/orchestration-execution-log.json` records at least two source-tier workpack worker executions with matching task IDs, timings, output hashes and receipt hashes, and `.analysis/data/cache-ledger.json` records a prior cache entry that was reused later with the deterministic run/request/artifact cache key.
 
 ## Required Coverage
 

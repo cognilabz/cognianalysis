@@ -936,6 +936,19 @@ function cacheKey(bundle, path, hash) {
     return (0, utils_1.sha1Short)(`${bundle.analysis_run?.analysis_run_id || ''}|${bundle.analysis_run?.source_commit || ''}|${bundle.product_analysis_request?.request_hash || ''}|${path}|${hash}`, 20);
 }
 const ORCHESTRATION_RUNNER_GENERATED_BY = 'cognianalysis dev run-orchestration';
+const SOURCE_TIER_WORKPACK_EXECUTION_KIND = 'codex_in_session_source_tier_workpack';
+const ORCHESTRATION_EXECUTION_MODE = 'codex_authored_workpack_receipt_validation';
+function stableJson(value) {
+    if (Array.isArray(value))
+        return `[${value.map(item => stableJson(item)).join(',')}]`;
+    if (value && typeof value === 'object') {
+        return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value);
+}
+function hashStable(value, length = 20) {
+    return (0, utils_1.sha1Short)(stableJson(value), length);
+}
 function sourceTierTaskMap(bundle) {
     return new Map((bundle.source_tier_task_manifest?.tasks || [])
         .map((task) => [String(task?.id || '').trim(), task])
@@ -956,6 +969,11 @@ function validateExecutionLog(bundle, log) {
             duration_ms: Number(row?.duration_ms || 0),
             artifact_path: expectedOutput,
             artifact_hash: String(row?.artifact_hash || row?.output_hash || '').trim(),
+            execution_kind: String(row?.execution_kind || '').trim(),
+            execution_mode: String(row?.execution_mode || '').trim(),
+            execution_receipt_hash: String(row?.execution_receipt_hash || '').trim(),
+            review_hash: String(row?.review_hash || '').trim(),
+            task_context_hash: String(row?.task_context_hash || '').trim(),
             expected_hash: expectedHash
         };
     });
@@ -964,6 +982,7 @@ function validateExecutionLog(bundle, log) {
     const errors = [
         ...(log.schemaVersion === '1.0' ? [] : ['execution_log.schemaVersion']),
         ...(String(log.execution_kind || '') === 'source_tier_workpack_execution' ? [] : ['execution_log.execution_kind']),
+        ...(String(log.execution_mode || '') === ORCHESTRATION_EXECUTION_MODE ? [] : ['execution_log.execution_mode']),
         ...(String(log.generated_by || '') === ORCHESTRATION_RUNNER_GENERATED_BY ? [] : ['execution_log.generated_by']),
         ...(String(log.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['execution_log.analysis_run_id']),
         ...(String(log.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['execution_log.source_commit']),
@@ -973,9 +992,45 @@ function validateExecutionLog(bundle, log) {
         ...(rows.every((row) => row.worker_id && row.task_id && row.artifact_path) ? [] : ['execution_log.worker_task_identity']),
         ...(rows.every((row) => tasksById.has(row.task_id)) ? [] : ['execution_log.source_tier_task_ids']),
         ...(rows.every((row) => row.artifact_hash && row.expected_hash && row.artifact_hash === row.expected_hash) ? [] : ['execution_log.artifact_hashes']),
+        ...(rows.every((row) => row.execution_kind === SOURCE_TIER_WORKPACK_EXECUTION_KIND && row.execution_mode === ORCHESTRATION_EXECUTION_MODE) ? [] : ['execution_log.workpack_execution_kind']),
+        ...(rows.every((row) => row.execution_receipt_hash && row.review_hash && row.task_context_hash) ? [] : ['execution_log.workpack_execution_receipts']),
         ...(rows.every((row) => row.duration_ms > 0 || (row.started_at && row.ended_at)) ? [] : ['execution_log.worker_task_timing'])
     ];
     return { workerTasks: rows, errors };
+}
+function sourceTierWorkpackTaskContextHash(task) {
+    return hashStable({
+        task_id: String(task?.id || '').trim(),
+        task_file: String(task?.task_file || '').trim(),
+        expected_output: String(task?.expected_output || '').trim(),
+        file_paths: (task?.file_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort()
+    });
+}
+function sourceTierWorkpackReceipt(artifact) {
+    return artifact?.source_tier_workpack_execution || artifact?.workpack_execution_receipt || {};
+}
+function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
+    const review = artifact?.source_file_tier_review || {};
+    const receipt = sourceTierWorkpackReceipt(artifact);
+    const filePaths = (task?.file_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort();
+    const reviewedPaths = (review?.files || []).map((file) => String(file?.path || '').trim()).filter(Boolean).sort();
+    const reviewHash = hashStable(review);
+    const receiptHash = hashStable(receipt);
+    const taskContextHash = sourceTierWorkpackTaskContextHash(task);
+    const errors = [
+        ...(String(receipt?.schemaVersion || '') === '1.0' ? [] : ['workpack_receipt.schemaVersion']),
+        ...(String(receipt?.execution_kind || '') === SOURCE_TIER_WORKPACK_EXECUTION_KIND ? [] : ['workpack_receipt.execution_kind']),
+        ...(String(receipt?.execution_mode || '') === ORCHESTRATION_EXECUTION_MODE ? [] : ['workpack_receipt.execution_mode']),
+        ...(String(receipt?.executor || '') === 'codex-in-session' ? [] : ['workpack_receipt.executor']),
+        ...(String(receipt?.task_id || '') === String(task?.id || '') ? [] : ['workpack_receipt.task_id']),
+        ...(String(receipt?.artifact_path || '') === artifactPath ? [] : ['workpack_receipt.artifact_path']),
+        ...(String(receipt?.task_context_hash || '') === taskContextHash ? [] : ['workpack_receipt.task_context_hash']),
+        ...(String(receipt?.review_hash || '') === reviewHash ? [] : ['workpack_receipt.review_hash']),
+        ...(String(review?.task_id || '') === String(task?.id || '') ? [] : ['source_file_tier_review.task_id']),
+        ...(String(review?.review_status || '') === 'complete' ? [] : ['source_file_tier_review.review_status']),
+        ...(filePaths.length > 0 && filePaths.length === reviewedPaths.length && filePaths.every((path, index) => path === reviewedPaths[index]) ? [] : ['source_file_tier_review.file_paths'])
+    ];
+    return { errors, reviewHash, receiptHash, taskContextHash };
 }
 function validateCacheLedger(bundle, ledger) {
     const hashes = artifactHashMap(bundle);
@@ -1017,7 +1072,8 @@ async function cmdRunOrchestration(args) {
     const runnableTasks = (manifest.tasks || [])
         .map((task) => ({
         task_id: String(task?.id || '').trim(),
-        artifact_path: String(task?.expected_output || '').trim()
+        artifact_path: String(task?.expected_output || '').trim(),
+        task
     }))
         .filter((task) => task.task_id && task.artifact_path)
         .slice(0, 2);
@@ -1029,14 +1085,14 @@ async function cmdRunOrchestration(args) {
     const started = Date.now();
     const workerTasks = await Promise.all(runnableTasks.map(async (task, index) => {
         const workerStart = Date.now();
-        const seedOutput = utils_1.Path.join(repo, '.analysis-seed', task.artifact_path);
         const targetOutput = utils_1.Path.join(analysis, task.artifact_path);
-        if (!utils_1.FS.existsSync(seedOutput))
-            throw new Error(`Missing source-tier seed output for runner execution: ${seedOutput}`);
+        if (!utils_1.FS.existsSync(targetOutput))
+            throw new Error(`Missing Codex-authored source-tier output for runner execution: ${targetOutput}`);
         await new Promise(resolve => setTimeout(resolve, 25));
-        (0, utils_1.ensureDir)(utils_1.Path.dirname(targetOutput));
-        utils_1.FS.copyFileSync(seedOutput, targetOutput);
-        JSON.parse(utils_1.FS.readFileSync(targetOutput, 'utf8'));
+        const artifact = JSON.parse(utils_1.FS.readFileSync(targetOutput, 'utf8'));
+        const receiptValidation = validateSourceTierWorkpackExecution(task.task, task.artifact_path, artifact);
+        if (receiptValidation.errors.length)
+            throw new Error(`Invalid Codex workpack execution receipt for ${task.task_id}: ${receiptValidation.errors.join(', ')}`);
         const workerEnd = Date.now();
         return {
             worker_id: `source-tier-worker-${index + 1}`,
@@ -1044,7 +1100,12 @@ async function cmdRunOrchestration(args) {
             started_at: new Date(workerStart).toISOString(),
             ended_at: new Date(workerEnd).toISOString(),
             duration_ms: Math.max(1, workerEnd - workerStart),
-            artifact_path: task.artifact_path
+            artifact_path: task.artifact_path,
+            execution_kind: SOURCE_TIER_WORKPACK_EXECUTION_KIND,
+            execution_mode: ORCHESTRATION_EXECUTION_MODE,
+            execution_receipt_hash: receiptValidation.receiptHash,
+            review_hash: receiptValidation.reviewHash,
+            task_context_hash: receiptValidation.taskContextHash
         };
     }));
     let bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
@@ -1075,6 +1136,7 @@ async function cmdRunOrchestration(args) {
             hit,
             artifact_path: task.artifact_path,
             artifact_hash: task.artifact_hash,
+            execution_receipt_hash: task.execution_receipt_hash,
             created_at: createdAt,
             reused_at: hit ? new Date(cacheCheckStarted + index + 1).toISOString() : ''
         };
@@ -1085,6 +1147,7 @@ async function cmdRunOrchestration(args) {
                 generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
                 artifact_path: task.artifact_path,
                 artifact_hash: task.artifact_hash,
+                execution_receipt_hash: task.execution_receipt_hash,
                 created_at: task.ended_at
             }, null, 2) + '\n');
         }
@@ -1093,7 +1156,8 @@ async function cmdRunOrchestration(args) {
     (0, utils_1.writeText)(utils_1.Path.join(analysis, 'data', 'orchestration-execution-log.json'), JSON.stringify({
         schemaVersion: '1.0',
         execution_kind: 'source_tier_workpack_execution',
-        execution_mode: 'seeded_source_tier_workpack_materialization',
+        execution_mode: ORCHESTRATION_EXECUTION_MODE,
+        execution_boundary: 'Codex authors semantic source-tier workpack outputs in-session; this runner validates task-bound execution receipts, records concurrent worker supervision, and never reads .analysis-seed as orchestration input.',
         generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
         generated_at: new Date(started).toISOString(),
         analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
@@ -1179,7 +1243,10 @@ async function cmdProveOrchestration(args) {
             started_at: row.started_at,
             ended_at: row.ended_at,
             duration_ms: row.duration_ms,
-            artifact_hash: row.artifact_hash
+            artifact_hash: row.artifact_hash,
+            execution_receipt_hash: row.execution_receipt_hash,
+            review_hash: row.review_hash,
+            task_context_hash: row.task_context_hash
         }))
     };
     const cacheProof = {

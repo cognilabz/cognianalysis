@@ -133,6 +133,7 @@ export function aggregate(repo: string, analysisDir: string): any {
     cache_reuse_proof: loadJson<any>(Path.join(dataDir, 'cache-reuse-proof.json'), {}),
     source_tier_model: sourceTierModelArtifact(),
     source_tier_task_manifest: validateNested(repo, sourceTierTaskManifest),
+    source_tier_workpack_executions: sourceTier.workpackExecutions || [],
     analysis_pipeline: analysisPipeline,
     assessment: validateNested(repo, assessment),
     capabilities: validateItems(repo, capabilities),
@@ -455,13 +456,39 @@ function hasOverlappingWorkerWindows(tasks: any[]): boolean {
   return false;
 }
 
+function stableJson(value: any): string {
+  if (Array.isArray(value)) return `[${value.map(item => stableJson(item)).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function hashStable(value: any, length = 20): string {
+  return sha1Short(stableJson(value), length);
+}
+
+function sourceTierWorkpackTaskContextHash(task: any): string {
+  return hashStable({
+    task_id: String(task?.id || '').trim(),
+    task_file: String(task?.task_file || '').trim(),
+    expected_output: String(task?.expected_output || '').trim(),
+    file_paths: asList(task?.file_paths).map((path: any) => String(path || '').trim()).filter(Boolean).sort()
+  });
+}
+
 function validateOrchestrationExecutionLog(bundle: any): any {
   const log = bundle.orchestration_execution_log || {};
   const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
+  const executionMode = 'codex_authored_workpack_receipt_validation';
+  const workpackExecutionKind = 'codex_in_session_source_tier_workpack';
   const hashesByPath = artifactHashesByPath(bundle);
   const sourceTierTasks = asList(bundle.source_tier_task_manifest?.tasks);
   const tasksById = new Map<string, any>(sourceTierTasks
     .map((task: any) => [String(task?.id || '').trim(), task])
+    .filter((entry: any[]) => entry[0]) as [string, any][]);
+  const executionsByTask = new Map<string, any>(asList(bundle.source_tier_workpack_executions)
+    .map((receipt: any) => [String(receipt?.task_id || '').trim(), receipt])
     .filter((entry: any[]) => entry[0]) as [string, any][]);
   const tasks = asList(log.worker_tasks || log.tasks);
   const workerIds = new Set(tasks.map((task: any) => String(task?.worker_id || '').trim()).filter(Boolean));
@@ -469,6 +496,7 @@ function validateOrchestrationExecutionLog(bundle: any): any {
   const missing = [
     ...(log.schemaVersion === '1.0' ? [] : ['orchestration_execution_log.schemaVersion']),
     ...(String(log.execution_kind || '') === 'source_tier_workpack_execution' ? [] : ['orchestration_execution_log.execution_kind']),
+    ...(String(log.execution_mode || '') === executionMode ? [] : ['orchestration_execution_log.execution_mode']),
     ...(String(log.generated_by || '') === runnerGeneratedBy ? [] : ['orchestration_execution_log.generated_by']),
     ...(String(log.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['orchestration_execution_log.analysis_run_id']),
     ...(String(log.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['orchestration_execution_log.source_commit']),
@@ -477,6 +505,8 @@ function validateOrchestrationExecutionLog(bundle: any): any {
     ...(workerIds.size >= 2 ? [] : ['orchestration_execution_log.distinct_workers']),
     ...(taskIds.size >= 2 ? [] : ['orchestration_execution_log.distinct_tasks']),
     ...(tasks.every((task: any) => String(task?.worker_id || '').trim() && String(task?.task_id || '').trim()) ? [] : ['orchestration_execution_log.worker_task_identity']),
+    ...(tasks.every((task: any) => String(task?.execution_kind || '').trim() === workpackExecutionKind && String(task?.execution_mode || '').trim() === executionMode) ? [] : ['orchestration_execution_log.workpack_execution_kind']),
+    ...(tasks.every((task: any) => String(task?.execution_receipt_hash || '').trim() && String(task?.review_hash || '').trim() && String(task?.task_context_hash || '').trim()) ? [] : ['orchestration_execution_log.workpack_execution_receipts']),
     ...(tasks.every((task: any) => Number(task?.duration_ms || 0) > 0 || (String(task?.started_at || '').trim() && String(task?.ended_at || '').trim())) ? [] : ['orchestration_execution_log.worker_task_timing']),
     ...(hasOverlappingWorkerWindows(tasks) ? [] : ['orchestration_execution_log.worker_task_concurrency'])
   ];
@@ -489,6 +519,24 @@ function validateOrchestrationExecutionLog(bundle: any): any {
     return !!expectedHash && artifactHash === expectedHash;
   });
   if (!hashesMatch) missing.push('orchestration_execution_log.artifact_hashes');
+  const receiptsValid = tasks.every((task: any) => {
+    const taskId = String(task?.task_id || '').trim();
+    const receipt = executionsByTask.get(taskId);
+    const manifestTask = tasksById.get(taskId);
+    return receipt?.valid === true
+      && String(receipt.task_context_hash || '').trim() === sourceTierWorkpackTaskContextHash(manifestTask);
+  });
+  if (!receiptsValid) missing.push('orchestration_execution_log.workpack_receipts_valid');
+  const receiptsMatchArtifacts = tasks.every((task: any) => {
+    const taskId = String(task?.task_id || '').trim();
+    const receipt = executionsByTask.get(taskId);
+    return receipt
+      && String(task?.artifact_path || '').trim() === String(receipt.artifact_path || '').trim()
+      && String(task?.execution_receipt_hash || '').trim() === String(receipt.receipt_hash || '').trim()
+      && String(task?.review_hash || '').trim() === String(receipt.review_hash || '').trim()
+      && String(task?.task_context_hash || '').trim() === String(receipt.task_context_hash || '').trim();
+  });
+  if (!receiptsMatchArtifacts) missing.push('orchestration_execution_log.workpack_receipts_match_artifacts');
   return {
     valid: missing.length === 0,
     missing,
@@ -550,6 +598,7 @@ function validateParallelExecutionProof(bundle: any): any {
       && String(row?.started_at || '').trim() === startedAt
       && String(row?.ended_at || '').trim() === endedAt
       && String(row?.artifact_hash || row?.output_hash || '').trim() === artifactHash
+      && String(row?.execution_receipt_hash || '').trim() === String(task?.execution_receipt_hash || '').trim()
     );
   });
   if (!proofTasksMatchLog) missing.push('worker_tasks_match_orchestration_execution_log');
@@ -2774,14 +2823,31 @@ function loadDetailOutputs(detailDir: string): any {
 function loadSourceTierOutputs(sourceTierDir: string): any {
   const fs = require('node:fs');
   const reviews: any[] = [];
-  if (!fs.existsSync(sourceTierDir)) return { reviews };
+  const workpackExecutions: any[] = [];
+  if (!fs.existsSync(sourceTierDir)) return { reviews, workpackExecutions };
   const files = fs.readdirSync(sourceTierDir).filter((f: string) => f.endsWith('.json')).sort();
   for (const f of files) {
     const data = loadJson<any>(Path.join(sourceTierDir, f), {});
     if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
-    if (data.source_file_tier_review) reviews.push(data.source_file_tier_review);
+    const review = data.source_file_tier_review;
+    if (review) reviews.push(review);
+    const receipt = data.source_tier_workpack_execution || data.workpack_execution_receipt;
+    if (review && receipt && typeof receipt === 'object' && !Array.isArray(receipt)) {
+      workpackExecutions.push({
+        ...receipt,
+        artifact_path: receipt.artifact_path || `source_tiers/${f}`,
+        task_id: receipt.task_id || review.task_id || Path.basename(f, '.json'),
+        receipt_hash: hashStable(receipt),
+        review_hash_computed: hashStable(review),
+        valid: String(receipt.schemaVersion || '') === '1.0'
+          && String(receipt.execution_kind || '') === 'codex_in_session_source_tier_workpack'
+          && String(receipt.execution_mode || '') === 'codex_authored_workpack_receipt_validation'
+          && String(receipt.executor || '') === 'codex-in-session'
+          && String(receipt.review_hash || '') === hashStable(review)
+      });
+    }
   }
-  return { reviews };
+  return { reviews, workpackExecutions };
 }
 
 function loadExternalFindings(analysisDir: string): any[] {

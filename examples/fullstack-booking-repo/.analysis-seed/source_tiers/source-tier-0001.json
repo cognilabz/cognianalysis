@@ -116,5 +116,26 @@
     ],
     "deferred_files": [],
     "open_questions": []
+  },
+  "source_tier_workpack_execution": {
+    "schemaVersion": "1.0",
+    "execution_kind": "codex_in_session_source_tier_workpack",
+    "execution_mode": "codex_authored_workpack_receipt_validation",
+    "executor": "codex-in-session",
+    "task_id": "source-tier-0001",
+    "artifact_path": "source_tiers/source-tier-0001.json",
+    "task_context_hash": "148808a10f6792106ac7",
+    "review_hash": "774eca49e38b5155d33d",
+    "source_paths": [
+      "README.md",
+      "docs/user-journey.md",
+      "src/api/bookings.ts",
+      "src/ui/BookingForm.tsx"
+    ],
+    "generated_from": [
+      "source-tier-task-manifest.json",
+      "source_tier_tasks/source-tier-0001.md"
+    ],
+    "authoring_boundary": "Codex authored the semantic Tier 1 file cards in-session; the CLI validates this receipt before recording orchestration proof."
   }
 }

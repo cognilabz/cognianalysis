@@ -98,6 +98,47 @@ function sha1Short(value, len = 20) {
   return createHash('sha1').update(value).digest('hex').slice(0, len);
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(item => stableJson(item)).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function hashStable(value, len = 20) {
+  return sha1Short(stableJson(value), len);
+}
+
+function sourceTierTaskContextHash(task) {
+  return hashStable({
+    task_id: task.id,
+    task_file: task.task_file,
+    expected_output: task.expected_output,
+    file_paths: [...(task.file_paths || [])].sort()
+  });
+}
+
+function withWorkpackExecutionReceipt(artifact, task) {
+  const review = artifact.source_file_tier_review || {};
+  return {
+    ...artifact,
+    source_tier_workpack_execution: {
+      schemaVersion: '1.0',
+      execution_kind: 'codex_in_session_source_tier_workpack',
+      execution_mode: 'codex_authored_workpack_receipt_validation',
+      executor: 'codex-in-session',
+      task_id: task.id,
+      artifact_path: task.expected_output,
+      task_context_hash: sourceTierTaskContextHash(task),
+      review_hash: hashStable(review),
+      source_paths: [...(task.file_paths || [])].sort(),
+      generated_from: ['source-tier-task-manifest.json', task.task_file],
+      authoring_boundary: 'Codex authored the semantic Tier 1 file cards in-session; the CLI validates this receipt before recording orchestration proof.'
+    }
+  };
+}
+
 function runtimeSourceFiles(dir) {
   return readdirSync(dir)
     .flatMap(name => {
@@ -465,7 +506,7 @@ function splitTask(base, id, cards) {
   };
 }
 function splitTierArtifact(id, cards) {
-  return {
+  const artifact = {
     ...sourceTierSeed,
     source_file_tier_review: {
       ...sourceTierSeed.source_file_tier_review,
@@ -473,6 +514,9 @@ function splitTierArtifact(id, cards) {
       files: cards
     }
   };
+  delete artifact.source_tier_workpack_execution;
+  delete artifact.workpack_execution_receipt;
+  return artifact;
 }
 sourceTierManifest.batch_size = firstCards.length;
 sourceTierManifest.task_count = 2;
@@ -586,6 +630,13 @@ orchestrationBundle = JSON.parse(readFileSync(join(orchestrationAnalysis, 'data'
 assert(orchestrationBundle.parallel_orchestration_contract?.complete === false, 'Proof files with correct lineage but mismatched log/ledger rows must not complete orchestration');
 assert(orchestrationBundle.parallel_orchestration_contract?.parallel_execution_proof_validation?.missing?.includes('worker_tasks_match_orchestration_execution_log'), 'Parallel proof rows must match the exact orchestration execution log rows');
 assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_validation?.missing?.includes('cache_entries_match_cache_ledger'), 'Cache proof rows must match the exact cache ledger rows');
+const receiptlessRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
+const receiptlessRunnerOutput = `${receiptlessRunner.stdout || ''}\n${receiptlessRunner.stderr || ''}`;
+assert(receiptlessRunnerOutput.includes('Invalid Codex workpack execution receipt'), 'Runner must reject completed source-tier outputs that lack Codex workpack execution receipts');
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1]));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1]));
 run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
 const firstRunnerProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 const firstRunnerProofOutput = `${firstRunnerProof.stdout || ''}\n${firstRunnerProof.stderr || ''}`;

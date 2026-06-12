@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "benchmark": "golden-suite",
   "generated_by": "scripts/verify-golden.mjs",
-  "source_commit": "ef863712e83acee7d92bd37aca4677db223225b4",
+  "source_commit": "847def962eec9cfa4ceb3d8870b54d6e08352032",
   "tool_fingerprint": {
     "schemaVersion": "1.0",
     "algorithm": "sha1",
@@ -10,7 +10,7 @@
     "paths": [
       {
         "path": "dist/aggregate.js",
-        "sha1": "40d15b9221fec4e70925eddf0b7bb9799377b053"
+        "sha1": "252b1aa6052bd49643248ec3678f75f403b143e0"
       },
       {
         "path": "dist/analysisGoal.js",
@@ -26,7 +26,7 @@
       },
       {
         "path": "dist/cli.js",
-        "sha1": "6c2b2c6782a9771a1e0a853528d2f4aa136661b3"
+        "sha1": "46235ab4c2c3cdaa4254e3e0e5dc7f4631ded8ba"
       },
       {
         "path": "dist/index.js",
@@ -106,7 +106,7 @@
       },
       {
         "path": "src/aggregate.ts",
-        "sha1": "9f24fb86080a23be571203dcc6e127b59039ba0d"
+        "sha1": "abf1c6e6fb3153438c9a7f0dc62e2f8efe00ddc3"
       },
       {
         "path": "src/analysisGoal.ts",
@@ -122,7 +122,7 @@
       },
       {
         "path": "src/cli.ts",
-        "sha1": "a169fdcc7abbae20bd49a7c85afe4f232645ec86"
+        "sha1": "495d6041c13df90adf3fb20dabea3188eccf1578"
       },
       {
         "path": "src/index.ts",
@@ -189,9 +189,9 @@
         "sha1": "209bd3c9822c2dacd20d503a8c51537af4a3bc69"
       }
     ],
-    "hash": "7d80d39680437541d2450770ef4d834739d0009a"
+    "hash": "abb00f55f59c40b495a26e9aa63a8f62a92871f7"
   },
-  "generated_at": "2026-06-12T02:35:16.506Z",
+  "generated_at": "2026-06-12T02:50:24.791Z",
   "total_repos": 5,
   "passed_repos": 5,
   "failed_repos": 0,
