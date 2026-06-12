@@ -1,0 +1,77 @@
+{
+  "source_family_detail_review": {
+    "source_family": "main-flow",
+    "review_status": "complete",
+    "summary": "Focused detail review confirms event-driven inventory reservation across implementation, contract and operations documentation.",
+    "findings": [
+      {
+        "title": "event-driven inventory reservation parity reviewed",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "contracts/inventory-events.json",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/inventory-consumer.ts",
+        "line": 1
+      },
+      {
+        "path": "contracts/inventory-events.json",
+        "line": 1
+      },
+      {
+        "path": "docs/replay-runbook.md",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "inspected_files": [
+      {
+        "path": "src/inventory-consumer.ts",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "contracts/inventory-events.json",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "contracts/inventory-events.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/replay-runbook.md",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

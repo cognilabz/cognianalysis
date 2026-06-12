@@ -1,0 +1,3 @@
+       01 INVOICE-RECORD.
+          05 CUSTOMER-ID PIC X(12).
+          05 INVOICE-TOTAL PIC 9(9)V99.

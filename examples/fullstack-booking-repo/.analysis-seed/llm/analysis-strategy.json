@@ -1,0 +1,119 @@
+{
+  "analysis_strategy": {
+    "planning_stage": "pre_source_tier_pre_overview",
+    "planning_source": "llm/analysis-strategy.json",
+    "summary": "Analyze Fullstack Booking App as a representative frontend_backend_app fixture for frontend/backend appointment booking.",
+    "whole_repo_first_plan": "Review the implementation, contract and operations docs together before writing the decision report.",
+    "candidate_source_slices": [
+      {
+        "name": "frontend/backend appointment booking",
+        "slice_kind": "frontend_backend_app",
+        "why_it_matters": "Representative benchmark fixture for market proof coverage.",
+        "initial_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "no_skill_workbenches_needed": true,
+    "skill_workbench_not_planned": [
+      {
+        "reason": "Fixture is intentionally compact; source-tier review plus final synthesis is sufficient for this golden proof.",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "report_intent": {
+      "audience": [
+        "management",
+        "architecture",
+        "engineering"
+      ],
+      "likely_sections": [
+        "Executive decision",
+        "System boundary",
+        "Flow",
+        "Quality and roadmap"
+      ],
+      "management_questions": [
+        "Is this representative fixture decision-ready?"
+      ],
+      "technical_drilldown_questions": [
+        "Which source, contract and docs prove the behavior?"
+      ]
+    },
+    "known_risks_to_understanding": [],
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "src/api/bookings.ts",
+        "line": 1
+      },
+      {
+        "path": "docs/user-journey.md",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Compact representative fixture strategy.",
+    "inspected_files": [
+      {
+        "path": "src/api/bookings.ts",
+        "reason": "Inspected for fixture strategy.",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/ui/BookingForm.tsx",
+        "reason": "Inspected for fixture strategy.",
+        "evidence": [
+          {
+            "path": "src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/user-journey.md",
+        "reason": "Inspected for fixture strategy.",
+        "evidence": [
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Inspected for fixture strategy.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

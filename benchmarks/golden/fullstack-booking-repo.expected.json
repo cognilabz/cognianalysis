@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "fullstack-booking-repo",
+  "repo": "examples/fullstack-booking-repo",
+  "minimums": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1
+  },
+  "facts": [
+    {
+      "id": "ui-booking-form",
+      "category": "interface",
+      "expected": "BookingForm",
+      "evidence_required": true
+    },
+    {
+      "id": "api-create-booking",
+      "category": "interface",
+      "expected": "createBooking",
+      "evidence_required": true
+    },
+    {
+      "id": "flow-book-slot",
+      "category": "flow",
+      "expected": "Book slot from form submission.",
+      "evidence_required": true
+    },
+    {
+      "id": "finding-accessibility-tests",
+      "category": "finding",
+      "expected": "Accessibility testing is not automated",
+      "evidence_required": true
+    },
+    {
+      "id": "refactor-shared-booking-schema",
+      "category": "refactoring",
+      "expected": "Share booking validation schema",
+      "evidence_required": true
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "facts": [
+    {
+      "id": "api-post-onboard",
+      "expected": "POST /customers/onboard"
+    },
+    {
+      "id": "event-onboarding-started",
+      "expected": "customer.onboarding.started"
+    },
+    {
+      "id": "finding-hard-coded-threshold",
+      "expected": "Risk threshold is hard-coded"
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim-evidence-backed",
+      "expected": "The report should cite source evidence for interface and risk claims."
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision-automation-pilot",
+      "expected": "Use this repo as automation pilot?"
+    }
+  ]
+}

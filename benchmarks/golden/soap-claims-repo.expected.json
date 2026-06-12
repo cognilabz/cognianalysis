@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "soap-claims-repo",
+  "repo": "examples/soap-claims-repo",
+  "minimums": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1
+  },
+  "facts": [
+    {
+      "id": "soap-submit-claim-case",
+      "category": "interface",
+      "expected": "SubmitClaimCase",
+      "evidence_required": true
+    },
+    {
+      "id": "flow-claim-referral",
+      "category": "flow",
+      "expected": "Route high-value claim to manual referral.",
+      "evidence_required": true
+    },
+    {
+      "id": "finding-threshold",
+      "category": "finding",
+      "expected": "Claim referral threshold is hard-coded",
+      "evidence_required": true
+    },
+    {
+      "id": "refactor-claim-policy",
+      "category": "refactoring",
+      "expected": "Extract claim decision policy",
+      "evidence_required": true
+    },
+    {
+      "id": "decision-soap-gateway",
+      "category": "decision",
+      "expected": "Keep SOAP gateway with policy extraction?",
+      "evidence_required": true
+    }
+  ]
+}

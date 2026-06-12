@@ -1,0 +1,77 @@
+{
+  "source_family_detail_review": {
+    "source_family": "main-flow",
+    "review_status": "complete",
+    "summary": "Focused detail review confirms frontend/backend appointment booking across implementation, contract and operations documentation.",
+    "findings": [
+      {
+        "title": "frontend/backend appointment booking parity reviewed",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "src/ui/BookingForm.tsx",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/api/bookings.ts",
+        "line": 1
+      },
+      {
+        "path": "src/ui/BookingForm.tsx",
+        "line": 1
+      },
+      {
+        "path": "docs/user-journey.md",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "inspected_files": [
+      {
+        "path": "src/api/bookings.ts",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/ui/BookingForm.tsx",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/user-journey.md",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

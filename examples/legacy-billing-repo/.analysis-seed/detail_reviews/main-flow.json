@@ -1,0 +1,77 @@
+{
+  "source_family_detail_review": {
+    "source_family": "main-flow",
+    "review_status": "complete",
+    "summary": "Focused detail review confirms legacy invoice batch billing across implementation, contract and operations documentation.",
+    "findings": [
+      {
+        "title": "legacy invoice batch billing parity reviewed",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/BILLING.CBL",
+            "line": 1
+          },
+          {
+            "path": "copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          },
+          {
+            "path": "docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/BILLING.CBL",
+        "line": 1
+      },
+      {
+        "path": "copybooks/INVOICE-RECORD.cpy",
+        "line": 1
+      },
+      {
+        "path": "docs/batch-operations.md",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "inspected_files": [
+      {
+        "path": "src/BILLING.CBL",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "copybooks/INVOICE-RECORD.cpy",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/batch-operations.md",
+        "reason": "Inspected for compact detail review.",
+        "evidence": [
+          {
+            "path": "docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

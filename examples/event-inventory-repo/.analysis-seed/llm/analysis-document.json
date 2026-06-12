@@ -1,0 +1,505 @@
+{
+  "analysis_document": {
+    "title": "Inventory Event Processor Analysis",
+    "subtitle": "Representative golden suite for event_driven_service.",
+    "audience": [
+      "management",
+      "architecture",
+      "engineering"
+    ],
+    "authoring_mode": "llm",
+    "synthesis_stage": "final_after_detail_reviews",
+    "source_basis": "Authored from src/inventory-consumer.ts, contracts/inventory-events.json and docs/replay-runbook.md.",
+    "open_questions": [],
+    "requirements_trace": [
+      {
+        "requirement": "Original Cognianalysis entry-question coverage for compact fixture",
+        "covered_by_sections": [
+          "executive-decision",
+          "system-boundary",
+          "functional-flow",
+          "quality-roadmap"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.reverse_engineering_documentation",
+          "required_levels.code_analysis",
+          "required_levels.process_analysis",
+          "required_levels.refactoring_target_architecture",
+          "required_views.functional_view",
+          "required_views.technical_view",
+          "required_output_shape.deliverable",
+          "required_output_shape.visible_report_authority",
+          "required_output_shape.style_system",
+          "required_output_shape.source_basis",
+          "required_output_shape.automation_goal",
+          "required_output_shape.management_drilldown",
+          "required_report_behaviors.whole_repo_first",
+          "required_report_behaviors.tiered_whole_codebase_analysis",
+          "required_report_behaviors.e2e_relationships",
+          "required_report_behaviors.llm_authored_report",
+          "required_report_behaviors.detail_agents_after_overview",
+          "required_report_behaviors.tool_positioning",
+          "required_report_behaviors.evidence_and_uncertainty"
+        ]
+      }
+    ],
+    "executive_decision_basis": {
+      "summary": "Inventory Event Processor implements event-driven inventory reservation.",
+      "recommendation": "Use this fixture to prove event_driven_service benchmark coverage.",
+      "confidence": "high",
+      "decision_questions": {
+        "keep_system": "Keep Inventory Event Processor as a representative benchmark fixture.",
+        "modernize_system": "Automate inventory replay",
+        "replace_system": "Do not replace based on this fixture; use it for proof coverage.",
+        "cost": "Small fixture-scale effort.",
+        "biggest_risks": [
+          "Inventory replay is manual"
+        ],
+        "next_actions": [
+          "Automate inventory replay"
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/inventory-consumer.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/replay-runbook.md",
+          "line": 1
+        }
+      ],
+      "open_questions": []
+    },
+    "consistency_review": {
+      "reviewer": "llm",
+      "summary": "The fixture report consistently describes the same representative system and does not claim market completeness by itself.",
+      "contradictions_found": 0,
+      "contradictions": [],
+      "evidence": [
+        {
+          "path": "src/inventory-consumer.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/replay-runbook.md",
+          "line": 1
+        }
+      ]
+    },
+    "sections": [
+      {
+        "id": "executive-decision",
+        "title": "Executive Decision",
+        "level": "executive",
+        "blocks": [
+          {
+            "type": "decision_matrix",
+            "title": "Decision basis",
+            "rows": [
+              {
+                "decision": "Modernize inventory replay automation?",
+                "recommendation": "Keep event-driven inventory reservation as a representative benchmark fixture while hardening the noted modernization path.",
+                "risk": "Inventory replay is manual",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "system-boundary",
+        "title": "System Boundary",
+        "level": "technical",
+        "blocks": [
+          {
+            "type": "boundary_map",
+            "title": "Boundary map",
+            "entries": [
+              {
+                "name": "inventory.reservation.requested",
+                "protocol": "event",
+                "technology": "JSON event",
+                "description": "Inbound inventory reservation command event.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "exits": [
+              {
+                "name": "inventory.reservation.confirmed",
+                "protocol": "event",
+                "technology": "JSON event",
+                "description": "Outbound confirmation event emitted after reservation.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "state": [
+              {
+                "name": "SKU reservation state",
+                "kind": "event state",
+                "description": "Reservation state is keyed by SKU and quantity.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "functional-flow",
+        "title": "Functional Flow",
+        "level": "functional",
+        "blocks": [
+          {
+            "type": "flow",
+            "title": "Representative flow",
+            "summary": "event-driven inventory reservation",
+            "steps": [
+              {
+                "description": "Reserve inventory from requested event.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "path": "src/inventory-consumer.ts",
+                "line": 1
+              },
+              {
+                "path": "docs/replay-runbook.md",
+                "line": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quality-roadmap",
+        "title": "Quality And Roadmap",
+        "level": "implementation",
+        "blocks": [
+          {
+            "type": "statement_list",
+            "title": "Findings",
+            "items": [
+              {
+                "title": "Inventory replay is manual",
+                "description": "Inventory replay is manual is visible in the compact fixture evidence.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "roadmap",
+            "title": "Modernization roadmap",
+            "items": [
+              {
+                "title": "Automate inventory replay",
+                "benefit": "Reduces operational and change risk.",
+                "effort": "small",
+                "risk": "Inventory replay is manual",
+                "phase": "next",
+                "next_steps": [
+                  "Plan Automate inventory replay."
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/replay-runbook.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "detail_review_synthesis": {
+      "summary": "The compact main-flow detail review is integrated into the final decision report.",
+      "integrated_detail_reviews": [
+        "main-flow"
+      ],
+      "coverage_statement": "Detail review covered implementation, contract and operations evidence.",
+      "evidence": [
+        {
+          "path": "src/inventory-consumer.ts",
+          "line": 1
+        },
+        {
+          "path": "contracts/inventory-events.json",
+          "line": 1
+        },
+        {
+          "path": "docs/replay-runbook.md",
+          "line": 1
+        }
+      ]
+    },
+    "skill_workbench_synthesis": {
+      "summary": "No skill workbenches were executed or needed for this compact fixture.",
+      "integrated_skill_workbenches": [],
+      "evidence": [
+        {
+          "path": "src/inventory-consumer.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/replay-runbook.md",
+          "line": 1
+        }
+      ]
+    },
+    "semantic_lineage": [],
+    "report_quality_review": {
+      "reviewer": "codex_llm",
+      "verdict": "decision_ready",
+      "summary": "The compact fixture has sufficient evidence, traceability and decision framing for benchmark scoring.",
+      "checks": {
+        "repo_specific_information_architecture": true,
+        "repo_specific_information_architecture_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "management_ready_decision_basis": true,
+        "management_ready_decision_basis_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "whole_repo_first_understanding": true,
+        "whole_repo_first_understanding_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "e2e_relationships_explained": true,
+        "e2e_relationships_explained_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "functional_view_explained": true,
+        "functional_view_explained_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "technical_view_explained": true,
+        "technical_view_explained_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "four_level_model_covered": true,
+        "four_level_model_covered_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "improvements_and_refactoring_covered": true,
+        "improvements_and_refactoring_covered_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "tool_positioning_covered": true,
+        "tool_positioning_covered_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ],
+        "evidence_and_uncertainty_visible": true,
+        "evidence_and_uncertainty_visible_evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      },
+      "accepted_limitations": [],
+      "open_questions": [],
+      "evidence": [
+        {
+          "path": "src/inventory-consumer.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/replay-runbook.md",
+          "line": 1
+        }
+      ]
+    }
+  },
+  "analysis_coverage": {
+    "summary": "Final report covers the compact representative fixture.",
+    "inspected_files": [
+      {
+        "path": "src/inventory-consumer.ts",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "src/inventory-consumer.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "contracts/inventory-events.json",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "contracts/inventory-events.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/replay-runbook.md",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

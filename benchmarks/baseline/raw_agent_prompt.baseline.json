@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "repo": "examples/demo-repo",
+  "baseline_kind": "raw_agent_prompt",
+  "source_commit": "ae85c5deb110e83abbcc6d3264f761e07cc7b7c7",
+  "verdict": "pass",
+  "metrics": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_usefulness": 1
+  },
+  "provenance": {
+    "generated_by": "manual-raw-agent-prompt-2026-06-12",
+    "artifact": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+    "artifact_sha1": "e55f551740ee5f3a94db879f0bb8db4d6616cae0",
+    "source_commit": "ae85c5deb110e83abbcc6d3264f761e07cc7b7c7"
+  },
+  "comparison": {
+    "target": "benchmarks/baseline/targets/demo-baseline-target.json"
+  },
+  "metric_derivation": {
+    "fact_rows": [
+      {
+        "id": "api-post-onboard",
+        "found": true,
+        "evidence_present": true,
+        "artifact_snippet": "POST /customers/onboard",
+        "support_snippet": "POST /customers/onboard",
+        "scored_by": "codex-baseline-fixture-review"
+      },
+      {
+        "id": "event-onboarding-started",
+        "found": true,
+        "evidence_present": true,
+        "artifact_snippet": "customer.onboarding.started",
+        "support_snippet": "customer.onboarding.started",
+        "scored_by": "codex-baseline-fixture-review"
+      },
+      {
+        "id": "finding-hard-coded-threshold",
+        "found": true,
+        "evidence_present": true,
+        "artifact_snippet": "Risk threshold is hard-coded",
+        "support_snippet": "Risk threshold is hard-coded",
+        "scored_by": "codex-baseline-fixture-review"
+      }
+    ],
+    "claim_rows": [
+      {
+        "id": "claim-evidence-backed",
+        "unsupported": false,
+        "artifact_snippet": "The report should cite source evidence for interface and risk claims.",
+        "support_snippet": "The report should cite source evidence for interface and risk claims.",
+        "scored_by": "codex-baseline-fixture-review"
+      }
+    ],
+    "decision_rows": [
+      {
+        "id": "decision-automation-pilot",
+        "useful": true,
+        "artifact_snippet": "Use this repo as automation pilot?",
+        "support_snippet": "Use this repo as automation pilot?",
+        "scored_by": "codex-baseline-fixture-review"
+      }
+    ]
+  }
+}

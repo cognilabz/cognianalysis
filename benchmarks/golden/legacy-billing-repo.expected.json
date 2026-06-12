@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "benchmark": "legacy-billing-repo",
+  "repo": "examples/legacy-billing-repo",
+  "minimums": {
+    "fact_recall": 1,
+    "evidence_precision": 1,
+    "unsupported_claim_rate": 0,
+    "decision_readiness": 1,
+    "report_completeness": 1
+  },
+  "facts": [
+    {
+      "id": "copybook-invoice-record",
+      "category": "interface",
+      "expected": "INVOICE-RECORD",
+      "evidence_required": true
+    },
+    {
+      "id": "flow-write-ar-ledger",
+      "category": "flow",
+      "expected": "Write AR ledger after invoice total calculation.",
+      "evidence_required": true
+    },
+    {
+      "id": "finding-manual-rollback",
+      "category": "finding",
+      "expected": "Billing rollback is manual",
+      "evidence_required": true
+    },
+    {
+      "id": "refactor-strangler-billing",
+      "category": "refactoring",
+      "expected": "Introduce strangler billing facade",
+      "evidence_required": true
+    },
+    {
+      "id": "decision-modernize-monolith",
+      "category": "decision",
+      "expected": "Modernize billing monolith incrementally?",
+      "evidence_required": true
+    }
+  ]
+}

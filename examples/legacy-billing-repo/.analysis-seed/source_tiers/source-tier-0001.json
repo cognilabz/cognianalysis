@@ -1,0 +1,120 @@
+{
+  "source_file_tier_review": {
+    "task_id": "source-tier-0001",
+    "tier_model_version": "source-tier-v1",
+    "review_status": "complete",
+    "files": [
+      {
+        "path": "README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Repository overview for legacy invoice batch billing",
+        "technical_role": "documentation",
+        "business_relevance": "legacy invoice batch billing",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/BILLING.CBL",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Primary implementation for legacy invoice batch billing",
+        "technical_role": "implementation",
+        "business_relevance": "legacy invoice batch billing",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "copybooks/INVOICE-RECORD.cpy",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Contract or interface artifact for legacy invoice batch billing",
+        "technical_role": "contract",
+        "business_relevance": "legacy invoice batch billing",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/batch-operations.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Operational documentation for legacy invoice batch billing",
+        "technical_role": "documentation",
+        "business_relevance": "legacy invoice batch billing",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "open_questions": []
+  },
+  "analysis_coverage": {
+    "inspected_files": [
+      {
+        "path": "README.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/BILLING.CBL",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "copybooks/INVOICE-RECORD.cpy",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/batch-operations.md",
+        "reason": "Tier 1 file card authored.",
+        "evidence": [
+          {
+            "path": "docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

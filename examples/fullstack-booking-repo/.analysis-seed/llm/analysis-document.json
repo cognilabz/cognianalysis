@@ -1,0 +1,505 @@
+{
+  "analysis_document": {
+    "title": "Fullstack Booking App Analysis",
+    "subtitle": "Representative golden suite for frontend_backend_app.",
+    "audience": [
+      "management",
+      "architecture",
+      "engineering"
+    ],
+    "authoring_mode": "llm",
+    "synthesis_stage": "final_after_detail_reviews",
+    "source_basis": "Authored from src/api/bookings.ts, src/ui/BookingForm.tsx and docs/user-journey.md.",
+    "open_questions": [],
+    "requirements_trace": [
+      {
+        "requirement": "Original Cognianalysis entry-question coverage for compact fixture",
+        "covered_by_sections": [
+          "executive-decision",
+          "system-boundary",
+          "functional-flow",
+          "quality-roadmap"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.reverse_engineering_documentation",
+          "required_levels.code_analysis",
+          "required_levels.process_analysis",
+          "required_levels.refactoring_target_architecture",
+          "required_views.functional_view",
+          "required_views.technical_view",
+          "required_output_shape.deliverable",
+          "required_output_shape.visible_report_authority",
+          "required_output_shape.style_system",
+          "required_output_shape.source_basis",
+          "required_output_shape.automation_goal",
+          "required_output_shape.management_drilldown",
+          "required_report_behaviors.whole_repo_first",
+          "required_report_behaviors.tiered_whole_codebase_analysis",
+          "required_report_behaviors.e2e_relationships",
+          "required_report_behaviors.llm_authored_report",
+          "required_report_behaviors.detail_agents_after_overview",
+          "required_report_behaviors.tool_positioning",
+          "required_report_behaviors.evidence_and_uncertainty"
+        ]
+      }
+    ],
+    "executive_decision_basis": {
+      "summary": "Fullstack Booking App implements frontend/backend appointment booking.",
+      "recommendation": "Use this fixture to prove frontend_backend_app benchmark coverage.",
+      "confidence": "high",
+      "decision_questions": {
+        "keep_system": "Keep Fullstack Booking App as a representative benchmark fixture.",
+        "modernize_system": "Share booking validation schema",
+        "replace_system": "Do not replace based on this fixture; use it for proof coverage.",
+        "cost": "Small fixture-scale effort.",
+        "biggest_risks": [
+          "Accessibility testing is not automated"
+        ],
+        "next_actions": [
+          "Share booking validation schema"
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/api/bookings.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/user-journey.md",
+          "line": 1
+        }
+      ],
+      "open_questions": []
+    },
+    "consistency_review": {
+      "reviewer": "llm",
+      "summary": "The fixture report consistently describes the same representative system and does not claim market completeness by itself.",
+      "contradictions_found": 0,
+      "contradictions": [],
+      "evidence": [
+        {
+          "path": "src/api/bookings.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/user-journey.md",
+          "line": 1
+        }
+      ]
+    },
+    "sections": [
+      {
+        "id": "executive-decision",
+        "title": "Executive Decision",
+        "level": "executive",
+        "blocks": [
+          {
+            "type": "decision_matrix",
+            "title": "Decision basis",
+            "rows": [
+              {
+                "decision": "Use as fullstack booking pilot?",
+                "recommendation": "Keep frontend/backend appointment booking as a representative benchmark fixture while hardening the noted modernization path.",
+                "risk": "Accessibility testing is not automated",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "system-boundary",
+        "title": "System Boundary",
+        "level": "technical",
+        "blocks": [
+          {
+            "type": "boundary_map",
+            "title": "Boundary map",
+            "entries": [
+              {
+                "name": "BookingForm",
+                "protocol": "browser UI",
+                "technology": "React",
+                "description": "User-facing form that gathers guest name and slot id.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "exits": [
+              {
+                "name": "createBooking",
+                "protocol": "function/API",
+                "technology": "TypeScript",
+                "description": "Backend handler creates confirmed bookings.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "state": [
+              {
+                "name": "booking confirmation state",
+                "kind": "application state",
+                "description": "Booking status becomes CONFIRMED after creation.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "functional-flow",
+        "title": "Functional Flow",
+        "level": "functional",
+        "blocks": [
+          {
+            "type": "flow",
+            "title": "Representative flow",
+            "summary": "frontend/backend appointment booking",
+            "steps": [
+              {
+                "description": "Book slot from form submission.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "path": "src/api/bookings.ts",
+                "line": 1
+              },
+              {
+                "path": "docs/user-journey.md",
+                "line": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quality-roadmap",
+        "title": "Quality And Roadmap",
+        "level": "implementation",
+        "blocks": [
+          {
+            "type": "statement_list",
+            "title": "Findings",
+            "items": [
+              {
+                "title": "Accessibility testing is not automated",
+                "description": "Accessibility testing is not automated is visible in the compact fixture evidence.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "roadmap",
+            "title": "Modernization roadmap",
+            "items": [
+              {
+                "title": "Share booking validation schema",
+                "benefit": "Reduces operational and change risk.",
+                "effort": "small",
+                "risk": "Accessibility testing is not automated",
+                "phase": "next",
+                "next_steps": [
+                  "Plan Share booking validation schema."
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/api/bookings.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/user-journey.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "detail_review_synthesis": {
+      "summary": "The compact main-flow detail review is integrated into the final decision report.",
+      "integrated_detail_reviews": [
+        "main-flow"
+      ],
+      "coverage_statement": "Detail review covered implementation, contract and operations evidence.",
+      "evidence": [
+        {
+          "path": "src/api/bookings.ts",
+          "line": 1
+        },
+        {
+          "path": "src/ui/BookingForm.tsx",
+          "line": 1
+        },
+        {
+          "path": "docs/user-journey.md",
+          "line": 1
+        }
+      ]
+    },
+    "skill_workbench_synthesis": {
+      "summary": "No skill workbenches were executed or needed for this compact fixture.",
+      "integrated_skill_workbenches": [],
+      "evidence": [
+        {
+          "path": "src/api/bookings.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/user-journey.md",
+          "line": 1
+        }
+      ]
+    },
+    "semantic_lineage": [],
+    "report_quality_review": {
+      "reviewer": "codex_llm",
+      "verdict": "decision_ready",
+      "summary": "The compact fixture has sufficient evidence, traceability and decision framing for benchmark scoring.",
+      "checks": {
+        "repo_specific_information_architecture": true,
+        "repo_specific_information_architecture_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "management_ready_decision_basis": true,
+        "management_ready_decision_basis_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "whole_repo_first_understanding": true,
+        "whole_repo_first_understanding_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "e2e_relationships_explained": true,
+        "e2e_relationships_explained_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "functional_view_explained": true,
+        "functional_view_explained_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "technical_view_explained": true,
+        "technical_view_explained_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "four_level_model_covered": true,
+        "four_level_model_covered_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "improvements_and_refactoring_covered": true,
+        "improvements_and_refactoring_covered_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "tool_positioning_covered": true,
+        "tool_positioning_covered_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ],
+        "evidence_and_uncertainty_visible": true,
+        "evidence_and_uncertainty_visible_evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          },
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      "accepted_limitations": [],
+      "open_questions": [],
+      "evidence": [
+        {
+          "path": "src/api/bookings.ts",
+          "line": 1
+        },
+        {
+          "path": "docs/user-journey.md",
+          "line": 1
+        }
+      ]
+    }
+  },
+  "analysis_coverage": {
+    "summary": "Final report covers the compact representative fixture.",
+    "inspected_files": [
+      {
+        "path": "src/api/bookings.ts",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/ui/BookingForm.tsx",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/user-journey.md",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Used for final report synthesis.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

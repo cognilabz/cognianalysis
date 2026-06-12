@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<definitions name="ClaimsGateway" targetNamespace="urn:claims">
+  <message name="SubmitClaimCaseRequest"/>
+  <message name="SubmitClaimCaseResponse"/>
+  <portType name="ClaimsPort">
+    <operation name="SubmitClaimCase">
+      <input message="tns:SubmitClaimCaseRequest"/>
+      <output message="tns:SubmitClaimCaseResponse"/>
+    </operation>
+  </portType>
+</definitions>

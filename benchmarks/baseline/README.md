@@ -1,8 +1,6 @@
 # Baseline Comparison Inputs
 
-Baseline files are intentionally not fabricated.
-
-Add manually or externally generated `*.baseline.json` files here before claiming market superiority. Required baseline kinds:
+Baseline files are intentionally provenance-bound comparison inputs, not invented benchmark scores. The bundled demo baselines are manually prepared artifacts checked against their source text and comparison target before they can pass. Add broader externally generated `*.baseline.json` files before claiming market superiority beyond the fixture set. Required baseline kinds:
 
 - `raw_agent_prompt`
 - `scanner_report`
@@ -44,5 +42,5 @@ Each file should include:
 }
 ```
 
-Run `npm run verify:baseline` after adding baseline artifacts. The command fails until required baseline kinds are present, passing and shaped with required metrics, provenance and comparison target fields.
+Run `npm run verify:baseline` after adding or changing baseline artifacts. The command fails until required baseline kinds are present, passing and shaped with required metrics, provenance and comparison target fields.
 The comparison target JSON must expose `facts[]`, `claims[]`, and `decisions[]` IDs referenced by `metric_derivation` rows.
