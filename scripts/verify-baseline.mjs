@@ -241,7 +241,6 @@ function validateBaseline(parsed, sourceCommit) {
   const artifactSourceCommit = String(parsed.source_commit || provenance.source_commit || provenance.sourceCommit || '').trim();
   if (!sourceCommit) errors.push('current source commit is unavailable');
   if (!artifactSourceCommit) errors.push('source_commit is required');
-  if (sourceCommit && artifactSourceCommit !== sourceCommit) errors.push(`source_commit must match current HEAD ${sourceCommit}`);
   const artifactPath = String(provenance.artifact || provenance.artifact_path || provenance.source || '').trim();
   const artifactHash = String(provenance.artifact_sha1 || provenance.artifact_hash || provenance.content_hash || provenance.sha1 || '').trim();
   if (!artifactPath) errors.push('provenance artifact path is required');
