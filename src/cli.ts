@@ -3,17 +3,23 @@ import { aggregate, prepareAnalysis } from './aggregate';
 import { renderReport } from './report';
 import { buildRepoMap } from './repoMap';
 import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './tasks';
+import { writeWorkpacks } from './workpacks';
 import { FS, Path, argValue, copyRecursive, ensureDir, hasFlag, loadJson, numericArg, sha1Short, writeJson, writeText } from './utils';
 import { startMcpLikeServer } from './mcp';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
 import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
 import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
-import { computeProductReadiness, productReadinessBrief } from './productReadiness';
+import { computeProductReadiness, computeProductReadinessV2, productReadinessBrief, productReadinessV2Brief } from './productReadiness';
 import { marketProofStatusForRoot } from './marketProof';
+import { migrateV07ToV08 } from './migration/v07ToV08';
 
 const VERSION = '0.7.0';
 const CLI_NAME = 'cognianalysis';
-const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep-dive', 'complete']);
+const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep', 'complete-audit']);
+const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {
+  'deep-dive': 'deep',
+  complete: 'complete-audit'
+};
 const PRODUCT_REQUEST_LLM_OUTPUTS = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
 const PRODUCT_REQUEST_OPTION_FLAGS = ['--mode', '--goal', '--flow', '--module', '--api', '--risk', '--decision', '--scope', '--scope-files'];
 const OPTION_VALUE_FLAGS = new Set([
@@ -55,8 +61,8 @@ function analysisScopeMode(args: string[]): string {
 }
 
 function defaultScopeForProductMode(mode: string): string {
-  if (mode === 'complete') return 'complete';
-  if (mode === 'deep-dive') return 'critical-path';
+  if (mode === 'complete-audit') return 'complete';
+  if (mode === 'deep') return 'critical-path';
   return 'representative';
 }
 
@@ -120,32 +126,22 @@ function scopedCodeMap(codeMap: any, args: string[]): any {
 }
 
 function usage(): void {
-  console.log(`Cognianalysis v${VERSION} · LLM-first source-code analysis
+  console.log(`Cognianalysis v${VERSION} · LLM-first skill/report protocol
 
 Usage:
-  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep-dive|complete] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
+  ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep|complete-audit] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
   ${CLI_NAME} status [repo] [--analysis .analysis]
   ${CLI_NAME} open [repo] [--analysis .analysis]
   ${CLI_NAME} eval [repo] [--analysis .analysis] [--strict]
 
-Internal/debug commands:
-  ${CLI_NAME} dev resume [repo] [--analysis .analysis]
-  ${CLI_NAME} dev repair [repo] [--analysis .analysis]
-  ${CLI_NAME} dev init-harness [target] [--harness all|codex|claude|cursor|windsurf|copilot|aider|generic] [--force] [--no-skills]
-  ${CLI_NAME} dev init-agent [target]
-  ${CLI_NAME} dev init-codex [target]
-  ${CLI_NAME} dev mcp
-  ${CLI_NAME} dev prepare [repo] [--analysis .analysis] [--capsules 44] [--scope complete|critical-path|representative] [--scope-files N]
-  ${CLI_NAME} dev finalize [repo] [--analysis .analysis] [--out report-dir] [--title title] [--allow-invalid] [--allow-partial]
-  ${CLI_NAME} dev audit-report [repo] [--analysis .analysis]
-  ${CLI_NAME} dev tier-status [repo] [--analysis .analysis] [--limit 20]
-  ${CLI_NAME} dev tier-next [repo] [--analysis .analysis] [--limit 1] [--max-chars 6000]
-  ${CLI_NAME} dev tier-context [repo] --task source-tier-0001 [--analysis .analysis] [--max-chars 6000]
-  ${CLI_NAME} dev run-orchestration [repo] [--analysis .analysis]
-  ${CLI_NAME} dev prove-orchestration [repo] [--analysis .analysis] [--execution-log path] [--cache-ledger path]
-  ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
+Modes:
+  brief           Fast orientation.
+  blueprint       Default decision blueprint.
+  deep            Targeted depth for --goal/--flow/--module/--api/--risk/--decision.
+  complete-audit  Whole-repo audit path for legacy source-tier/detail-review depth.
 
-Compatibility aliases still work for existing automation. New users should start with analyze, status, open and eval.
+Legacy mode aliases still work with warnings: deep-dive -> deep, complete -> complete-audit.
+Developer/audit commands are available under ${CLI_NAME} dev --help.
 `);
 }
 
@@ -153,6 +149,7 @@ function devUsage(): void {
   console.log(`Internal/debug commands:
   ${CLI_NAME} dev resume [repo]
   ${CLI_NAME} dev repair [repo]
+  ${CLI_NAME} dev migrate [repo]
   ${CLI_NAME} dev init-harness [target]
   ${CLI_NAME} dev mcp
   ${CLI_NAME} dev prepare [repo]
@@ -168,8 +165,15 @@ function devUsage(): void {
 Use ${CLI_NAME} analyze . for the normal product flow.`);
 }
 
-function stagedLlmWorkflowMessage(): string {
-  return `Next step for Codex, as the active in-session LLM: open .analysis/TASK.md and follow that single harness-native work guide. It starts with llm_tasks/00-analysis-strategy.md, uses source-tier work only for the selected scope, treats capability_templates as optional, materializes any LLM-planned skill_workbench_tasks and detail_tasks with ${CLI_NAME} dev finalize . --allow-partial, then authors llm_tasks/11-detail-agent-plan.md and llm_tasks/12-analysis-document.md before rerunning ${CLI_NAME} analyze .`;
+function stagedLlmWorkflowMessage(completeAudit = false): string {
+  return completeAudit
+    ? `Workspace prepared. Open .analysis/TASK.md in your agent harness. Complete the audit LLM artifacts requested there, then rerun: ${CLI_NAME} analyze .`
+    : `Workspace prepared. Open .analysis/TASK.md in your agent harness. After the agent writes .analysis/analysis.json, rerun: ${CLI_NAME} analyze .`;
+}
+
+function isCompleteAuditMode(value: any): boolean {
+  const mode = String(value || '').toLowerCase();
+  return mode === 'complete-audit' || mode === 'complete';
 }
 
 function positionalArgs(args: string[]): string[] {
@@ -239,7 +243,8 @@ function productModeForBundle(bundle: any | null): string {
 }
 
 function requiresCompleteTierForBundle(bundle: any | null): boolean {
-  return productModeForBundle(bundle) === 'complete';
+  const mode = productModeForBundle(bundle);
+  return mode === 'complete-audit' || mode === 'complete';
 }
 
 function productStatusRows(analysis: string, bundle: any | null, statuses: any[]): any[] {
@@ -328,6 +333,26 @@ function printRepositoryStatus(repo: string, analysis: string, bundle: any | nul
   }
   if (bundle?.analysis_staleness?.stale === true) console.log(`Stale warning: ${bundle.analysis_staleness.summary}`);
   return { rows, action };
+}
+
+function printRepositoryStatusV2(repo: string, analysis: string, bundle: any | null): any {
+  const readiness = computeProductReadinessV2(repo, analysis, bundle);
+  const checks = readiness.checks || [];
+  const keyIds = new Set([
+    'inventory_exists',
+    'workpacks_exist',
+    'analysis_json_exists',
+    'analysis_json_valid',
+    'evidence_validated',
+    'report_rendered'
+  ]);
+  console.log('Repository Analysis Status');
+  for (const row of checks.filter((check: any) => keyIds.has(check.id)).slice(0, 6)) {
+    console.log(`${row.ready ? '✓' : '✗'} ${row.label}`);
+  }
+  console.log(`State: ${readiness.state}`);
+  console.log(`Next action: ${readiness.next_action}`);
+  return readiness;
 }
 
 function jsonProblems(analysis: string): any[] {
@@ -430,30 +455,40 @@ function cmdPrepare(args: string[]): number {
     capsuleChars: numericArg(args, '--capsule-chars', 10_000)
   }), args);
   prepareAnalysis(repo, analysis, codeMap);
-  const tasks = writeLlmTasks(analysis, codeMap);
-  const seedDir = Path.join(repo, '.analysis-seed', 'llm');
-  if (FS.existsSync(seedDir) && !hasFlag(args, '--no-seed')) {
-    copyRecursive(seedDir, Path.join(analysis, 'llm'), false);
-  }
-  const detailReviewSeedDir = Path.join(repo, '.analysis-seed', 'detail_reviews');
-  if (FS.existsSync(detailReviewSeedDir) && !hasFlag(args, '--no-seed')) {
-    copyRecursive(detailReviewSeedDir, Path.join(analysis, 'detail_reviews'), false);
-  }
-  const sourceTierSeedDir = Path.join(repo, '.analysis-seed', 'source_tiers');
-  if (FS.existsSync(sourceTierSeedDir) && !hasFlag(args, '--no-seed')) {
-    copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
-  }
-  const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
-  if (FS.existsSync(skillReviewSeedDir) && !hasFlag(args, '--no-seed')) {
-    copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
+  const request = loadJson<any | null>(Path.join(analysis, 'data', 'product-analysis-request.json'), null);
+  const completeAudit = isCompleteAuditMode(request?.mode);
+  const tasks = completeAudit ? writeLlmTasks(analysis, codeMap) : writeWorkpacks(analysis);
+  if (completeAudit) {
+    const seedDir = Path.join(repo, '.analysis-seed', 'llm');
+    if (FS.existsSync(seedDir) && !hasFlag(args, '--no-seed')) {
+      copyRecursive(seedDir, Path.join(analysis, 'llm'), false);
+    }
+    const detailReviewSeedDir = Path.join(repo, '.analysis-seed', 'detail_reviews');
+    if (FS.existsSync(detailReviewSeedDir) && !hasFlag(args, '--no-seed')) {
+      copyRecursive(detailReviewSeedDir, Path.join(analysis, 'detail_reviews'), false);
+    }
+    const sourceTierSeedDir = Path.join(repo, '.analysis-seed', 'source_tiers');
+    if (FS.existsSync(sourceTierSeedDir) && !hasFlag(args, '--no-seed')) {
+      copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
+    }
+    const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
+    if (FS.existsSync(skillReviewSeedDir) && !hasFlag(args, '--no-seed')) {
+      copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
+    }
   }
   console.log(`Prepared LLM-first analysis workspace: ${analysis}`);
-  console.log(`Code map: ${Path.join(analysis, 'data', 'code-map.json')}`);
-  console.log(`Source capsules: ${Path.join(analysis, 'source-capsules.json')}`);
-  console.log(`Required LLM workflow task files: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
-  console.log(`Optional capability templates: ${Path.join(analysis, 'capability_templates')}`);
+  console.log(`Inventory: ${Path.join(analysis, 'inventory.json')}`);
+  if (completeAudit) {
+    console.log(`Code map: ${Path.join(analysis, 'data', 'code-map.json')}`);
+    console.log(`Source capsules: ${Path.join(analysis, 'source-capsules.json')}`);
+    console.log(`Required LLM workflow task files: ${Path.join(analysis, 'llm_tasks')} (${tasks.length} tasks)`);
+    console.log(`Optional capability templates: ${Path.join(analysis, 'capability_templates')}`);
+  } else {
+    console.log(`Workpacks: ${Path.join(analysis, 'workpacks')} (${tasks.length} workpacks)`);
+    console.log(`Workpack manifest: ${Path.join(analysis, 'workpack-manifest.json')}`);
+  }
   console.log('Important: the code map is inventory-only. It does not parse imports, symbols, frameworks, contracts, examples or relationships; Codex, as the active in-session LLM, extracts those from source.');
-  console.log(stagedLlmWorkflowMessage());
+  console.log(stagedLlmWorkflowMessage(completeAudit));
   return 0;
 }
 
@@ -462,8 +497,11 @@ function productAnalysisRequest(args: string[], previous?: any): any {
   const previousTarget = previous?.target || {};
   const hasScope = args.includes('--scope');
   const hasScopeFiles = args.includes('--scope-files');
-  const mode = String(args.includes('--mode') ? argValue(args, '--mode', 'brief') : previous?.mode || 'brief').trim().toLowerCase();
-  if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${mode}. Expected brief, blueprint, deep-dive or complete.`);
+  const rawMode = String(args.includes('--mode') ? argValue(args, '--mode', 'blueprint') : previous?.mode || 'blueprint').trim().toLowerCase();
+  const aliasMode = PRODUCT_ANALYSIS_MODE_ALIASES[rawMode];
+  const mode = aliasMode || rawMode;
+  if (aliasMode && args.includes('--mode')) console.log(`Deprecation warning: --mode ${rawMode} is now --mode ${aliasMode}.`);
+  if (!PRODUCT_ANALYSIS_MODES.has(mode)) throw new Error(`Unknown --mode ${rawMode}. Expected brief, blueprint, deep or complete-audit.`);
   const defaultScopeMode = defaultScopeForProductMode(mode);
   if (hasScopeFiles && !hasScope && String(previousScopeRequest.mode || defaultScopeMode) === 'complete') {
     throw new Error('--scope-files requires --scope unless the previous product request or selected mode already has a non-complete default scope.');
@@ -471,7 +509,7 @@ function productAnalysisRequest(args: string[], previous?: any): any {
   const goal = String(args.includes('--goal') ? argValue(args, '--goal', '') : previous?.goal || '').trim();
   const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || defaultScopeMode);
   if (!SCOPE_MODES.has(scopeMode)) throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
-  if (mode === 'complete' && scopeMode !== 'complete') throw new Error('Complete mode requires --scope complete. Use brief, blueprint or deep-dive for scoped/adaptive analysis.');
+  if (mode === 'complete-audit' && scopeMode !== 'complete') throw new Error('Complete-audit mode requires --scope complete. Use brief, blueprint or deep for scoped/adaptive analysis.');
   const previousScopeMode = String(previousScopeRequest.mode || 'complete');
   const previousScopeFiles = Number(previousScopeRequest.scope_files || 0);
   const preservePreviousScopeFiles = !hasScope || scopeMode === previousScopeMode;
@@ -490,13 +528,14 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     decision: String(args.includes('--decision') ? argValue(args, '--decision', '') : previousTarget.decision || '').trim()
   };
   const hasTarget = Object.values(target).some(Boolean);
-  if (mode === 'deep-dive' && !hasTarget && !goal) {
-    throw new Error('Deep-dive mode requires --goal or at least one target flag: --flow, --module, --api, --risk or --decision.');
+  if (mode === 'deep' && !hasTarget && !goal) {
+    throw new Error('Deep mode requires --goal or at least one target flag: --flow, --module, --api, --risk or --decision.');
   }
   return {
     contract_kind: 'product_analysis_request',
     entrypoint: 'analyze',
     mode,
+    legacy_mode_alias: aliasMode ? rawMode : '',
     goal,
     target,
     analysis_scope_request: {
@@ -506,13 +545,13 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     generated_at: new Date().toISOString(),
     public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
     internal_work_area: '.analysis',
-    depth_policy: mode === 'complete'
+    depth_policy: mode === 'complete-audit'
       ? 'audit-heavy whole-repository analysis with complete included source inventory coverage'
-      : mode === 'deep-dive'
+      : mode === 'deep'
       ? 'targeted critical-path source-family, flow, module, API, risk or decision analysis for the requested slice'
       : mode === 'blueprint'
-        ? 'adaptive decision report plus modernization/rebuild blueprint and deep-dive backlog; complete every-file Tier 1 is reserved for --mode complete'
-        : 'adaptive concise decision report with broad system understanding, explicit deferred scope and deep-dive backlog; complete every-file Tier 1 is reserved for --mode complete'
+        ? 'adaptive decision report plus modernization/rebuild blueprint and deep backlog; complete every-file Tier 1 is reserved for --mode complete-audit'
+        : 'adaptive concise decision report with broad system understanding, explicit deferred scope and deep backlog; complete every-file Tier 1 is reserved for --mode complete-audit'
   };
 }
 
@@ -609,7 +648,10 @@ function cmdAnalyze(args: string[]): number {
     if (rc !== 0) return rc;
   }
   const codeMapPath = Path.join(analysis, 'data', 'code-map.json');
-  if (!scopeChanged && FS.existsSync(codeMapPath)) writeLlmTasks(analysis, loadJson<any>(codeMapPath, {}));
+  if (!scopeChanged && FS.existsSync(codeMapPath)) {
+    if (isCompleteAuditMode(request.mode)) writeLlmTasks(analysis, loadJson<any>(codeMapPath, {}));
+    else writeWorkpacks(analysis);
+  }
   console.log(`Cognianalysis analyze: mode=${request.mode}${request.goal ? ` · goal=${request.goal}` : ''}`);
   return cmdRun(args);
 }
@@ -617,14 +659,40 @@ function cmdAnalyze(args: string[]): number {
 function cmdRun(args: string[]): number {
   const repo = repoArg(args);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
-  const needsPrepare = !FS.existsSync(analysis)
+  const request = loadJson<any | null>(Path.join(analysis, 'data', 'product-analysis-request.json'), null);
+  const completeAudit = isCompleteAuditMode(request?.mode);
+  const needsPrepare = completeAudit ? (!FS.existsSync(analysis)
     || !FS.existsSync(Path.join(analysis, 'data', 'code-map.json'))
     || !FS.existsSync(Path.join(analysis, 'llm_tasks'))
     || !FS.existsSync(Path.join(analysis, 'TASK.md'))
-    || !FS.existsSync(Path.join(analysis, 'source-tier-task-manifest.json'));
+    || !FS.existsSync(Path.join(analysis, 'source-tier-task-manifest.json'))) : (!FS.existsSync(analysis)
+    || !FS.existsSync(Path.join(analysis, 'inventory.json'))
+    || !FS.existsSync(Path.join(analysis, 'workpacks'))
+    || !FS.existsSync(Path.join(analysis, 'workpack-manifest.json'))
+    || !FS.existsSync(Path.join(analysis, 'TASK.md')));
   if (needsPrepare) {
     const rc = cmdPrepare(argsWithPersistedRequestScope(args, analysis));
     if (rc !== 0) return rc;
+  }
+  const analysisJsonPath = Path.join(analysis, 'analysis.json');
+  if (FS.existsSync(analysisJsonPath)) {
+    const bundle = aggregate(repo, analysis);
+    if (bundle.analysis_contract?.valid !== true) {
+      console.log(`Cognianalysis product mode: analysis.json is invalid.`);
+      for (const missing of bundle.analysis_contract?.missing || []) console.log(`  ANALYSIS-MISSING ${missing}`);
+      return 1;
+    }
+    const report = renderReport(analysis, argValue(args, '--out') ? Path.resolve(argValue(args, '--out')) : undefined, argValue(args, '--title'));
+    aggregate(repo, analysis);
+    console.log(`Product mode complete from analysis.json. Report: ${report}`);
+    return 0;
+  }
+  if (!completeAudit) {
+    aggregate(repo, analysis);
+    console.log(`Cognianalysis product mode: workspace prepared; waiting for LLM-authored analysis.json.`);
+    console.log(`Task guide: ${Path.join(analysis, 'TASK.md')}`);
+    console.log(stagedLlmWorkflowMessage(false));
+    return 0;
   }
   const statuses = workflowArtifactStatuses(analysis);
   const missing = statuses.filter(row => !row.ready);
@@ -632,7 +700,7 @@ function cmdRun(args: string[]): number {
     aggregate(repo, analysis);
     console.log(`Cognianalysis product mode: waiting for Codex-authored workflow artifacts.`);
     printProductNextStep(analysis, statuses);
-    console.log(stagedLlmWorkflowMessage());
+    console.log(stagedLlmWorkflowMessage(true));
     return 0;
   }
   const rc = cmdFinalize(args);
@@ -669,7 +737,7 @@ function cmdOpen(args: string[]): number {
     return 1;
   }
   let report = reportPathForAnalysis(analysis);
-  if (!FS.existsSync(report) && FS.existsSync(Path.join(analysis, 'llm', 'analysis-document.json'))) {
+  if (!FS.existsSync(report) && (FS.existsSync(Path.join(analysis, 'analysis.json')) || FS.existsSync(Path.join(analysis, 'llm', 'analysis-document.json')))) {
     const refreshed = renderReportAndRefreshBundle(repo, analysis, argValue(args, '--out') ? Path.resolve(argValue(args, '--out')) : undefined, argValue(args, '--title'));
     report = refreshed.report;
   }
@@ -687,10 +755,14 @@ function cmdStatus(args: string[]): number {
   const repo = repoArg(args);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   if (!FS.existsSync(analysis)) {
-    printRepositoryStatus(repo, analysis, null, []);
+    printRepositoryStatusV2(repo, analysis, null);
     return 0;
   }
   const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+  if (!requiresCompleteTierForBundle(bundle) && !hasFlag(args, '--audit')) {
+    const readiness = printRepositoryStatusV2(repo, analysis, bundle);
+    return readiness.ready === true ? 0 : 1;
+  }
   const statuses = workflowArtifactStatuses(analysis);
   printRepositoryStatus(repo, analysis, bundle, statuses);
   return bundle.final_llm_readiness?.state === 'ready' ? 0 : 1;
@@ -702,8 +774,19 @@ function cmdEval(args: string[]): number {
   console.log('Cognianalysis eval');
   console.log(`Repo: ${repo}`);
   console.log(`Analysis: ${analysis}`);
-  const marketProof = printMarketProofStatus(analysis);
   const bundle = FS.existsSync(analysis) ? aggregateWithMaterializedDetailTasks(repo, analysis) : null;
+  const readinessV2 = computeProductReadinessV2(repo, analysis, bundle);
+  console.log('Product readiness v2:');
+  for (const line of productReadinessV2Brief(readinessV2)) console.log(line);
+  for (const item of (readinessV2.missing || []).slice(0, 12)) console.log(`  V2-MISSING ${item.id}: ${item.next_action}`);
+  const includeLegacy = hasFlag(args, '--strict') || hasFlag(args, '--audit') || requiresCompleteTierForBundle(bundle);
+  if (!includeLegacy) return readinessV2.invalid === true ? 1 : 0;
+  const marketProof = printMarketProofStatus(analysis);
+  if (bundle?.analysis_contract) {
+    console.log(`Analysis contract: ${bundle.analysis_contract.source || 'missing'} · valid=${bundle.analysis_contract.valid === true}`);
+    for (const missing of (bundle.analysis_contract.missing || []).slice(0, 12)) console.log(`  ANALYSIS-MISSING ${missing}`);
+    for (const warning of (bundle.analysis_contract.warnings || []).slice(0, 8)) console.log(`  ANALYSIS-WARNING ${warning}`);
+  }
   const productReadiness = computeProductReadiness(repo, analysis, bundle, marketProof);
   console.log('Original product readiness:');
   for (const line of productReadinessBrief(productReadiness)) console.log(line);
@@ -765,6 +848,17 @@ function cmdRepair(args: string[]): number {
   for (const item of staleOrIncomplete.slice(0, 10)) console.log(`REPAIR-NEXT ${item.area}: ${item.status}`);
   printRepositoryStatus(repo, analysis, bundle, statuses);
   return problems.length ? 1 : 0;
+}
+
+function cmdMigrate(args: string[]): number {
+  const repo = repoArg(args);
+  const analysis = analysisPath(repo, argValue(args, '--analysis'));
+  const report = migrateV07ToV08(repo, analysis, { force: hasFlag(args, '--force') });
+  console.log(`Migration report: ${Path.join(analysis, 'data', 'migration-v07-to-v08.json')}`);
+  console.log(`Detected workspace: ${report.detection?.version || 'unknown'}`);
+  console.log(`Changed: ${(report.changed || []).length ? report.changed.join(', ') : 'none'}`);
+  console.log(`Legacy artifacts preserved: ${report.legacy_artifacts_preserved === true}`);
+  return 0;
 }
 
 function cmdDoctor(args: string[]): number {
@@ -1747,11 +1841,12 @@ async function runCommand(command: string | undefined, args: string[], options: 
   }
   if (!options.dev) {
     const preferred = command === 'finish' || command === 'report' ? 'dev finalize' : `dev ${command}`;
-    const compatibilityCommands = new Set(['resume', 'repair', 'init-harness', 'init-agent', 'init-codex', 'init', 'prepare', 'run', 'doctor', 'finalize', 'finish', 'report', 'aggregate', 'render', 'validate', 'coverage', 'tier-status', 'tier-next', 'tier-context', 'audit-report', 'portfolio']);
+    const compatibilityCommands = new Set(['resume', 'repair', 'migrate', 'init-harness', 'init-agent', 'init-codex', 'init', 'prepare', 'run', 'doctor', 'finalize', 'finish', 'report', 'aggregate', 'render', 'validate', 'coverage', 'tier-status', 'tier-next', 'tier-context', 'audit-report', 'portfolio']);
     if (compatibilityCommands.has(command)) compatibilityWarning(preferred);
   }
   if (command === 'resume') return cmdResume(args);
   if (command === 'repair') return cmdRepair(args);
+  if (command === 'migrate') return cmdMigrate(args);
   if (command === 'init-harness' || command === 'init-agent') return cmdInitHarness(args);
   if (command === 'init-codex') return cmdInitCodex(args);
   if (command === 'mcp') { startMcpLikeServer(); return 0; }

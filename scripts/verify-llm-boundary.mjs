@@ -126,12 +126,60 @@ const forbiddenDirectLlmPackageDeps = [
   'langchain'
 ];
 const packageJson = JSON.parse(readProjectFile('package.json'));
+assert(
+  String(packageJson.description || '').includes('skill/report protocol'),
+  'package.json description must position Cognianalysis as a skill/report protocol'
+);
 for (const block of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
   const deps = packageJson[block] || {};
   for (const dep of Object.keys(deps)) {
     assert(!forbiddenDirectLlmPackageDeps.includes(dep), `package.json must not depend on a direct LLM API/provider SDK: ${block}.${dep}`);
   }
 }
+
+for (const file of ['AGENTS.md', 'resources/AGENTS.md']) {
+  const source = readProjectFile(file);
+  assert(!source.includes('Post-Push Review Loop'), `${file} must not include private maintainer review workflow instructions`);
+  assert(!source.includes('chatgpt.com/c/'), `${file} must not include private external review conversation links`);
+  assert(source.includes('Cognianalysis is a thin, LLM-first harness protocol'), `${file} must state the thin harness product boundary`);
+  assert(source.includes('The CLI must not become semantic authority.'), `${file} must state the CLI is not semantic authority`);
+  assert(source.includes('Every relevant business or technical claim must include file:line evidence'), `${file} must preserve evidence rules`);
+}
+
+requireSnippets('docs/adr/0001-llm-semantic-authority.md', [
+  'Cognianalysis does not semantically analyze code through deterministic parsers.',
+  'The CLI only performs:',
+  'The active agent harness / LLM performs:',
+  'no import graph as semantic truth',
+  'no symbol graph as semantic truth',
+  'no framework detection as semantic truth',
+  'no deterministic bug scanner',
+  'no direct LLM API runtime',
+  'no hidden semantic scoring'
+]);
+
+requireSnippets('docs/adr/0002-thin-harness-product-boundary.md', [
+  'Cognianalysis is a skill/report protocol plus deterministic CLI support',
+  'The default product path is `analyze`, `status`, `open` and `eval`.',
+  'Default runs should feel like inventory plus workpacks plus evidence plus report.',
+  'Public reports must not leak local absolute paths.'
+]);
+
+requireSnippets('docs/product/v08-thin-harness.md', [
+  'Cognianalysis v0.8 is a thin LLM-first harness protocol',
+  '.analysis/inventory.json',
+  '.analysis/analysis.json',
+  'cognianalysis analyze . --mode blueprint',
+  'The CLI can validate whether cited evidence exists. It cannot decide that the evidence semantically proves the claim.'
+]);
+
+requireSnippets('docs/product/modes.md', [
+  '## brief',
+  '## blueprint',
+  '## deep',
+  '## complete-audit',
+  '`complete` maps to `complete-audit`.'
+]);
 
 requireSnippets('src/repoMap.ts', [
   "return 'source-inventory'",
@@ -202,6 +250,13 @@ requireSnippets('src/readiness.ts', [
 
 requireSnippets('README.md', [
   'The TypeScript/Node CLI prepares repository context',
+  'LLM-first skill/report protocol',
+  'deterministic code prepares, validates and renders',
+  'the active agent harness / LLM understands, evaluates and authors',
+  'cognianalysis analyze . --goal "Create a decision document for this repository."',
+  'cognianalysis status .',
+  'cognianalysis open .',
+  'cognianalysis eval .',
   'The generated bundle includes a `semantic_authority` audit section',
   'it does not infer semantic quality from keywords, menus, classes, functions or component presence.',
   'That bridge exposes deterministic prepare/finalize/audit/report tooling. It still does not replace the LLM extraction step.'

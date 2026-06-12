@@ -1,7 +1,7 @@
 {
   "name": "cognianalysis",
   "version": "0.7.0",
-  "description": "LLM-first source-code analysis, documentation and decision-reporting library for existing agent harness workflows.",
+  "description": "LLM-first source-code analysis skill/report protocol for existing agent harness workflows.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
@@ -18,6 +18,8 @@
     "README.md",
     "LICENSE",
     "src",
+    "examples/minimal-analysis-v2.json",
+    "examples/demo-repo/.analysis/analysis.json",
     "examples/demo-repo/.analysis/data/analysis-document-report-lint.json",
     "examples/demo-repo/.analysis/data/bundle.json",
     "examples/demo-repo/.analysis/data/golden-benchmark.json",
@@ -62,6 +64,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
     "prepare-demo": "node dist/cli.js prepare examples/demo-repo",
     "demo-report": "node dist/cli.js render examples/demo-repo",
     "audit-demo": "node dist/cli.js audit-report examples/demo-repo",
@@ -93,5 +96,8 @@
     "html-report",
     "mermaid",
     "evidence"
-  ]
+  ],
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
 }

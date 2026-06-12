@@ -9,6 +9,11 @@ import { analysisGoalContractArtifact } from './analysisGoal';
 import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
 import { sourceTierBacklogArtifact, sourceTierModelArtifact } from './sourceTiers';
 import { SKILL_WORKBENCH_VERSION } from './skillWorkbenches';
+import { loadAnalysisDocument } from './contracts/analysisV2';
+import { buildInventory } from './inventory';
+import { validateEvidenceTree } from './evidence';
+import { buildSynthesisInput } from './synthesisInputs';
+import { normalizeScannerImports } from './scannerImports';
 
 function isCodexLlmAuthority(value: any): boolean {
   const normalized = String(value || '').toLowerCase();
@@ -18,6 +23,9 @@ function isCodexLlmAuthority(value: any): boolean {
 export function prepareAnalysis(repo: string, analysisDir: string, codeMap: CodeMap): void {
   const dataDir = Path.join(analysisDir, 'data');
   ensureDir(dataDir);
+  const inventory = buildInventory(repo, codeMap);
+  writeJson(Path.join(analysisDir, 'inventory.json'), inventory);
+  writeJson(Path.join(dataDir, 'inventory.json'), inventory);
   writeJson(Path.join(dataDir, 'repo-profile.json'), codeMap.profile);
   writeJson(Path.join(dataDir, 'analysis-scope.json'), normalizeAnalysisScope(codeMap.analysis_scope, codeMap));
   writeJson(Path.join(dataDir, 'code-map.json'), codeMap);
@@ -43,7 +51,9 @@ export function prepareAnalysis(repo: string, analysisDir: string, codeMap: Code
   writeJson(Path.join(dataDir, 'source-tier-model.json'), sourceTierModelArtifact());
   writeJson(Path.join(dataDir, 'report-component-library.json'), reportComponentLibraryArtifact());
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), analysisSkillCatalogArtifact());
-  writeJson(Path.join(dataDir, 'analysis-run.json'), analysisRunSeed(repo, analysisDir, codeMap.profile));
+  const runSeed = analysisRunSeed(repo, analysisDir, codeMap.profile);
+  writeJson(Path.join(dataDir, 'analysis-run.json'), runSeed);
+  writeJson(Path.join(analysisDir, 'run.json'), runSeed);
   writeJson(Path.join(dataDir, 'target-coverage.json'), TARGET_CAPABILITIES);
 }
 
@@ -68,8 +78,13 @@ export function aggregate(repo: string, analysisDir: string): any {
   const skillWorkbenchTaskManifest = loadJson<any>(Path.join(analysisDir, 'skill-workbench-task-manifest.json'), { tasks: [] });
   const sourceTierTaskManifest = loadJson<any>(Path.join(analysisDir, 'source-tier-task-manifest.json'), { tasks: [] });
   const capabilityTemplateManifest = loadJson<any>(Path.join(analysisDir, 'capability-template-manifest.json'), { templates: [] });
+  const workpackManifest = loadJson<any>(Path.join(analysisDir, 'workpack-manifest.json'), loadJson<any>(Path.join(dataDir, 'workpack-manifest.json'), { workpacks: [] }));
   const productAnalysisRequest = loadJson<any | null>(Path.join(dataDir, 'product-analysis-request.json'), null);
+  const auditMode = ['complete', 'complete-audit'].includes(String(productAnalysisRequest?.mode || '').toLowerCase());
   const analysisRun = analysisRunSeed(repo, analysisDir, profile);
+  const inventoryV2 = loadJson<any>(Path.join(analysisDir, 'inventory.json'), loadJson<any>(Path.join(dataDir, 'inventory.json'), {}));
+  const scannerFindings = normalizeScannerImports(analysisDir);
+  const synthesisInput = buildSynthesisInput(repo, analysisDir, inventoryV2.summary || {});
 
   const assessment = llm.assessment || null;
   const capabilities = asList(llm.capabilities);
@@ -88,15 +103,22 @@ export function aggregate(repo: string, analysisDir: string): any {
   const modernization = asList(llm.modernization);
   const documentation = llm.documentation || {};
   const analysisStrategy = analysisStrategyArtifact?.analysis_strategy || analysisStrategyArtifact || llm.analysis_strategy || null;
-  const analysisDocument = llm.analysis_document || null;
   const detailAgentPlan = detailAgentPlanArtifact?.detail_agent_plan || detailAgentPlanArtifact || llm.detail_agent_plan || null;
+  const loadedAnalysisDocument = loadAnalysisDocument(
+    repo,
+    analysisDir,
+    llm.analysis_document || null,
+    profile,
+    productAnalysisRequest?.mode || 'blueprint'
+  );
+  const analysisDocument = loadedAnalysisDocument.analysis_document || null;
   const hasAnalysisStrategyArtifact = !!analysisStrategyArtifact && typeof analysisStrategyArtifact === 'object' && !Array.isArray(analysisStrategyArtifact);
   const hasDetailAgentPlanArtifact = !!detailAgentPlanArtifact && typeof detailAgentPlanArtifact === 'object' && !Array.isArray(detailAgentPlanArtifact);
   const analysisCoverage = validateNested(repo, mergeCoverage(llm.analysis_coverage || pendingAnalysisCoverage(), [...skillWorkbench.coverageItems, ...detail.coverageItems]));
 
-  const hasLlmAuthoredOutput = hasLlmAuthoredOutputPresence(llmOutputPresence, sourceTier.reviews, detail.reviews);
+  const hasLlmAuthoredOutput = loadedAnalysisDocument.source === 'analysis-v2' || hasLlmAuthoredOutputPresence(llmOutputPresence, sourceTier.reviews, detail.reviews);
   const status = hasLlmAuthoredOutput
-    ? { state: 'llm_extracted', message: 'Codex-authored LLM analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
+    ? { state: 'llm_extracted', message: loadedAnalysisDocument.source === 'analysis-v2' ? 'LLM-authored analysis.json v2 is present. Semantic completeness and readiness come from the active harness / LLM-authored decision document.' : 'Codex-authored LLM analysis artifacts are present. Semantic completeness and readiness still come only from analysis_document.requirements_trace and analysis_document.report_quality_review.' }
     : { state: 'awaiting_llm_extraction', message: 'Codex-authored LLM extraction has not been run yet. The report shows inventory-only repo map data, unscored target capability context and source capsules only. Imports, symbols, frameworks, contracts, examples, relationships and semantics must be parsed by Codex from source.' };
 
   const taskManifest = loadJson<any>(Path.join(analysisDir, 'task-manifest.json'), { tasks: [], capability_templates: [] });
@@ -120,6 +142,9 @@ export function aggregate(repo: string, analysisDir: string): any {
     extraction_policy: codeMap.extraction_policy || {},
     artifact_navigation_candidates: codeMap.artifact_navigation_candidates || codeMap.important_docs || [],
     important_docs: codeMap.important_docs || [],
+    inventory: inventoryV2,
+    scanner_findings: validateNested(repo, scannerFindings),
+    synthesis_input: validateNested(repo, synthesisInput),
     analysis_goal_contract: analysisGoalContractArtifact(),
     tool_positioning_references: toolPositioningReferencesArtifact(),
     report_component_library: reportComponentLibraryArtifact(),
@@ -136,6 +161,7 @@ export function aggregate(repo: string, analysisDir: string): any {
     source_tier_task_manifest: validateNested(repo, sourceTierTaskManifest),
     source_tier_workpack_executions: sourceTier.workpackExecutions || [],
     analysis_pipeline: analysisPipeline,
+    workpack_manifest: validateNested(repo, workpackManifest),
     assessment: validateNested(repo, assessment),
     capabilities: validateItems(repo, capabilities),
     interfaces: validateItems(repo, interfaces),
@@ -152,6 +178,16 @@ export function aggregate(repo: string, analysisDir: string): any {
     refactoring: validateItems(repo, refactoring),
     modernization: validateItems(repo, modernization),
     documentation: validateNested(repo, documentation),
+    analysis: validateNested(repo, loadedAnalysisDocument.analysis),
+    analysis_contract: validateNested(repo, {
+      contract_version: '2.0',
+      source: loadedAnalysisDocument.source,
+      path: loadedAnalysisDocument.path ? Path.relative(analysisDir, loadedAnalysisDocument.path).replace(/\\/g, '/') : '',
+      valid: loadedAnalysisDocument.validation.valid,
+      missing: loadedAnalysisDocument.validation.missing,
+      warnings: loadedAnalysisDocument.validation.warnings,
+      primary_output: loadedAnalysisDocument.source === 'analysis-v2' ? 'analysis.json' : loadedAnalysisDocument.source === 'legacy-analysis-document' ? 'llm/analysis-document.json' : ''
+    }),
     llm_analysis_strategy: validateNested(repo, extractLlmAnalysisStrategy(analysisStrategy, hasAnalysisStrategyArtifact)),
     analysis_strategy: validateNested(repo, analysisStrategy),
     analysis_document: validateNested(repo, analysisDocument),
@@ -176,12 +212,21 @@ export function aggregate(repo: string, analysisDir: string): any {
 
   let evidence: any[] = [];
   for (const key of ['capabilities','interfaces','flows','business_logic','integrations','side_effects','findings','refactoring','modernization','external_findings']) evidence = evidence.concat(collectEvidence(bundle[key] || []));
-  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis_strategy','detail_agent_plan','analysis_document','source_file_tier_reviews','skill_workbench_reviews','source_family_detail_reviews','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
+  for (const key of ['assessment','domain_model','data_model','architecture','process','quality','documentation','analysis','analysis_strategy','detail_agent_plan','analysis_document','source_file_tier_reviews','skill_workbench_reviews','source_family_detail_reviews','analysis_coverage']) evidence = evidence.concat(collectEvidence(bundle[key] || {}));
   bundle.evidence_index = dedupeEvidence(evidence);
   bundle.source_tier_coverage = computeSourceTierCoverage(codeMap, bundle.source_file_tier_reviews, bundle.source_tier_task_manifest);
-  bundle.source_tier_backlog = sourceTierBacklogArtifact(analysisDir);
+  bundle.source_tier_backlog = auditMode ? sourceTierBacklogArtifact(analysisDir) : {
+    complete: true,
+    total_tasks: 0,
+    complete_tasks: 0,
+    missing_tasks: [],
+    audit_only: true,
+    message: 'Source-tier backlog is only computed for complete-audit mode.'
+  };
   bundle.source_inventory_accounting = computeSourceCoverage(codeMap, bundle.evidence_index, bundle.analysis_coverage);
   bundle.source_coverage = bundle.source_inventory_accounting;
+  const skippedPaths = new Set(asList(codeMap.skipped_files).map((item: any) => String(item?.path || '').trim()).filter(Boolean));
+  bundle.analysis_evidence_validation = validateEvidenceTree(repo, bundle.analysis, skippedPaths);
   bundle.analysis_document_requirements_trace_contract = computeAnalysisDocumentRequirementsTraceContract(bundle.analysis_document);
   bundle.analysis_document_goal_coverage = bundle.analysis_document_requirements_trace_contract;
   bundle.analysis_goal_trace_alignment = computeAnalysisGoalTraceAlignment(bundle.analysis_goal_contract, bundle.analysis_document);
@@ -236,6 +281,8 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'analysis-document-evidence-strength.json'), bundle.analysis_document_evidence_strength);
   writeJson(Path.join(dataDir, 'analysis-document-semantic-lineage.json'), bundle.analysis_document_semantic_lineage);
   writeJson(Path.join(dataDir, 'analysis-document-open-questions.json'), bundle.analysis_document_open_questions);
+  writeJson(Path.join(dataDir, 'analysis-contract.json'), bundle.analysis_contract);
+  writeJson(Path.join(dataDir, 'analysis-evidence-validation.json'), bundle.analysis_evidence_validation);
   writeJson(Path.join(dataDir, 'external-findings.json'), bundle.external_findings_contract);
   writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
   writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
@@ -2593,7 +2640,7 @@ function computeSkillWorkbenchCoverage(plan: any, reviews: any[], manifest: any,
   const usesAnalysisStrategyPlan = plan?.uses_analysis_strategy_artifact === true;
   const sourceTierComplete = sourceTierCoverage?.complete === true;
   const productMode = String(productRequest?.mode || 'brief').toLowerCase();
-  const requiresCompleteTierBeforeWorkbenches = productMode === 'complete';
+  const requiresCompleteTierBeforeWorkbenches = productMode === 'complete-audit' || productMode === 'complete';
   const materializedTaskManifestPresent = plan?.materialized_task_manifest_present === true;
   const planningDecisionPresent = plan?.planning_decision_present === true;
   const noSkillDecision = plan?.no_skill_workbenches_needed === true;

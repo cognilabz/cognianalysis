@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognianalysis.local/schemas/analysis-v2.schema.json",
+  "title": "Cognianalysis Analysis Contract v2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "analysis_kind",
+    "mode",
+    "repo",
+    "confidence",
+    "executive_decision",
+    "functional_view",
+    "technical_view",
+    "code_quality_security",
+    "process_analysis",
+    "refactoring",
+    "report_sections",
+    "open_questions",
+    "evidence_index"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0" },
+    "analysis_kind": { "const": "cognianalysis_decision_document" },
+    "mode": { "enum": ["brief", "blueprint", "deep", "complete-audit"] },
+    "repo": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "scope_summary", "analyzed_at"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string" },
+        "scope_summary": { "type": "string", "minLength": 1 },
+        "analyzed_at": { "type": "string", "minLength": 1 }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["overall", "reason", "limitations"],
+      "properties": {
+        "overall": { "enum": ["high", "medium", "low"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "limitations": { "type": "array" }
+      }
+    },
+    "executive_decision": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["summary", "recommended_action", "decision_options", "top_risks", "next_steps", "evidence"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "recommended_action": { "type": "string", "minLength": 1 },
+        "decision_options": { "type": "array" },
+        "top_risks": { "type": "array" },
+        "next_steps": { "type": "array" },
+        "evidence": { "$ref": "#/$defs/evidence_array" }
+      }
+    },
+    "functional_view": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["system_purpose", "actors", "capabilities", "user_or_system_flows"],
+      "properties": {
+        "system_purpose": { "type": "string" },
+        "actors": { "type": "array" },
+        "capabilities": { "type": "array" },
+        "user_or_system_flows": { "type": "array" }
+      }
+    },
+    "technical_view": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["architecture_summary", "entrypoints", "apis_and_interfaces", "data_and_state", "integrations", "deployment_runtime", "evidence"],
+      "properties": {
+        "architecture_summary": { "type": "string" },
+        "entrypoints": { "type": "array" },
+        "apis_and_interfaces": { "type": "array" },
+        "data_and_state": { "type": "array" },
+        "integrations": { "type": "array" },
+        "deployment_runtime": { "type": "array" },
+        "evidence": { "$ref": "#/$defs/evidence_array" }
+      }
+    },
+    "code_quality_security": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["bugs", "vulnerabilities", "code_quality_findings", "scanner_findings_imported"],
+      "properties": {
+        "bugs": { "type": "array" },
+        "vulnerabilities": { "type": "array" },
+        "code_quality_findings": { "type": "array" },
+        "scanner_findings_imported": { "type": "array" }
+      }
+    },
+    "process_analysis": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["test_readiness", "delivery_risks", "observability", "documentation_gaps", "process_improvements"],
+      "properties": {
+        "test_readiness": { "type": "string" },
+        "delivery_risks": { "type": "array" },
+        "observability": { "type": "array" },
+        "documentation_gaps": { "type": "array" },
+        "process_improvements": { "type": "array" }
+      }
+    },
+    "refactoring": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["target_architecture_options", "migration_roadmap", "tech_stack_options", "quick_wins"],
+      "properties": {
+        "target_architecture_options": { "type": "array" },
+        "migration_roadmap": { "type": "array" },
+        "tech_stack_options": { "type": "array" },
+        "quick_wins": { "type": "array" }
+      }
+    },
+    "report_sections": { "type": "array" },
+    "open_questions": { "type": "array" },
+    "evidence_index": { "$ref": "#/$defs/evidence_array" },
+    "report_quality_review": { "type": "object" }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "symbol": { "type": "string" },
+        "snippet": { "type": "string" },
+        "claim_id": { "type": "string" }
+      }
+    },
+    "evidence_array": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence" }
+    }
+  }
+}

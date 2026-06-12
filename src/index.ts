@@ -6,3 +6,12 @@ export { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTier
 export { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
 export { TARGET_CAPABILITIES, computeTargetCoverage } from './targetCoverage';
 export { computeProductReadiness, productReadinessBrief } from './productReadiness';
+export { loadAnalysisDocument, validateAnalysisV2, analysisV2ToLegacyAnalysisDocument, analysisV2ToReportSections } from './contracts/analysisV2';
+export { buildInventory } from './inventory';
+export { writeWorkpacks } from './workpacks';
+export { validateEvidenceReference, validateEvidenceTree, collectMajorClaims } from './evidence';
+export { loadShards } from './shards';
+export { buildSynthesisInput } from './synthesisInputs';
+export { normalizeScannerImports } from './scannerImports';
+export { detectLegacyWorkspace } from './legacy';
+export { migrateV07ToV08 } from './migration/v07ToV08';

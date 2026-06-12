@@ -1,5 +1,10 @@
 .cognibrain
 .agents/
 .memory-harness.json
+/.analysis/
 .verify-tmp-*/
+dist/
 examples/demo-repo/.analysis/
+!examples/demo-repo/.analysis/
+examples/demo-repo/.analysis/*
+!examples/demo-repo/.analysis/analysis.json

@@ -1,0 +1,105 @@
+{
+  "schema_version": "2.0",
+  "analysis_kind": "cognianalysis_decision_document",
+  "mode": "blueprint",
+  "repo": {
+    "name": "demo-repo",
+    "commit": "",
+    "scope_summary": "Representative blueprint analysis for the demo repository.",
+    "analyzed_at": "2026-06-12T00:00:00Z"
+  },
+  "confidence": {
+    "overall": "medium",
+    "reason": "Minimal contract example with one evidence-backed executive claim.",
+    "limitations": [
+      {
+        "title": "Minimal example",
+        "summary": "This file demonstrates shape, not full repository completeness."
+      }
+    ]
+  },
+  "executive_decision": {
+    "summary": "Use Cognianalysis as a thin harness protocol and keep semantic interpretation in the active LLM harness.",
+    "recommended_action": "Proceed with blueprint analysis before complete-audit depth.",
+    "decision_options": [
+      {
+        "title": "Blueprint first",
+        "summary": "Generate a decision report from LLM-authored analysis.json before deeper audit.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1,
+            "claim_id": "decision-blueprint-first"
+          }
+        ]
+      }
+    ],
+    "top_risks": [],
+    "next_steps": [
+      {
+        "title": "Run product loop",
+        "summary": "Run analyze, status, open and eval after the LLM writes analysis.json."
+      }
+    ],
+    "evidence": [
+      {
+        "path": "README.md",
+        "line": 1,
+        "claim_id": "executive-summary"
+      }
+    ]
+  },
+  "functional_view": {
+    "system_purpose": "Minimal example for the v2 analysis contract.",
+    "actors": [],
+    "capabilities": [],
+    "user_or_system_flows": []
+  },
+  "technical_view": {
+    "architecture_summary": "The example is a static JSON contract.",
+    "entrypoints": [],
+    "apis_and_interfaces": [],
+    "data_and_state": [],
+    "integrations": [],
+    "deployment_runtime": [],
+    "evidence": []
+  },
+  "code_quality_security": {
+    "bugs": [],
+    "vulnerabilities": [],
+    "code_quality_findings": [],
+    "scanner_findings_imported": []
+  },
+  "process_analysis": {
+    "test_readiness": "Use this file with schema and renderer smoke tests.",
+    "delivery_risks": [],
+    "observability": [],
+    "documentation_gaps": [],
+    "process_improvements": []
+  },
+  "refactoring": {
+    "target_architecture_options": [],
+    "migration_roadmap": [],
+    "tech_stack_options": [],
+    "quick_wins": []
+  },
+  "report_sections": [],
+  "open_questions": [],
+  "evidence_index": [
+    {
+      "path": "README.md",
+      "line": 1,
+      "claim_id": "executive-summary"
+    }
+  ],
+  "report_quality_review": {
+    "verdict": "partial",
+    "rationale": "Minimal example is not a complete report.",
+    "strengths": ["Valid contract shape."],
+    "limitations": ["Not a real analysis."],
+    "blocking_gaps": [],
+    "recommended_followups": [],
+    "confidence": "medium",
+    "evidence": []
+  }
+}

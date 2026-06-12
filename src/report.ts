@@ -128,6 +128,15 @@ function evidenceOf(item: any): any[] {
   return [];
 }
 
+function evidenceGapOf(item: any): string {
+  return firstText(item?.evidence_gap, item?.missing_evidence, item?.proof_gap);
+}
+
+function evidenceGapHtml(item: any): string {
+  const gap = evidenceGapOf(item);
+  return gap ? `<div class="evidence-gap"><strong>Evidence gap</strong><p>${escapeHtml(gap)}</p></div>` : '';
+}
+
 function statementHasDisplayContent(x: any): boolean {
   return [
     x?.title,
@@ -152,7 +161,7 @@ function statementList(items: any[]): string {
   return listItems(displayItems, (x: any) => {
     const title = firstText(x.title, x.name, x.criterion, x.verdict, x.id) || 'Statement';
     const text = firstText(x.description, x.summary, x.rationale, x.recommendation, x.gap, x.reason);
-    return `<div class="statement"><strong>${escapeHtml(title)}</strong>${x.confidence ? ` ${confidenceChip(x.confidence)}` : ''}${x.severity ? ` ${riskChip(x.severity)}` : ''}${x.owner ? ` ${chip(x.owner)}` : ''}${text ? `<p>${escapeHtml(text)}</p>` : ''}${evidenceHtml(evidenceOf(x))}</div>`;
+    return `<div class="statement"><strong>${escapeHtml(title)}</strong>${x.confidence ? ` ${confidenceChip(x.confidence)}` : ''}${x.severity ? ` ${riskChip(x.severity)}` : ''}${x.owner ? ` ${chip(x.owner)}` : ''}${text ? `<p>${escapeHtml(text)}</p>` : ''}${evidenceGapHtml(x)}${evidenceHtml(evidenceOf(x))}</div>`;
   });
 }
 
@@ -310,8 +319,55 @@ function renderOpenQuestions(block: any): string {
     owner: q.owner || q.impact,
     severity: q.blocking ? 'blocking' : q.priority,
     confidence: q.status,
-    evidence: q.evidence
+    evidence: q.evidence,
+    evidence_gap: q.evidence_gap || q.missing_evidence || q.proof_gap
   }))) + evidenceHtml(evidenceOf(block));
+}
+
+function renderEvidenceIndex(block: any): string {
+  const items = Array.isArray(block.items) ? block.items : [];
+  if (!items.length) return evidenceHtml(evidenceOf(block));
+  const rows = items.slice(0, 200).map((ev: any) => {
+    const ok = ev && ev.valid !== false;
+    return `<div class="evidence-row ${ok ? 'ok' : 'bad'}">
+      <div class="path">${escapeHtml(evidenceLabel(ev))}</div>
+      ${ev?.claim_id ? `<div class="small muted">Claim: ${escapeHtml(ev.claim_id)}</div>` : ''}
+      ${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}
+      ${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}
+      ${ev?.snippet ? `<pre>${escapeHtml(ev.snippet)}</pre>` : ''}
+    </div>`;
+  }).join('');
+  const more = items.length > 200 ? `<p class="small muted">+${items.length - 200} additional evidence references</p>` : '';
+  return `<div class="evidence-list">${rows}${more}</div>${evidenceHtml(evidenceOf(block))}`;
+}
+
+function reportQualityBlock(review: any): string {
+  if (!review || typeof review !== 'object') return '';
+  return renderDocBlock({
+    type: 'statement_list',
+    title: 'Report Quality Self-Review',
+    items: [
+      {
+        title: review.verdict || 'Report quality review',
+        summary: review.rationale || '',
+        confidence: review.confidence,
+        evidence: evidenceOf(review)
+      },
+      ...(Array.isArray(review.blocking_gaps) ? review.blocking_gaps.map((gap: any, index: number) => ({
+        title: gap.title || gap.id || `Blocking gap ${index + 1}`,
+        summary: gap.summary || gap.description || gap.reason || String(gap || ''),
+        severity: 'blocking',
+        evidence: evidenceOf(gap),
+        evidence_gap: evidenceGapOf(gap)
+      })) : []),
+      ...(Array.isArray(review.limitations) ? review.limitations.map((item: any, index: number) => ({
+        title: item.title || item.id || `Limitation ${index + 1}`,
+        summary: item.summary || item.description || item.reason || String(item || ''),
+        evidence: evidenceOf(item),
+        evidence_gap: evidenceGapOf(item)
+      })) : [])
+    ]
+  });
 }
 
 function renderDocBlock(block: any): string {
@@ -328,6 +384,7 @@ function renderDocBlock(block: any): string {
     case 'agent_plan': body = renderAgentPlan(block); break;
     case 'technical_drilldown': body = renderTechnicalDrilldown(block); break;
     case 'open_questions': body = renderOpenQuestions(block); break;
+    case 'evidence_index': body = renderEvidenceIndex(block); break;
     case 'statement_list': body = statementList(block.items || []) + evidenceHtml(evidenceOf(block)); break;
     case 'narrative':
     default: body = paragraphs(block.text || block.paragraphs || block.summary || block.description || block.business_need || block.business_use || block.technical_drilldown) + evidenceHtml(evidenceOf(block)); break;
@@ -354,6 +411,8 @@ function analysisDocumentSections(bundle: any): [string, string, string][] {
     </article>`;
     sections.push([id, label, body]);
   }
+  const evidenceAudit = evidenceAuditSection(bundle);
+  if (evidenceAudit) sections.push(evidenceAudit);
   return sections;
 }
 
@@ -362,8 +421,7 @@ function pendingAnalysisDocumentSections(bundle: any): [string, string, string][
   const body = `<article class="analysis-doc-lead card accent search-card" data-search="awaiting llm authored analysis document report incomplete">
     <p class="eyebrow">LLM-authored analysis document required</p>
     <h2>Report pending · ${escapeHtml(bundle.profile?.repo_name || 'Repository')}</h2>
-    <p>This is not a completed analysis report. The CLI has prepared deterministic context and audit data, but the human-facing report is intentionally withheld until an LLM-authored <code>analysis_document.sections</code> output exists.</p>
-    <p>The next step is to author <code>.analysis/llm_tasks/00-analysis-strategy.md</code>, complete every <code>.analysis/source_tier_tasks/*.md</code> Tier 1 file-card task, run <code>cognianalysis dev finalize . --allow-partial</code> to materialize strategy-planned skill workbenches, execute those reviews, optionally use <code>.analysis/capability_templates/*.md</code> only when the LLM strategy calls for them, then continue through detail planning and the final LLM-authored analysis document.</p>
+    <p>The CLI has prepared deterministic inventory and harness workpacks. Open <code>.analysis/TASK.md</code> in your agent harness, then rerun <code>cognianalysis analyze .</code> after the agent writes <code>.analysis/analysis.json</code>.</p>
     <div class="metrics compact">
       ${metric('Report mode', bundle.report_mode?.state || 'awaiting_llm_authored_report')}
       ${metric('Generated tasks', tasks.length)}
@@ -371,11 +429,45 @@ function pendingAnalysisDocumentSections(bundle: any): [string, string, string][
     </div>
   </article>
   <article class="analysis-doc-section">
-    <p class="doc-section-kicker">prepared audit inputs</p>
-    <p class="section-intent">These deterministic artifacts are available to the agent harness, but they are not a replacement for the final LLM-authored document.</p>
+    <p class="doc-section-kicker">prepared harness inputs</p>
+    <p class="section-intent">These deterministic artifacts are navigation aids only. They are not semantic findings.</p>
     ${card('Next LLM Tasks', sectionTasks(bundle), 'prose-card')}
   </article>`;
   return [['analysis-document-pending', 'Analysis Document Pending', body]];
+}
+
+function evidenceAuditSection(bundle: any): [string, string, string] | null {
+  const validation = bundle.analysis_evidence_validation || {};
+  const invalidEvidence = Array.isArray(validation.invalid_evidence) ? validation.invalid_evidence : [];
+  const unsupported = Array.isArray(validation.unsupported_claims) ? validation.unsupported_claims : [];
+  const allEvidence = Array.isArray(validation.evidence) && validation.evidence.length ? validation.evidence : (bundle.analysis?.evidence_index || []);
+  const openQuestions = Array.isArray(bundle.analysis?.open_questions) ? bundle.analysis.open_questions : (bundle.analysis_document?.open_questions || []);
+  const reportQuality = bundle.analysis?.report_quality_review || bundle.analysis_document?.report_quality_review;
+  const blockingQuestions = openQuestions.filter((q: any) => q?.blocking === true);
+  if (!invalidEvidence.length && !unsupported.length && !allEvidence.length && !openQuestions.length && !reportQuality) return null;
+  const blocks = [
+    blockingQuestions.length ? renderDocBlock({ type: 'open_questions', title: 'Blocking Open Questions', items: blockingQuestions }) : '',
+    unsupported.length ? renderDocBlock({
+      type: 'statement_list',
+      title: 'Unsupported Major Claims',
+      items: unsupported.map((claim: any) => ({
+        title: claim.title || claim.id || 'Unsupported claim',
+        summary: claim.summary || claim.category || '',
+        severity: 'unsupported',
+        evidence_gap: claim.evidence_gap || 'Major claim needs file:line evidence, explicit evidence_gap or open-question treatment.'
+      }))
+    }) : '',
+    invalidEvidence.length ? renderDocBlock({ type: 'evidence_index', title: 'Invalid Evidence References', items: invalidEvidence }) : '',
+    allEvidence.length ? renderDocBlock({ type: 'evidence_index', title: 'Global Evidence Index', items: allEvidence }) : '',
+    openQuestions.length ? renderDocBlock({ type: 'open_questions', title: 'Open Questions', items: openQuestions }) : '',
+    reportQualityBlock(reportQuality)
+  ].filter(Boolean).join('');
+  const body = `<article class="analysis-doc-section">
+    <p class="doc-section-kicker">evidence integrity</p>
+    <p class="section-intent">This section is rendered from authored evidence references and deterministic path:line validation. It does not replace semantic judgement.</p>
+    ${blocks}
+  </article>`;
+  return ['evidence-audit', 'Evidence & Open Questions', body];
 }
 
 export function buildHtml(bundle: any, title: string): string {
@@ -425,7 +517,7 @@ export function buildHtml(bundle: any, title: string): string {
 const CSS = `
 :root{--bg:#f4f7fb;--panel:#ffffff;--panel2:#f8fbff;--text:#142033;--muted:#64748b;--line:#dbe5f2;--accent:#3157ff;--accent2:#eaf0ff;--good:#087443;--bad:#b42318;--warn:#a15c07;--shadow:0 18px 42px rgba(35,54,86,.10)}
 .dark{--bg:#07111f;--panel:#0d1b2d;--panel2:#0a1626;--text:#eaf1ff;--muted:#9fb0c7;--line:#203249;--accent:#91a7ff;--accent2:#152544;--good:#55d296;--bad:#ff8b7f;--warn:#ffc46b;--shadow:none}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}.evidence-quick>span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.evidence-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--accent2);color:var(--accent);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:800}.evidence-link:hover{filter:brightness(.96)}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2);scroll-margin-top:22px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.evidence-item.evidence-highlight{box-shadow:0 0 0 3px var(--accent2)}.evidence-item:target{box-shadow:0 0 0 3px var(--accent2)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence-gap{border:1px dashed var(--warn);border-radius:14px;background:var(--panel2);padding:10px;margin:10px 0}.evidence-gap strong{color:var(--warn)}.evidence-gap p{margin:4px 0 0}.evidence-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}.evidence-quick>span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.evidence-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--accent2);color:var(--accent);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:800}.evidence-link:hover{filter:brightness(.96)}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2);scroll-margin-top:22px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.evidence-item.evidence-highlight{box-shadow:0 0 0 3px var(--accent2)}.evidence-item:target{box-shadow:0 0 0 3px var(--accent2)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
 `;
 
 const JS = `

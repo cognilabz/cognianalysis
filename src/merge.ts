@@ -1,0 +1,1 @@
+export { buildSynthesisInput } from './synthesisInputs';

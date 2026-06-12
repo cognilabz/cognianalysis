@@ -2555,8 +2555,8 @@
     "executor": "codex-in-session",
     "task_id": "source-tier-0001",
     "artifact_path": "source_tiers/source-tier-0001.json",
-    "task_context_hash": "d62ba25069cf1d22ee57",
-    "task_file_sha1": "d1b4d25d881c259995bb",
+    "task_context_hash": "3f000bd4d12b4b4963c3",
+    "task_file_sha1": "6c718fda291b466df45d",
     "review_hash": "e7def45540ae9352d198",
     "source_paths": [
       ".github/workflows/verify.yml",

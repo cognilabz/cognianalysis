@@ -1,10 +1,31 @@
 # Cognianalysis
 
-An agent-harness-compatible, **LLM-first source-code analysis library** for source-code repositories.
+An agent-harness-compatible, **LLM-first skill/report protocol** for source-code repositories.
 
-This package is **not a coding agent** and **not a proprietary scanner**. Codex, Claude Code, Cursor, Windsurf/Devin Desktop, GitHub Copilot, Aider or another existing agent harness performs the semantic extraction. The TypeScript/Node CLI prepares repository context, creates evidence-friendly task files, validates file:line references, writes artifact/provenance matrices and renders an interactive static HTML report.
+This package is **not a coding agent**, **not a proprietary scanner** and **not a deterministic semantic analyzer**. Codex, Claude Code, Cursor, Windsurf/Devin Desktop, GitHub Copilot, Aider or another existing agent harness performs the semantic extraction. The TypeScript/Node CLI prepares repository context, creates evidence-friendly task files, validates file:line references, handles deterministic bookkeeping and renders an interactive static HTML report.
 
-## What changed in v0.7
+## v0.8 Product Boundary
+
+Cognianalysis v0.8 is optimized around a thin harness boundary:
+
+- deterministic code prepares, validates and renders
+- the active agent harness / LLM understands, evaluates and authors
+- inventory and workpacks are navigation aids, not semantic truth
+- every major report claim needs file:line evidence or an explicit evidence gap
+- complete-audit depth is optional, not the default product path
+
+The normal product surface is intentionally small:
+
+```bash
+cognianalysis analyze . --goal "Create a decision document for this repository."
+cognianalysis status .
+cognianalysis open .
+cognianalysis eval .
+```
+
+See [ADR-0001](docs/adr/0001-llm-semantic-authority.md), [ADR-0002](docs/adr/0002-thin-harness-product-boundary.md), [v0.8 Thin Harness](docs/product/v08-thin-harness.md) and [Modes](docs/product/modes.md) for the product decision.
+
+## Current v0.7 Compatibility
 
 The normal flow no longer requires users to run `cognianalysis aggregate`, `cognianalysis coverage`, `cognianalysis render`, `cognianalysis validate` or the staged Tier/debug commands manually. Those commands still exist for debugging and CI under `cognianalysis dev ...`, but the intended product-mode entrypoint is now:
 
@@ -15,7 +36,7 @@ cognianalysis open .
 cognianalysis eval .
 ```
 
-`analyze` prepares the workspace when needed, records the product request in `.analysis/data/product-analysis-request.json`, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. It accepts `--mode brief|blueprint|deep-dive|complete` so the default can stay decision-oriented while deeper source review or audit-heavy whole-repo coverage happens only when the request calls for it. `dev finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
+`analyze` prepares the workspace when needed, records the product request in `.analysis/data/product-analysis-request.json`, points the agent harness at the single `.analysis/TASK.md` guide while required LLM artifacts are missing, and finalizes the report when `.analysis/llm/*.json` is ready. Current v0.7 modes are `--mode brief|blueprint|deep-dive|complete`; the v0.8 mode names are `brief|blueprint|deep|complete-audit`, with `deep-dive` and `complete` retained as compatibility aliases during migration. `dev finalize` remains the explicit CI/debug command for aggregation, validation and rendering after the agent harness has written the LLM artifacts.
 
 `analyze` and `dev prepare` also accept deliberate scope modes: `--scope complete`, `--scope critical-path` or `--scope representative`, with `--scope-files N` for the non-complete modes. The scope decision is persisted to `.analysis/data/analysis-scope.json`. `complete` is the whole included source inventory; non-complete modes are intentionally decision-limited and require the final report to disclose the selected/deferred file counts and confidence impact.
 
@@ -45,13 +66,13 @@ src/                         TypeScript source
   report.ts                  interactive static HTML renderer
   mcp.ts                     optional stdio-style tool bridge
 
-dist/                        compiled JavaScript used by the cognianalysis binary
+dist/                        generated JavaScript used by the cognianalysis binary
 resources/                   source templates for AGENTS.md and .agents/skills assets
 schemas/                     JSON schema/example assets
 examples/demo-repo           runnable demo repository
 ```
 
-The runtime uses Node built-ins only. TypeScript is only required when rebuilding from source.
+The runtime uses Node built-ins only. `dist/` is generated from `src/` during the npm prepare/build flow and is not committed to Git.
 
 ## Harness And Skill Layout
 
@@ -141,9 +162,11 @@ All generated tasks, skill instructions, JSON field descriptions and report UI l
 
 ## Installation
 
-Use the included compiled JavaScript directly:
+Build the local runtime, then use the generated JavaScript directly:
 
 ```bash
+npm install
+npm run build
 node dist/cli.js --help
 ```
 
@@ -154,10 +177,9 @@ npm install -g .
 cognianalysis --help
 ```
 
-To rebuild from TypeScript source:
+To rebuild after source changes:
 
 ```bash
-npm install
 npm run build
 ```
 
@@ -405,8 +427,8 @@ cognianalysis analyze .       # product-mode loop: prepare, show missing LLM art
 cognianalysis analyze . --goal "Assess whether this service should be rebuilt."
 cognianalysis analyze . --mode brief
 cognianalysis analyze . --mode blueprint --goal "Plan a Spring Boot 3 + React migration."
-cognianalysis analyze . --mode deep-dive --goal "Inspect the billing flow before rebuild."
-cognianalysis analyze . --mode complete --scope complete
+cognianalysis analyze . --mode deep --goal "Inspect the billing flow before rebuild."          # v0.8 target; deep-dive is the compatibility alias
+cognianalysis analyze . --mode complete-audit --scope complete                                  # v0.8 target; complete is the compatibility alias
 cognianalysis analyze . --scope complete
 cognianalysis analyze . --scope critical-path --scope-files 1200
 cognianalysis analyze . --scope representative --scope-files 400

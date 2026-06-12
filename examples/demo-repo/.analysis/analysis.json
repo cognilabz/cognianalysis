@@ -1,0 +1,308 @@
+{
+  "schema_version": "2.0",
+  "analysis_kind": "cognianalysis_decision_document",
+  "mode": "blueprint",
+  "repo": {
+    "name": "demo-repo",
+    "commit": "",
+    "scope_summary": "Demo blueprint analysis covering the compact customer onboarding service.",
+    "analyzed_at": "2026-06-12T00:00:00Z"
+  },
+  "confidence": {
+    "overall": "medium",
+    "reason": "The demo repository is compact and contains explicit controller, service, contract and documentation evidence.",
+    "limitations": [
+      {
+        "title": "Demo depth",
+        "summary": "This v2 example is intentionally concise and does not replace a full complete-audit run."
+      }
+    ]
+  },
+  "executive_decision": {
+    "summary": "The repository is a compact customer onboarding service with enough explicit source and documentation evidence to produce a blueprint decision report.",
+    "recommended_action": "Use blueprint mode for the default decision report and reserve complete-audit for exhaustive file-card coverage.",
+    "decision_options": [
+      {
+        "title": "Blueprint analysis",
+        "summary": "Start with the v2 analysis document because the repository already exposes REST endpoints and service flow evidence.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "claim_id": "decision-blueprint-controller"
+          }
+        ]
+      }
+    ],
+    "top_risks": [
+      {
+        "title": "External KYC dependency",
+        "summary": "Identity verification is delegated to a KYC client, so modernization decisions need integration detail.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 27,
+            "claim_id": "risk-kyc-dependency"
+          }
+        ]
+      }
+    ],
+    "next_steps": [
+      {
+        "title": "Inspect integration contracts",
+        "summary": "Review OpenAPI and WSDL files before making interface migration decisions."
+      }
+    ],
+    "evidence": [
+      {
+        "path": "README.md",
+        "line": 3,
+        "claim_id": "executive-demo-purpose"
+      }
+    ]
+  },
+  "functional_view": {
+    "system_purpose": "Customer onboarding accepts customer requests, checks identity and risk, persists customer state and publishes onboarding events.",
+    "actors": [
+      {
+        "title": "Customer onboarding API caller",
+        "summary": "Calls the REST controller to start onboarding and check customer status.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "claim_id": "actor-api-caller"
+          }
+        ]
+      }
+    ],
+    "capabilities": [
+      {
+        "title": "Start onboarding",
+        "summary": "The service starts onboarding from a request and returns a result containing status, risk score and KYC reference.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 23,
+            "claim_id": "capability-start-onboarding"
+          }
+        ]
+      }
+    ],
+    "user_or_system_flows": [
+      {
+        "name": "Start onboarding",
+        "summary": "REST request enters the controller, delegates to the service, runs duplicate, KYC and risk checks, persists the customer and publishes an event.",
+        "steps": [
+          {
+            "order": 1,
+            "actor": "API caller",
+            "description": "POST /customers/onboard submits an onboarding request.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+                "line": 21,
+                "claim_id": "flow-post-onboard"
+              }
+            ]
+          },
+          {
+            "order": 2,
+            "actor": "OnboardingService",
+            "description": "The service checks duplicates, verifies identity, scores risk, saves state and publishes the onboarding event.",
+            "evidence": [
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 24,
+                "claim_id": "flow-service-logic"
+              },
+              {
+                "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+                "line": 36,
+                "claim_id": "flow-event-publish"
+              }
+            ]
+          }
+        ],
+        "mermaid": {
+          "diagram_type": "sequenceDiagram",
+          "source": "sequenceDiagram\n  participant Caller\n  participant Controller\n  participant Service\n  participant KYC\n  Caller->>Controller: POST /customers/onboard\n  Controller->>Service: startOnboarding(request)\n  Service->>KYC: verifyIdentity(...)\n  Service-->>Controller: OnboardingResult\n  Controller-->>Caller: 202 Accepted"
+        },
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 23,
+            "claim_id": "flow-controller-delegation"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_view": {
+    "architecture_summary": "A REST controller delegates onboarding work to an application service that coordinates repository, KYC, risk scoring and event publisher collaborators.",
+    "entrypoints": [
+      {
+        "title": "POST /customers/onboard",
+        "summary": "Starts onboarding and returns an accepted onboarding response.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 21,
+            "claim_id": "entrypoint-onboard"
+          }
+        ]
+      },
+      {
+        "title": "GET /customers/{customerId}/status",
+        "summary": "Returns customer onboarding status.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 27,
+            "claim_id": "entrypoint-status"
+          }
+        ]
+      }
+    ],
+    "apis_and_interfaces": [],
+    "data_and_state": [
+      {
+        "title": "Manual review or activation state",
+        "summary": "KYC approval and risk score decide whether a pending customer moves to manual review or active.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30,
+            "claim_id": "state-manual-review"
+          }
+        ]
+      }
+    ],
+    "integrations": [
+      {
+        "title": "KYC client",
+        "summary": "The service calls a KYC client to verify identity.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 27,
+            "claim_id": "integration-kyc"
+          }
+        ]
+      }
+    ],
+    "deployment_runtime": [],
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 14,
+        "claim_id": "technical-collaborators"
+      }
+    ]
+  },
+  "code_quality_security": {
+    "bugs": [],
+    "vulnerabilities": [],
+    "code_quality_findings": [
+      {
+        "title": "Integration behavior needs focused tests",
+        "summary": "The service has branch behavior around KYC approval and risk score; complete evaluation should inspect tests for those paths.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30,
+            "claim_id": "quality-branch-tests"
+          }
+        ]
+      }
+    ],
+    "scanner_findings_imported": []
+  },
+  "process_analysis": {
+    "test_readiness": "Blueprint evidence is sufficient to identify service branches that should be covered by tests.",
+    "delivery_risks": [
+      {
+        "title": "Contract and dependency review",
+        "summary": "REST and external identity verification contracts should be reviewed before migration planning."
+      }
+    ],
+    "observability": [],
+    "documentation_gaps": [],
+    "process_improvements": []
+  },
+  "refactoring": {
+    "target_architecture_options": [
+      {
+        "title": "Keep controller-service separation",
+        "summary": "The existing controller delegates to service logic cleanly enough to preserve the boundary in a modernization."
+      }
+    ],
+    "migration_roadmap": [
+      {
+        "title": "Contract inventory",
+        "phase": "1",
+        "benefit": "Confirms REST and KYC/SOAP contract behavior before implementation changes."
+      }
+    ],
+    "tech_stack_options": [],
+    "quick_wins": [
+      {
+        "title": "Document risk thresholds",
+        "phase": "quick win",
+        "benefit": "The risk threshold at score > 70 is a business rule that should be visible in docs and tests.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 30,
+            "claim_id": "quick-win-risk-threshold"
+          }
+        ]
+      }
+    ]
+  },
+  "report_sections": [],
+  "open_questions": [
+    {
+      "id": "oq-scanner-results",
+      "question": "Are there external scanner findings to import for this repository?",
+      "reason": "The v2 demo analysis does not include scanner import artifacts.",
+      "impact": "Quality/security prioritization remains limited to source evidence.",
+      "blocking": false,
+      "evidence_gap": "No .analysis/imports scanner files were reviewed for this minimal v2 example."
+    }
+  ],
+  "evidence_index": [
+    {
+      "path": "README.md",
+      "line": 3,
+      "claim_id": "executive-demo-purpose"
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+      "line": 21,
+      "claim_id": "entrypoint-onboard"
+    },
+    {
+      "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+      "line": 30,
+      "claim_id": "state-manual-review"
+    }
+  ],
+  "report_quality_review": {
+    "verdict": "partial",
+    "rationale": "This is a concise v2 demo report, not a complete audit.",
+    "strengths": ["Covers executive, functional, technical, quality, process and refactoring views."],
+    "limitations": ["Scanner imports and exhaustive source-tier coverage are not included in this v2 demo."],
+    "blocking_gaps": [],
+    "recommended_followups": ["Run complete-audit if exhaustive file-card coverage is required."],
+    "confidence": "medium",
+    "evidence": [
+      {
+        "path": "README.md",
+        "line": 3,
+        "claim_id": "quality-review-demo-scope"
+      }
+    ]
+  }
+}

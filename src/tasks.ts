@@ -145,10 +145,10 @@ function singleTaskGuide(profile: any, tierManifest: any, taskDefs: any[], templ
   const completeMode = productMode === 'complete' && scopeMode === 'complete';
   const sourceTierStep = completeMode
     ? 'Execute every `.analysis/source_tier_tasks/*.md` task and write Tier 1 file cards to `.analysis/source_tiers/*.json` before final readiness.'
-    : 'Execute selected/adaptive `.analysis/source_tier_tasks/*.md` workpacks as needed for the Codex-authored strategy and report scope. Do not expand to whole-repository Tier 1 unless the run is `--mode complete --scope complete`; disclose deferred files, confidence impact and follow-up deep dives in the final report.';
+    : 'Execute selected/adaptive `.analysis/source_tier_tasks/*.md` workpacks as needed for the Codex-authored strategy and report scope. Do not expand to whole-repository Tier 1 unless the run is `--mode complete-audit --scope complete`; disclose deferred files, confidence impact and follow-up deep reviews in the final report.';
   const sourceTierReadiness = completeMode
     ? 'Every included file needs a Tier 1 Codex-authored LLM card before a final report can claim whole-codebase readiness. Deferred files are visible follow-up, not completed analysis.'
-    : 'Adaptive modes do not claim whole-codebase Tier 1 readiness. The final report must visibly state selected scope, deferred-file count, confidence impact and any open questions or deep-dive backlog before claiming decision readiness.';
+    : 'Adaptive modes do not claim whole-codebase Tier 1 readiness. The final report must visibly state selected scope, deferred-file count, confidence impact and any open questions or deep backlog before claiming decision readiness.';
   return `# Cognianalysis Task
 
 This is the single human-facing workpack for this repository. The detailed task files remain available for harnesses, batching and CI, but this file is the path a user should read first.
@@ -193,7 +193,7 @@ ${taskDefs.map(task => `- \`${task.expected_output}\` from \`${task.task_file}\`
 
 ${sourceTierReadiness}
 
-Product mode: \`${productMode}\`. Analysis scope mode: \`${scopeMode}\`. If this is not \`--mode complete --scope complete\`, the final report must visibly state the scope, deferred-file count and confidence impact.
+Product mode: \`${productMode}\`. Analysis scope mode: \`${scopeMode}\`. If this is not \`--mode complete-audit --scope complete\`, the final report must visibly state the scope, deferred-file count and confidence impact.
 
 ## Optional Capability Templates
 
@@ -668,7 +668,7 @@ General rules:
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
 - When using navigation partitions, Codex must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
-- Preserve the product analysis request. The selected \`mode\`, \`goal\`, \`target\` and \`depth_policy\` from \`.analysis/data/product-analysis-request.json\` must shape the strategy, detail-agent plan and final report. If \`mode\` is \`brief\`, default to a concise decision report with a visible deep-dive backlog. If \`mode\` is \`blueprint\`, include modernization/rebuild planning. If \`mode\` is \`deep-dive\`, keep the review focused on the requested target or goal while still disclosing whole-repository context and boundaries.
+- Preserve the product analysis request. The selected \`mode\`, \`goal\`, \`target\` and \`depth_policy\` from \`.analysis/data/product-analysis-request.json\` must shape the strategy, detail-agent plan and final report. If \`mode\` is \`brief\`, default to a concise decision report with a visible deep backlog. If \`mode\` is \`blueprint\`, include modernization/rebuild planning. If \`mode\` is \`deep\`, keep the review focused on the requested target or goal while still disclosing whole-repository context and boundaries. If a legacy request says \`deep-dive\`, treat it as \`deep\`.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
 	- Do not author final management summaries, E2E conclusions or visible report sections until the final analysis-document task. Use the earlier LLM-planned skill workbenches and generic capability contracts to build source-backed blocks, examples, flows, findings and the detail-agent plan.

@@ -69,7 +69,7 @@ export function computeFinalLlmReadiness(bundle: any): any {
     state: readinessGaps.length ? 'partial' : 'ready',
     semantic_verdict_authority: 'codex_llm',
     product_mode: String(bundle.product_analysis_request?.mode || 'brief').toLowerCase(),
-    complete_mode_requires_whole_repo_tier1: String(bundle.product_analysis_request?.mode || 'brief').toLowerCase() === 'complete',
+    complete_mode_requires_whole_repo_tier1: ['complete-audit', 'complete'].includes(String(bundle.product_analysis_request?.mode || 'brief').toLowerCase()),
     llm_execution_model: {
       executor: 'codex_in_session',
       execution_surface: 'current_codex_session',

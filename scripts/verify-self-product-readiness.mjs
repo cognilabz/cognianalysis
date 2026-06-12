@@ -46,6 +46,19 @@ function runNodeScript(scriptPath, options = {}) {
   return result;
 }
 
+function runNpm(args, options = {}) {
+  const result = spawnSync('npm', args, {
+    cwd: options.cwd || root,
+    encoding: 'utf8',
+    stdio: 'pipe',
+    env: { ...process.env, ...(options.env || {}) }
+  });
+  if (result.status !== 0) {
+    throw new Error(`Command failed with exit ${result.status}: npm ${args.join(' ')}\n${result.stdout || ''}\n${result.stderr || ''}`);
+  }
+  return result;
+}
+
 function copyCleanTree(src, dst) {
   const tracked = spawnSync('git', ['ls-files', '--cached', '-z'], {
     cwd: src,
@@ -152,7 +165,9 @@ assertNoMachinePaths('Baseline aggregate results', join(root, 'benchmarks', 'bas
 copyCleanTree(root, cleanRepo);
 rmSync(join(cleanRepo, '.analysis'), { recursive: true, force: true });
 const cleanCli = join(cleanRepo, 'dist', 'cli.js');
-assert(existsSync(cleanCli), 'Clean checkout must include its own built dist/cli.js runtime');
+assert(!existsSync(cleanCli), 'Clean source checkout must not include tracked dist/cli.js runtime');
+runNpm(['install', '--no-package-lock'], { cwd: cleanRepo });
+assert(existsSync(cleanCli), 'Clean source checkout must build dist/cli.js during npm install');
 const cleanEval = run(['eval', cleanRepo, '--strict'], { cliPath: cleanCli, expectFailure: true });
 const cleanEvalOutput = `${cleanEval.stdout || ''}\n${cleanEval.stderr || ''}`;
 assert(!cleanEvalOutput.includes('Verdict: PRODUCT_READY'), 'Clean checkout must not claim product readiness before analysis is prepared');
