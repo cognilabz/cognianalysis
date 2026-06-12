@@ -1,0 +1,203 @@
+{
+  "source_family_detail_review": {
+    "source_family": "core-harness-readiness",
+    "review_status": "complete",
+    "summary": "The core harness implements the public CLI loop, LLM artifact pipeline, final-readiness gate, original product readiness contract, report renderer and simplified artifact model.",
+    "business_view": {
+      "summary": "This family is the product center: it turns repository source into a governed decision document instead of a raw code map.",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 123
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 50,
+          "symbol": "aggregate"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        }
+      ]
+    },
+    "technical_view": {
+      "summary": "The implementation separates public commands, generated .analysis artifacts, Codex-authored semantic outputs and deterministic validators.",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 120
+        },
+        {
+          "path": "src/analysisPipeline.ts",
+          "line": 1,
+          "symbol": "analysisPipelineArtifact"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        }
+      ]
+    },
+    "findings": [
+      {
+        "title": "Readiness is explicitly contract based.",
+        "description": "Final readiness depends on strategy, report, source-tier coverage, workbenches, detail reviews, report lint, evidence lineage and goal trace alignment.",
+        "severity": "positive",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ]
+      },
+      {
+        "title": "The thin harness is implemented as an auditable product surface.",
+        "description": "The public surface is small while the deep flow remains under dev commands and .analysis artifacts.",
+        "severity": "positive",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 120
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 376,
+            "symbol": "computeSimplifiedHarnessContract"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 328,
+            "symbol": "computeProductArtifactModel"
+          }
+        ]
+      }
+    ],
+    "recommendations": [
+      {
+        "title": "Refresh generated self-analysis after source commits.",
+        "phase": "now",
+        "benefit": "Avoids stale product proof when product source changes.",
+        "effort": "S",
+        "risk": "low",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          }
+        ]
+      }
+    ],
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "src/cli.ts",
+        "line": 123
+      },
+      {
+        "path": "src/aggregate.ts",
+        "line": 50,
+        "symbol": "aggregate"
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "line": 173,
+        "symbol": "computeProductReadiness"
+      },
+      {
+        "path": "src/readiness.ts",
+        "line": 66,
+        "symbol": "computeFinalLlmReadiness"
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Detail review inspected direct source anchors plus completed Tier 1 and workbench outputs.",
+    "inspected_files": [
+      {
+        "path": "src/cli.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisPipeline.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/report.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

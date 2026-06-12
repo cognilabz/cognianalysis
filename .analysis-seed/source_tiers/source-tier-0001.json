@@ -1,0 +1,2551 @@
+{
+  "source_file_tier_review": {
+    "task_id": "source-tier-0001",
+    "tier_model_version": "source-tier-v1",
+    "review_status": "complete",
+    "summary": "Tier 1 file cards for 80 files in source-tier-0001.",
+    "files": [
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "verification gate included in complete analysis scope.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Autonomous external handoff benchmark proving the harness does not falsely mark unseeded analysis as complete.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-repos.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "verification gate included in complete analysis scope.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-repos.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Pinned external semantic benchmark verifier with package fixture assertions.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "verification gate included in complete analysis scope.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-llm-boundary.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "verification gate included in complete analysis scope.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-llm-boundary.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-self-product-readiness.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Clean-checkout self-product readiness verifier that rehydrates committed seed artifacts, regenerates orchestration/cache proof and requires strict PRODUCT_READY.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides durable proof that the pushed tree can reproduce product readiness without relying on local untracked .analysis output.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Exposed through the verify:self-product-readiness package script."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-self-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisGoal.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/analysisGoal.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisPipeline.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "LLM-first stage contract that separates deterministic context preparation from Codex-authored semantic analysis.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisSkills.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/analysisSkills.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/marketProof.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/marketProof.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/mcp.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/mcp.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Original product readiness contract that checks decision report coverage, examples, evidence, benchmarks, simplification and orchestration.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Final LLM readiness gate for required artifacts, report quality, lineage, source-tier coverage, skill workbenches and detail reviews.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/repoMap.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/repoMap.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/report.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Static HTML report renderer for the final structured decision document.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Stable report component library used by LLM-authored analysis_document.sections.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/skillWorkbenches.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Materializes repository-specific skill workbench tasks from the LLM analysis strategy.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/sourceTiers.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Source-tier workpack helper for whole-codebase Tier 1 file-card analysis.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/sourceTiers.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/targetCoverage.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/targetCoverage.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/toolPositioningReferences.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/toolPositioningReferences.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/types.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/types.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/utils.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/utils.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": ".github/workflows/verify.yml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "ci verification workflow included in complete analysis scope.",
+        "technical_role": "ci verification workflow",
+        "business_relevance": "Keeps verification runnable in CI for product confidence.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": ".github/workflows/verify.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/results.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/scanner_report.baseline.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/scanner_report.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/autonomous/manifest.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "External repository benchmark artifact for non-demo proof.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/external/autonomous/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/manifest.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "External repository benchmark artifact for non-demo proof.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/external/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/semantic/manifest.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "External repository benchmark artifact for non-demo proof.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/external/semantic/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/demo-repo.expected.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/demo-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/event-inventory-repo.expected.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/event-inventory-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/manifest.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/results.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/soap-claims-repo.expected.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Golden benchmark artifact for representative repository validation.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/soap-claims-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/openapi.yml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/openapi.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "package.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Package scripts and distribution manifest for CLI and verification commands.",
+        "technical_role": "configuration or contract",
+        "business_relevance": "Supports build, packaging, contracts or analysis execution.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "package.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "schemas/llm-output.schema.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "configuration or contract included in complete analysis scope.",
+        "technical_role": "configuration or contract",
+        "business_relevance": "Supports build, packaging, contracts or analysis execution.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Project agent contract that defines the Cognianalysis workflow and post-push review loop.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Product, benchmark, target-picture or roadmap documentation.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [
+          {
+            "target": "README.md",
+            "kind": "documents",
+            "description": "Supports product-level explanation and operating guidance."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/MARKET_HARDENING_ROADMAP.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Product, benchmark, target-picture or roadmap documentation.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [
+          {
+            "target": "README.md",
+            "kind": "documents",
+            "description": "Supports product-level explanation and operating guidance."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/MARKET_HARDENING_ROADMAP.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/TARGET_COVERAGE.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Product, benchmark, target-picture or roadmap documentation.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [
+          {
+            "target": "README.md",
+            "kind": "documents",
+            "description": "Supports product-level explanation and operating guidance."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/TARGET_COVERAGE.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/target-picture.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Product, benchmark, target-picture or roadmap documentation.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [
+          {
+            "target": "README.md",
+            "kind": "documents",
+            "description": "Supports product-level explanation and operating guidance."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "docs/target-picture.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/api-examples.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/api-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-examples.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-flows.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-flows.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Top-level product overview and user workflow documentation.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/AGENTS.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product documentation included in complete analysis scope.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "resources/AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/business-extraction/SKILL.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Reusable agent skill instructions for specialized analysis workbenches.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/business-extraction/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/cognianalysis/SKILL.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Reusable agent skill instructions for specialized analysis workbenches.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/cognianalysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative event-driven inventory fixture for golden coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+        "line": 1
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+        "line": 1
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "All files assigned to source-tier-0001 received Tier 1 file-card coverage.",
+    "inspected_files": [
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-repos.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-repos.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-llm-boundary.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-llm-boundary.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-self-product-readiness.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-self-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisGoal.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/analysisGoal.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisPipeline.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisSkills.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/analysisSkills.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/marketProof.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/marketProof.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/mcp.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/mcp.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/repoMap.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/repoMap.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/report.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/skillWorkbenches.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/sourceTiers.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/sourceTiers.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/targetCoverage.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/targetCoverage.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/toolPositioningReferences.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/toolPositioningReferences.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/types.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/types.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/utils.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/utils.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": ".github/workflows/verify.yml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": ".github/workflows/verify.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/results.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/scanner_report.baseline.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/scanner_report.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/autonomous/manifest.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/autonomous/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/manifest.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/semantic/manifest.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/semantic/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/demo-repo.expected.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/demo-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/event-inventory-repo.expected.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/event-inventory-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/manifest.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/results.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/soap-claims-repo.expected.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/soap-claims-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/openapi.yml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/openapi.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "package.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "package.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "schemas/llm-output.schema.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/MARKET_HARDENING_ROADMAP.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "docs/MARKET_HARDENING_ROADMAP.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/TARGET_COVERAGE.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "docs/TARGET_COVERAGE.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/target-picture.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "docs/target-picture.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/api-examples.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/api-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-examples.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-flows.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-flows.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/AGENTS.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "resources/AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/business-extraction/SKILL.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/business-extraction/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/cognianalysis/SKILL.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/cognianalysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

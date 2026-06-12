@@ -57,6 +57,7 @@
     "examples/soap-claims-repo/docs",
     "examples/soap-claims-repo/src",
     "examples/soap-claims-repo/README.md",
+    ".analysis-seed",
     "AGENTS.md"
   ],
   "scripts": {
@@ -71,7 +72,8 @@
     "verify:baseline": "npm run build && node scripts/verify-baseline.mjs",
     "verify:external": "npm run build && node scripts/verify-external-repos.mjs",
     "verify:external-semantic": "npm run build && node scripts/verify-external-semantic.mjs",
-    "verify:external-autonomous": "npm run build && node scripts/verify-external-autonomous.mjs"
+    "verify:external-autonomous": "npm run build && node scripts/verify-external-autonomous.mjs",
+    "verify:self-product-readiness": "npm run build && node scripts/verify-self-product-readiness.mjs"
   },
   "engines": {
     "node": ">=18"

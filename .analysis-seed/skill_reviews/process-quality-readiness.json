@@ -1,0 +1,259 @@
+{
+  "skill_workbench_review": {
+    "id": "process-quality-readiness",
+    "skill_id": "process_quality_readiness",
+    "version": "skill-workbench-v1",
+    "review_status": "complete",
+    "summary": "The quality/process story is proof-oriented: strict product readiness, report lint, evidence validation, benchmark gates and a post-push live review requirement. Security is covered as local CLI/package/evidence integrity plus optional external finding ingestion, not as web-app auth.",
+    "scope": "Readiness contracts, verification scripts, benchmark docs, package scripts and agent operating rules.",
+    "findings": [
+      {
+        "title": "Original product readiness is executable.",
+        "description": "computeProductReadiness checks decision report readiness, requirements trace, functional/technical/examples/quality/process/refactoring/evidence, benchmarks, thin artifact model, simplified harness and parallel orchestration.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 209
+          }
+        ]
+      },
+      {
+        "title": "Quality gates are broad and repeatable.",
+        "description": "Golden, baseline, demo, external semantic, external autonomous and product readiness scripts give deterministic proof of expected artifacts and failure modes.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "title": "Simplification is guarded by contract rather than prose.",
+        "description": "The simplified harness contract verifies small public surface, dev-scoped internals, compatibility aliases and Codex semantic authority.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 376,
+            "symbol": "computeSimplifiedHarnessContract"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 328,
+            "symbol": "computeProductArtifactModel"
+          }
+        ]
+      },
+      {
+        "title": "Security coverage exists at the artifact/product boundary.",
+        "description": "The readiness code requires explicit security evidence and the verifier guards package contents and external finding shape; no network service auth surface exists in the TypeScript CLI itself.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "outputs_for_later_synthesis": [
+      {
+        "kind": "process_quality_view",
+        "description": "Final report should mark the process mature enough for product readiness when strict gates pass, with a non-blocking follow-up to automate true agent-run external semantic scoring.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "kind": "orchestration_view",
+        "description": "Final report and proof artifacts should show parallel source-tier workpacks and cache reuse proof, because the readiness contract requires both.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 662,
+            "symbol": "computeParallelOrchestrationContract"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          }
+        ]
+      }
+    ],
+    "confidence": "high; complete Tier 1 coverage exists and key claims are tied to direct source evidence.",
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "src/productReadiness.ts",
+        "line": 173,
+        "symbol": "computeProductReadiness"
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "line": 209
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Workbench inspected direct source anchors and completed Tier 1 outputs relevant to this repository-specific review.",
+    "inspected_files": [
+      {
+        "path": "src/productReadiness.ts",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "package.json",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "package.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "reason": "Direct evidence for the workbench finding.",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

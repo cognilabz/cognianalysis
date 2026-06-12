@@ -1,0 +1,838 @@
+{
+  "assessment": {
+    "summary": "Cognianalysis is a CLI product that prepares repository context, asks Codex to author semantic artifacts, validates evidence/report contracts, renders an HTML decision document and checks original product readiness.",
+    "confidence": "high",
+    "evidence": [
+      {
+        "path": "src/cli.ts",
+        "line": 123
+      },
+      {
+        "path": "src/aggregate.ts",
+        "line": 50,
+        "symbol": "aggregate"
+      },
+      {
+        "path": "src/readiness.ts",
+        "line": 66,
+        "symbol": "computeFinalLlmReadiness"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "name": "Thin public analysis loop",
+      "summary": "Users start with analyze, inspect with status/open and verify with eval while internal operations remain dev-scoped.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 120
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 376,
+          "symbol": "computeSimplifiedHarnessContract"
+        }
+      ]
+    },
+    {
+      "name": "LLM-authored decision report workflow",
+      "summary": "The CLI creates task guides, Codex authors strategy/source-tier/workbench/detail/final artifacts, and final readiness comes from report_quality_review plus deterministic contracts.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 167
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        }
+      ]
+    },
+    {
+      "name": "Benchmark-backed market proof",
+      "summary": "Golden, baseline, external semantic and autonomous handoff verifiers provide executable proof instead of market claims by assertion.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "scripts/verify-golden.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-baseline.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-semantic.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-autonomous.mjs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "name": "Evidence-backed static report rendering",
+      "summary": "LLM-authored sections use a fixed component library and renderer while evidence lint and lineage contracts keep claims connected to source.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/reportComponents.ts",
+          "line": 9,
+          "symbol": "REPORT_COMPONENT_LIBRARY"
+        },
+        {
+          "path": "src/report.ts",
+          "line": 1
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 50,
+          "symbol": "aggregate"
+        }
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "cognianalysis analyze",
+      "protocol": "CLI",
+      "description": "Prepares context and records the product analysis request for a repository.",
+      "examples": [
+        {
+          "example_origin": "source_provided",
+          "command": "cognianalysis analyze . --mode complete --scope complete",
+          "evidence": [
+            {
+              "path": "src/cli.ts",
+              "line": 123
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "name": "cognianalysis status/open/eval",
+      "protocol": "CLI",
+      "description": "Expose progress, rendered report and strict readiness without surfacing internal workflow complexity.",
+      "examples": [
+        {
+          "example_origin": "inferred",
+          "command": "cognianalysis eval . --strict",
+          "evidence": [
+            {
+              "path": "src/cli.ts",
+              "line": 120
+            },
+            {
+              "path": "src/productReadiness.ts",
+              "line": 173,
+              "symbol": "computeProductReadiness"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 120
+        }
+      ]
+    },
+    {
+      "name": "analysis_document.sections",
+      "protocol": "JSON artifact contract",
+      "description": "Stable report component input authored by Codex and rendered to HTML.",
+      "examples": [
+        {
+          "example_origin": "inferred",
+          "payload": {
+            "analysis_document": {
+              "sections": [
+                {
+                  "id": "executive-decision",
+                  "blocks": [
+                    {
+                      "type": "decision_matrix"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "evidence": [
+            {
+              "path": "src/reportComponents.ts",
+              "line": 9,
+              "symbol": "REPORT_COMPONENT_LIBRARY"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/reportComponents.ts",
+          "line": 9,
+          "symbol": "REPORT_COMPONENT_LIBRARY"
+        },
+        {
+          "path": "src/report.ts",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "name": "Complete source analysis loop",
+      "summary": "analyze prepares context, Codex authors strategy/source-tier/workbench/detail/final artifacts, finalize aggregates/renders, and eval checks readiness.",
+      "examples": [
+        {
+          "example_origin": "inferred",
+          "steps": [
+            "analyze",
+            "author LLM artifacts",
+            "dev finalize",
+            "status/open/eval"
+          ],
+          "evidence": [
+            {
+              "path": "src/cli.ts",
+              "line": 167
+            },
+            {
+              "path": "src/analysisPipeline.ts",
+              "line": 1,
+              "symbol": "analysisPipelineArtifact"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 167
+        },
+        {
+          "path": "src/analysisPipeline.ts",
+          "line": 1,
+          "symbol": "analysisPipelineArtifact"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        }
+      ]
+    }
+  ],
+  "business_logic": [
+    {
+      "name": "Original product readiness contract",
+      "summary": "Product readiness requires decision report coverage, examples, quality/security/process/refactoring, evidence, benchmarks, thin artifact model, simplified harness and orchestration proof.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 209
+        }
+      ]
+    },
+    {
+      "name": "Semantic authority boundary",
+      "summary": "Codex authors semantic artifacts; deterministic code validates shape, freshness, evidence references and rendering contracts.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/analysisPipeline.ts",
+          "line": 1,
+          "symbol": "analysisPipelineArtifact"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        }
+      ]
+    }
+  ],
+  "architecture": {
+    "summary": "A TypeScript CLI orchestrates repository mapping, LLM task materialization, JSON aggregation, readiness contracts and static HTML rendering around a .analysis workspace.",
+    "components": [
+      {
+        "name": "CLI",
+        "role": "public product entrypoint and dev command host",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          }
+        ]
+      },
+      {
+        "name": "Aggregator",
+        "role": "contract and evidence validation",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          }
+        ]
+      },
+      {
+        "name": "Report renderer",
+        "role": "HTML output for LLM-authored decision sections",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          },
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          }
+        ]
+      },
+      {
+        "name": "Verifier scripts",
+        "role": "repeatable proof for benchmark and readiness claims",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/cli.ts",
+        "line": 123
+      },
+      {
+        "path": "src/aggregate.ts",
+        "line": 50,
+        "symbol": "aggregate"
+      },
+      {
+        "path": "src/report.ts",
+        "line": 1
+      }
+    ]
+  },
+  "process": {
+    "summary": "The repository has a proof-oriented delivery process: npm verification scripts, CI workflow, benchmark fixtures and a project instruction requiring post-push live review.",
+    "optimization_potential": [
+      {
+        "title": "Refresh self-analysis after every product commit",
+        "reason": "Analysis staleness is based on the prepared commit, so source changes require re-running analyze and the LLM workflow.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          }
+        ]
+      },
+      {
+        "title": "Keep external semantic benchmarks explicit",
+        "reason": "External fixtures and handoff gates prevent overclaiming from demo-only proof.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "package.json",
+        "line": 1
+      },
+      {
+        "path": "AGENTS.md",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "line": 1
+      }
+    ]
+  },
+  "quality": {
+    "summary": "Quality controls are centered on deterministic contract validation, evidence lint, golden/baseline/external verification and strict readiness evaluation. No network service authentication surface is present in this local CLI product; security coverage is framed as artifact/evidence integrity, package contents and external scanner ingestion shape.",
+    "findings": [
+      {
+        "title": "Security and evidence integrity gate exists",
+        "category": "security",
+        "severity": "medium",
+        "description": "The product checks explicit security coverage, invalid evidence, external findings shape and package fixture inclusion rather than relying on unsupported report claims.",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "title": "Generated analysis can stale after commits",
+        "category": "quality",
+        "severity": "medium",
+        "description": "Readiness detects analysis/source commit drift, so generated product-proof artifacts must be refreshed after product source changes.",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "src/productReadiness.ts",
+        "line": 173,
+        "symbol": "computeProductReadiness"
+      },
+      {
+        "path": "src/readiness.ts",
+        "line": 66,
+        "symbol": "computeFinalLlmReadiness"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "title": "Public workflow is simplified but proof artifacts remain available for audit",
+      "severity": "positive",
+      "category": "product",
+      "description": "The product exposes analyze/status/open/eval publicly and keeps deep workflow under .analysis and dev commands.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 120
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 376,
+          "symbol": "computeSimplifiedHarnessContract"
+        }
+      ]
+    },
+    {
+      "title": "Parallel and cache readiness require proof artifacts in addition to scaffolding",
+      "severity": "medium",
+      "category": "quality",
+      "description": "The orchestration contract separates scaffold checks from parallel execution and cache reuse proof, preventing false readiness.",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        }
+      ]
+    }
+  ],
+  "refactoring": [
+    {
+      "title": "Keep generated self-analysis reproducible",
+      "phase": "now",
+      "benefit": "Makes product readiness auditable after commits.",
+      "risk": "medium",
+      "effort": "S",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        }
+      ]
+    },
+    {
+      "title": "Expand true unseeded semantic benchmark automation when an agent runner is available",
+      "phase": "next",
+      "benefit": "Converts manual Codex-authored external runs into repeatable external scoring.",
+      "risk": "medium",
+      "effort": "M",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "path": "scripts/verify-external-autonomous.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-semantic.mjs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "modernization": [
+    {
+      "title": "Promote orchestration/cache proof into a first-class runner surface",
+      "phase": "next",
+      "benefit": "Reduces manual proof authoring and makes parallel execution easier to reproduce.",
+      "risk": "medium",
+      "effort": "M",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 3035,
+          "symbol": "computeSourceTierCoverage"
+        }
+      ]
+    }
+  ],
+  "documentation": {
+    "request_response_examples": [
+      {
+        "example_origin": "inferred",
+        "request": "cognianalysis analyze . --mode complete --scope complete",
+        "response": "Prepares .analysis, task guides, source tier workpacks and next LLM action.",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/cli.ts",
+            "line": 167
+          }
+        ]
+      },
+      {
+        "example_origin": "inferred",
+        "request": "cognianalysis eval . --strict",
+        "response": "Returns original product readiness with missing checks and next action.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ]
+      }
+    ],
+    "function_examples": [
+      {
+        "example_origin": "inferred",
+        "function": "computeProductReadiness",
+        "input": "bundle plus market proof",
+        "output": "PRODUCT_READY, PARTIALLY_READY or NOT_PRODUCT_READY",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 209
+          }
+        ]
+      }
+    ],
+    "business_logic_examples": [
+      {
+        "example_origin": "inferred",
+        "rule": "All core product checks and simplification checks must pass before readiness is PRODUCT_READY.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 209
+          }
+        ]
+      }
+    ],
+    "openapi": [
+      {
+        "example_origin": "source_provided",
+        "description": "Demo repository OpenAPI files are included as representative contract extraction inputs.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "soap": [
+      {
+        "example_origin": "source_provided",
+        "description": "Demo and SOAP claims WSDL files are included as representative SOAP contract extraction inputs.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          },
+          {
+            "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "contract_examples": [
+      {
+        "example_origin": "source_provided",
+        "description": "llm-output schema and report component library define artifact/report contracts.",
+        "evidence": [
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          },
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          }
+        ]
+      }
+    ],
+    "mermaid_flows": [
+      {
+        "example_origin": "inferred",
+        "mermaid": "flowchart TD\n  A[analyze] --> B[Codex artifacts]\n  B --> C[finalize]\n  C --> D[report]\n  D --> E[eval strict]",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 167
+          },
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1,
+            "symbol": "analysisPipelineArtifact"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "schemas/llm-output.schema.json",
+        "line": 1
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "line": 9,
+        "symbol": "REPORT_COMPONENT_LIBRARY"
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Product extraction output covers CLI, aggregation/readiness/report contracts, verification scripts, docs and representative fixtures.",
+    "inspected_files": [
+      {
+        "path": "src/cli.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/report.ts",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+        "reason": "Evidence anchor for product extraction.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

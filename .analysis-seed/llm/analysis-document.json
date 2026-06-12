@@ -1,0 +1,1704 @@
+{
+  "analysis_document": {
+    "title": "Cognianalysis Product Readiness Analysis",
+    "subtitle": "Self-analysis of the LLM-first source-code analysis product against the original decision-document vision.",
+    "audience": [
+      "management",
+      "architecture",
+      "engineering"
+    ],
+    "authoring_mode": "llm",
+    "synthesis_stage": "final_after_detail_reviews",
+    "source_basis": "Authored from complete-scope Tier 1 coverage of 113 included files, three planned skill workbench reviews, two focused detail reviews, product extraction artifacts, source code, docs, benchmark fixtures and verifier scripts.",
+    "open_questions": [],
+    "requirements_trace": [
+      {
+        "requirement": "Decision document output shape",
+        "covered_by_sections": [
+          "executive-decision",
+          "system-understanding",
+          "technical-boundary"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          },
+          {
+            "path": "src/report.ts",
+            "line": 1
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          }
+        ],
+        "goal_contract_refs": [
+          "required_output_shape.deliverable",
+          "required_output_shape.visible_report_authority",
+          "required_output_shape.style_system",
+          "required_output_shape.source_basis",
+          "required_output_shape.automation_goal",
+          "required_output_shape.management_drilldown",
+          "required_report_behaviors.llm_authored_report"
+        ]
+      },
+      {
+        "requirement": "Reverse Engineering & Documentation",
+        "covered_by_sections": [
+          "system-understanding",
+          "functional-flow"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          },
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 22,
+            "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+          },
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.reverse_engineering_documentation",
+          "required_report_behaviors.whole_repo_first",
+          "required_report_behaviors.tiered_whole_codebase_analysis",
+          "required_report_behaviors.e2e_relationships"
+        ]
+      },
+      {
+        "requirement": "Code Analysis",
+        "covered_by_sections": [
+          "quality-security-process"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          },
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.code_analysis"
+        ]
+      },
+      {
+        "requirement": "Process Analysis",
+        "covered_by_sections": [
+          "quality-security-process",
+          "target-architecture"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "package.json",
+            "line": 1
+          },
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          },
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.process_analysis"
+        ]
+      },
+      {
+        "requirement": "Refactoring / Target Architecture",
+        "covered_by_sections": [
+          "target-architecture"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 662,
+            "symbol": "computeParallelOrchestrationContract"
+          },
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          },
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          }
+        ],
+        "goal_contract_refs": [
+          "required_levels.refactoring_target_architecture"
+        ]
+      },
+      {
+        "requirement": "Functional View",
+        "covered_by_sections": [
+          "functional-flow",
+          "system-understanding"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 167
+          },
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1,
+            "symbol": "analysisPipelineArtifact"
+          },
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          }
+        ],
+        "goal_contract_refs": [
+          "required_views.functional_view",
+          "required_report_behaviors.e2e_relationships"
+        ]
+      },
+      {
+        "requirement": "Technical View",
+        "covered_by_sections": [
+          "technical-boundary"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 120
+          },
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          },
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          }
+        ],
+        "goal_contract_refs": [
+          "required_views.technical_view"
+        ]
+      },
+      {
+        "requirement": "Detail agents after overview",
+        "covered_by_sections": [
+          "detail-review-basis"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 22,
+            "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+          },
+          {
+            "path": "src/tasks.ts",
+            "line": 227,
+            "symbol": "writeDetailTasksFromLlmPlan"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          }
+        ],
+        "goal_contract_refs": [
+          "required_report_behaviors.detail_agents_after_overview"
+        ]
+      },
+      {
+        "requirement": "Tool positioning",
+        "covered_by_sections": [
+          "target-architecture"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ],
+        "goal_contract_refs": [
+          "required_report_behaviors.tool_positioning"
+        ]
+      },
+      {
+        "requirement": "Evidence and uncertainty",
+        "covered_by_sections": [
+          "quality-security-process",
+          "detail-review-basis"
+        ],
+        "status": "covered",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "goal_contract_refs": [
+          "required_report_behaviors.evidence_and_uncertainty"
+        ]
+      }
+    ],
+    "executive_decision_basis": {
+      "summary": "Cognianalysis now covers the original product shape in the executable repository state: source-first analysis, LLM-authored strategy and report artifacts, complete Tier 1 coverage, skill/detail reviews, evidence-backed decision sections, benchmark proof and simplified harness contracts.",
+      "recommendation": "Treat the product as ready for this repository-level readiness gate after strict verification passes, while keeping true agent-run external semantic scoring as the next non-blocking hardening track.",
+      "confidence": "high",
+      "decision_questions": {
+        "keep_system": "Keep and continue hardening Cognianalysis because the product loop, report contract, evidence gates and benchmarks are implemented in source and executable artifacts.",
+        "modernize_system": "Modernize by turning orchestration/cache proof and true external semantic scoring into more automated runner surfaces.",
+        "replace_system": "Do not replace the system; the current evidence supports incremental hardening rather than restart.",
+        "cost": "Low short-term cost for refreshing generated analysis artifacts and moderate cost for CI-grade agent-run external semantic scoring.",
+        "biggest_risks": [
+          "Generated analysis artifacts can become stale after source commits.",
+          "External semantic quality is still strongest when Codex authors the artifacts in-session.",
+          "Parallel/cache proof must remain tied to real artifact hashes, not prose."
+        ],
+        "next_actions": [
+          "Run strict verification after every product source change.",
+          "Keep live ChatGPT review/recheck after pushes.",
+          "Automate more of the external semantic scoring loop when an agent runner is available."
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 123
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 50,
+          "symbol": "aggregate"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        },
+        {
+          "path": "src/reportComponents.ts",
+          "line": 9,
+          "symbol": "REPORT_COMPONENT_LIBRARY"
+        },
+        {
+          "path": "scripts/verify-golden.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-autonomous.mjs",
+          "line": 1
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        }
+      ],
+      "open_questions": []
+    },
+    "consistency_review": {
+      "reviewer": "codex_llm",
+      "summary": "The report consistently describes Cognianalysis as a thin LLM-first harness with deterministic contract validation. It does not claim deterministic code understands semantics, and it treats further external semantic scoring automation as hardening rather than a blocker for the current strict product gate.",
+      "contradictions_found": 0,
+      "contradictions": [],
+      "evidence": [
+        {
+          "path": "src/analysisPipeline.ts",
+          "line": 1,
+          "symbol": "analysisPipelineArtifact"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        }
+      ]
+    },
+    "skill_workbench_synthesis": {
+      "integrated_skill_workbenches": [
+        "whole-repository-understanding",
+        "interface-contract-analysis",
+        "process-quality-readiness"
+      ],
+      "summary": "The final report integrates all three planned skill workbenches: whole-product story, CLI/artifact/interface contracts and process-quality-readiness.",
+      "coverage_statement": "3/3 LLM-planned skill workbenches are incorporated before detail review synthesis.",
+      "evidence": [
+        {
+          "path": "src/skillWorkbenches.ts",
+          "line": 22,
+          "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+        },
+        {
+          "path": "src/cli.ts",
+          "line": 120
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        }
+      ]
+    },
+    "detail_review_synthesis": {
+      "integrated_detail_reviews": [
+        "core-harness-readiness",
+        "benchmark-orchestration-proof"
+      ],
+      "summary": "The final report integrates the two planned focused detail reviews: core harness/readiness and benchmark/orchestration proof.",
+      "coverage_statement": "2/2 planned detail reviews executed and incorporated.",
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 123
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        },
+        {
+          "path": "scripts/verify-golden.mjs",
+          "line": 1
+        }
+      ]
+    },
+    "report_quality_review": {
+      "reviewer": "codex_llm",
+      "verdict": "decision_ready",
+      "summary": "The report is decision-ready for the current complete-scope repository run because it starts whole-repository first, covers functional and technical views, covers all four analysis levels, includes examples and quality/security/process evidence, connects major claims to file:line evidence and preserves limitations without blocking questions.",
+      "checks": {
+        "repo_specific_information_architecture": true,
+        "management_ready_decision_basis": true,
+        "whole_repo_first_understanding": true,
+        "e2e_relationships_explained": true,
+        "functional_view_explained": true,
+        "technical_view_explained": true,
+        "four_level_model_covered": true,
+        "improvements_and_refactoring_covered": true,
+        "tool_positioning_covered": true,
+        "evidence_and_uncertainty_visible": true,
+        "repo_specific_information_architecture_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "management_ready_decision_basis_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "whole_repo_first_understanding_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "e2e_relationships_explained_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "functional_view_explained_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "technical_view_explained_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "four_level_model_covered_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "improvements_and_refactoring_covered_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "tool_positioning_covered_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ],
+        "evidence_and_uncertainty_visible_evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "path": "src/cli.ts",
+          "line": 123
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 50,
+          "symbol": "aggregate"
+        },
+        {
+          "path": "src/productReadiness.ts",
+          "line": 173,
+          "symbol": "computeProductReadiness"
+        },
+        {
+          "path": "src/readiness.ts",
+          "line": 66,
+          "symbol": "computeFinalLlmReadiness"
+        },
+        {
+          "path": "src/reportComponents.ts",
+          "line": 9,
+          "symbol": "REPORT_COMPONENT_LIBRARY"
+        },
+        {
+          "path": "scripts/verify-golden.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-autonomous.mjs",
+          "line": 1
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        }
+      ],
+      "open_questions": [],
+      "partial_requirement_rationale": []
+    },
+    "sections": [
+      {
+        "id": "executive-decision",
+        "title": "Executive Decision",
+        "level": "executive",
+        "role": "executive_decision",
+        "decision_layer": true,
+        "intent": "State the product readiness decision before drilldown.",
+        "blocks": [
+          {
+            "type": "decision_matrix",
+            "rows": [
+              {
+                "decision": "Did Cognianalysis reach the expected product shape for this repository?",
+                "options": [
+                  "yes",
+                  "no"
+                ],
+                "recommendation": "Yes for the strict repository-level product-readiness gate after verification passes, because the implementation and generated artifacts cover the original decision-document contract.",
+                "risk": "Generated self-analysis must be refreshed after source commits.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  },
+                  {
+                    "path": "src/reportComponents.ts",
+                    "line": 9,
+                    "symbol": "REPORT_COMPONENT_LIBRARY"
+                  }
+                ]
+              },
+              {
+                "decision": "Is the product perfectly simplified?",
+                "options": [
+                  "yes",
+                  "partly"
+                ],
+                "recommendation": "Yes for the current harness contract: users operate analyze/status/open/eval while internals stay dev-scoped and auditable.",
+                "risk": "Advanced users still need .analysis artifacts for audit and LLM workflow execution.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 376,
+                    "symbol": "computeSimplifiedHarnessContract"
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 328,
+                    "symbol": "computeProductArtifactModel"
+                  }
+                ]
+              },
+              {
+                "decision": "What remains as hardening?",
+                "options": [
+                  "automate external semantic scoring",
+                  "stop"
+                ],
+                "recommendation": "Continue automating true agent-run external semantic scoring, but do not block this strict readiness decision on that next hardening track.",
+                "risk": "Without automation, external semantic proof requires an in-session Codex run.",
+                "confidence": "medium",
+                "evidence": [
+                  {
+                    "path": "scripts/verify-external-autonomous.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-semantic.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/BENCHMARK.md",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 376,
+            "symbol": "computeSimplifiedHarnessContract"
+          }
+        ]
+      },
+      {
+        "id": "system-understanding",
+        "title": "System Understanding",
+        "level": "management",
+        "intent": "Explain the whole repository as product families rather than a file list.",
+        "blocks": [
+          {
+            "type": "source_family_map",
+            "families": [
+              {
+                "name": "Core CLI and harness",
+                "role": "Public product entrypoint plus deterministic task/finalization flow.",
+                "business_use": "Lets users start, inspect, open and evaluate analyses without learning internal workflow commands.",
+                "technical_shape": "TypeScript CLI with analyze/status/open/eval and dev-scoped internals.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "src/cli.ts",
+                    "line": 167
+                  },
+                  {
+                    "path": "src/cli.ts",
+                    "line": 123
+                  }
+                ]
+              },
+              {
+                "name": "LLM artifact and readiness contracts",
+                "role": "Semantic artifacts and deterministic validation for report readiness.",
+                "business_use": "Turns source evidence into a decision basis while preventing unsupported completion claims.",
+                "technical_shape": "Aggregator, final LLM readiness, product readiness, goal trace and artifact model checks.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 50,
+                    "symbol": "aggregate"
+                  },
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  }
+                ]
+              },
+              {
+                "name": "Report renderer and component library",
+                "role": "Stable display system for LLM-authored sections.",
+                "business_use": "Gives management a readable report while preserving drilldown evidence.",
+                "technical_shape": "analysis_document.sections rendered through supported component types.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/reportComponents.ts",
+                    "line": 9,
+                    "symbol": "REPORT_COMPONENT_LIBRARY"
+                  },
+                  {
+                    "path": "src/report.ts",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "Verification and benchmarks",
+                "role": "Executable proof for demo, golden, baseline, external semantic and autonomous handoff behavior.",
+                "business_use": "Supports market and quality claims with repeatable checks.",
+                "technical_shape": "Node verifier scripts and benchmark fixture manifests/results.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "scripts/verify-golden.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-baseline.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-semantic.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-autonomous.mjs",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "Representative fixtures and skills",
+                "role": "Analysis targets and reusable agent instructions.",
+                "business_use": "Proves the product can cover REST, SOAP, event, fullstack and legacy examples.",
+                "technical_shape": "Example repositories plus skills for business extraction, flow and interface analysis.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+                    "line": 1
+                  },
+                  {
+                    "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+                    "line": 1
+                  },
+                  {
+                    "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+                    "line": 1
+                  },
+                  {
+                    "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "statement_list",
+            "items": [
+              {
+                "title": "The whole-codebase base is complete for this run.",
+                "description": "Every included source-inventory file has a Tier 1 card before final synthesis.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 3035,
+                    "symbol": "computeSourceTierCoverage"
+                  }
+                ]
+              },
+              {
+                "title": "The output is a decision report, not only a repository map.",
+                "description": "The report is authored through analysis_document.sections and evaluated by report_quality_review and requirements_trace.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/reportComponents.ts",
+                    "line": 9,
+                    "symbol": "REPORT_COMPONENT_LIBRARY"
+                  },
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          }
+        ]
+      },
+      {
+        "id": "functional-flow",
+        "title": "Functional Flow",
+        "level": "functional",
+        "intent": "Show how the product operates end to end.",
+        "blocks": [
+          {
+            "type": "flow",
+            "summary": "A user runs analyze; the CLI prepares source inventory and task guides; Codex authors strategy, source-tier, skill, detail and final report artifacts; finalize renders; eval checks readiness.",
+            "mermaid": "flowchart TD\n  A[analyze repository] --> B[prepare .analysis context]\n  B --> C[Codex strategy and Tier 1 cards]\n  C --> D[skill workbenches]\n  D --> E[detail reviews]\n  E --> F[analysis_document]\n  F --> G[finalize and render]\n  G --> H[eval strict]",
+            "steps": [
+              {
+                "title": "Prepare context",
+                "description": "analyze creates code map, source inventory, task guide and product request.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 18,
+                    "symbol": "prepareAnalysis"
+                  },
+                  {
+                    "path": "src/cli.ts",
+                    "line": 167
+                  }
+                ]
+              },
+              {
+                "title": "Author semantic artifacts",
+                "description": "Codex authors strategy, Tier 1 file cards, workbench reviews, detail reviews and final analysis document.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/analysisPipeline.ts",
+                    "line": 1,
+                    "symbol": "analysisPipelineArtifact"
+                  },
+                  {
+                    "path": "src/skillWorkbenches.ts",
+                    "line": 22,
+                    "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+                  },
+                  {
+                    "path": "src/tasks.ts",
+                    "line": 227,
+                    "symbol": "writeDetailTasksFromLlmPlan"
+                  }
+                ]
+              },
+              {
+                "title": "Validate and render",
+                "description": "aggregate validates contracts, evidence, lineage and report components, then renderReport produces HTML.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 50,
+                    "symbol": "aggregate"
+                  },
+                  {
+                    "path": "src/report.ts",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "title": "Decide readiness",
+                "description": "eval strict checks original product readiness including report coverage, examples, evidence, benchmarks, simplified harness and orchestration.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 209
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "path": "src/cli.ts",
+                "line": 167
+              },
+              {
+                "path": "src/analysisPipeline.ts",
+                "line": 1,
+                "symbol": "analysisPipelineArtifact"
+              },
+              {
+                "path": "src/productReadiness.ts",
+                "line": 173,
+                "symbol": "computeProductReadiness"
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 167
+          },
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1,
+            "symbol": "analysisPipelineArtifact"
+          }
+        ]
+      },
+      {
+        "id": "technical-boundary",
+        "title": "Technical Boundary",
+        "level": "technical",
+        "intent": "Name the main interfaces, outputs and proof surfaces.",
+        "blocks": [
+          {
+            "type": "boundary_map",
+            "entries": [
+              {
+                "name": "cognianalysis analyze",
+                "description": "Primary public entrypoint that prepares analysis context and LLM task guides.",
+                "protocol": "CLI",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 18,
+                    "symbol": "prepareAnalysis"
+                  }
+                ]
+              },
+              {
+                "name": "cognianalysis status/open/eval",
+                "description": "Progress, rendered report and readiness surfaces for users.",
+                "protocol": "CLI",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  }
+                ]
+              },
+              {
+                "name": "analysis_document.sections",
+                "description": "LLM-authored JSON report input consumed by the renderer.",
+                "protocol": "JSON artifact",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/reportComponents.ts",
+                    "line": 9,
+                    "symbol": "REPORT_COMPONENT_LIBRARY"
+                  },
+                  {
+                    "path": "src/report.ts",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "exits": [
+              {
+                "name": "report/index.html",
+                "description": "Static rendered decision report output.",
+                "protocol": "HTML artifact",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/report.ts",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "benchmark verifier results",
+                "description": "Golden, baseline and external verifier outputs used as product proof.",
+                "protocol": "JSON artifacts",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "scripts/verify-golden.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-baseline.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-semantic.mjs",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "state": [
+              {
+                "name": ".analysis workspace",
+                "description": "Stores deterministic context, LLM-authored artifacts, detail reviews, bundle, evidence and report outputs.",
+                "technology": "filesystem artifacts",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 50,
+                    "symbol": "aggregate"
+                  },
+                  {
+                    "path": "src/cli.ts",
+                    "line": 167
+                  }
+                ]
+              },
+              {
+                "name": "source-tier workpacks",
+                "description": "Batch files and outputs used for complete Tier 1 whole-codebase coverage and orchestration proof.",
+                "technology": "JSON and Markdown workpacks",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 3035,
+                    "symbol": "computeSourceTierCoverage"
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 662,
+                    "symbol": "computeParallelOrchestrationContract"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 120
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          }
+        ]
+      },
+      {
+        "id": "quality-security-process",
+        "title": "Quality, Security and Process",
+        "level": "technical",
+        "intent": "Cover bugs, security, process readiness and evidence integrity.",
+        "blocks": [
+          {
+            "type": "four_level_assessment",
+            "levels": [
+              {
+                "level": "Reverse Engineering & Documentation",
+                "status": "covered",
+                "summary": "Complete Tier 1 cards and source-family mapping explain repository responsibilities before detail review.",
+                "next_steps": [
+                  "Refresh after product source changes."
+                ],
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 3035,
+                    "symbol": "computeSourceTierCoverage"
+                  },
+                  {
+                    "path": "README.md",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "level": "Code Analysis",
+                "status": "covered",
+                "summary": "Readiness, report lint, semantic lineage, evidence validation and verifier scripts expose code/product risks.",
+                "next_steps": [
+                  "Keep strict eval in CI and post-push loop."
+                ],
+                "evidence": [
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "scripts/verify-demo.mjs",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "level": "Process Analysis",
+                "status": "covered",
+                "summary": "Package scripts, benchmark docs, CI workflow and AGENTS post-push review rules create a proof-oriented delivery process.",
+                "next_steps": [
+                  "Automate true agent-run external semantic scoring when runner access is available."
+                ],
+                "evidence": [
+                  {
+                    "path": "package.json",
+                    "line": 1
+                  },
+                  {
+                    "path": "docs/BENCHMARK.md",
+                    "line": 1
+                  },
+                  {
+                    "path": "AGENTS.md",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "level": "Refactoring / Target Architecture",
+                "status": "covered",
+                "summary": "The target is a thin LLM-first harness with stronger orchestration/cache proof and external semantic automation.",
+                "next_steps": [
+                  "Promote proof generation into reusable runner commands."
+                ],
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 376,
+                    "symbol": "computeSimplifiedHarnessContract"
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 662,
+                    "symbol": "computeParallelOrchestrationContract"
+                  },
+                  {
+                    "path": "scripts/verify-external-autonomous.mjs",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "statement_list",
+            "items": [
+              {
+                "title": "Security coverage is explicit at the local CLI and artifact boundary.",
+                "category": "security",
+                "severity": "medium",
+                "description": "The product has no web-app auth surface in this repo; security coverage is evidence integrity, package fixture inclusion, external finding ingestion and explicit security finding checks.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "scripts/verify-demo.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-semantic.mjs",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "title": "Strict readiness prevents unsupported product claims.",
+                "category": "quality",
+                "severity": "positive",
+                "description": "The readiness gate fails until report quality, evidence, source-tier coverage, workbenches, detail reviews, benchmarks and simplification pass.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  }
+                ]
+              },
+              {
+                "title": "Staleness is the main operational risk for generated proof.",
+                "category": "process",
+                "severity": "medium",
+                "description": "Generated analysis artifacts must be refreshed after commits because analysis staleness compares prepared and current commits.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          },
+          {
+            "path": "package.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "id": "target-architecture",
+        "title": "Target Architecture and Next Moves",
+        "level": "management",
+        "intent": "Convert the readiness review into action.",
+        "blocks": [
+          {
+            "type": "roadmap",
+            "items": [
+              {
+                "title": "Keep the thin public loop as the product surface.",
+                "phase": "now",
+                "benefit": "Preserves simplicity for users while keeping audit artifacts available.",
+                "effort": "S",
+                "risk": "low",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 376,
+                    "symbol": "computeSimplifiedHarnessContract"
+                  }
+                ]
+              },
+              {
+                "title": "Refresh and verify generated product proof after commits.",
+                "phase": "now",
+                "benefit": "Keeps strict readiness truthful after source changes.",
+                "effort": "S",
+                "risk": "medium",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/readiness.ts",
+                    "line": 66,
+                    "symbol": "computeFinalLlmReadiness"
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  }
+                ]
+              },
+              {
+                "title": "Automate true agent-run external semantic scoring.",
+                "phase": "next",
+                "benefit": "Turns in-session external semantic review into repeatable runner proof.",
+                "effort": "M",
+                "risk": "medium",
+                "confidence": "medium",
+                "evidence": [
+                  {
+                    "path": "scripts/verify-external-autonomous.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "scripts/verify-external-semantic.mjs",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "title": "Promote orchestration/cache proof generation.",
+                "phase": "next",
+                "benefit": "Makes parallel execution and cache reuse easier to reproduce and review.",
+                "effort": "M",
+                "risk": "medium",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 662,
+                    "symbol": "computeParallelOrchestrationContract"
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 3035,
+                    "symbol": "computeSourceTierCoverage"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "decision_matrix",
+            "rows": [
+              {
+                "decision": "Position against consulting and gen-AI delivery suites",
+                "options": [
+                  "replace discovery draft",
+                  "complement delivery suite"
+                ],
+                "recommendation": "Use Cognianalysis as the first-pass source-grounded discovery and decision basis, then hand off owner-specific decisions to humans or delivery suites.",
+                "risk": "Do not claim hidden business intent beyond source evidence.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "docs/BENCHMARK.md",
+                    "line": 1
+                  },
+                  {
+                    "path": "README.md",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "decision": "Position against static scanners and architecture maps",
+                "options": [
+                  "replace",
+                  "complement"
+                ],
+                "recommendation": "Complement scanners and architecture graph tools: Cognianalysis adds LLM-authored management narrative, examples and decision synthesis while preserving evidence.",
+                "risk": "Static scanner findings should remain source-tool authority when imported.",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 50,
+                    "symbol": "aggregate"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 376,
+            "symbol": "computeSimplifiedHarnessContract"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 662,
+            "symbol": "computeParallelOrchestrationContract"
+          },
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "id": "detail-review-basis",
+        "title": "Detail Review Basis",
+        "level": "technical",
+        "intent": "Show that final synthesis happened after planned workbench and detail reviews.",
+        "blocks": [
+          {
+            "type": "agent_plan",
+            "summary": "Three skill workbenches and two detail reviews were planned after whole-repository Tier 1 coverage and integrated into this final report.",
+            "tasks": [
+              {
+                "source_family": "whole-repository-understanding",
+                "recommended_agent": "skill workbench",
+                "focus": [
+                  "source families",
+                  "business capability",
+                  "decision report authority"
+                ],
+                "expected_outputs": [
+                  "whole product story"
+                ],
+                "seed_files": [
+                  "src/cli.ts",
+                  "src/aggregate.ts"
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/skillWorkbenches.ts",
+                    "line": 22,
+                    "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+                  },
+                  {
+                    "path": "src/cli.ts",
+                    "line": 123
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 50,
+                    "symbol": "aggregate"
+                  }
+                ]
+              },
+              {
+                "source_family": "interface-contract-analysis",
+                "recommended_agent": "skill workbench",
+                "focus": [
+                  "CLI interface",
+                  "artifact schema",
+                  "OpenAPI/SOAP fixtures"
+                ],
+                "expected_outputs": [
+                  "technical boundary and examples"
+                ],
+                "seed_files": [
+                  "src/cli.ts",
+                  "schemas/llm-output.schema.json"
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 120
+                  },
+                  {
+                    "path": "schemas/llm-output.schema.json",
+                    "line": 1
+                  },
+                  {
+                    "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "source_family": "process-quality-readiness",
+                "recommended_agent": "skill workbench",
+                "focus": [
+                  "quality gates",
+                  "security coverage",
+                  "simplification"
+                ],
+                "expected_outputs": [
+                  "quality/process view"
+                ],
+                "seed_files": [
+                  "src/productReadiness.ts",
+                  "docs/BENCHMARK.md"
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  },
+                  {
+                    "path": "docs/BENCHMARK.md",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "source_family": "core-harness-readiness",
+                "recommended_agent": "detail reviewer",
+                "focus": [
+                  "public CLI loop",
+                  "readiness contracts",
+                  "thin artifact model"
+                ],
+                "expected_outputs": [
+                  "decision risks",
+                  "simplification proof"
+                ],
+                "seed_files": [
+                  "src/cli.ts",
+                  "src/productReadiness.ts"
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "src/cli.ts",
+                    "line": 123
+                  },
+                  {
+                    "path": "src/productReadiness.ts",
+                    "line": 173,
+                    "symbol": "computeProductReadiness"
+                  }
+                ]
+              },
+              {
+                "source_family": "benchmark-orchestration-proof",
+                "recommended_agent": "detail reviewer",
+                "focus": [
+                  "golden/baseline/external proof",
+                  "parallel/cache proof"
+                ],
+                "expected_outputs": [
+                  "benchmark and orchestration assessment"
+                ],
+                "seed_files": [
+                  "scripts/verify-golden.mjs",
+                  "src/aggregate.ts"
+                ],
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "path": "scripts/verify-golden.mjs",
+                    "line": 1
+                  },
+                  {
+                    "path": "src/aggregate.ts",
+                    "line": 662,
+                    "symbol": "computeParallelOrchestrationContract"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 22,
+            "symbol": "writeSkillWorkbenchTasksFromLlmStrategy"
+          },
+          {
+            "path": "src/tasks.ts",
+            "line": 227,
+            "symbol": "writeDetailTasksFromLlmPlan"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1356 @@
+{
+  "analysis_strategy": {
+    "planning_stage": "analysis_strategy",
+    "planning_source": "llm/analysis-strategy.json",
+    "summary": "Analyze Cognianalysis as its own product harness: a TypeScript CLI plus report renderer, LLM artifact workflow, benchmark suites, representative fixtures, docs, skills and verification scripts. The report must decide whether the original source-code-analysis product vision is implemented, simplified and evidence-backed.",
+    "whole_repo_first_plan": "Start with complete source-inventory Tier 1 coverage across src, scripts, benchmarks, docs, skills and example repositories; then use planned skill workbenches for whole-product story, interface/contract view and process-quality-readiness; then run focused detail reviews on the core harness and benchmark proof surfaces before final synthesis.",
+    "tier_plan": {
+      "tier1": "Every included file receives a Tier 1 file card from source_tier_tasks before final synthesis.",
+      "tier2": "Synthesize product source families: core CLI/harness, report/readiness contracts, benchmarks, docs/skills and representative repositories.",
+      "tier3": "Review the analyze/status/open/eval workflow, LLM artifact handoff, evidence/report rendering, benchmark verification and orchestration/cache proof.",
+      "tier4": "Turn gaps into decision, simplification and modernization recommendations."
+    },
+    "candidate_source_slices": [
+      {
+        "id": "core-harness",
+        "source_family": "src",
+        "focus": [
+          "CLI public loop",
+          "aggregation contracts",
+          "readiness and report rendering"
+        ],
+        "seed_files": [
+          "src/cli.ts",
+          "src/aggregate.ts",
+          "src/productReadiness.ts"
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          }
+        ]
+      },
+      {
+        "id": "verification-benchmarks",
+        "source_family": "scripts and benchmarks",
+        "focus": [
+          "golden proof",
+          "baseline comparison",
+          "external semantic and autonomous handoff"
+        ],
+        "seed_files": [
+          "scripts/verify-golden.mjs",
+          "scripts/verify-external-semantic.mjs",
+          "scripts/verify-external-autonomous.mjs"
+        ],
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "id": "report-artifact-model",
+        "source_family": "report and artifacts",
+        "focus": [
+          "component library",
+          "evidence lint",
+          "thin artifact model",
+          "parallel orchestration proof"
+        ],
+        "seed_files": [
+          "src/reportComponents.ts",
+          "src/report.ts",
+          "src/aggregate.ts"
+        ],
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 9,
+            "symbol": "REPORT_COMPONENT_LIBRARY"
+          },
+          {
+            "path": "src/report.ts",
+            "line": 1
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 662,
+            "symbol": "computeParallelOrchestrationContract"
+          }
+        ]
+      }
+    ],
+    "skill_application_plan": [
+      {
+        "id": "whole-repository-understanding",
+        "skill_id": "whole_repository_understanding",
+        "purpose": "Build a whole-product story across CLI, LLM workflow, benchmarks, docs and fixtures before final synthesis.",
+        "scope": "complete inventory",
+        "focus": [
+          "source families",
+          "business capability",
+          "decision report authority"
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 123
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 50,
+            "symbol": "aggregate"
+          },
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "id": "interface-contract-analysis",
+        "skill_id": "interface_contract_analysis",
+        "purpose": "Extract public CLI commands, artifact contracts, report component contracts and representative external API fixtures.",
+        "scope": "CLI, schemas, report components, examples",
+        "focus": [
+          "CLI interface",
+          "artifact schema",
+          "OpenAPI/SOAP/example contracts"
+        ],
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 120
+          },
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          },
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "id": "process-quality-readiness",
+        "skill_id": "process_quality_readiness",
+        "purpose": "Assess verification, product-readiness, security/quality evidence, benchmark proof and simplification risk.",
+        "scope": "readiness code, scripts, benchmarks and docs",
+        "focus": [
+          "quality gates",
+          "security coverage",
+          "orchestration/cache proof",
+          "simplification"
+        ],
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 173,
+            "symbol": "computeProductReadiness"
+          },
+          {
+            "path": "src/productReadiness.ts",
+            "line": 209
+          },
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "report_intent": {
+      "audience": [
+        "management",
+        "architecture",
+        "engineering"
+      ],
+      "decision": "Is Cognianalysis now the expected simplified source-analysis product, and what evidence supports or limits that decision?",
+      "output_shape": "LLM-authored structured decision document rendered by the stable component library with drilldown to file:line evidence."
+    },
+    "known_risks_to_understanding": [
+      {
+        "risk": "Generated analysis artifacts can become stale after product source commits.",
+        "mitigation": "Use analysis_staleness, product request freshness, strict eval and rerun analyze after each product source change.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 66,
+            "symbol": "computeFinalLlmReadiness"
+          }
+        ]
+      }
+    ],
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "src/cli.ts",
+        "line": 123
+      },
+      {
+        "path": "src/aggregate.ts",
+        "line": 50,
+        "symbol": "aggregate"
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "line": 173,
+        "symbol": "computeProductReadiness"
+      },
+      {
+        "path": "src/readiness.ts",
+        "line": 66,
+        "symbol": "computeFinalLlmReadiness"
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Strategy considered the complete source inventory and selected product-specific slices for source-tier, workbench, detail and final report synthesis.",
+    "inspected_files": [
+      {
+        "path": ".github/workflows/verify.yml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": ".github/workflows/verify.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": ".gitignore",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": ".gitignore",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/raw_agent_prompt.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/results.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/scanner_report.baseline.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/scanner_report.baseline.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/targets/demo-baseline-target.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/autonomous/manifest.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/autonomous/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/manifest.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/external/semantic/manifest.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/external/semantic/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/demo-repo.expected.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/demo-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/event-inventory-repo.expected.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/event-inventory-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/fullstack-booking-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/legacy-billing-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/manifest.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/manifest.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/results.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/results.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/golden/soap-claims-repo.expected.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "benchmarks/golden/soap-claims-repo.expected.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/MARKET_HARDENING_ROADMAP.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "docs/MARKET_HARDENING_ROADMAP.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/TARGET_COVERAGE.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "docs/TARGET_COVERAGE.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/target-picture.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "docs/target-picture.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/api-examples.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/api-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-examples.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-examples.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/business-flows.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/business-flows.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/examples/customer-verification-soap.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/openapi.yml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/openapi.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/docs/soap-kyc.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/pom.xml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/pom.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/Customer.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerNotFoundException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerRepository.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/CustomerStatus.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/DuplicateCustomerException.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycClient.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/KycResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingEventPublisher.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingRequest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingResult.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStartedEvent.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/OnboardingStatusResponse.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/java/com/acme/onboarding/RiskScoringService.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/application.yml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/application.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/onboarding.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/openapi/customer-onboarding.openapi.yaml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/customer-verification.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/wsdl/kyc-status.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/test/java/com/acme/onboarding/OnboardingServiceTest.java",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/src/inventory-consumer.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/docs/operations.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/docs/operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "LICENSE",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "LICENSE",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "package.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "package.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "README.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/AGENTS.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "resources/AGENTS.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/business-extraction/SKILL.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/business-extraction/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/cognianalysis/SKILL.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/cognianalysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "schemas/llm-output.schema.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "schemas/llm-output.schema.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-repos.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-repos.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-golden.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-llm-boundary.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-llm-boundary.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-product-readiness.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-self-product-readiness.mjs",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "scripts/verify-self-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisGoal.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/analysisGoal.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisPipeline.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/analysisPipeline.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/analysisSkills.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/analysisSkills.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/cli.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/index.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/index.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/marketProof.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/marketProof.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/mcp.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/mcp.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/node-globals.d.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/node-globals.d.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/productReadiness.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/productReadiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/readiness.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/readiness.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/repoMap.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/repoMap.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/report.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/report.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/reportComponents.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/reportComponents.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/skillWorkbenches.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/skillWorkbenches.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/sourceTiers.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/sourceTiers.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/targetCoverage.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/targetCoverage.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/tasks.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/tasks.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/toolPositioningReferences.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/toolPositioningReferences.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/types.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/types.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/utils.ts",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "src/utils.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "tsconfig.json",
+        "reason": "Included in complete source inventory for Tier 1 strategy planning.",
+        "evidence": [
+          {
+            "path": "tsconfig.json",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

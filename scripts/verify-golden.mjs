@@ -66,6 +66,24 @@ function readJsonObject(file, fallback = {}) {
   }
 }
 
+function replaceAllText(value, replacements) {
+  let out = String(value);
+  for (const [from, to] of replacements) {
+    if (!from) continue;
+    out = out.split(from).join(to);
+  }
+  return out;
+}
+
+function sanitizePublishedArtifact(value, replacements) {
+  if (Array.isArray(value)) return value.map(item => sanitizePublishedArtifact(item, replacements));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, sanitizePublishedArtifact(child, replacements)]));
+  }
+  if (typeof value === 'string') return replaceAllText(value, replacements);
+  return value;
+}
+
 function fileSha1(file) {
   return createHash('sha1').update(readFileSync(file)).digest('hex');
 }
@@ -214,7 +232,13 @@ function scoreExpected(expectedPath) {
       const targetArtifact = join(resultRoot, expected.repo, '.analysis', 'data', name);
       if (existsSync(sourceArtifact) && sourceArtifact !== targetArtifact) {
         mkdirSync(dirname(targetArtifact), { recursive: true });
-        cpSync(sourceArtifact, targetArtifact);
+        const sanitized = sanitizePublishedArtifact(readJsonObject(sourceArtifact), [
+          [analysis, `${expected.repo}/.analysis`],
+          [repo, expected.repo],
+          [verifyRoot, '<verify-root>'],
+          [root, '<repo-root>']
+        ]);
+        writeFileSync(targetArtifact, JSON.stringify(sanitized, null, 2) + '\n');
       }
     }
   }

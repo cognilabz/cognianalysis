@@ -1,0 +1,218 @@
+{
+  "source_family_detail_review": {
+    "source_family": "benchmark-orchestration-proof",
+    "review_status": "complete",
+    "summary": "The benchmark and orchestration surface supplies golden, baseline, external semantic, external autonomous handoff, source-tier workpack and cache/parallel proof contracts.",
+    "business_view": {
+      "summary": "This family prevents product claims from resting only on the demo repository or on a single model approval.",
+      "evidence": [
+        {
+          "path": "scripts/verify-golden.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-baseline.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-semantic.mjs",
+          "line": 1
+        },
+        {
+          "path": "scripts/verify-external-autonomous.mjs",
+          "line": 1
+        }
+      ]
+    },
+    "technical_view": {
+      "summary": "Verifier scripts and aggregate contracts validate benchmark fixtures, package inclusion, source-tier batches, parallel worker evidence and cache reuse evidence.",
+      "evidence": [
+        {
+          "path": "scripts/verify-demo.mjs",
+          "line": 1
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 662,
+          "symbol": "computeParallelOrchestrationContract"
+        },
+        {
+          "path": "src/aggregate.ts",
+          "line": 3035,
+          "symbol": "computeSourceTierCoverage"
+        }
+      ]
+    },
+    "findings": [
+      {
+        "title": "Representative benchmark proof is present.",
+        "description": "Golden, baseline and external benchmark scripts provide multi-fixture verification surfaces for the product.",
+        "severity": "positive",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "title": "Orchestration readiness is intentionally not granted by scaffold alone.",
+        "description": "The parallel orchestration contract requires worker-task evidence and cache-hit proof in addition to source-tier batches and artifact hashes.",
+        "severity": "positive",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 662,
+            "symbol": "computeParallelOrchestrationContract"
+          },
+          {
+            "path": "src/aggregate.ts",
+            "line": 3035,
+            "symbol": "computeSourceTierCoverage"
+          }
+        ]
+      }
+    ],
+    "recommendations": [
+      {
+        "title": "Automate true agent-run external semantic scoring when runner access exists.",
+        "phase": "next",
+        "benefit": "Turns the current Codex-authored external semantic loop into repeatable CI-grade proof.",
+        "effort": "M",
+        "risk": "medium",
+        "confidence": "medium",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          },
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "open_questions": [],
+    "evidence": [
+      {
+        "path": "scripts/verify-golden.mjs",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "line": 1
+      },
+      {
+        "path": "src/aggregate.ts",
+        "line": 662,
+        "symbol": "computeParallelOrchestrationContract"
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "Detail review inspected direct source anchors plus completed Tier 1 and workbench outputs.",
+    "inspected_files": [
+      {
+        "path": "scripts/verify-golden.mjs",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "scripts/verify-golden.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-baseline.mjs",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "scripts/verify-baseline.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-semantic.mjs",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-semantic.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-external-autonomous.mjs",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "scripts/verify-external-autonomous.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/sourceTiers.ts",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "src/sourceTiers.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "docs/BENCHMARK.md",
+        "reason": "Direct evidence for focused detail review.",
+        "evidence": [
+          {
+            "path": "docs/BENCHMARK.md",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}

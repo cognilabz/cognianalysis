@@ -74,6 +74,26 @@ function writeJson(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
 }
 
+function walkFiles(dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const stat = statSync(full);
+    if (stat.isDirectory()) walkFiles(full, out);
+    else if (stat.isFile()) out.push(full);
+  }
+  return out.sort();
+}
+
+function assertNoMachinePaths(label, dirOrFile) {
+  const files = statSync(dirOrFile).isDirectory() ? walkFiles(dirOrFile) : [dirOrFile];
+  const offenders = files
+    .filter(file => /\.(json|md|html|txt|yml|yaml|xml|wsdl|cpy)$/i.test(file))
+    .filter(file => /\/Users\/|\/var\/folders\/|\/private\/var\/|\/tmp\//.test(readFileSync(file, 'utf8')))
+    .map(file => file.slice(root.length + 1));
+  assert(offenders.length === 0, `${label} must not contain machine-local absolute paths: ${offenders.slice(0, 8).join(', ')}`);
+}
+
 function sha1Short(value, len = 20) {
   return createHash('sha1').update(value).digest('hex').slice(0, len);
 }
@@ -620,10 +640,14 @@ assert(packageJson.scripts?.['verify:baseline'] === 'npm run build && node scrip
 assert(packageJson.scripts?.['verify:external'] === 'npm run build && node scripts/verify-external-repos.mjs', 'Package must expose the external repository smoke verifier');
 assert(packageJson.scripts?.['verify:external-semantic'] === 'npm run build && node scripts/verify-external-semantic.mjs', 'Package must expose the external semantic benchmark verifier');
 assert(packageJson.scripts?.['verify:external-autonomous'] === 'npm run build && node scripts/verify-external-autonomous.mjs', 'Package must expose the external autonomous handoff verifier');
+assert(packageJson.scripts?.['verify:self-product-readiness'] === 'npm run build && node scripts/verify-self-product-readiness.mjs', 'Package must expose the self-product readiness verifier');
 assert(packageJson.files?.includes('benchmarks'), 'Package must publish benchmark fixtures');
 assert(packageJson.files?.includes('scripts'), 'Package must publish benchmark verification scripts');
+assert(packageJson.files?.includes('.analysis-seed'), 'Package must publish root self-analysis seed data for clean-checkout readiness proof');
 assert(packagePublishesPath('scripts/verify-external-semantic.mjs'), 'Package file allowlist must publish the external semantic verifier script');
 assert(packagePublishesPath('scripts/verify-external-autonomous.mjs'), 'Package file allowlist must publish the external autonomous handoff verifier script');
+assert(packagePublishesPath('scripts/verify-self-product-readiness.mjs'), 'Package file allowlist must publish the self-product readiness verifier script');
+assert(packagePublishesPath('.analysis-seed/llm/analysis-document.json'), 'Package file allowlist must publish root self-analysis seed artifact');
 assert(existsSync(join(root, 'benchmarks/external/autonomous/manifest.json')), 'External autonomous package manifest must exist');
 assert(packagePublishesPath('benchmarks/external/autonomous/manifest.json'), 'Package file allowlist must publish external autonomous manifest');
 for (const fixturePath of [
@@ -639,6 +663,10 @@ for (const fixturePath of [
 assert(!Object.prototype.hasOwnProperty.call(packageJson.bin || {}, 'cba'), 'Package must not expose the legacy cba CLI alias');
 assert(!packageJson.files?.includes('examples'), 'Package must not publish generated demo .analysis artifacts through the broad examples folder');
 assert(packageJson.files?.includes('examples/demo-repo/.analysis-seed'), 'Package must publish reusable demo seed data');
+assertNoMachinePaths('Published example benchmark artifacts', join(root, 'examples'));
+assertNoMachinePaths('Root self-analysis seed', join(root, '.analysis-seed'));
+assertNoMachinePaths('Golden benchmark results', join(root, 'benchmarks', 'golden', 'results.json'));
+assertNoMachinePaths('Baseline benchmark results', join(root, 'benchmarks', 'baseline', 'results.json'));
 const semanticRuntimeSources = ['src', 'dist']
   .flatMap(dir => {
     const full = join(root, dir);

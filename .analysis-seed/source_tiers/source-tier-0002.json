@@ -1,0 +1,1033 @@
+{
+  "source_file_tier_review": {
+    "task_id": "source-tier-0002",
+    "tier_model_version": "source-tier-v1",
+    "review_status": "complete",
+    "summary": "Tier 1 file cards for 32 files in source-tier-0002.",
+    "files": [
+      {
+        "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative fullstack booking fixture for API/UI/user-journey coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative fullstack booking fixture for API/UI/user-journey coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative SOAP claims fixture for WSDL and gateway coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "End-to-end demo verifier covering package publishing surface, report output and product fixtures.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-product-readiness.mjs",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Executable strict readiness gate used by package scripts.",
+        "technical_role": "verification gate",
+        "business_relevance": "Provides executable proof that product claims are guarded by repeatable verification.",
+        "relationships": [
+          {
+            "target": "package.json",
+            "kind": "called-by",
+            "description": "Verification script exposed through npm scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "scripts/verify-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/cli.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "CLI entrypoint exposing analyze, status, open and eval as the thin public product loop plus dev-scoped internals.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/index.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/index.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/node-globals.d.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "product implementation included in complete analysis scope.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/node-globals.d.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/tasks.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Generates required LLM task guides and detail review tasks.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/tasks.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/pom.xml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/pom.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/application.yml",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/application.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative event-driven inventory fixture for golden coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative SOAP claims fixture for WSDL and gateway coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "tsconfig.json",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "configuration or contract included in complete analysis scope.",
+        "technical_role": "configuration or contract",
+        "business_relevance": "Supports build, packaging, contracts or analysis execution.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "tsconfig.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Baseline comparison artifact for raw-agent and scanner/manual alternatives.",
+        "technical_role": "benchmark proof artifact",
+        "business_relevance": "Supplies representative proof data for market and baseline comparisons.",
+        "relationships": [
+          {
+            "target": "scripts/verify-golden.mjs",
+            "kind": "validated-by",
+            "description": "Benchmark data consumed by verifier scripts."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Demo onboarding repository source, contracts, docs or tests used to prove analysis quality.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative event-driven inventory fixture for golden coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative event-driven inventory fixture for golden coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative fullstack booking fixture for API/UI/user-journey coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative fullstack booking fixture for API/UI/user-journey coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative legacy billing fixture for COBOL/copybook/process coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative legacy billing fixture for COBOL/copybook/process coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/docs/operations.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative SOAP claims fixture for WSDL and gateway coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/docs/operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/README.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative SOAP claims fixture for WSDL and gateway coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Reusable agent skill instructions for specialized analysis workbenches.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Reusable agent skill instructions for specialized analysis workbenches.",
+        "technical_role": "product documentation",
+        "business_relevance": "Documents the product promise, workflow, benchmark contract or agent operating rules.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Aggregation engine that loads LLM artifacts, validates evidence, computes report contracts, simplified harness proof and orchestration proof.",
+        "technical_role": "product implementation",
+        "business_relevance": "Implements the Cognianalysis product harness that turns source repositories into evidence-backed decision reports.",
+        "relationships": [
+          {
+            "target": "src/cli.ts",
+            "kind": "supports",
+            "description": "Part of the CLI product harness and aggregation/reporting flow."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "LICENSE",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "repository support file included in complete analysis scope.",
+        "technical_role": "repository support file",
+        "business_relevance": "Supports build, packaging, contracts or analysis execution.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "LICENSE",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": ".gitignore",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "repository support file included in complete analysis scope.",
+        "technical_role": "repository support file",
+        "business_relevance": "Supports build, packaging, contracts or analysis execution.",
+        "relationships": [],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": ".gitignore",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative legacy billing fixture for COBOL/copybook/process coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+        "tier": "tier1_file_card",
+        "analysis_depth": 1,
+        "summary": "Representative legacy billing fixture for COBOL/copybook/process coverage.",
+        "technical_role": "representative example repository",
+        "business_relevance": "Represents the kinds of systems Cognianalysis must understand and report on.",
+        "relationships": [
+          {
+            "target": "benchmarks/golden/manifest.json",
+            "kind": "covered-by",
+            "description": "Representative fixture covered by golden benchmark expectations."
+          }
+        ],
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+        "line": 1
+      },
+      {
+        "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+        "line": 1
+      },
+      {
+        "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "line": 1
+      },
+      {
+        "path": "scripts/verify-product-readiness.mjs",
+        "line": 1
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "summary": "All files assigned to source-tier-0002 received Tier 1 file-card coverage.",
+    "inspected_files": [
+      {
+        "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/api/bookings.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/src/ui/BookingForm.tsx",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/src/claims-gateway.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-demo.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-demo.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "scripts/verify-product-readiness.mjs",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "scripts/verify-product-readiness.mjs",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/cli.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/cli.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/index.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/index.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/node-globals.d.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/node-globals.d.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/tasks.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/tasks.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/pom.xml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/pom.xml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/src/main/resources/application.yml",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/src/main/resources/application.yml",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/contracts/inventory-events.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/contracts/claims.wsdl",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "tsconfig.json",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "tsconfig.json",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/raw-agent-prompt-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "benchmarks/baseline/artifacts/scanner-report-demo.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/demo-repo/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/demo-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/docs/replay-runbook.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/event-inventory-repo/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/event-inventory-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/docs/user-journey.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/fullstack-booking-repo/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/fullstack-booking-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/docs/batch-operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/docs/operations.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/docs/operations.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/soap-claims-repo/README.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/soap-claims-repo/README.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/flow-mermaid-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "resources/agents/skills/interface-contract-analysis/SKILL.md",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "src/aggregate.ts",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "src/aggregate.ts",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "LICENSE",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "LICENSE",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": ".gitignore",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": ".gitignore",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/copybooks/INVOICE-RECORD.cpy",
+            "line": 1
+          }
+        ]
+      },
+      {
+        "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+        "reason": "Source-tier file card authored for complete-scope inventory coverage.",
+        "evidence": [
+          {
+            "path": "examples/legacy-billing-repo/src/BILLING.CBL",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "deferred_files": [],
+    "open_questions": []
+  }
+}
