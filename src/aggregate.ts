@@ -468,13 +468,24 @@ function hashStable(value: any, length = 20): string {
   return sha1Short(stableJson(value), length);
 }
 
-function sourceTierWorkpackTaskContextHash(task: any): string {
+function sourceTierWorkpackTaskContextHash(task: any, receipt: any = {}): string {
   return hashStable({
     task_id: String(task?.id || '').trim(),
     task_file: String(task?.task_file || '').trim(),
+    task_file_sha1: String(receipt?.task_file_sha1 || '').trim(),
+    context_file: String(receipt?.context_file || '').trim(),
+    context_file_sha1: String(receipt?.context_file_sha1 || '').trim(),
     expected_output: String(task?.expected_output || '').trim(),
     file_paths: asList(task?.file_paths).map((path: any) => String(path || '').trim()).filter(Boolean).sort()
   });
+}
+
+function fileContentHash20(file: string): string {
+  try {
+    return sha1Short(FS.readFileSync(file, 'utf8'), 20);
+  } catch {
+    return '';
+  }
 }
 
 function validateOrchestrationExecutionLog(bundle: any): any {
@@ -527,7 +538,7 @@ function validateOrchestrationExecutionLog(bundle: any): any {
     const receiptPaths = asList(receipt?.source_paths).map((path: any) => String(path || '').trim()).filter(Boolean).sort();
     const generatedFrom = asList(receipt?.generated_from).map((path: any) => String(path || '').trim()).filter(Boolean);
     return receipt?.valid === true
-      && String(receipt.task_context_hash || '').trim() === sourceTierWorkpackTaskContextHash(manifestTask)
+      && String(receipt.task_context_hash || '').trim() === sourceTierWorkpackTaskContextHash(manifestTask, receipt)
       && expectedPaths.length > 0
       && expectedPaths.length === receiptPaths.length
       && expectedPaths.every((path: string, index: number) => path === receiptPaths[index])
@@ -2833,6 +2844,7 @@ function loadSourceTierOutputs(sourceTierDir: string): any {
   const reviews: any[] = [];
   const workpackExecutions: any[] = [];
   if (!fs.existsSync(sourceTierDir)) return { reviews, workpackExecutions };
+  const analysisDir = Path.dirname(sourceTierDir);
   const files = fs.readdirSync(sourceTierDir).filter((f: string) => f.endsWith('.json')).sort();
   for (const f of files) {
     const data = loadJson<any>(Path.join(sourceTierDir, f), {});
@@ -2841,10 +2853,17 @@ function loadSourceTierOutputs(sourceTierDir: string): any {
     if (review) reviews.push(review);
     const receipt = data.source_tier_workpack_execution || data.workpack_execution_receipt;
     if (review && receipt && typeof receipt === 'object' && !Array.isArray(receipt)) {
+      const generatedFrom = asList(receipt.generated_from).map((path: any) => String(path || '').trim()).filter(Boolean);
+      const taskFile = generatedFrom.find((path: string) => path.startsWith('source_tier_tasks/') && path.endsWith('.md')) || '';
+      const taskFileHash = taskFile ? fileContentHash20(Path.join(analysisDir, taskFile)) : '';
+      const contextFile = `source_tier_contexts/${String(receipt.task_id || review.task_id || Path.basename(f, '.json')).trim()}.json`;
+      const contextFileHash = FS.existsSync(Path.join(analysisDir, contextFile)) ? fileContentHash20(Path.join(analysisDir, contextFile)) : '';
       workpackExecutions.push({
         ...receipt,
         artifact_path: receipt.artifact_path || `source_tiers/${f}`,
         task_id: receipt.task_id || review.task_id || Path.basename(f, '.json'),
+        task_file_sha1_computed: taskFileHash,
+        context_file_sha1_computed: contextFileHash,
         receipt_hash: hashStable(receipt),
         review_hash_computed: hashStable(review),
         valid: String(receipt.schemaVersion || '') === '1.0'
@@ -2852,6 +2871,9 @@ function loadSourceTierOutputs(sourceTierDir: string): any {
           && String(receipt.execution_mode || '') === 'codex_authored_workpack_receipt_validation'
           && String(receipt.executor || '') === 'codex-in-session'
           && String(receipt.review_hash || '') === hashStable(review)
+          && !!taskFileHash
+          && String(receipt.task_file_sha1 || '') === taskFileHash
+          && (!contextFileHash || String(receipt.context_file_sha1 || '') === contextFileHash)
       });
     }
   }

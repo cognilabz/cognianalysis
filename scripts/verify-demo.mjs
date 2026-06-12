@@ -114,13 +114,27 @@ function sourceTierTaskContextHash(task) {
   return hashStable({
     task_id: task.id,
     task_file: task.task_file,
+    task_file_sha1: task.task_file_sha1 || '',
+    context_file: task.context_file || '',
+    context_file_sha1: task.context_file_sha1 || '',
     expected_output: task.expected_output,
     file_paths: [...(task.file_paths || [])].sort()
   });
 }
 
-function withWorkpackExecutionReceipt(artifact, task) {
+function withWorkpackExecutionReceipt(artifact, task, analysisDir) {
   const review = artifact.source_file_tier_review || {};
+  const taskFilePath = join(analysisDir, task.task_file);
+  const taskFileSha1 = existsSync(taskFilePath) ? sha1Short(readFileSync(taskFilePath, 'utf8'), 20) : '';
+  const contextFile = `source_tier_contexts/${task.id}.json`;
+  const contextFilePath = join(analysisDir, contextFile);
+  const contextFileSha1 = existsSync(contextFilePath) ? sha1Short(readFileSync(contextFilePath, 'utf8'), 20) : '';
+  const receiptTask = {
+    ...task,
+    task_file_sha1: taskFileSha1,
+    context_file: contextFileSha1 ? contextFile : '',
+    context_file_sha1: contextFileSha1
+  };
   return {
     ...artifact,
     source_tier_workpack_execution: {
@@ -130,7 +144,9 @@ function withWorkpackExecutionReceipt(artifact, task) {
       executor: 'codex-in-session',
       task_id: task.id,
       artifact_path: task.expected_output,
-      task_context_hash: sourceTierTaskContextHash(task),
+      task_context_hash: sourceTierTaskContextHash(receiptTask),
+      task_file_sha1: taskFileSha1,
+      ...(contextFileSha1 ? { context_file: contextFile, context_file_sha1: contextFileSha1 } : {}),
       review_hash: hashStable(review),
       source_paths: [...(task.file_paths || [])].sort(),
       generated_from: ['source-tier-task-manifest.json', task.task_file],
@@ -633,23 +649,32 @@ assert(orchestrationBundle.parallel_orchestration_contract?.cache_reuse_proof_va
 const receiptlessRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 const receiptlessRunnerOutput = `${receiptlessRunner.stdout || ''}\n${receiptlessRunner.stderr || ''}`;
 assert(receiptlessRunnerOutput.includes('Invalid Codex workpack execution receipt'), 'Runner must reject completed source-tier outputs that lack Codex workpack execution receipts');
-const badSourcePathReceipt = withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]);
+const badSourcePathReceipt = withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis);
 badSourcePathReceipt.source_tier_workpack_execution.source_paths = ['not-the-task-source-path'];
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), badSourcePathReceipt);
-writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1]));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
 let badReceiptRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 let badReceiptOutput = `${badReceiptRunner.stdout || ''}\n${badReceiptRunner.stderr || ''}`;
 assert(badReceiptOutput.includes('workpack_receipt.source_paths'), 'Runner must reject receipts whose source_paths do not match the task manifest');
-const badGeneratedFromReceipt = withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]);
+const badGeneratedFromReceipt = withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis);
 badGeneratedFromReceipt.source_tier_workpack_execution.generated_from = ['source-tier-task-manifest.json'];
 writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), badGeneratedFromReceipt);
 badReceiptRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 badReceiptOutput = `${badReceiptRunner.stdout || ''}\n${badReceiptRunner.stderr || ''}`;
 assert(badReceiptOutput.includes('workpack_receipt.generated_from'), 'Runner must reject receipts that do not name the generated task file');
-writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]));
-writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1]));
-writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0]));
-writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1]));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
+const firstTaskFile = join(orchestrationAnalysis, sourceTierManifest.tasks[0].task_file);
+const firstTaskFileOriginal = readFileSync(firstTaskFile, 'utf8');
+writeFileSync(firstTaskFile, `${firstTaskFileOriginal}\nStale receipt regression: task content changed after receipt authoring.\n`, 'utf8');
+badReceiptRunner = run(['dev', 'run-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
+badReceiptOutput = `${badReceiptRunner.stdout || ''}\n${badReceiptRunner.stderr || ''}`;
+assert(badReceiptOutput.includes('workpack_receipt.task_context_hash') || badReceiptOutput.includes('workpack_receipt.task_file_sha1'), 'Runner must reject receipts when task file content changes after receipt authoring');
+writeFileSync(firstTaskFile, firstTaskFileOriginal, 'utf8');
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis));
+writeJson(join(orchestrationAnalysis, 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0001.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0001', firstCards), sourceTierManifest.tasks[0], orchestrationAnalysis));
+writeJson(join(orchestrationRepo, '.analysis-seed', 'source_tiers', 'source-tier-0002.json'), withWorkpackExecutionReceipt(splitTierArtifact('source-tier-0002', secondCards), sourceTierManifest.tasks[1], orchestrationAnalysis));
 run(['dev', 'run-orchestration', orchestrationRepo], { capture: true });
 const firstRunnerProof = run(['dev', 'prove-orchestration', orchestrationRepo], { capture: true, expectFailure: true });
 const firstRunnerProofOutput = `${firstRunnerProof.stdout || ''}\n${firstRunnerProof.stderr || ''}`;

@@ -124,7 +124,8 @@
     "executor": "codex-in-session",
     "task_id": "source-tier-0001",
     "artifact_path": "source_tiers/source-tier-0001.json",
-    "task_context_hash": "148808a10f6792106ac7",
+    "task_context_hash": "d4cfe247c3a74adcb5d5",
+    "task_file_sha1": "75ccb926db6171b772ae",
     "review_hash": "774eca49e38b5155d33d",
     "source_paths": [
       "README.md",

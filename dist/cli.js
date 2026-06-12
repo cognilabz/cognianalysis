@@ -998,10 +998,20 @@ function validateExecutionLog(bundle, log) {
     ];
     return { workerTasks: rows, errors };
 }
-function sourceTierWorkpackTaskContextHash(task) {
+function fileContentHash(file) {
+    return utils_1.FS.existsSync(file) ? (0, utils_1.sha1Short)(utils_1.FS.readFileSync(file, 'utf8'), 20) : '';
+}
+function sourceTierWorkpackTaskContextHash(analysis, task) {
+    const taskFile = String(task?.task_file || '').trim();
+    const contextFile = utils_1.Path.join('source_tier_contexts', `${String(task?.id || '').trim()}.json`);
+    const taskFileHash = taskFile ? fileContentHash(utils_1.Path.join(analysis, taskFile)) : '';
+    const contextFileHash = utils_1.FS.existsSync(utils_1.Path.join(analysis, contextFile)) ? fileContentHash(utils_1.Path.join(analysis, contextFile)) : '';
     return hashStable({
         task_id: String(task?.id || '').trim(),
-        task_file: String(task?.task_file || '').trim(),
+        task_file: taskFile,
+        task_file_sha1: taskFileHash,
+        context_file: contextFileHash ? contextFile : '',
+        context_file_sha1: contextFileHash,
         expected_output: String(task?.expected_output || '').trim(),
         file_paths: (task?.file_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort()
     });
@@ -1009,7 +1019,7 @@ function sourceTierWorkpackTaskContextHash(task) {
 function sourceTierWorkpackReceipt(artifact) {
     return artifact?.source_tier_workpack_execution || artifact?.workpack_execution_receipt || {};
 }
-function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
+function validateSourceTierWorkpackExecution(analysis, task, artifactPath, artifact) {
     const review = artifact?.source_file_tier_review || {};
     const receipt = sourceTierWorkpackReceipt(artifact);
     const filePaths = (task?.file_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort();
@@ -1017,9 +1027,12 @@ function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
     const receiptSourcePaths = (receipt?.source_paths || []).map((path) => String(path || '').trim()).filter(Boolean).sort();
     const generatedFrom = (receipt?.generated_from || []).map((path) => String(path || '').trim()).filter(Boolean);
     const taskFile = String(task?.task_file || '').trim();
+    const taskFileHash = taskFile ? fileContentHash(utils_1.Path.join(analysis, taskFile)) : '';
+    const contextFile = utils_1.Path.join('source_tier_contexts', `${String(task?.id || '').trim()}.json`);
+    const contextFileHash = utils_1.FS.existsSync(utils_1.Path.join(analysis, contextFile)) ? fileContentHash(utils_1.Path.join(analysis, contextFile)) : '';
     const reviewHash = hashStable(review);
     const receiptHash = hashStable(receipt);
-    const taskContextHash = sourceTierWorkpackTaskContextHash(task);
+    const taskContextHash = sourceTierWorkpackTaskContextHash(analysis, task);
     const errors = [
         ...(String(receipt?.schemaVersion || '') === '1.0' ? [] : ['workpack_receipt.schemaVersion']),
         ...(String(receipt?.execution_kind || '') === SOURCE_TIER_WORKPACK_EXECUTION_KIND ? [] : ['workpack_receipt.execution_kind']),
@@ -1028,6 +1041,8 @@ function validateSourceTierWorkpackExecution(task, artifactPath, artifact) {
         ...(String(receipt?.task_id || '') === String(task?.id || '') ? [] : ['workpack_receipt.task_id']),
         ...(String(receipt?.artifact_path || '') === artifactPath ? [] : ['workpack_receipt.artifact_path']),
         ...(String(receipt?.task_context_hash || '') === taskContextHash ? [] : ['workpack_receipt.task_context_hash']),
+        ...(String(receipt?.task_file_sha1 || '') === taskFileHash ? [] : ['workpack_receipt.task_file_sha1']),
+        ...(contextFileHash ? (String(receipt?.context_file_sha1 || '') === contextFileHash ? [] : ['workpack_receipt.context_file_sha1']) : []),
         ...(String(receipt?.review_hash || '') === reviewHash ? [] : ['workpack_receipt.review_hash']),
         ...(filePaths.length > 0 && filePaths.length === receiptSourcePaths.length && filePaths.every((path, index) => path === receiptSourcePaths[index]) ? [] : ['workpack_receipt.source_paths']),
         ...(generatedFrom.includes('source-tier-task-manifest.json') && generatedFrom.includes(taskFile) ? [] : ['workpack_receipt.generated_from']),
@@ -1095,7 +1110,7 @@ async function cmdRunOrchestration(args) {
             throw new Error(`Missing Codex-authored source-tier output for runner execution: ${targetOutput}`);
         await new Promise(resolve => setTimeout(resolve, 25));
         const artifact = JSON.parse(utils_1.FS.readFileSync(targetOutput, 'utf8'));
-        const receiptValidation = validateSourceTierWorkpackExecution(task.task, task.artifact_path, artifact);
+        const receiptValidation = validateSourceTierWorkpackExecution(analysis, task.task, task.artifact_path, artifact);
         if (receiptValidation.errors.length)
             throw new Error(`Invalid Codex workpack execution receipt for ${task.task_id}: ${receiptValidation.errors.join(', ')}`);
         const workerEnd = Date.now();
