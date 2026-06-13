@@ -5,7 +5,9 @@ export function renderReport(analysisDir: string, outputDir?: string, title?: st
   const bundle = publicReportBundle(loadBundle(analysisDir));
   const out = outputDir || Path.join(analysisDir, 'report');
   ensureDir(out);
-  const reportTitle = title || bundle.analysis_document?.title || `Cognianalysis · ${bundle.profile?.repo_name || 'Repository'}`;
+  const reportTitle = title
+    || bundle.analysis_document?.title
+    || `Cognianalysis Decision Report · ${bundle.analysis?.repo?.name || bundle.profile?.repo_name || 'Repository'}`;
   const index = Path.join(out, 'index.html');
   writeText(index, buildHtml(bundle, reportTitle));
   const dataPath = Path.join(out, 'analysis-data.json');
@@ -172,7 +174,36 @@ function mermaidBlock(source: any, evidence?: any): string {
 }
 
 function sectionTasks(bundle: any): string {
-  return listItems(bundle.tasks || [], (t: any) => card(t.title || t.task_file, `<div>${chip(t.status || 'pending')}</div><div class="kv"><span>Task</span><code>${escapeHtml(t.task_file)}</code></div><div class="kv"><span>Output</span><code>${escapeHtml(t.expected_output)}</code></div>`));
+  const rows = Array.isArray(bundle.workpack_manifest?.workpacks) && bundle.workpack_manifest.workpacks.length
+    ? bundle.workpack_manifest.workpacks.map((w: any) => ({
+      title: w.title || w.id,
+      task_file: `workpacks/${w.id}.md`,
+      expected_output: w.output_path,
+      status: w.required ? 'required' : 'optional'
+    }))
+    : (bundle.tasks || []);
+  return listItems(rows, (t: any) => card(t.title || t.task_file, `<div>${chip(t.status || 'pending')}</div><div class="kv"><span>Task</span><code>${escapeHtml(t.task_file)}</code></div><div class="kv"><span>Output</span><code>${escapeHtml(t.expected_output)}</code></div>`));
+}
+
+function collectEvidenceGaps(value: any, out: any[] = [], path: string[] = []): any[] {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectEvidenceGaps(item, out, [...path, String(index)]));
+    return out;
+  }
+  if (!value || typeof value !== 'object') return out;
+  const gap = evidenceGapOf(value);
+  if (gap) {
+    out.push({
+      title: firstText(value.title, value.name, value.id, value.question, path[path.length - 1], 'Evidence gap'),
+      summary: gap,
+      severity: value.blocking ? 'blocking' : value.severity,
+      evidence: evidenceOf(value)
+    });
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (key !== 'evidence' && key !== 'evidence_refs') collectEvidenceGaps(child, out, [...path, key]);
+  }
+  return out;
 }
 
 function sectionId(value: any, fallback: string): string {
@@ -418,13 +449,14 @@ function analysisDocumentSections(bundle: any): [string, string, string][] {
 
 function pendingAnalysisDocumentSections(bundle: any): [string, string, string][] {
   const tasks = bundle.tasks || [];
+  const workpacks = Array.isArray(bundle.workpack_manifest?.workpacks) ? bundle.workpack_manifest.workpacks : [];
   const body = `<article class="analysis-doc-lead card accent search-card" data-search="awaiting llm authored analysis document report incomplete">
     <p class="eyebrow">LLM-authored analysis document required</p>
     <h2>Report pending · ${escapeHtml(bundle.profile?.repo_name || 'Repository')}</h2>
     <p>The CLI has prepared deterministic inventory and harness workpacks. Open <code>.analysis/TASK.md</code> in your agent harness, then rerun <code>cognianalysis analyze .</code> after the agent writes <code>.analysis/analysis.json</code>.</p>
     <div class="metrics compact">
       ${metric('Report mode', bundle.report_mode?.state || 'awaiting_llm_authored_report')}
-      ${metric('Generated tasks', tasks.length)}
+      ${metric('Generated workpacks', workpacks.length || tasks.length)}
       ${metric('Source inventory files', (bundle.source_inventory_accounting || bundle.source_coverage)?.total_files || bundle.profile?.source_files || 0)}
     </div>
   </article>
@@ -444,8 +476,19 @@ function evidenceAuditSection(bundle: any): [string, string, string] | null {
   const openQuestions = Array.isArray(bundle.analysis?.open_questions) ? bundle.analysis.open_questions : (bundle.analysis_document?.open_questions || []);
   const reportQuality = bundle.analysis?.report_quality_review || bundle.analysis_document?.report_quality_review;
   const blockingQuestions = openQuestions.filter((q: any) => q?.blocking === true);
-  if (!invalidEvidence.length && !unsupported.length && !allEvidence.length && !openQuestions.length && !reportQuality) return null;
+  const evidenceGaps = collectEvidenceGaps(bundle.analysis || {}).slice(0, 80);
+  if (!invalidEvidence.length && !unsupported.length && !allEvidence.length && !openQuestions.length && !reportQuality && !evidenceGaps.length) return null;
   const blocks = [
+    renderDocBlock({
+      type: 'metric_grid',
+      title: 'Evidence Integrity Summary',
+      metrics: [
+        { label: 'Invalid evidence', value: invalidEvidence.length },
+        { label: 'Unsupported major claims', value: unsupported.length },
+        { label: 'Evidence gaps', value: evidenceGaps.length },
+        { label: 'Open questions', value: openQuestions.length }
+      ]
+    }),
     blockingQuestions.length ? renderDocBlock({ type: 'open_questions', title: 'Blocking Open Questions', items: blockingQuestions }) : '',
     unsupported.length ? renderDocBlock({
       type: 'statement_list',
@@ -456,6 +499,11 @@ function evidenceAuditSection(bundle: any): [string, string, string] | null {
         severity: 'unsupported',
         evidence_gap: claim.evidence_gap || 'Major claim needs file:line evidence, explicit evidence_gap or open-question treatment.'
       }))
+    }) : '',
+    evidenceGaps.length ? renderDocBlock({
+      type: 'statement_list',
+      title: 'Explicit Evidence Gaps',
+      items: evidenceGaps
     }) : '',
     invalidEvidence.length ? renderDocBlock({ type: 'evidence_index', title: 'Invalid Evidence References', items: invalidEvidence }) : '',
     allEvidence.length ? renderDocBlock({ type: 'evidence_index', title: 'Global Evidence Index', items: allEvidence }) : '',

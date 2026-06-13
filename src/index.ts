@@ -1,11 +1,11 @@
 export { buildRepoMap } from './repoMap';
 export { prepareAnalysis, aggregate, loadBundle } from './aggregate';
 export { renderReport, buildHtml } from './report';
-export { writeLlmTasks } from './tasks';
-export { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
-export { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
-export { TARGET_CAPABILITIES, computeTargetCoverage } from './targetCoverage';
-export { computeProductReadiness, productReadinessBrief } from './productReadiness';
+export { writeLlmTasks } from './audit/tasks';
+export { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './audit/sourceTiers';
+export { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenches';
+export { TARGET_CAPABILITIES, computeTargetCoverage } from './audit/targetCoverage';
+export { computeProductReadinessV2, productReadinessV2Brief } from './productReadiness';
 export { loadAnalysisDocument, validateAnalysisV2, analysisV2ToLegacyAnalysisDocument, analysisV2ToReportSections } from './contracts/analysisV2';
 export { buildInventory } from './inventory';
 export { writeWorkpacks } from './workpacks';

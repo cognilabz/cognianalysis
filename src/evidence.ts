@@ -40,12 +40,23 @@ function text(value: any, fields: string[]): string {
   return '';
 }
 
-function claim(idPrefix: string, category: string, item: any, index: number, inheritedEvidence: EvidenceReference[] = []): MajorClaim | null {
+function claim(idPrefix: string, category: string, item: any, index: number, inheritedEvidence: EvidenceReference[] = [], inheritedGap = ''): MajorClaim | null {
+  if (typeof item === 'string' && item.trim()) {
+    return {
+      id: `${idPrefix}-${index + 1}`,
+      category,
+      title: item.trim().slice(0, 120),
+      summary: item.trim(),
+      evidence: inheritedEvidence,
+      evidence_gap: inheritedGap,
+      open_question: category === 'open_question'
+    };
+  }
   if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
   const title = text(item, ['title', 'name', 'id', 'question', 'recommended_action']) || `${category} ${index + 1}`;
-  const summary = text(item, ['summary', 'description', 'rationale', 'recommendation', 'reason', 'impact']);
+  const summary = text(item, ['summary', 'description', 'rationale', 'recommendation', 'reason', 'impact', 'text']);
   const evidence = evidenceRefs(item).length ? evidenceRefs(item) : inheritedEvidence;
-  const evidenceGap = text(item, ['evidence_gap', 'missing_evidence', 'proof_gap']);
+  const evidenceGap = text(item, ['evidence_gap', 'missing_evidence', 'proof_gap']) || inheritedGap;
   const openQuestion = item.blocking !== undefined || !!item.question || category === 'open_question';
   if (!title && !summary && !evidence.length && !evidenceGap) return null;
   return {
@@ -62,9 +73,9 @@ function claim(idPrefix: string, category: string, item: any, index: number, inh
 export function collectMajorClaims(analysis: any): MajorClaim[] {
   if (!analysis || typeof analysis !== 'object') return [];
   const claims: MajorClaim[] = [];
-  const add = (category: string, items: any, prefix: string, inheritedEvidence: EvidenceReference[] = []) => {
+  const add = (category: string, items: any, prefix: string, inheritedEvidence: EvidenceReference[] = [], inheritedGap = '') => {
     asList(items).forEach((item, index) => {
-      const row = claim(prefix, category, item, index, inheritedEvidence);
+      const row = claim(prefix, category, item, index, inheritedEvidence, inheritedGap);
       if (row) claims.push(row);
     });
   };
@@ -72,21 +83,36 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   const executiveGap = text(analysis.executive_decision, ['evidence_gap', 'missing_evidence', 'proof_gap']);
   add('executive_recommendation', [{ title: 'Executive summary', summary: analysis.executive_decision?.summary, evidence: executiveEvidence, evidence_gap: executiveGap }], 'executive-summary');
   add('executive_recommendation', [{ title: 'Recommended action', summary: analysis.executive_decision?.recommended_action, evidence: executiveEvidence, evidence_gap: executiveGap }], 'recommended-action');
-  add('executive_recommendation', analysis.executive_decision?.decision_options, 'decision-option', executiveEvidence);
-  add('process_risk', analysis.executive_decision?.top_risks, 'executive-risk', executiveEvidence);
-  add('process_risk', analysis.executive_decision?.next_steps, 'executive-next-step', executiveEvidence);
+  add('executive_recommendation', analysis.executive_decision?.decision_options, 'decision-option', executiveEvidence, executiveGap);
+  add('process_risk', analysis.executive_decision?.top_risks, 'executive-risk', executiveEvidence, executiveGap);
+  add('process_risk', analysis.executive_decision?.next_steps, 'executive-next-step', executiveEvidence, executiveGap);
+  const functionalGap = text(analysis.functional_view, ['evidence_gap', 'missing_evidence', 'proof_gap']);
+  add('capability_statement', [{ title: 'System purpose', summary: analysis.functional_view?.system_purpose, evidence: evidenceRefs(analysis.functional_view || {}), evidence_gap: functionalGap }], 'system-purpose');
   const technicalGap = text(analysis.technical_view, ['evidence_gap', 'missing_evidence', 'proof_gap']);
   add('architecture_statement', [{ title: 'Architecture summary', summary: analysis.technical_view?.architecture_summary, evidence: evidenceRefs(analysis.technical_view || {}), evidence_gap: technicalGap }], 'architecture-summary');
-  add('capability_statement', analysis.functional_view?.capabilities, 'capability');
-  add('api_interface_statement', analysis.technical_view?.entrypoints, 'entrypoint');
-  add('api_interface_statement', analysis.technical_view?.apis_and_interfaces, 'interface');
-  add('bug_statement', analysis.code_quality_security?.bugs, 'bug');
-  add('vulnerability_statement', analysis.code_quality_security?.vulnerabilities, 'vulnerability');
-  add('quality_statement', analysis.code_quality_security?.code_quality_findings, 'quality');
-  add('process_risk', analysis.process_analysis?.delivery_risks, 'delivery-risk');
-  add('refactoring_recommendation', analysis.refactoring?.target_architecture_options, 'target-architecture');
-  add('refactoring_recommendation', analysis.refactoring?.migration_roadmap, 'migration-roadmap');
-  add('refactoring_recommendation', analysis.refactoring?.quick_wins, 'quick-win');
+  add('capability_statement', analysis.functional_view?.actors, 'actor', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('capability_statement', analysis.functional_view?.capabilities, 'capability', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('capability_statement', analysis.functional_view?.user_or_system_flows, 'flow', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('api_interface_statement', analysis.technical_view?.entrypoints, 'entrypoint', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('api_interface_statement', analysis.technical_view?.apis_and_interfaces, 'interface', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.data_and_state, 'data-state', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.integrations, 'integration', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.deployment_runtime, 'deployment-runtime', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  const qualityGap = text(analysis.code_quality_security, ['evidence_gap', 'missing_evidence', 'proof_gap']);
+  add('bug_statement', analysis.code_quality_security?.bugs, 'bug', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
+  add('vulnerability_statement', analysis.code_quality_security?.vulnerabilities, 'vulnerability', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
+  add('quality_statement', analysis.code_quality_security?.code_quality_findings, 'quality', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
+  const processGap = text(analysis.process_analysis, ['evidence_gap', 'missing_evidence', 'proof_gap']);
+  add('process_risk', [{ title: 'Test readiness', summary: analysis.process_analysis?.test_readiness, evidence: evidenceRefs(analysis.process_analysis || {}), evidence_gap: processGap }], 'test-readiness');
+  add('process_risk', analysis.process_analysis?.delivery_risks, 'delivery-risk', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('process_risk', analysis.process_analysis?.observability, 'observability', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('process_risk', analysis.process_analysis?.documentation_gaps, 'documentation-gap', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('process_risk', analysis.process_analysis?.process_improvements, 'process-improvement', evidenceRefs(analysis.process_analysis || {}), processGap);
+  const refactoringGap = text(analysis.refactoring, ['evidence_gap', 'missing_evidence', 'proof_gap']);
+  add('refactoring_recommendation', analysis.refactoring?.target_architecture_options, 'target-architecture', evidenceRefs(analysis.refactoring || {}), refactoringGap);
+  add('refactoring_recommendation', analysis.refactoring?.migration_roadmap, 'migration-roadmap', evidenceRefs(analysis.refactoring || {}), refactoringGap);
+  add('refactoring_recommendation', analysis.refactoring?.tech_stack_options, 'tech-stack', evidenceRefs(analysis.refactoring || {}), refactoringGap);
+  add('refactoring_recommendation', analysis.refactoring?.quick_wins, 'quick-win', evidenceRefs(analysis.refactoring || {}), refactoringGap);
   add('open_question', analysis.open_questions, 'open-question');
   return claims;
 }

@@ -1,16 +1,16 @@
 import { aggregate } from './aggregate';
 import { buildRepoMap } from './repoMap';
 import { renderReport } from './report';
-import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './tasks';
+import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './audit/tasks';
 import { prepareAnalysis } from './aggregate';
-import { FS, Path, copyRecursive } from './utils';
+import { FS, Path } from './utils';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
-import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
+import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenches';
 
 function send(obj: any): void { process.stdout.write(JSON.stringify(obj) + '\n'); }
 
 const SERVER_NAME = 'cognianalysis';
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const CLI_NAME = 'cognianalysis';
 
 function stagedLlmWorkflowMessage(): string {
@@ -44,16 +44,8 @@ async function callTool(name: string, args: any): Promise<any> {
   if (!FS.existsSync(repo) || !FS.statSync(repo).isDirectory()) throw new Error(`Repository path does not exist or is not a directory: ${repo}`);
   if (name === 'prepare') {
     const codeMap = buildRepoMap(repo, { maxFileSize: args?.maxFileSize, capsuleLimit: args?.capsules, capsuleChars: args?.capsuleChars });
-    prepareAnalysis(repo, analysis, codeMap);
+    prepareAnalysis(repo, analysis, codeMap, { auditMode: true });
     const tasks = writeLlmTasks(analysis, codeMap);
-    const seedDir = Path.join(repo, '.analysis-seed', 'llm');
-    if (FS.existsSync(seedDir)) copyRecursive(seedDir, Path.join(analysis, 'llm'), false);
-    const detailReviewSeedDir = Path.join(repo, '.analysis-seed', 'detail_reviews');
-    if (FS.existsSync(detailReviewSeedDir)) copyRecursive(detailReviewSeedDir, Path.join(analysis, 'detail_reviews'), false);
-    const sourceTierSeedDir = Path.join(repo, '.analysis-seed', 'source_tiers');
-    if (FS.existsSync(sourceTierSeedDir)) copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
-    const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
-    if (FS.existsSync(skillReviewSeedDir)) copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
     return { analysis, tasks: tasks.length, staged_llm_workflow: stagedLlmWorkflowMessage() };
   }
   if (name === 'aggregate') return aggregate(repo, analysis);

@@ -156,23 +156,6 @@ export function writeWorkpacks(analysisDir: string): WorkpackDefinition[] {
     workpacks
   };
   writeJson(Path.join(analysisDir, 'workpack-manifest.json'), manifest);
-  writeJson(Path.join(dataDir, 'workpack-manifest.json'), manifest);
   writeText(Path.join(analysisDir, 'TASK.md'), taskGuide(workpacks, mode, goal));
-  writeJson(Path.join(analysisDir, 'task-manifest.json'), {
-    mode: 'workpack_v2_parallel_llm_shards',
-    implementation_language: 'TypeScript',
-    single_task_file: 'TASK.md',
-    product_analysis_request: request,
-    workpacks,
-    tasks: workpacks.map(item => ({
-      id: item.id,
-      title: item.title,
-      task_kind: 'workpack_v2',
-      required_for_final: item.required,
-      task_file: `workpacks/${item.id}.md`,
-      expected_output: item.output_path.replace(/^\.analysis\//, ''),
-      status: 'pending'
-    }))
-  });
   return workpacks;
 }

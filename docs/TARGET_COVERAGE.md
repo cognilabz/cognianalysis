@@ -1,6 +1,6 @@
 # Target Capability Context
 
-This document defines the product-level target context used by `cognianalysis dev finalize` and `cognianalysis dev coverage`.
+This document defines the complete-audit target context used by `cognianalysis dev finalize`.
 
 The target rows are not semantic coverage and are not CLI-scored. They preserve the original capability picture as LLM trace context:
 
@@ -39,7 +39,6 @@ A repository must not show target rows as `covered`, `present`, `partial`, `miss
 - Tool alternative positioning
 - Evidence-first validation
 - Interactive HTML reporting
-- Portfolio mode
 - Harness portability through CLI, skills and optional stdio tools
 
 ## Evidence rule

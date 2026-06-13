@@ -2,6 +2,10 @@ import { loadShards } from './shards';
 import { validateEvidenceTree } from './evidence';
 import { FS, Path, asList, loadJson, writeJson } from './utils';
 
+export interface SynthesisInputOptions {
+  writeDataAlias?: boolean;
+}
+
 function evidenceRefs(value: any): any[] {
   const out: any[] = [];
   function walk(item: any): void {
@@ -57,7 +61,7 @@ function claimsById(value: any): Map<string, Set<string>> {
   return map;
 }
 
-export function buildSynthesisInput(repo: string, analysisDir: string, inventorySummary: any = {}): any {
+export function buildSynthesisInput(repo: string, analysisDir: string, inventorySummary: any = {}, options: SynthesisInputOptions = {}): any {
   const manifest = loadJson<any>(Path.join(analysisDir, 'workpack-manifest.json'), { workpacks: [] });
   const requiredOutputs = asList(manifest.workpacks).filter((item: any) => item.required !== false).map((item: any) => String(item.output_path || '').replace(/^\.analysis\//, ''));
   const shards = loadShards(analysisDir);
@@ -83,6 +87,6 @@ export function buildSynthesisInput(repo: string, analysisDir: string, inventory
     inventory_summary: inventorySummary
   };
   writeJson(Path.join(analysisDir, 'synthesis-input.json'), synthesis);
-  writeJson(Path.join(analysisDir, 'data', 'synthesis-input.json'), synthesis);
+  if (options.writeDataAlias === true) writeJson(Path.join(analysisDir, 'data', 'synthesis-input.json'), synthesis);
   return synthesis;
 }

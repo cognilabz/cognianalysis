@@ -1,6 +1,10 @@
 import { NormalizedScannerFinding, NormalizedScannerFindings, ScannerCategory, ScannerSeverity, ScannerTool } from './scannerTypes';
 import { FS, Path, asList, loadJson, writeJson } from './utils';
 
+export interface ScannerImportOptions {
+  writeDataAlias?: boolean;
+}
+
 const INPUTS: Array<{ tool: ScannerTool; file: string }> = [
   { tool: 'sonar', file: 'sonar.json' },
   { tool: 'codeql', file: 'codeql.sarif' },
@@ -136,7 +140,7 @@ function simpleFindings(tool: ScannerTool, inputPath: string, data: any): Normal
   }, index, tool, inputPath));
 }
 
-export function normalizeScannerImports(analysisDir: string): NormalizedScannerFindings {
+export function normalizeScannerImports(analysisDir: string, options: ScannerImportOptions = {}): NormalizedScannerFindings {
   const importsDir = Path.join(analysisDir, 'imports');
   const sources: NormalizedScannerFindings['sources'] = [];
   const findings: NormalizedScannerFinding[] = [];
@@ -162,6 +166,6 @@ export function normalizeScannerImports(analysisDir: string): NormalizedScannerF
     findings
   };
   writeJson(Path.join(analysisDir, 'scanner-findings.json'), normalized);
-  writeJson(Path.join(analysisDir, 'data', 'scanner-findings.json'), normalized);
+  if (options.writeDataAlias === true) writeJson(Path.join(analysisDir, 'data', 'scanner-findings.json'), normalized);
   return normalized;
 }

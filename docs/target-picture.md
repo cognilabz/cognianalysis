@@ -30,13 +30,12 @@ The pack is designed around one main objective:
 21. Tool alternative positioning
 22. Evidence-first validation
 23. Interactive static HTML report
-24. Portfolio mode
-25. Harness portability through skills, CLI and optional bridge
+24. Harness portability through skills, CLI and optional bridge
 
 ## Validation mechanism
 
-- Target capability context is defined in `src/targetCoverage.ts` and is not CLI-scored.
-- `cognianalysis dev finalize .` preserves target rows as unscored LLM trace context; `cognianalysis dev coverage .` prints that context plus Tier 1 file-card coverage and source inventory accounting.
+- Target capability context for complete-audit compatibility is defined in `src/audit/targetCoverage.ts` and is not CLI-scored.
+- `cognianalysis dev finalize .` preserves target rows as unscored LLM trace context. Product status now lives in `cognianalysis status .` and `cognianalysis eval .`.
 - Whole-codebase source inventory accounting is computed from `.analysis/data/source-inventory.json`, validated evidence paths and LLM-provided `analysis_coverage` accounting. Deferred files remain incomplete.
 - Tiered whole-codebase analysis is computed from `.analysis/source_tiers/*.json`; every included file needs a Tier 1 LLM-authored file card before the final report can be ready.
 - Semantic content must come from `.analysis/llm/*.json`, produced by Codex, as the active in-session LLM, from `.analysis/llm_tasks/*.md`.

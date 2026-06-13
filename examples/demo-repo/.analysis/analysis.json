@@ -63,6 +63,13 @@
   },
   "functional_view": {
     "system_purpose": "Customer onboarding accepts customer requests, checks identity and risk, persists customer state and publishes onboarding events.",
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 23,
+        "claim_id": "functional-system-purpose"
+      }
+    ],
     "actors": [
       {
         "title": "Customer onboarding API caller",
@@ -221,10 +228,24 @@
   },
   "process_analysis": {
     "test_readiness": "Blueprint evidence is sufficient to identify service branches that should be covered by tests.",
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingService.java",
+        "line": 30,
+        "claim_id": "process-test-readiness-branching"
+      }
+    ],
     "delivery_risks": [
       {
         "title": "Contract and dependency review",
-        "summary": "REST and external identity verification contracts should be reviewed before migration planning."
+        "summary": "REST and external identity verification contracts should be reviewed before migration planning.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 1,
+            "claim_id": "process-contract-review-openapi"
+          }
+        ]
       }
     ],
     "observability": [],
@@ -232,17 +253,39 @@
     "process_improvements": []
   },
   "refactoring": {
+    "evidence": [
+      {
+        "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+        "line": 23,
+        "claim_id": "refactoring-controller-service-boundary"
+      }
+    ],
     "target_architecture_options": [
       {
         "title": "Keep controller-service separation",
-        "summary": "The existing controller delegates to service logic cleanly enough to preserve the boundary in a modernization."
+        "summary": "The existing controller delegates to service logic cleanly enough to preserve the boundary in a modernization.",
+        "evidence": [
+          {
+            "path": "src/main/java/com/acme/onboarding/OnboardingController.java",
+            "line": 23,
+            "claim_id": "target-architecture-controller-service"
+          }
+        ]
       }
     ],
     "migration_roadmap": [
       {
         "title": "Contract inventory",
         "phase": "1",
-        "benefit": "Confirms REST and KYC/SOAP contract behavior before implementation changes."
+        "summary": "Confirm REST and KYC/SOAP contract behavior before implementation changes.",
+        "benefit": "Confirms REST and KYC/SOAP contract behavior before implementation changes.",
+        "evidence": [
+          {
+            "path": "src/main/resources/openapi.yaml",
+            "line": 1,
+            "claim_id": "migration-roadmap-contract-inventory"
+          }
+        ]
       }
     ],
     "tech_stack_options": [],

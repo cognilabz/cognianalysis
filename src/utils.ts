@@ -145,7 +145,6 @@ export function listFileInventory(root: string, maxFileSize: number): { included
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const entry of entries) {
       if (ignored.has(entry.name)) continue;
-      if (entry.name.startsWith('.verify-tmp-')) continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);

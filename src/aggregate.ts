@@ -1,34 +1,43 @@
 import { CodeMap } from './types';
 import { FS, Path, asList, cleanId, countLines, ensureDir, getLine, gitCommit, loadJson, mergeDict, sha1Short, utcNow, writeJson } from './utils';
-import { computeTargetCoverage, TARGET_CAPABILITIES } from './targetCoverage';
+import { computeTargetCoverage, TARGET_CAPABILITIES } from './audit/targetCoverage';
 import { reportComponentLibraryArtifact, supportedReportComponentTypes } from './reportComponents';
-import { analysisPipelineArtifact, computeAnalysisPipelineContract } from './analysisPipeline';
-import { analysisSkillCatalogArtifact, analysisSkillIds } from './analysisSkills';
+import { analysisPipelineArtifact, computeAnalysisPipelineContract } from './audit/analysisPipeline';
+import { analysisSkillCatalogArtifact, analysisSkillIds } from './audit/analysisSkills';
 import { computeFinalLlmReadiness } from './readiness';
 import { analysisGoalContractArtifact } from './analysisGoal';
 import { toolPositioningReferencesArtifact } from './toolPositioningReferences';
-import { sourceTierBacklogArtifact, sourceTierModelArtifact } from './sourceTiers';
-import { SKILL_WORKBENCH_VERSION } from './skillWorkbenches';
+import { sourceTierBacklogArtifact, sourceTierModelArtifact } from './audit/sourceTiers';
+import { SKILL_WORKBENCH_VERSION } from './audit/skillWorkbenches';
 import { loadAnalysisDocument } from './contracts/analysisV2';
 import { buildInventory } from './inventory';
 import { validateEvidenceTree } from './evidence';
 import { buildSynthesisInput } from './synthesisInputs';
 import { normalizeScannerImports } from './scannerImports';
 
+export interface PrepareAnalysisOptions {
+  auditMode?: boolean;
+}
+
 function isCodexLlmAuthority(value: any): boolean {
   const normalized = String(value || '').toLowerCase();
   return normalized === 'codex_llm' || normalized === 'llm';
 }
 
-export function prepareAnalysis(repo: string, analysisDir: string, codeMap: CodeMap): void {
+export function prepareAnalysis(repo: string, analysisDir: string, codeMap: CodeMap, options: PrepareAnalysisOptions = {}): void {
   const dataDir = Path.join(analysisDir, 'data');
   ensureDir(dataDir);
+  const auditMode = options.auditMode === true;
   const inventory = buildInventory(repo, codeMap);
   writeJson(Path.join(analysisDir, 'inventory.json'), inventory);
   writeJson(Path.join(dataDir, 'inventory.json'), inventory);
   writeJson(Path.join(dataDir, 'repo-profile.json'), codeMap.profile);
   writeJson(Path.join(dataDir, 'analysis-scope.json'), normalizeAnalysisScope(codeMap.analysis_scope, codeMap));
   writeJson(Path.join(dataDir, 'code-map.json'), codeMap);
+  const runSeed = analysisRunSeed(repo, analysisDir, codeMap.profile);
+  writeJson(Path.join(dataDir, 'analysis-run.json'), runSeed);
+  writeJson(Path.join(analysisDir, 'run.json'), runSeed);
+  if (!auditMode) return;
   writeJson(Path.join(dataDir, 'source-inventory.json'), {
     included_files: (codeMap.files || []).map((f: any) => ({
       path: f.path,
@@ -51,9 +60,6 @@ export function prepareAnalysis(repo: string, analysisDir: string, codeMap: Code
   writeJson(Path.join(dataDir, 'source-tier-model.json'), sourceTierModelArtifact());
   writeJson(Path.join(dataDir, 'report-component-library.json'), reportComponentLibraryArtifact());
   writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), analysisSkillCatalogArtifact());
-  const runSeed = analysisRunSeed(repo, analysisDir, codeMap.profile);
-  writeJson(Path.join(dataDir, 'analysis-run.json'), runSeed);
-  writeJson(Path.join(analysisDir, 'run.json'), runSeed);
   writeJson(Path.join(dataDir, 'target-coverage.json'), TARGET_CAPABILITIES);
 }
 
@@ -80,11 +86,18 @@ export function aggregate(repo: string, analysisDir: string): any {
   const capabilityTemplateManifest = loadJson<any>(Path.join(analysisDir, 'capability-template-manifest.json'), { templates: [] });
   const workpackManifest = loadJson<any>(Path.join(analysisDir, 'workpack-manifest.json'), loadJson<any>(Path.join(dataDir, 'workpack-manifest.json'), { workpacks: [] }));
   const productAnalysisRequest = loadJson<any | null>(Path.join(dataDir, 'product-analysis-request.json'), null);
-  const auditMode = ['complete', 'complete-audit'].includes(String(productAnalysisRequest?.mode || '').toLowerCase());
+  const legacyAuditWorkspace = !productAnalysisRequest && (
+    FS.existsSync(Path.join(analysisDir, 'llm_tasks')) ||
+    FS.existsSync(Path.join(analysisDir, 'source-tier-task-manifest.json')) ||
+    FS.existsSync(Path.join(analysisDir, 'source_tiers')) ||
+    FS.existsSync(Path.join(analysisDir, 'skill_reviews')) ||
+    FS.existsSync(Path.join(analysisDir, 'detail_reviews'))
+  );
+  const auditMode = ['complete', 'complete-audit'].includes(String(productAnalysisRequest?.mode || '').toLowerCase()) || legacyAuditWorkspace;
   const analysisRun = analysisRunSeed(repo, analysisDir, profile);
   const inventoryV2 = loadJson<any>(Path.join(analysisDir, 'inventory.json'), loadJson<any>(Path.join(dataDir, 'inventory.json'), {}));
-  const scannerFindings = normalizeScannerImports(analysisDir);
-  const synthesisInput = buildSynthesisInput(repo, analysisDir, inventoryV2.summary || {});
+  const scannerFindings = normalizeScannerImports(analysisDir, { writeDataAlias: auditMode });
+  const synthesisInput = buildSynthesisInput(repo, analysisDir, inventoryV2.summary || {}, { writeDataAlias: auditMode });
 
   const assessment = llm.assessment || null;
   const capabilities = asList(llm.capabilities);
@@ -261,41 +274,43 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.target_artifact_contract_coverage = bundle.target_coverage;
 
   ensureDir(dataDir);
-  writeJson(Path.join(dataDir, 'analysis-goal-contract.json'), bundle.analysis_goal_contract);
   writeJson(Path.join(dataDir, 'analysis-scope.json'), bundle.analysis_scope);
-  writeJson(Path.join(dataDir, 'tool-positioning-references.json'), bundle.tool_positioning_references);
-  writeJson(Path.join(dataDir, 'report-component-library.json'), bundle.report_component_library);
-  writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), bundle.analysis_skill_catalog);
   writeJson(Path.join(dataDir, 'analysis-run.json'), bundle.analysis_run);
-  writeJson(Path.join(dataDir, 'capability-template-manifest.json'), bundle.capability_template_manifest);
-  writeJson(Path.join(dataDir, 'source-tier-model.json'), bundle.source_tier_model);
-  writeJson(Path.join(dataDir, 'source-tier-coverage.json'), bundle.source_tier_coverage);
-  writeJson(Path.join(dataDir, 'source-tier-backlog.json'), bundle.source_tier_backlog);
-  writeJson(Path.join(dataDir, 'skill-workbench-coverage.json'), bundle.skill_workbench_coverage);
-  writeJson(Path.join(dataDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
-  writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
-  writeJson(Path.join(dataDir, 'analysis-goal-trace-alignment.json'), bundle.analysis_goal_trace_alignment);
-  writeJson(Path.join(dataDir, 'analysis-document-report-lint.json'), bundle.analysis_document_report_lint);
-  writeJson(Path.join(dataDir, 'analysis-document-executive-decision-layer.json'), bundle.analysis_document_executive_decision_layer);
-  writeJson(Path.join(dataDir, 'analysis-document-consistency-review.json'), bundle.analysis_document_consistency_review);
-  writeJson(Path.join(dataDir, 'analysis-document-evidence-strength.json'), bundle.analysis_document_evidence_strength);
-  writeJson(Path.join(dataDir, 'analysis-document-semantic-lineage.json'), bundle.analysis_document_semantic_lineage);
-  writeJson(Path.join(dataDir, 'analysis-document-open-questions.json'), bundle.analysis_document_open_questions);
   writeJson(Path.join(dataDir, 'analysis-contract.json'), bundle.analysis_contract);
   writeJson(Path.join(dataDir, 'analysis-evidence-validation.json'), bundle.analysis_evidence_validation);
-  writeJson(Path.join(dataDir, 'external-findings.json'), bundle.external_findings_contract);
-  writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
-  writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
-  writeJson(Path.join(dataDir, 'product-analysis-request-freshness.json'), bundle.product_analysis_request_freshness);
-  writeJson(Path.join(dataDir, 'product-artifact-model.json'), bundle.product_artifact_model);
-  writeJson(Path.join(dataDir, 'simplified-harness-contract.json'), bundle.simplified_harness_contract);
-  writeJson(Path.join(dataDir, 'parallel-orchestration-contract.json'), bundle.parallel_orchestration_contract);
   writeJson(Path.join(dataDir, 'analysis-staleness.json'), bundle.analysis_staleness);
   writeJson(Path.join(dataDir, 'bundle.json'), bundle);
   writeJson(Path.join(dataDir, 'evidence.json'), bundle.evidence_index);
-  writeJson(Path.join(dataDir, 'source-inventory-accounting.json'), bundle.source_inventory_accounting);
-  writeJson(Path.join(dataDir, 'target-coverage.json'), bundle.target_coverage);
-  writeJson(Path.join(dataDir, 'target-artifact-contract-coverage.json'), bundle.target_artifact_contract_coverage);
+  if (auditMode) {
+    writeJson(Path.join(dataDir, 'analysis-goal-contract.json'), bundle.analysis_goal_contract);
+    writeJson(Path.join(dataDir, 'tool-positioning-references.json'), bundle.tool_positioning_references);
+    writeJson(Path.join(dataDir, 'report-component-library.json'), bundle.report_component_library);
+    writeJson(Path.join(dataDir, 'analysis-skill-catalog.json'), bundle.analysis_skill_catalog);
+    writeJson(Path.join(dataDir, 'capability-template-manifest.json'), bundle.capability_template_manifest);
+    writeJson(Path.join(dataDir, 'source-tier-model.json'), bundle.source_tier_model);
+    writeJson(Path.join(dataDir, 'source-tier-coverage.json'), bundle.source_tier_coverage);
+    writeJson(Path.join(dataDir, 'source-tier-backlog.json'), bundle.source_tier_backlog);
+    writeJson(Path.join(dataDir, 'skill-workbench-coverage.json'), bundle.skill_workbench_coverage);
+    writeJson(Path.join(dataDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
+    writeJson(Path.join(analysisDir, 'analysis-pipeline.json'), bundle.analysis_pipeline);
+    writeJson(Path.join(dataDir, 'analysis-goal-trace-alignment.json'), bundle.analysis_goal_trace_alignment);
+    writeJson(Path.join(dataDir, 'analysis-document-report-lint.json'), bundle.analysis_document_report_lint);
+    writeJson(Path.join(dataDir, 'analysis-document-executive-decision-layer.json'), bundle.analysis_document_executive_decision_layer);
+    writeJson(Path.join(dataDir, 'analysis-document-consistency-review.json'), bundle.analysis_document_consistency_review);
+    writeJson(Path.join(dataDir, 'analysis-document-evidence-strength.json'), bundle.analysis_document_evidence_strength);
+    writeJson(Path.join(dataDir, 'analysis-document-semantic-lineage.json'), bundle.analysis_document_semantic_lineage);
+    writeJson(Path.join(dataDir, 'analysis-document-open-questions.json'), bundle.analysis_document_open_questions);
+    writeJson(Path.join(dataDir, 'external-findings.json'), bundle.external_findings_contract);
+    writeJson(Path.join(dataDir, 'analysis-run-provenance.json'), bundle.analysis_run_provenance);
+    writeJson(Path.join(dataDir, 'artifact-dependency-graph.json'), bundle.artifact_dependency_graph);
+    writeJson(Path.join(dataDir, 'product-analysis-request-freshness.json'), bundle.product_analysis_request_freshness);
+    writeJson(Path.join(dataDir, 'product-artifact-model.json'), bundle.product_artifact_model);
+    writeJson(Path.join(dataDir, 'simplified-harness-contract.json'), bundle.simplified_harness_contract);
+    writeJson(Path.join(dataDir, 'parallel-orchestration-contract.json'), bundle.parallel_orchestration_contract);
+    writeJson(Path.join(dataDir, 'source-inventory-accounting.json'), bundle.source_inventory_accounting);
+    writeJson(Path.join(dataDir, 'target-coverage.json'), bundle.target_coverage);
+    writeJson(Path.join(dataDir, 'target-artifact-contract-coverage.json'), bundle.target_artifact_contract_coverage);
+  }
   return bundle;
 }
 
@@ -339,9 +354,9 @@ export function loadBundle(analysisDir: string): any {
 function computeToolingCapabilities(): any {
   return {
     public_cli_commands: ['analyze', 'status', 'open', 'eval'],
-    internal_cli_commands: ['dev resume', 'dev repair', 'dev init-harness', 'dev init-codex', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev coverage', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context', 'dev run-orchestration', 'dev prove-orchestration', 'dev doctor', 'dev portfolio', 'dev run', 'dev init'],
-    compatibility_cli_commands: ['resume', 'repair', 'init-harness', 'init-codex', 'mcp', 'run', 'init', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'coverage', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'doctor', 'portfolio'],
-    portfolio_mode_available: true,
+    internal_cli_commands: ['dev migrate', 'dev init-harness', 'dev mcp', 'dev prepare', 'dev finalize', 'dev audit-report', 'dev aggregate', 'dev render', 'dev validate', 'dev tier-status', 'dev tier-next', 'dev tier-context'],
+    compatibility_cli_commands: ['migrate', 'init-harness', 'prepare', 'finalize', 'finish', 'report', 'audit-report', 'aggregate', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context'],
+    portfolio_mode_available: false,
     harness_portability_available: true,
     product_mode_available: true,
     report_renderer_available: true,
@@ -379,27 +394,21 @@ function computeProductArtifactModel(bundle: any): any {
   const requiredPublicCommands = ['analyze', 'status', 'open', 'eval'];
   const requiredArtifacts = [
     'data/product-analysis-request.json',
+    'inventory.json',
     'TASK.md',
-    'llm/analysis-strategy.json',
-    'source_tiers/*.json',
-    'skill_reviews/*.json',
-    'llm/detail-agent-plan.json',
-    'detail_reviews/*.json',
-    'llm/analysis-document.json',
-    'data/bundle.json',
-    'report/index.html'
+    'workpack-manifest.json',
+    'workpacks/*.md',
+    'analysis.json',
+    'report/index.html',
+    'report/analysis-data.json'
   ];
   const checks = [
     { id: 'public_commands', ready: missingCommands(publicCommands, requiredPublicCommands).length === 0, evidence: [...publicCommands].join(',') },
     { id: 'product_request', ready: bundle.product_analysis_request?.entrypoint === 'analyze', evidence: String(bundle.product_analysis_request?.entrypoint || 'missing') },
-    { id: 'task_guide_model', ready: asList(bundle.tasks).length > 0 && bundle.analysis_pipeline?.pipeline_kind === 'llm_driven_overview_detail_final_report', evidence: `tasks=${asList(bundle.tasks).length}` },
-    { id: 'llm_artifacts', ready: bundle.llm_artifacts?.complete === true, evidence: `ready=${bundle.llm_artifacts?.ready_count || 0}/${bundle.llm_artifacts?.total_count || 0}` },
-    { id: 'source_tier_artifacts', ready: bundle.source_tier_task_manifest?.task_count > 0 && bundle.source_tier_coverage?.complete === true, evidence: `tasks=${bundle.source_tier_task_manifest?.task_count || 0}, coverage=${bundle.source_tier_coverage?.complete === true}` },
-    { id: 'skill_workbench_artifacts', ready: bundle.skill_workbench_coverage?.complete === true, evidence: `executed=${bundle.skill_workbench_coverage?.executed_count || 0}/${bundle.skill_workbench_coverage?.planned_count || 0}` },
-    { id: 'detail_review_artifacts', ready: bundle.source_family_detail_review_coverage?.complete === true, evidence: `executed=${bundle.source_family_detail_review_coverage?.executed_count || 0}/${bundle.source_family_detail_review_coverage?.planned_count || 0}` },
+    { id: 'inventory', ready: bundle.inventory?.schema_version === '2.0' && bundle.inventory?.semantic_authority === false, evidence: `schema=${bundle.inventory?.schema_version || 'missing'}, semantic=${bundle.inventory?.semantic_authority}` },
+    { id: 'workpack_model', ready: asList(bundle.workpack_manifest?.workpacks).length > 0 && bundle.workpack_manifest?.workpack_model === 'parallel_llm_shards', evidence: `workpacks=${asList(bundle.workpack_manifest?.workpacks).length}, model=${bundle.workpack_manifest?.workpack_model || 'missing'}` },
+    { id: 'analysis_json', ready: bundle.analysis_contract?.primary_output === 'analysis.json' && bundle.analysis_contract?.valid === true, evidence: `source=${bundle.analysis_contract?.source || 'missing'}, valid=${bundle.analysis_contract?.valid === true}` },
     { id: 'report_artifacts', ready: bundle.report_artifacts?.index_html === true && bundle.report_artifacts?.analysis_data_json === true, evidence: `index=${bundle.report_artifacts?.index_html === true}, data=${bundle.report_artifacts?.analysis_data_json === true}` },
-    { id: 'component_library', ready: bundle.report_component_library?.library_kind === 'analysis_document_component_library', evidence: String(bundle.report_component_library?.library_kind || 'missing') },
-    { id: 'original_goal_contract', ready: !!bundle.analysis_goal_contract?.contract_kind, evidence: String(bundle.analysis_goal_contract?.contract_kind || 'missing') },
     { id: 'semantic_authority', ready: bundle.semantic_authority?.semantic_decider === 'codex_llm', evidence: String(bundle.semantic_authority?.semantic_decider || 'missing') }
   ];
   const missing = checks.filter(check => !check.ready).map(check => check.id);
@@ -413,12 +422,12 @@ function computeProductArtifactModel(bundle: any): any {
     hidden_or_dev_scoped_commands: asList(bundle.tooling?.internal_cli_commands),
     compatibility_aliases: asList(bundle.tooling?.compatibility_cli_commands),
     required_artifact_families: requiredArtifacts,
-    visible_report_source: 'analysis_document.sections',
+    visible_report_source: 'analysis.json',
     semantic_authority: bundle.semantic_authority?.semantic_decider || 'llm',
     missing,
     summary: missing.length
-      ? `Thin artifact model is incomplete: ${missing.slice(0, 6).join(', ')}.`
-      : 'Thin LLM-first artifact model is present: users operate analyze/status/open/eval while detailed workflow artifacts stay under the harness workspace.'
+      ? `Thin v0.8 artifact model is incomplete: ${missing.slice(0, 6).join(', ')}.`
+      : 'Thin v0.8 artifact model is present: users operate analyze/status/open/eval while audit-depth artifacts stay in complete-audit.'
   };
 }
 
@@ -450,8 +459,8 @@ function computeSimplifiedHarnessContract(bundle: any): any {
     },
     {
       id: 'single_harness_task_guide',
-      ready: asList(bundle.tasks).length > 0 && bundle.analysis_pipeline_contract?.complete === true,
-      evidence: `tasks=${asList(bundle.tasks).length}, pipeline=${bundle.analysis_pipeline_contract?.complete === true}`
+      ready: asList(bundle.workpack_manifest?.workpacks).length > 0,
+      evidence: `workpacks=${asList(bundle.workpack_manifest?.workpacks).length}`
     },
     {
       id: 'deterministic_layer_not_semantic_authority',
@@ -538,7 +547,7 @@ function fileContentHash20(file: string): string {
 
 function validateOrchestrationExecutionLog(bundle: any): any {
   const log = bundle.orchestration_execution_log || {};
-  const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
+  const runnerGeneratedBy = 'legacy_harness_orchestration_runner';
   const executionMode = 'codex_authored_workpack_receipt_validation';
   const workpackExecutionKind = 'codex_in_session_source_tier_workpack';
   const hashesByPath = artifactHashesByPath(bundle);
@@ -681,7 +690,7 @@ function validateParallelExecutionProof(bundle: any): any {
 
 function validateCacheLedger(bundle: any): any {
   const ledger = bundle.cache_ledger || {};
-  const runnerGeneratedBy = 'cognianalysis dev run-orchestration';
+  const runnerGeneratedBy = 'legacy_harness_orchestration_runner';
   const cacheStoreKind = 'source_tier_artifact_cache_entry';
   const hashesByPath = artifactHashesByPath(bundle);
   const entries = asList(ledger.cache_entries || ledger.entries);

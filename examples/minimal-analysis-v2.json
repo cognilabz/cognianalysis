@@ -51,12 +51,14 @@
   },
   "functional_view": {
     "system_purpose": "Minimal example for the v2 analysis contract.",
+    "evidence_gap": "This minimal example demonstrates contract shape, not a real repository-level functional claim.",
     "actors": [],
     "capabilities": [],
     "user_or_system_flows": []
   },
   "technical_view": {
     "architecture_summary": "The example is a static JSON contract.",
+    "evidence_gap": "This minimal example demonstrates contract shape, not a real technical architecture claim.",
     "entrypoints": [],
     "apis_and_interfaces": [],
     "data_and_state": [],
@@ -72,12 +74,14 @@
   },
   "process_analysis": {
     "test_readiness": "Use this file with schema and renderer smoke tests.",
+    "evidence_gap": "Process readiness is illustrative in this minimal contract example.",
     "delivery_risks": [],
     "observability": [],
     "documentation_gaps": [],
     "process_improvements": []
   },
   "refactoring": {
+    "evidence_gap": "No refactoring recommendation is made by this minimal contract example.",
     "target_architecture_options": [],
     "migration_roadmap": [],
     "tech_stack_options": [],

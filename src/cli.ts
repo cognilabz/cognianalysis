@@ -2,18 +2,17 @@
 import { aggregate, prepareAnalysis } from './aggregate';
 import { renderReport } from './report';
 import { buildRepoMap } from './repoMap';
-import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './tasks';
+import { writeDetailTasksFromLlmPlan, writeLlmTasks } from './audit/tasks';
 import { writeWorkpacks } from './workpacks';
 import { FS, Path, argValue, copyRecursive, ensureDir, hasFlag, loadJson, numericArg, sha1Short, writeJson, writeText } from './utils';
 import { startMcpLikeServer } from './mcp';
 import { computeFinalLlmReadiness, finalLlmReadinessFailures } from './readiness';
-import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './sourceTiers';
-import { writeSkillWorkbenchTasksFromLlmStrategy } from './skillWorkbenches';
-import { computeProductReadiness, computeProductReadinessV2, productReadinessBrief, productReadinessV2Brief } from './productReadiness';
-import { marketProofStatusForRoot } from './marketProof';
+import { sourceTierBacklogArtifact, writeNextSourceTierContexts, writeSourceTierContext } from './audit/sourceTiers';
+import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenches';
+import { computeProductReadinessV2, productReadinessV2Brief } from './productReadiness';
 import { migrateV07ToV08 } from './migration/v07ToV08';
 
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep', 'complete-audit']);
 const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {
@@ -27,11 +26,9 @@ const OPTION_VALUE_FLAGS = new Set([
   '--capsules',
   '--capsule-chars',
   '--decision',
-  '--execution-log',
   '--flow',
   '--goal',
   '--harness',
-  '--cache-ledger',
   '--limit',
   '--max-chars',
   '--max-file-size',
@@ -146,21 +143,21 @@ Developer/audit commands are available under ${CLI_NAME} dev --help.
 }
 
 function devUsage(): void {
-  console.log(`Internal/debug commands:
-  ${CLI_NAME} dev resume [repo]
-  ${CLI_NAME} dev repair [repo]
+  console.log(`Developer and audit commands:
   ${CLI_NAME} dev migrate [repo]
   ${CLI_NAME} dev init-harness [target]
   ${CLI_NAME} dev mcp
+
+Complete-audit compatibility:
   ${CLI_NAME} dev prepare [repo]
   ${CLI_NAME} dev finalize [repo]
   ${CLI_NAME} dev audit-report [repo]
   ${CLI_NAME} dev tier-status [repo]
   ${CLI_NAME} dev tier-next [repo]
   ${CLI_NAME} dev tier-context [repo]
-  ${CLI_NAME} dev run-orchestration [repo]
-  ${CLI_NAME} dev prove-orchestration [repo] [--execution-log path] [--cache-ledger path]
-  ${CLI_NAME} dev aggregate|render|validate|coverage|doctor|portfolio|run|init [...]
+
+Low-level artifact tools:
+  ${CLI_NAME} dev aggregate|render|validate [...]
 
 Use ${CLI_NAME} analyze . for the normal product flow.`);
 }
@@ -376,10 +373,6 @@ function reportPathForAnalysis(analysis: string): string {
   return artifacts.index_html_path || Path.join(analysis, 'report', 'index.html');
 }
 
-function packageRoot(): string {
-  return Path.resolve(__dirname, '..');
-}
-
 function listFilesRecursive(dir: string, predicate: (file: string) => boolean): string[] {
   const out: string[] = [];
   if (!FS.existsSync(dir)) return out;
@@ -389,37 +382,6 @@ function listFilesRecursive(dir: string, predicate: (file: string) => boolean): 
     else if (entry.isFile() && predicate(full)) out.push(full);
   }
   return out.sort();
-}
-
-function marketProofStatus(analysis: string): any {
-  return marketProofStatusForRoot(packageRoot(), analysis);
-}
-
-function printMarketProofStatus(analysis: string): any {
-  const status = marketProofStatus(analysis);
-  console.log('Market proof:');
-  console.log(`- Benchmark protocol doc: ${FS.existsSync(status.benchmarkDoc) ? 'present' : 'missing'} · ${status.benchmarkDoc}`);
-  console.log(`- Golden expected suites: ${status.goldenExpected.length} · ${status.goldenDir}`);
-  console.log(`- Golden verifier: ${FS.existsSync(status.goldenScript) ? 'present' : 'missing'} · ${status.goldenScript}`);
-  console.log(`- Golden aggregate: ${status.goldenAggregate?.verdict || 'missing'} · validated=${status.passedGoldenRepos}/${status.totalGoldenRepos} · proof=${status.goldenProofReady ? 'ready' : 'not_ready'}`);
-  const representative = status.goldenRepresentativeCoverage || {};
-  if (representative.required_categories) {
-    console.log(`- Golden representative coverage: ${representative.ready ? 'ready' : 'not_ready'} · categories=${(representative.covered_categories || []).length}/${(representative.required_categories || []).length} · repos=${representative.distinct_repositories ?? 0}/${representative.minimum_representative_suites ?? 5}`);
-    for (const category of representative.missing_categories || []) console.log(`  REPRESENTATIVE-MISSING ${category}`);
-  }
-  if (!status.result) {
-    console.log('- Golden result: missing · run npm run verify:golden');
-  } else {
-    const metrics = status.result.metrics || {};
-    console.log(`- Current repo golden result: ${status.result.verdict || 'unknown'} · ${Path.join(analysis, 'data', 'golden-benchmark.json')}`);
-    console.log(`- Fact recall: ${metrics.fact_recall ?? 'unknown'} · Evidence precision: ${metrics.evidence_precision ?? 'unknown'} · Unsupported claim rate: ${metrics.unsupported_claim_rate ?? 'unknown'} · Decision readiness: ${metrics.decision_readiness ?? 'unknown'}`);
-  }
-  console.log(`- Baseline verifier: ${FS.existsSync(status.baselineScript) ? 'present' : 'missing'} · ${status.baselineScript}`);
-  console.log(`- Baseline aggregate: ${status.baselineAggregate?.verdict || 'missing'} · proof=${status.baselineProofReady ? 'ready' : 'not_ready'} · ${Path.join(packageRoot(), 'benchmarks', 'baseline', 'results.json')}`);
-  console.log(`- Strict market proof: ${status.strictReady ? 'ready' : 'not_ready'}`);
-  for (const failure of status.strictFailures) console.log(`  STRICT-MISSING ${failure}`);
-  console.log('- Market claim boundary: benchmark proof scaffold exists; broader multi-repo/baseline proof is still required before market-superiority claims.');
-  return status;
 }
 
 function printProductNextStep(analysis: string, statuses: any[]): void {
@@ -449,33 +411,18 @@ function cmdPrepare(args: string[]): number {
   const repo = repoArg(args);
   assertRepoDirectory(repo);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
+  const requestPath = Path.join(analysis, 'data', 'product-analysis-request.json');
+  const existingRequest = loadJson<any | null>(requestPath, null);
+  const modeHint = existingRequest?.mode || argValue(args, '--mode', 'complete-audit');
+  const completeAudit = isCompleteAuditMode(modeHint);
   const codeMap = scopedCodeMap(buildRepoMap(repo, {
     maxFileSize: numericArg(args, '--max-file-size', 1_250_000),
     capsuleLimit: numericArg(args, '--capsules', 44),
     capsuleChars: numericArg(args, '--capsule-chars', 10_000)
   }), args);
-  prepareAnalysis(repo, analysis, codeMap);
-  const request = loadJson<any | null>(Path.join(analysis, 'data', 'product-analysis-request.json'), null);
-  const completeAudit = isCompleteAuditMode(request?.mode);
+  prepareAnalysis(repo, analysis, codeMap, { auditMode: completeAudit });
+  const request = existingRequest || loadJson<any | null>(requestPath, null);
   const tasks = completeAudit ? writeLlmTasks(analysis, codeMap) : writeWorkpacks(analysis);
-  if (completeAudit) {
-    const seedDir = Path.join(repo, '.analysis-seed', 'llm');
-    if (FS.existsSync(seedDir) && !hasFlag(args, '--no-seed')) {
-      copyRecursive(seedDir, Path.join(analysis, 'llm'), false);
-    }
-    const detailReviewSeedDir = Path.join(repo, '.analysis-seed', 'detail_reviews');
-    if (FS.existsSync(detailReviewSeedDir) && !hasFlag(args, '--no-seed')) {
-      copyRecursive(detailReviewSeedDir, Path.join(analysis, 'detail_reviews'), false);
-    }
-    const sourceTierSeedDir = Path.join(repo, '.analysis-seed', 'source_tiers');
-    if (FS.existsSync(sourceTierSeedDir) && !hasFlag(args, '--no-seed')) {
-      copyRecursive(sourceTierSeedDir, Path.join(analysis, 'source_tiers'), false);
-    }
-    const skillReviewSeedDir = Path.join(repo, '.analysis-seed', 'skill_reviews');
-    if (FS.existsSync(skillReviewSeedDir) && !hasFlag(args, '--no-seed')) {
-      copyRecursive(skillReviewSeedDir, Path.join(analysis, 'skill_reviews'), false);
-    }
-  }
   console.log(`Prepared LLM-first analysis workspace: ${analysis}`);
   console.log(`Inventory: ${Path.join(analysis, 'inventory.json')}`);
   if (completeAudit) {
@@ -497,7 +444,8 @@ function productAnalysisRequest(args: string[], previous?: any): any {
   const previousTarget = previous?.target || {};
   const hasScope = args.includes('--scope');
   const hasScopeFiles = args.includes('--scope-files');
-  const rawMode = String(args.includes('--mode') ? argValue(args, '--mode', 'blueprint') : previous?.mode || 'blueprint').trim().toLowerCase();
+  const explicitMode = args.includes('--mode');
+  const rawMode = String(explicitMode ? argValue(args, '--mode', 'blueprint') : previous?.mode || 'blueprint').trim().toLowerCase();
   const aliasMode = PRODUCT_ANALYSIS_MODE_ALIASES[rawMode];
   const mode = aliasMode || rawMode;
   if (aliasMode && args.includes('--mode')) console.log(`Deprecation warning: --mode ${rawMode} is now --mode ${aliasMode}.`);
@@ -507,7 +455,7 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     throw new Error('--scope-files requires --scope unless the previous product request or selected mode already has a non-complete default scope.');
   }
   const goal = String(args.includes('--goal') ? argValue(args, '--goal', '') : previous?.goal || '').trim();
-  const scopeMode = hasScope ? analysisScopeMode(args) : String(previousScopeRequest.mode || defaultScopeMode);
+  const scopeMode = hasScope ? analysisScopeMode(args) : explicitMode ? defaultScopeMode : String(previousScopeRequest.mode || defaultScopeMode);
   if (!SCOPE_MODES.has(scopeMode)) throw new Error(`Unknown --scope ${scopeMode}. Expected complete, critical-path or representative.`);
   if (mode === 'complete-audit' && scopeMode !== 'complete') throw new Error('Complete-audit mode requires --scope complete. Use brief, blueprint or deep for scoped/adaptive analysis.');
   const previousScopeMode = String(previousScopeRequest.mode || 'complete');
@@ -543,7 +491,7 @@ function productAnalysisRequest(args: string[], previous?: any): any {
       scope_files: scopeFiles
     },
     generated_at: new Date().toISOString(),
-    public_outputs: ['.analysis/report/index.html', '.analysis/data/bundle.json', '.analysis/data/evidence.json'],
+    public_outputs: ['.analysis/report/index.html', '.analysis/report/analysis-data.json'],
     internal_work_area: '.analysis',
     depth_policy: mode === 'complete-audit'
       ? 'audit-heavy whole-repository analysis with complete included source inventory coverage'
@@ -688,7 +636,6 @@ function cmdRun(args: string[]): number {
     return 0;
   }
   if (!completeAudit) {
-    aggregate(repo, analysis);
     console.log(`Cognianalysis product mode: workspace prepared; waiting for LLM-authored analysis.json.`);
     console.log(`Task guide: ${Path.join(analysis, 'TASK.md')}`);
     console.log(stagedLlmWorkflowMessage(false));
@@ -779,19 +726,14 @@ function cmdEval(args: string[]): number {
   console.log('Product readiness v2:');
   for (const line of productReadinessV2Brief(readinessV2)) console.log(line);
   for (const item of (readinessV2.missing || []).slice(0, 12)) console.log(`  V2-MISSING ${item.id}: ${item.next_action}`);
-  const includeLegacy = hasFlag(args, '--strict') || hasFlag(args, '--audit') || requiresCompleteTierForBundle(bundle);
+  const includeLegacy = hasFlag(args, '--audit') || requiresCompleteTierForBundle(bundle);
   if (!includeLegacy) return readinessV2.invalid === true ? 1 : 0;
-  const marketProof = printMarketProofStatus(analysis);
   if (bundle?.analysis_contract) {
     console.log(`Analysis contract: ${bundle.analysis_contract.source || 'missing'} · valid=${bundle.analysis_contract.valid === true}`);
     for (const missing of (bundle.analysis_contract.missing || []).slice(0, 12)) console.log(`  ANALYSIS-MISSING ${missing}`);
     for (const warning of (bundle.analysis_contract.warnings || []).slice(0, 8)) console.log(`  ANALYSIS-WARNING ${warning}`);
   }
-  const productReadiness = computeProductReadiness(repo, analysis, bundle, marketProof);
-  console.log('Original product readiness:');
-  for (const line of productReadinessBrief(productReadiness)) console.log(line);
-  for (const item of productReadiness.missing.slice(0, 12)) console.log(`  PRODUCT-MISSING ${item.id}: ${item.next_action}`);
-  return hasFlag(args, '--strict') && (marketProof.strictReady !== true || productReadiness.ready !== true) ? 1 : 0;
+  return readinessV2.invalid === true ? 1 : 0;
 }
 
 function cmdRepair(args: string[]): number {
@@ -907,10 +849,6 @@ function cmdDoctor(args: string[]): number {
   console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
   console.log(`Evidence invalid: ${invalid.length}`);
   console.log(`Final Codex-authored analysis readiness: ${readiness.state} · verdict=${readiness.final_verdict || 'unknown'}`);
-  if (hasFlag(args, '--market-proof')) {
-    const marketProof = printMarketProofStatus(analysis);
-    if (hasFlag(args, '--strict') && marketProof.strictReady !== true) return 1;
-  }
   return 0;
 }
 
@@ -1005,477 +943,6 @@ function cmdTierNext(args: string[]): number {
   }
   if (!plan.selected_count) console.log('No incomplete Tier 1 tasks found.');
   return 0;
-}
-
-function artifactHashMap(bundle: any): Map<string, string> {
-  return new Map((bundle.artifact_dependency_graph?.nodes || [])
-    .map((node: any) => [String(node?.path || '').trim(), String(node?.content_hash || '').trim()])
-    .filter((entry: string[]) => entry[0] && entry[1]) as [string, string][]);
-}
-
-function cacheKey(bundle: any, path: string, hash: string): string {
-  return sha1Short(`${bundle.analysis_run?.analysis_run_id || ''}|${bundle.analysis_run?.source_commit || ''}|${bundle.product_analysis_request?.request_hash || ''}|${path}|${hash}`, 20);
-}
-
-const ORCHESTRATION_RUNNER_GENERATED_BY = 'cognianalysis dev run-orchestration';
-const SOURCE_TIER_WORKPACK_EXECUTION_KIND = 'codex_in_session_source_tier_workpack';
-const ORCHESTRATION_EXECUTION_MODE = 'codex_authored_workpack_receipt_validation';
-const CACHE_STORE_KIND = 'source_tier_artifact_cache_entry';
-
-function stableJson(value: any): string {
-  if (Array.isArray(value)) return `[${value.map(item => stableJson(item)).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
-function hashStable(value: any, length = 20): string {
-  return sha1Short(stableJson(value), length);
-}
-
-function sourceTierTaskMap(bundle: any): Map<string, any> {
-  return new Map((bundle.source_tier_task_manifest?.tasks || [])
-    .map((task: any) => [String(task?.id || '').trim(), task])
-    .filter((entry: any[]) => entry[0]) as [string, any][]);
-}
-
-function validateExecutionLog(bundle: any, log: any): { workerTasks: any[], errors: string[] } {
-  const hashes = artifactHashMap(bundle);
-  const tasksById = sourceTierTaskMap(bundle);
-  const rows = (log.worker_tasks || log.tasks || []).map((row: any) => {
-    const taskId = String(row?.task_id || '').trim();
-    const expectedOutput = String(row?.artifact_path || row?.path || tasksById.get(taskId)?.expected_output || '').trim();
-    const expectedHash = expectedOutput ? hashes.get(expectedOutput) : '';
-    return {
-      worker_id: String(row?.worker_id || '').trim(),
-      task_id: taskId,
-      started_at: String(row?.started_at || '').trim(),
-      ended_at: String(row?.ended_at || '').trim(),
-      duration_ms: Number(row?.duration_ms || 0),
-      artifact_path: expectedOutput,
-      artifact_hash: String(row?.artifact_hash || row?.output_hash || '').trim(),
-      execution_kind: String(row?.execution_kind || '').trim(),
-      execution_mode: String(row?.execution_mode || '').trim(),
-      execution_receipt_hash: String(row?.execution_receipt_hash || '').trim(),
-      review_hash: String(row?.review_hash || '').trim(),
-      task_context_hash: String(row?.task_context_hash || '').trim(),
-      expected_hash: expectedHash
-    };
-  });
-  const workerIds = new Set(rows.map((row: any) => row.worker_id).filter(Boolean));
-  const taskIds = new Set(rows.map((row: any) => row.task_id).filter(Boolean));
-  const errors = [
-    ...(log.schemaVersion === '1.0' ? [] : ['execution_log.schemaVersion']),
-    ...(String(log.execution_kind || '') === 'source_tier_workpack_execution' ? [] : ['execution_log.execution_kind']),
-    ...(String(log.execution_mode || '') === ORCHESTRATION_EXECUTION_MODE ? [] : ['execution_log.execution_mode']),
-    ...(String(log.generated_by || '') === ORCHESTRATION_RUNNER_GENERATED_BY ? [] : ['execution_log.generated_by']),
-    ...(String(log.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['execution_log.analysis_run_id']),
-    ...(String(log.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['execution_log.source_commit']),
-    ...(rows.length >= 2 ? [] : ['execution_log.worker_tasks']),
-    ...(workerIds.size >= 2 ? [] : ['execution_log.distinct_workers']),
-    ...(taskIds.size >= 2 ? [] : ['execution_log.distinct_tasks']),
-    ...(rows.every((row: any) => row.worker_id && row.task_id && row.artifact_path) ? [] : ['execution_log.worker_task_identity']),
-    ...(rows.every((row: any) => tasksById.has(row.task_id)) ? [] : ['execution_log.source_tier_task_ids']),
-    ...(rows.every((row: any) => row.artifact_hash && row.expected_hash && row.artifact_hash === row.expected_hash) ? [] : ['execution_log.artifact_hashes']),
-    ...(rows.every((row: any) => row.execution_kind === SOURCE_TIER_WORKPACK_EXECUTION_KIND && row.execution_mode === ORCHESTRATION_EXECUTION_MODE) ? [] : ['execution_log.workpack_execution_kind']),
-    ...(rows.every((row: any) => row.execution_receipt_hash && row.review_hash && row.task_context_hash) ? [] : ['execution_log.workpack_execution_receipts']),
-    ...(rows.every((row: any) => row.duration_ms > 0 || (row.started_at && row.ended_at)) ? [] : ['execution_log.worker_task_timing'])
-  ];
-  return { workerTasks: rows, errors };
-}
-
-function fileContentHash(file: string): string {
-  return FS.existsSync(file) ? sha1Short(FS.readFileSync(file, 'utf8'), 20) : '';
-}
-
-function sourceTierWorkpackTaskContextHash(analysis: string, task: any): string {
-  const taskFile = String(task?.task_file || '').trim();
-  const contextFile = Path.join('source_tier_contexts', `${String(task?.id || '').trim()}.json`);
-  const taskFileHash = taskFile ? fileContentHash(Path.join(analysis, taskFile)) : '';
-  const contextFileHash = FS.existsSync(Path.join(analysis, contextFile)) ? fileContentHash(Path.join(analysis, contextFile)) : '';
-  return hashStable({
-    task_id: String(task?.id || '').trim(),
-    task_file: taskFile,
-    task_file_sha1: taskFileHash,
-    context_file: contextFileHash ? contextFile : '',
-    context_file_sha1: contextFileHash,
-    expected_output: String(task?.expected_output || '').trim(),
-    file_paths: (task?.file_paths || []).map((path: any) => String(path || '').trim()).filter(Boolean).sort()
-  });
-}
-
-function sourceTierWorkpackReceipt(artifact: any): any {
-  return artifact?.source_tier_workpack_execution || artifact?.workpack_execution_receipt || {};
-}
-
-function validateSourceTierWorkpackExecution(analysis: string, task: any, artifactPath: string, artifact: any): { errors: string[], reviewHash: string, receiptHash: string, taskContextHash: string } {
-  const review = artifact?.source_file_tier_review || {};
-  const receipt = sourceTierWorkpackReceipt(artifact);
-  const filePaths = (task?.file_paths || []).map((path: any) => String(path || '').trim()).filter(Boolean).sort();
-  const reviewedPaths = (review?.files || []).map((file: any) => String(file?.path || '').trim()).filter(Boolean).sort();
-  const receiptSourcePaths = (receipt?.source_paths || []).map((path: any) => String(path || '').trim()).filter(Boolean).sort();
-  const generatedFrom = (receipt?.generated_from || []).map((path: any) => String(path || '').trim()).filter(Boolean);
-  const taskFile = String(task?.task_file || '').trim();
-  const taskFileHash = taskFile ? fileContentHash(Path.join(analysis, taskFile)) : '';
-  const contextFile = Path.join('source_tier_contexts', `${String(task?.id || '').trim()}.json`);
-  const contextFileHash = FS.existsSync(Path.join(analysis, contextFile)) ? fileContentHash(Path.join(analysis, contextFile)) : '';
-  const reviewHash = hashStable(review);
-  const receiptHash = hashStable(receipt);
-  const taskContextHash = sourceTierWorkpackTaskContextHash(analysis, task);
-  const errors = [
-    ...(String(receipt?.schemaVersion || '') === '1.0' ? [] : ['workpack_receipt.schemaVersion']),
-    ...(String(receipt?.execution_kind || '') === SOURCE_TIER_WORKPACK_EXECUTION_KIND ? [] : ['workpack_receipt.execution_kind']),
-    ...(String(receipt?.execution_mode || '') === ORCHESTRATION_EXECUTION_MODE ? [] : ['workpack_receipt.execution_mode']),
-    ...(String(receipt?.executor || '') === 'codex-in-session' ? [] : ['workpack_receipt.executor']),
-    ...(String(receipt?.task_id || '') === String(task?.id || '') ? [] : ['workpack_receipt.task_id']),
-    ...(String(receipt?.artifact_path || '') === artifactPath ? [] : ['workpack_receipt.artifact_path']),
-    ...(String(receipt?.task_context_hash || '') === taskContextHash ? [] : ['workpack_receipt.task_context_hash']),
-    ...(String(receipt?.task_file_sha1 || '') === taskFileHash ? [] : ['workpack_receipt.task_file_sha1']),
-    ...(contextFileHash ? (String(receipt?.context_file_sha1 || '') === contextFileHash ? [] : ['workpack_receipt.context_file_sha1']) : []),
-    ...(String(receipt?.review_hash || '') === reviewHash ? [] : ['workpack_receipt.review_hash']),
-    ...(filePaths.length > 0 && filePaths.length === receiptSourcePaths.length && filePaths.every((path: string, index: number) => path === receiptSourcePaths[index]) ? [] : ['workpack_receipt.source_paths']),
-    ...(generatedFrom.includes('source-tier-task-manifest.json') && generatedFrom.includes(taskFile) ? [] : ['workpack_receipt.generated_from']),
-    ...(String(review?.task_id || '') === String(task?.id || '') ? [] : ['source_file_tier_review.task_id']),
-    ...(String(review?.review_status || '') === 'complete' ? [] : ['source_file_tier_review.review_status']),
-    ...(filePaths.length > 0 && filePaths.length === reviewedPaths.length && filePaths.every((path: string, index: number) => path === reviewedPaths[index]) ? [] : ['source_file_tier_review.file_paths'])
-  ];
-  return { errors, reviewHash, receiptHash, taskContextHash };
-}
-
-function cacheStoreMatchesHit(store: any, entry: any, requestHash: string, bundle: any): boolean {
-  return store?.schemaVersion === '1.0'
-    && String(store?.cache_store_kind || '').trim() === CACHE_STORE_KIND
-    && String(store?.generated_by || '').trim() === ORCHESTRATION_RUNNER_GENERATED_BY
-    && String(store?.cache_key || '').trim() === entry.cache_key
-    && String(store?.analysis_run_id || '').trim() === String(bundle.analysis_run?.analysis_run_id || '')
-    && String(store?.source_commit || '').trim() === String(bundle.analysis_run?.source_commit || '')
-    && String(store?.product_request_hash || '').trim() === requestHash
-    && String(store?.artifact_path || '').trim() === entry.artifact_path
-    && String(store?.artifact_hash || '').trim() === entry.artifact_hash
-    && String(store?.task_id || '').trim() === entry.task_id
-    && String(store?.task_context_hash || '').trim() === entry.task_context_hash
-    && String(store?.execution_receipt_hash || '').trim() === entry.execution_receipt_hash
-    && String(store?.created_at || '').trim() === String(entry.created_at || '').trim();
-}
-
-function loadCacheStoreHit(analysis: string, cacheKeyValue: string): any {
-  if (!/^[a-f0-9]{20}$/i.test(cacheKeyValue)) return null;
-  return loadJson<any>(Path.join(analysis, 'cache', 'source-tier', `${cacheKeyValue}.json`), null);
-}
-
-function validateCacheLedger(bundle: any, ledger: any, analysis?: string): { hitEntries: any[], errors: string[] } {
-  const hashes = artifactHashMap(bundle);
-  const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
-  const workpackExecutions = (bundle.source_tier_workpack_executions || []).filter((execution: any) => execution?.valid === true);
-  const entries = (ledger.cache_entries || ledger.entries || []).map((entry: any) => {
-    const artifactPath = String(entry?.artifact_path || entry?.path || '').trim();
-    const artifactHash = String(entry?.artifact_hash || entry?.content_hash || entry?.source_hash || '').trim();
-    return {
-      cache_key: String(entry?.cache_key || entry?.key || '').trim(),
-      hit: entry?.hit === true || entry?.cache_hit === true,
-      artifact_path: artifactPath,
-      artifact_hash: artifactHash,
-      created_at: String(entry?.created_at || '').trim(),
-      reused_at: String(entry?.reused_at || entry?.hit_at || '').trim(),
-      cache_store_kind: String(entry?.cache_store_kind || '').trim(),
-      cache_store_generated_by: String(entry?.cache_store_generated_by || '').trim(),
-      analysis_run_id: String(entry?.analysis_run_id || '').trim(),
-      source_commit: String(entry?.source_commit || '').trim(),
-      product_request_hash: String(entry?.product_request_hash || '').trim(),
-      task_id: String(entry?.task_id || '').trim(),
-      task_context_hash: String(entry?.task_context_hash || '').trim(),
-      execution_receipt_hash: String(entry?.execution_receipt_hash || '').trim(),
-      expected_hash: artifactPath ? hashes.get(artifactPath) || '' : ''
-    };
-  });
-  const hitEntries = entries.filter((entry: any) => entry.hit === true);
-  const errors = [
-    ...(ledger.schemaVersion === '1.0' ? [] : ['cache_ledger.schemaVersion']),
-    ...(String(ledger.ledger_kind || '') === 'artifact_cache_ledger' ? [] : ['cache_ledger.ledger_kind']),
-    ...(String(ledger.generated_by || '') === ORCHESTRATION_RUNNER_GENERATED_BY ? [] : ['cache_ledger.generated_by']),
-    ...(String(ledger.analysis_run_id || '') === String(bundle.analysis_run?.analysis_run_id || '') ? [] : ['cache_ledger.analysis_run_id']),
-    ...(String(ledger.source_commit || '') === String(bundle.analysis_run?.source_commit || '') ? [] : ['cache_ledger.source_commit']),
-    ...(String(ledger.product_request_hash || '') === requestHash ? [] : ['cache_ledger.product_request_hash']),
-    ...(hitEntries.length > 0 ? [] : ['cache_ledger.hit_entries']),
-    ...(hitEntries.every((entry: any) => entry.artifact_path && entry.artifact_hash && entry.expected_hash === entry.artifact_hash) ? [] : ['cache_ledger.artifact_hashes']),
-    ...(hitEntries.every((entry: any) => entry.cache_key === cacheKey(bundle, entry.artifact_path, entry.artifact_hash)) ? [] : ['cache_ledger.cache_keys']),
-    ...(hitEntries.every((entry: any) =>
-      entry.cache_store_kind === CACHE_STORE_KIND
-      && entry.cache_store_generated_by === ORCHESTRATION_RUNNER_GENERATED_BY
-      && entry.analysis_run_id === String(bundle.analysis_run?.analysis_run_id || '')
-      && entry.source_commit === String(bundle.analysis_run?.source_commit || '')
-      && entry.product_request_hash === requestHash
-      && entry.task_id
-      && entry.task_context_hash
-      && entry.execution_receipt_hash
-    ) ? [] : ['cache_ledger.cache_store_provenance']),
-    ...(hitEntries.every((entry: any) =>
-      workpackExecutions.some((execution: any) =>
-        String(execution?.artifact_path || '').trim() === entry.artifact_path
-        && String(execution?.task_id || '').trim() === entry.task_id
-        && String(execution?.task_context_hash || '').trim() === entry.task_context_hash
-        && String(execution?.receipt_hash || '').trim() === entry.execution_receipt_hash
-      )
-    ) ? [] : ['cache_ledger.cache_store_workpack_receipts']),
-    ...(!analysis || hitEntries.every((entry: any) => cacheStoreMatchesHit(loadCacheStoreHit(analysis, entry.cache_key), entry, requestHash, bundle)) ? [] : ['cache_ledger.cache_store_files']),
-    ...(hitEntries.every((entry: any) => {
-      const created = Date.parse(entry.created_at);
-      const reused = Date.parse(entry.reused_at);
-      return Number.isFinite(created) && Number.isFinite(reused) && reused > created;
-    }) ? [] : ['cache_ledger.prior_cache_reuse_timing'])
-  ];
-  return { hitEntries, errors };
-}
-
-async function cmdRunOrchestration(args: string[]): Promise<number> {
-  const repo = repoArg(args);
-  const analysis = analysisPath(repo, argValue(args, '--analysis'));
-  const manifest = loadJson<any>(Path.join(analysis, 'source-tier-task-manifest.json'), loadJson<any>(Path.join(analysis, 'data', 'source-tier-task-manifest.json'), {}));
-  const runnableTasks = (manifest.tasks || [])
-    .map((task: any) => ({
-      task_id: String(task?.id || '').trim(),
-      artifact_path: String(task?.expected_output || '').trim(),
-      task
-    }))
-    .filter((task: any) => task.task_id && task.artifact_path)
-    .slice(0, 2);
-
-  if (runnableTasks.length < 2) {
-    console.log('Harness orchestration run: not written');
-    console.log(`Need at least two source-tier workpacks in the manifest; found ${runnableTasks.length}.`);
-    return 1;
-  }
-
-  const started = Date.now();
-  const workerTasks = await Promise.all(runnableTasks.map(async (task: any, index: number) => {
-    const workerStart = Date.now();
-    const targetOutput = Path.join(analysis, task.artifact_path);
-    if (!FS.existsSync(targetOutput)) throw new Error(`Missing Codex-authored source-tier output for runner execution: ${targetOutput}`);
-    await new Promise(resolve => setTimeout(resolve, 25));
-    const artifact = JSON.parse(FS.readFileSync(targetOutput, 'utf8'));
-    const receiptValidation = validateSourceTierWorkpackExecution(analysis, task.task, task.artifact_path, artifact);
-    if (receiptValidation.errors.length) throw new Error(`Invalid Codex workpack execution receipt for ${task.task_id}: ${receiptValidation.errors.join(', ')}`);
-    const workerEnd = Date.now();
-    return {
-      worker_id: `source-tier-worker-${index + 1}`,
-      task_id: task.task_id,
-      started_at: new Date(workerStart).toISOString(),
-      ended_at: new Date(workerEnd).toISOString(),
-      duration_ms: Math.max(1, workerEnd - workerStart),
-      artifact_path: task.artifact_path,
-      execution_kind: SOURCE_TIER_WORKPACK_EXECUTION_KIND,
-      execution_mode: ORCHESTRATION_EXECUTION_MODE,
-      execution_receipt_hash: receiptValidation.receiptHash,
-      review_hash: receiptValidation.reviewHash,
-      task_context_hash: receiptValidation.taskContextHash
-    };
-  }));
-
-  let bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
-  if (bundle.artifact_dependency_graph?.complete !== true || bundle.analysis_run_provenance?.complete !== true) {
-    console.log('Harness orchestration run: not written');
-    console.log('Artifact dependency graph and analysis run provenance must be complete after source-tier runner execution.');
-    return 1;
-  }
-  const hashes = artifactHashMap(bundle);
-  for (const row of workerTasks) row.artifact_hash = hashes.get(row.artifact_path) || '';
-  if (!workerTasks.every((row: any) => row.artifact_hash)) {
-    console.log('Harness orchestration run: not written');
-    console.log('Runner-produced source-tier outputs are missing artifact graph hashes.');
-    return 1;
-  }
-
-  const cacheCheckStarted = Date.now();
-  const cacheDir = Path.join(analysis, 'cache', 'source-tier');
-  ensureDir(cacheDir);
-  const cacheEntries = workerTasks.map((task: any, index: number) => {
-    const key = cacheKey(bundle, task.artifact_path, task.artifact_hash);
-    const cacheFile = Path.join(cacheDir, `${key}.json`);
-    const existing = loadJson<any>(cacheFile, null);
-    const requestHash = String(bundle.product_analysis_request?.request_hash || '').trim();
-    const expectedStore = {
-      schemaVersion: '1.0',
-      cache_store_kind: CACHE_STORE_KIND,
-      cache_key: key,
-      generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
-      analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
-      source_commit: bundle.analysis_run?.source_commit || '',
-      product_request_hash: requestHash,
-      artifact_path: task.artifact_path,
-      artifact_hash: task.artifact_hash,
-      task_id: task.task_id,
-      task_context_hash: task.task_context_hash,
-      execution_receipt_hash: task.execution_receipt_hash
-    };
-    const hit = existing?.schemaVersion === expectedStore.schemaVersion
-      && existing?.cache_store_kind === expectedStore.cache_store_kind
-      && existing?.generated_by === expectedStore.generated_by
-      && existing?.analysis_run_id === expectedStore.analysis_run_id
-      && existing?.source_commit === expectedStore.source_commit
-      && existing?.product_request_hash === expectedStore.product_request_hash
-      && existing?.cache_key === expectedStore.cache_key
-      && existing?.artifact_hash === expectedStore.artifact_hash
-      && existing?.artifact_path === expectedStore.artifact_path
-      && existing?.task_id === expectedStore.task_id
-      && existing?.task_context_hash === expectedStore.task_context_hash
-      && existing?.execution_receipt_hash === expectedStore.execution_receipt_hash;
-    const createdAt = hit ? String(existing.created_at || task.ended_at) : task.ended_at;
-    const entry = {
-      cache_key: key,
-      hit,
-      artifact_path: task.artifact_path,
-      artifact_hash: task.artifact_hash,
-      execution_receipt_hash: task.execution_receipt_hash,
-      cache_store_kind: hit ? String(existing.cache_store_kind || '') : expectedStore.cache_store_kind,
-      cache_store_generated_by: hit ? String(existing.generated_by || '') : '',
-      analysis_run_id: hit ? String(existing.analysis_run_id || '') : expectedStore.analysis_run_id,
-      source_commit: hit ? String(existing.source_commit || '') : expectedStore.source_commit,
-      product_request_hash: hit ? String(existing.product_request_hash || '') : expectedStore.product_request_hash,
-      task_id: task.task_id,
-      task_context_hash: task.task_context_hash,
-      created_at: createdAt,
-      reused_at: hit ? new Date(cacheCheckStarted + index + 1).toISOString() : ''
-    };
-    if (!hit) {
-      writeText(cacheFile, JSON.stringify({
-        ...expectedStore,
-        created_at: task.ended_at
-      }, null, 2) + '\n');
-    }
-    return entry;
-  });
-
-  writeText(Path.join(analysis, 'data', 'orchestration-execution-log.json'), JSON.stringify({
-    schemaVersion: '1.0',
-    execution_kind: 'source_tier_workpack_execution',
-    execution_mode: ORCHESTRATION_EXECUTION_MODE,
-    execution_boundary: 'Codex authors semantic source-tier workpack outputs in-session; this runner validates task-bound execution receipts, records concurrent worker supervision, and never reads .analysis-seed as orchestration input.',
-    generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
-    generated_at: new Date(started).toISOString(),
-    analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
-    source_commit: bundle.analysis_run?.source_commit || '',
-    worker_tasks: workerTasks
-  }, null, 2) + '\n');
-  writeText(Path.join(analysis, 'data', 'cache-ledger.json'), JSON.stringify({
-    schemaVersion: '1.0',
-    ledger_kind: 'artifact_cache_ledger',
-    cache_mode: 'runner_verified_artifact_cache_reuse',
-    generated_by: ORCHESTRATION_RUNNER_GENERATED_BY,
-    generated_at: new Date(started).toISOString(),
-    analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
-    source_commit: bundle.analysis_run?.source_commit || '',
-    product_request_hash: bundle.product_analysis_request?.request_hash || '',
-    cache_entries: cacheEntries
-  }, null, 2) + '\n');
-
-  console.log('Harness orchestration run: recorded');
-  console.log(`Workers: ${workerTasks.length} · cache hits: ${cacheEntries.filter((entry: any) => entry.hit).length}`);
-  console.log(`Execution log: ${Path.join(analysis, 'data', 'orchestration-execution-log.json')}`);
-  console.log(`Cache ledger: ${Path.join(analysis, 'data', 'cache-ledger.json')}`);
-  return 0;
-}
-
-async function cmdProveOrchestration(args: string[]): Promise<number> {
-  const repo = repoArg(args);
-  const analysis = analysisPath(repo, argValue(args, '--analysis'));
-  const executionLogPath = Path.resolve(argValue(args, '--execution-log', Path.join(analysis, 'data', 'orchestration-execution-log.json')) || '');
-  const cacheLedgerPath = Path.resolve(argValue(args, '--cache-ledger', Path.join(analysis, 'data', 'cache-ledger.json')) || '');
-  let bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
-  const completedTasks = (bundle.source_tier_backlog?.rows || [])
-    .filter((row: any) => row.status === 'complete')
-    .map((row: any) => String(row?.id || '').trim())
-    .filter(Boolean);
-
-  if (completedTasks.length < 2) {
-    console.log('Parallel/caching orchestration proof: not written');
-    console.log(`Need at least two complete source-tier workpacks with hashed outputs; found ${completedTasks.length}.`);
-    console.log('Run larger scoped analysis, reduce Tier 1 batch size in the harness, or complete more source-tier workpacks through the harness orchestration path first.');
-    return 1;
-  }
-  if (bundle.artifact_dependency_graph?.complete !== true || bundle.analysis_run_provenance?.complete !== true) {
-    console.log('Parallel/caching orchestration proof: not written');
-    console.log('Artifact dependency graph and analysis run provenance must be complete before proof can be generated.');
-    return 1;
-  }
-  if (bundle.product_analysis_request_freshness?.complete === false) {
-    console.log('Parallel/caching orchestration proof: not written');
-    console.log('Product analysis request is stale; re-author downstream LLM artifacts first.');
-    return 1;
-  }
-  if (!FS.existsSync(executionLogPath)) {
-    console.log('Parallel/caching orchestration proof: not written');
-    console.log(`Missing orchestration execution log: ${executionLogPath}`);
-    return 1;
-  }
-  if (!FS.existsSync(cacheLedgerPath)) {
-    console.log('Parallel/caching orchestration proof: not written');
-    console.log(`Missing cache ledger: ${cacheLedgerPath}`);
-    return 1;
-  }
-
-  const executionLog = loadJson<any>(executionLogPath, {});
-  const cacheLedger = loadJson<any>(cacheLedgerPath, {});
-  const executionValidation = validateExecutionLog(bundle, executionLog);
-  const cacheValidation = validateCacheLedger(bundle, cacheLedger, analysis);
-  const validationErrors = [...executionValidation.errors, ...cacheValidation.errors];
-  if (validationErrors.length) {
-    console.log('Parallel/caching orchestration proof: not written');
-    for (const error of validationErrors) console.log(`ORCHESTRATION-INPUT-MISSING ${error}`);
-    return 1;
-  }
-
-  const parallelProof = {
-    schemaVersion: '1.0',
-    complete: true,
-    proof_kind: 'harness_recorded_parallel_source_tier_execution',
-    analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
-    source_commit: bundle.analysis_run?.source_commit || '',
-    generated_at: new Date().toISOString(),
-    generated_by: 'cognianalysis dev prove-orchestration',
-    generated_from: ['source-tier-task-manifest.json', 'source_tiers/*.json', Path.relative(analysis, executionLogPath).replace(/\\/g, '/')],
-    worker_count: executionValidation.workerTasks.length,
-    worker_tasks: executionValidation.workerTasks.map((row: any) => ({
-      worker_id: row.worker_id,
-      task_id: row.task_id,
-      started_at: row.started_at,
-      ended_at: row.ended_at,
-      duration_ms: row.duration_ms,
-      artifact_hash: row.artifact_hash,
-      execution_receipt_hash: row.execution_receipt_hash,
-      review_hash: row.review_hash,
-      task_context_hash: row.task_context_hash
-    }))
-  };
-
-  const cacheProof = {
-    schemaVersion: '1.0',
-    complete: true,
-    proof_kind: 'harness_recorded_artifact_cache_reuse',
-    analysis_run_id: bundle.analysis_run?.analysis_run_id || '',
-    source_commit: bundle.analysis_run?.source_commit || '',
-    generated_at: new Date().toISOString(),
-    generated_by: 'cognianalysis dev prove-orchestration',
-    generated_from: ['artifact-dependency-graph.json', 'product-analysis-request.json', Path.relative(analysis, cacheLedgerPath).replace(/\\/g, '/')],
-    cache_hits: cacheValidation.hitEntries.length,
-    cache_entries: cacheValidation.hitEntries.map((entry: any) => ({
-      cache_key: entry.cache_key,
-      hit: true,
-      artifact_path: entry.artifact_path,
-      artifact_hash: entry.artifact_hash
-    }))
-  };
-
-  writeText(Path.join(analysis, 'data', 'parallel-execution-proof.json'), JSON.stringify(parallelProof, null, 2) + '\n');
-  writeText(Path.join(analysis, 'data', 'cache-reuse-proof.json'), JSON.stringify(cacheProof, null, 2) + '\n');
-  bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
-  const contract = bundle.parallel_orchestration_contract || {};
-  console.log(`Parallel/caching orchestration proof: ${contract.complete === true ? 'complete' : 'partial'}`);
-  console.log(`Workers: ${parallelProof.worker_count} · cache hits: ${cacheProof.cache_hits}`);
-  console.log(`Parallel proof: ${Path.join(analysis, 'data', 'parallel-execution-proof.json')}`);
-  console.log(`Cache proof: ${Path.join(analysis, 'data', 'cache-reuse-proof.json')}`);
-  for (const missing of contract.missing || []) console.log(`ORCHESTRATION-MISSING ${missing}`);
-  return contract.complete === true ? 0 : 1;
 }
 
 function aggregateWithMaterializedDetailTasks(repo: string, analysis: string): any {
@@ -1841,31 +1308,22 @@ async function runCommand(command: string | undefined, args: string[], options: 
   }
   if (!options.dev) {
     const preferred = command === 'finish' || command === 'report' ? 'dev finalize' : `dev ${command}`;
-    const compatibilityCommands = new Set(['resume', 'repair', 'migrate', 'init-harness', 'init-agent', 'init-codex', 'init', 'prepare', 'run', 'doctor', 'finalize', 'finish', 'report', 'aggregate', 'render', 'validate', 'coverage', 'tier-status', 'tier-next', 'tier-context', 'audit-report', 'portfolio']);
+    const compatibilityCommands = new Set(['migrate', 'init-harness', 'init-agent', 'prepare', 'finalize', 'finish', 'report', 'aggregate', 'render', 'validate', 'tier-status', 'tier-next', 'tier-context', 'audit-report']);
     if (compatibilityCommands.has(command)) compatibilityWarning(preferred);
   }
-  if (command === 'resume') return cmdResume(args);
-  if (command === 'repair') return cmdRepair(args);
   if (command === 'migrate') return cmdMigrate(args);
   if (command === 'init-harness' || command === 'init-agent') return cmdInitHarness(args);
-  if (command === 'init-codex') return cmdInitCodex(args);
   if (command === 'mcp') { startMcpLikeServer(); return 0; }
 
-  if (command === 'init' || command === 'prepare') return cmdPrepare(args);
-  if (command === 'run') return cmdRun(args);
-  if (command === 'doctor') return cmdDoctor(args);
+  if (command === 'prepare') return cmdPrepare(args);
   if (command === 'finalize' || command === 'finish' || command === 'report') return cmdFinalize(args);
   if (command === 'aggregate') return cmdAggregate(args);
   if (command === 'render') return cmdRender(args);
   if (command === 'validate') return cmdValidate(args);
-  if (command === 'coverage') return cmdCoverage(args);
   if (command === 'tier-status') return cmdTierStatus(args);
   if (command === 'tier-next') return cmdTierNext(args);
   if (command === 'tier-context') return cmdTierContext(args);
-  if (command === 'run-orchestration') return cmdRunOrchestration(args);
-  if (command === 'prove-orchestration') return cmdProveOrchestration(args);
   if (command === 'audit-report') return cmdAuditReport(args);
-  if (command === 'portfolio') return cmdPortfolio(args);
   usage();
   return 1;
 }
