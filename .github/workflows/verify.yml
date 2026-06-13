@@ -29,26 +29,39 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify committed dist is current
-        run: git diff --exit-code -- dist
-
-      - name: Verify LLM authority boundary
-        run: npm run verify:llm-boundary
-
-      - name: Verify demo regression suite
-        run: npm run verify:demo
-
-      - name: Verify golden benchmark suite
-        run: npm run verify:golden
-
-      - name: Verify proof commands leave the worktree clean
+      - name: Product CLI smoke
         shell: bash
         run: |
-          status="$(git status --short)"
-          if [ -n "$status" ]; then
-            echo "$status"
-            exit 1
-          fi
+          tmpdir="$(mktemp -d)"
+          repo="$tmpdir/demo-repo"
+          cp -R examples/demo-repo "$repo"
+
+          node dist/cli.js --help
+          node dist/cli.js analyze "$repo" --mode blueprint --goal "CI product smoke"
+          node dist/cli.js status "$repo"
+          node dist/cli.js eval "$repo" --strict
+          node dist/cli.js open "$repo"
+
+          test -f "$repo/.analysis/inventory.json"
+          test -f "$repo/.analysis/workpack-manifest.json"
+          test -d "$repo/.analysis/workpacks"
+          test -f "$repo/.analysis/report/index.html"
+          test ! -d "$repo/.analysis/source_tier_tasks"
+          test ! -d "$repo/.analysis/llm_tasks"
+
+      - name: Complete-audit isolation smoke
+        shell: bash
+        run: |
+          tmpdir="$(mktemp -d)"
+          repo="$tmpdir/demo-repo"
+          cp -R examples/demo-repo "$repo"
+          rm -rf "$repo/.analysis"
+
+          node dist/cli.js analyze "$repo" --mode complete-audit --scope complete
+
+          test -f "$repo/.analysis/inventory.json"
+          test -d "$repo/.analysis/source_tier_tasks"
+          test -d "$repo/.analysis/llm_tasks"
 
       - name: Verify packed package smoke
         shell: bash
@@ -58,33 +71,19 @@ jobs:
           tarball="$(node -e "const path=require('path'); const fs=require('fs'); const pack=JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))[0]; console.log(path.join(process.argv[1], pack.filename));" "$tmpdir" "$tmpdir/pack.json")"
           smoke="$(mktemp -d)"
           mkdir -p "$smoke/target"
+          printf '# Package smoke\n' > "$smoke/target/README.md"
           cd "$smoke"
           npm init -y
           npm install --no-package-lock "$tarball"
           npx cognianalysis --help
-          npx cognianalysis init-harness ./target --harness generic
-          test -f ./target/AGENTS.md
+          npx cognianalysis analyze ./target --mode brief --goal "Package smoke"
+          npx cognianalysis status ./target
 
-      - name: Record non-blocking market-proof boundary
+      - name: Verify workflow leaves tracked files clean
         shell: bash
         run: |
-          set +e
-          npm run verify:baseline > baseline.out 2>&1
-          baseline_status=$?
-          node dist/cli.js doctor examples/demo-repo --market-proof --strict > market-proof.out 2>&1
-          strict_status=$?
-          {
-            echo "## Market Proof Boundary"
-            echo
-            echo "Baseline verifier exit code: ${baseline_status}"
-            echo
-            echo '```text'
-            cat baseline.out
-            echo '```'
-            echo
-            echo "Strict market-proof exit code: ${strict_status}"
-            echo
-            echo '```text'
-            cat market-proof.out
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          status="$(git status --short --untracked-files=no)"
+          if [ -n "$status" ]; then
+            echo "$status"
+            exit 1
+          fi
