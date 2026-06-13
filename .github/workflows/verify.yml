@@ -77,7 +77,10 @@ jobs:
           npm install --no-package-lock "$tarball"
           npx cognianalysis --help
           npx cognianalysis analyze ./target --mode brief --goal "Package smoke"
-          npx cognianalysis status ./target
+          npx cognianalysis status ./target || test "$?" -eq 1
+          test -f ./target/.analysis/inventory.json
+          test -f ./target/.analysis/workpack-manifest.json
+          test -d ./target/.analysis/workpacks
 
       - name: Verify workflow leaves tracked files clean
         shell: bash
