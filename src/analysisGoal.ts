@@ -15,7 +15,9 @@ export function analysisGoalContractArtifact(): any {
       style_system: 'stable report component library',
       source_basis: 'source code, tests, docs, contracts, examples and configuration',
       automation_goal: 'as automated as possible from source code',
-      management_drilldown: 'textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence'
+      management_drilldown: 'textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence',
+      detailed_textual_explanations: 'LLM-authored explanations of behavior, process, architecture, risk and modernization; not only tables, file lists or labels',
+      whole_file_thesis_trace: 'Visible explanation of how the complete included-file corpus and Tier 1 file cards influenced the report theses, including source-family weighting and explicit gaps when any file-card coverage is missing'
     },
     required_levels: [
       {
@@ -43,12 +45,12 @@ export function analysisGoalContractArtifact(): any {
       {
         id: 'functional_view',
         label: 'Functional View',
-        intent: 'Explain what the system does from a business/user/system perspective.'
+        intent: 'Explain what the system does from a business/user/system perspective, including business capabilities, user journeys, workflows, business rules and process logic.'
       },
       {
         id: 'technical_view',
         label: 'Technical View',
-        intent: 'Explain APIs, interfaces, contracts, architecture, data stores and integrations.'
+        intent: 'Explain APIs, interfaces, contracts, architecture, system landscape, data flows, dependencies, technology stack, data stores and integrations.'
       }
     ],
     required_report_behaviors: [
@@ -63,9 +65,19 @@ export function analysisGoalContractArtifact(): any {
         intent: 'Analyze every included file at least at Tier 1 before selecting Tier 2-4 technical drilldown, behavior, risk and refactoring depth.'
       },
       {
+        id: 'whole_file_thesis_trace',
+        label: 'Whole-file thesis trace',
+        intent: 'Show in the visible report that every included file was accounted for through Tier 1 file cards and explain how those cards influenced the LLM-authored conclusions, source-family map, risks, process analysis and modernization theses.'
+      },
+      {
         id: 'e2e_relationships',
         label: 'E2E relationships',
-        intent: 'Explain how functions, code blocks, modules and systems collaborate through representative flows.'
+        intent: 'Explain how functions, code blocks, modules and systems collaborate through representative whole E2E flows with source-backed steps and Mermaid where useful.'
+      },
+      {
+        id: 'business_process_descriptions',
+        label: 'Business process descriptions',
+        intent: 'Describe implemented business processes/workflows, trigger-to-outcome logic, decision points, inefficiencies and optimization potential from source evidence.'
       },
       {
         id: 'llm_authored_report',

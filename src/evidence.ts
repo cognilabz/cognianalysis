@@ -15,6 +15,7 @@ export function validateEvidenceReference(repo: string, ev: any, skippedPaths: S
   const fullReal = FS.realpathSync(full);
   if (fullReal !== repoReal && !fullReal.startsWith(`${repoReal}${Path.sep}`)) return { ...ev, line, valid: false, reason: 'path escapes repository' };
   const lineCount = countLines(full);
+  if (lineCount === 0 && line === 1) return { ...ev, line, valid: true, path_only: true, line_count: 0, snippet: '' };
   if (line > lineCount) return { ...ev, line, valid: false, reason: 'line out of range', line_count: lineCount };
   const actualLine = getLine(full, line);
   const declaredSnippet = String(ev.snippet || '').trim();
@@ -93,11 +94,17 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   add('capability_statement', analysis.functional_view?.actors, 'actor', evidenceRefs(analysis.functional_view || {}), functionalGap);
   add('capability_statement', analysis.functional_view?.capabilities, 'capability', evidenceRefs(analysis.functional_view || {}), functionalGap);
   add('capability_statement', analysis.functional_view?.user_or_system_flows, 'flow', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('business_process_statement', analysis.functional_view?.business_processes, 'business-process', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('business_rule_statement', analysis.functional_view?.business_rules, 'business-rule', evidenceRefs(analysis.functional_view || {}), functionalGap);
+  add('capability_statement', analysis.functional_view?.e2e_flows, 'e2e-flow', evidenceRefs(analysis.functional_view || {}), functionalGap);
   add('api_interface_statement', analysis.technical_view?.entrypoints, 'entrypoint', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('api_interface_statement', analysis.technical_view?.apis_and_interfaces, 'interface', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.data_and_state, 'data-state', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.integrations, 'integration', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.deployment_runtime, 'deployment-runtime', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.data_flows, 'data-flow', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.dependencies, 'dependency', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('architecture_statement', analysis.technical_view?.technology_stack, 'technology-stack', evidenceRefs(analysis.technical_view || {}), technicalGap);
   const qualityGap = text(analysis.code_quality_security, ['evidence_gap', 'missing_evidence', 'proof_gap']);
   add('bug_statement', analysis.code_quality_security?.bugs, 'bug', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
   add('vulnerability_statement', analysis.code_quality_security?.vulnerabilities, 'vulnerability', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
@@ -108,6 +115,10 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   add('process_risk', analysis.process_analysis?.observability, 'observability', evidenceRefs(analysis.process_analysis || {}), processGap);
   add('process_risk', analysis.process_analysis?.documentation_gaps, 'documentation-gap', evidenceRefs(analysis.process_analysis || {}), processGap);
   add('process_risk', analysis.process_analysis?.process_improvements, 'process-improvement', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('business_process_statement', analysis.process_analysis?.implemented_business_processes, 'implemented-business-process', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('business_process_statement', analysis.process_analysis?.process_flows, 'process-flow', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('process_risk', analysis.process_analysis?.workflow_inefficiencies, 'workflow-inefficiency', evidenceRefs(analysis.process_analysis || {}), processGap);
+  add('process_risk', analysis.process_analysis?.optimization_opportunities, 'optimization-opportunity', evidenceRefs(analysis.process_analysis || {}), processGap);
   const refactoringGap = text(analysis.refactoring, ['evidence_gap', 'missing_evidence', 'proof_gap']);
   add('refactoring_recommendation', analysis.refactoring?.target_architecture_options, 'target-architecture', evidenceRefs(analysis.refactoring || {}), refactoringGap);
   add('refactoring_recommendation', analysis.refactoring?.migration_roadmap, 'migration-roadmap', evidenceRefs(analysis.refactoring || {}), refactoringGap);

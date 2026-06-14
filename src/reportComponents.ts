@@ -12,7 +12,7 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     label: 'Narrative',
     purpose: 'Human-readable paragraphs for management/business meaning and technical explanation.',
     expected_fields: ['type', 'title?', 'labels?', 'text|paragraphs|summary|description', 'business_need?', 'business_use?', 'technical_drilldown?', 'evidence?|evidence_refs?'],
-    guidance: 'Use for authored prose that explains business need, business use, system meaning or technical drilldown. Do not use it as a dumping ground for class/function lists.'
+    guidance: 'Use for authored prose that explains business need, business use, system meaning, process behavior, risk rationale or technical drilldown. Prefer real explanatory paragraphs over terse labels. Do not use it as a dumping ground for class/function lists.'
   },
   {
     id: 'statement_list',
@@ -47,14 +47,28 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     label: 'Flow',
     purpose: 'E2E, process, request/response or failure flow with optional Mermaid.',
     expected_fields: ['type', 'title?', 'labels?', 'summary|description?', 'mermaid?|source?', 'steps[]?', 'evidence?'],
-    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems.'
+    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems. A strong flow explains trigger, actor, entrypoint, business rule/decision, state change, integration call, output, failure path and operational side effect when the source proves them.'
   },
   {
     id: 'four_level_assessment',
     label: 'Four-Level Assessment',
     purpose: 'The four requested analysis levels in one structured view.',
     expected_fields: ['type', 'title?', 'labels.next_steps?', 'levels[]', 'levels[].level', 'levels[].status', 'levels[].summary', 'levels[].next_steps?', 'levels[].evidence?'],
-    guidance: 'Use for reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture.'
+    guidance: 'Use for reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture. Each level should contain a narrative assessment and source-backed next steps, not just a status word.'
+  },
+  {
+    id: 'capability_coverage',
+    label: 'Capability Coverage',
+    purpose: 'LLM-authored coverage of the four core Cognianalysis capabilities, independent of the report section outline.',
+    expected_fields: ['type', 'title?', 'labels?', 'capabilities[]|items[]|levels[]', 'capabilities[].capability_id', 'capabilities[].label?', 'capabilities[].status', 'capabilities[].summary', 'capabilities[].covered_by_sections?', 'capabilities[].thesis_impact?', 'capabilities[].next_steps?', 'capabilities[].evidence?'],
+    guidance: 'Use when the report must prove that reverse engineering/documentation, code analysis, process analysis and refactoring/modernization are all covered. The LLM chooses the section structure; this component renders the explicit coverage model.'
+  },
+  {
+    id: 'source_coverage_trace',
+    label: 'Source Coverage Trace',
+    purpose: 'Visible whole-repository file accounting and explanation of how the complete file-card corpus affected the report theses.',
+    expected_fields: ['type', 'title?', 'labels?', 'included_files?', 'tier1_file_cards?', 'missing_tier1_file_cards?', 'source_tier_tasks?', 'summary|thesis_impact_summary?', 'source_family_impacts[]|families[]', 'source_family_impacts[].source_family|name', 'source_family_impacts[].file_count?', 'source_family_impacts[].thesis_impact|summary', 'source_family_impacts[].evidence?'],
+    guidance: 'Use for complete-audit reports to show source inventory reconciliation and thesis impact. Counts prove coverage mechanics; prose explains how file families affected confidence, conclusions and evidence gaps.'
   },
   {
     id: 'decision_matrix',
@@ -88,8 +102,15 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     id: 'open_questions',
     label: 'Open Questions',
     purpose: 'Missing proof, owner questions and follow-up analysis.',
-    expected_fields: ['type', 'title?', 'labels.question?', 'items[]', 'items[].id', 'items[].question|title', 'items[].reason|why_it_matters|description', 'items[].impact', 'items[].blocking', 'items[].evidence?|items[].evidence_refs?|items[].evidence_gap?'],
-    guidance: 'Use when code evidence cannot support a stronger claim. Mirror any top-level analysis_document.open_questions entries here when unresolved uncertainty should be visible to report readers.'
+    expected_fields: ['type', 'title?', 'summary?|description?', 'labels.question?', 'items[]', 'items[].id', 'items[].question|title', 'items[].reason|why_it_matters|description', 'items[].impact', 'items[].blocking', 'items[].evidence?|items[].evidence_refs?|items[].evidence_gap?'],
+    guidance: 'Use when code evidence cannot support a stronger claim. Mirror any top-level analysis_document.open_questions entries here when unresolved uncertainty should be visible to report readers. If there are no open questions, include an explicit LLM-authored summary instead of an empty block.'
+  },
+  {
+    id: 'evidence_index',
+    label: 'Evidence Index',
+    purpose: 'Visible file:line evidence references that support the LLM-authored report.',
+    expected_fields: ['type', 'title?', 'items[]|evidence[]|evidence_refs[]', 'items[].path', 'items[].line?', 'items[].snippet?', 'items[].claim_id?', 'items[].valid?'],
+    guidance: 'Use when the final report needs a compact trace of source-backed proof. Evidence indexes are navigation and support surfaces; they do not replace authored explanation.'
   }
 ];
 

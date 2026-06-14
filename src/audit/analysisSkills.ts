@@ -101,8 +101,8 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     label: 'Final Report Authoring',
     purpose: 'Compose the visible decision document from all building blocks and detail reviews through the component library.',
     stage_ids: ['llm_final_analysis_document'],
-    expected_outputs: ['analysis_document.sections[]', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review'],
-    guidance: 'Choose section order and emphasis per repository. Do not rely on fixed appendices or raw catalogs as the human report.'
+    expected_outputs: ['analysis_document.sections[]', 'analysis_document.core_capability_coverage[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review', 'analysis_document.sections[].blocks[type=capability_coverage]', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
+    guidance: 'Choose section order, IDs and emphasis per repository. Always make the four core capabilities and whole-file thesis-impact proof visible through authored coverage models and renderer components. Do not rely on fixed appendices or raw catalogs as the human report.'
   },
   {
     id: 'tool_positioning',
@@ -117,8 +117,8 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     label: 'Evidence Governance',
     purpose: 'Keep claims source-backed, uncertainty visible and file inventory accounted for.',
     stage_ids: ['llm_whole_repository_building_blocks', 'llm_detail_reviews', 'llm_final_analysis_document'],
-    expected_outputs: ['evidence[]', 'analysis_coverage', 'open_questions[]'],
-    guidance: 'Every substantive claim needs file:line evidence or an explicit open question.'
+    expected_outputs: ['evidence[]', 'analysis_coverage', 'open_questions[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
+    guidance: 'Every substantive claim needs file:line evidence or an explicit open question. The final report must also explain how complete Tier 1 file-card coverage influenced thesis selection and confidence.'
   }
 ];
 

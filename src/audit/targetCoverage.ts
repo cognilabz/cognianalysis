@@ -12,10 +12,10 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'llm-first-semantic-extraction',
     title: 'LLM-first semantic extraction',
-    description: 'Codex, as the active in-session LLM, extracts meaning. The CLI prepares context and validates evidence only.',
+    description: 'Codex, as the active in-session LLM, extracts meaning, detailed textual explanations, business processes and E2E flows. The CLI prepares context and validates evidence only.',
     addressed_by: ['Main harness workflow', 'llm_instructions.md', 'source-capsules.json'],
-    expected_outputs: ['assessment', 'capabilities', 'interfaces', 'flows'],
-    output_keys: ['assessment', 'capabilities', 'interfaces', 'flows']
+    expected_outputs: ['assessment', 'capabilities', 'interfaces', 'flows', 'business_processes[]', 'process.workflow_inefficiencies[]'],
+    output_keys: ['assessment', 'capabilities', 'interfaces', 'flows', 'business_processes', 'process']
   },
   {
     id: 'llm-authored-analysis-strategy',
@@ -132,17 +132,17 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'business-capabilities',
     title: 'Business capabilities',
-    description: 'Business capabilities, actors, domain terms and use cases.',
+    description: 'Business capabilities, actors, domain terms, use cases, business processes, workflows and rules.',
     addressed_by: ['Codex-selected business extraction workbench or optional capability_templates/02-business-capabilities-logic.md', 'Codex-authored LLM capability/business sections'],
-    expected_outputs: ['capabilities[]'],
-    output_keys: ['capabilities']
+    expected_outputs: ['capabilities[]', 'business_processes[]', 'business_rules[]'],
+    output_keys: ['capabilities', 'business_processes', 'business_rules']
   },
   {
     id: 'functional-view',
     title: 'Functional view',
-    description: 'Decision-ready functional view of what the system does, including capabilities, actors, use cases and user/system flows.',
+    description: 'Decision-ready functional view of what the system does, including capabilities, actors, use cases, user/system flows, business workflows, business rules, process logic and representative E2E flows.',
     addressed_by: ['Codex-planned skill workbench reviews', 'optional functional/flow capability templates when selected', 'Codex-authored LLM functional sections'],
-    expected_outputs: ['assessment.functional_view'],
+    expected_outputs: ['assessment.functional_view', 'functional_view.business_processes[]', 'functional_view.business_rules[]', 'functional_view.e2e_flows[]'],
     output_keys: ['assessment.functional_view']
   },
   {
@@ -188,9 +188,9 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'technical-view',
     title: 'Technical view',
-    description: 'Decision-ready technical view covering APIs, interfaces, contracts, architecture, data stores and integrations.',
+    description: 'Decision-ready technical view covering APIs, interfaces, contracts, architecture/system landscape, data flows, dependencies, technology stack, data stores and integrations.',
     addressed_by: ['Codex-planned skill workbench reviews', 'optional technical capability templates when selected', 'Codex-authored LLM technical sections'],
-    expected_outputs: ['assessment.technical_view'],
+    expected_outputs: ['assessment.technical_view', 'technical_view.data_flows[]', 'technical_view.dependencies[]', 'technical_view.technology_stack[]'],
     output_keys: ['assessment.technical_view']
   },
   {
@@ -220,9 +220,9 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'process-readiness',
     title: 'Process and readiness assessment',
-    description: 'Tests, CI/CD, release, observability, configuration, local setup and operational readiness.',
+    description: 'Implemented business processes, workflow inefficiencies, optimization opportunities, tests, CI/CD, release, observability, configuration, local setup and operational readiness.',
     addressed_by: ['Codex-selected process/quality workbench or optional capability_templates/08-process-quality-readiness.md', 'Codex-authored LLM process/readiness sections'],
-    expected_outputs: ['process', 'quality'],
+    expected_outputs: ['process', 'process.implemented_business_processes[]', 'process.workflow_inefficiencies[]', 'process.optimization_opportunities[]', 'quality'],
     output_keys: ['process', 'quality']
   },
   {

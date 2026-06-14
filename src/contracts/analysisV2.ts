@@ -32,14 +32,20 @@ export interface AnalysisV2 {
     system_purpose: string;
     actors: any[];
     capabilities: any[];
+    business_processes?: any[];
+    business_rules?: any[];
     user_or_system_flows: any[];
+    e2e_flows?: any[];
   };
   technical_view: {
     architecture_summary: string;
     entrypoints: any[];
     apis_and_interfaces: any[];
     data_and_state: any[];
+    data_flows?: any[];
     integrations: any[];
+    dependencies?: any[];
+    technology_stack?: any[];
     deployment_runtime: any[];
     evidence: AnalysisEvidenceRef[];
   };
@@ -51,6 +57,10 @@ export interface AnalysisV2 {
   };
   process_analysis: {
     test_readiness: string;
+    implemented_business_processes?: any[];
+    process_flows?: any[];
+    workflow_inefficiencies?: any[];
+    optimization_opportunities?: any[];
     delivery_risks: any[];
     observability: any[];
     documentation_gaps: any[];
@@ -62,6 +72,9 @@ export interface AnalysisV2 {
     tech_stack_options: any[];
     quick_wins: any[];
   };
+  core_capability_coverage?: any[];
+  whole_file_thesis_trace?: any;
+  whole_repository_file_accounting?: any;
   report_sections: AnalysisReportSection[];
   open_questions: any[];
   evidence_index: AnalysisEvidenceRef[];
@@ -142,7 +155,7 @@ function hasContent(value: any): boolean {
 function cleanBlocks(blocks: any[]): any[] {
   return blocks.filter(block => {
     if (!block || typeof block !== 'object') return false;
-    return ['text', 'paragraphs', 'summary', 'description', 'items', 'rows', 'metrics', 'mermaid', 'steps', 'evidence', 'evidence_refs']
+    return ['text', 'paragraphs', 'summary', 'description', 'items', 'rows', 'metrics', 'mermaid', 'steps', 'capabilities', 'levels', 'source_family_impacts', 'families', 'included_files', 'thesis_impact_summary', 'evidence', 'evidence_refs']
       .some(key => hasContent(block[key]));
   });
 }
@@ -173,7 +186,9 @@ function normalizeCustomSections(sections: any[]): any[] {
 }
 
 export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
-  const custom = normalizeCustomSections(analysis.report_sections || []);
+  const extended = analysis as any;
+  const authoredSections = list(analysis.report_sections).length ? analysis.report_sections : extended.sections;
+  const custom = normalizeCustomSections(authoredSections || []);
   if (custom.length) return custom;
 
   const executiveEvidence = evidenceRefs(analysis.executive_decision);
@@ -190,10 +205,20 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
       narrativeBlock('System Purpose', analysis.functional_view?.system_purpose, []),
       statementBlock('Actors', analysis.functional_view?.actors),
       statementBlock('Capabilities', analysis.functional_view?.capabilities),
+      statementBlock('Business Processes', analysis.functional_view?.business_processes),
+      statementBlock('Business Rules', analysis.functional_view?.business_rules),
       ...(list(analysis.functional_view?.user_or_system_flows).map((flow: any) => ({
         type: 'flow',
         title: flow.name || flow.title || 'Flow',
         summary: flow.summary || flow.description || '',
+        steps: flow.steps || [],
+        mermaid: flow.mermaid || '',
+        evidence: evidenceRefs(flow)
+      }))),
+      ...(list(analysis.functional_view?.e2e_flows).map((flow: any) => ({
+        type: 'flow',
+        title: flow.name || flow.title || 'E2E Flow',
+        summary: flow.narrative || flow.summary || flow.description || '',
         steps: flow.steps || [],
         mermaid: flow.mermaid || '',
         evidence: evidenceRefs(flow)
@@ -204,7 +229,10 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
       statementBlock('Entrypoints', analysis.technical_view?.entrypoints, technicalEvidence),
       statementBlock('APIs and Interfaces', analysis.technical_view?.apis_and_interfaces, technicalEvidence),
       statementBlock('Data and State', analysis.technical_view?.data_and_state, technicalEvidence),
+      statementBlock('Data Flows', analysis.technical_view?.data_flows, technicalEvidence),
       statementBlock('Integrations', analysis.technical_view?.integrations, technicalEvidence),
+      statementBlock('Dependencies', analysis.technical_view?.dependencies, technicalEvidence),
+      statementBlock('Technology Stack', analysis.technical_view?.technology_stack, technicalEvidence),
       statementBlock('Deployment Runtime', analysis.technical_view?.deployment_runtime, technicalEvidence)
     ], technicalEvidence),
     section('risks-quality-security', 'Risks & Quality', 'code_analysis', 'Bugs, vulnerabilities, quality findings and imported scanner findings.', [
@@ -215,6 +243,17 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
     ]),
     section('process-improvements', 'Process Improvements', 'process', 'Test readiness, delivery risks, observability and documentation/process gaps.', [
       narrativeBlock('Test Readiness', analysis.process_analysis?.test_readiness),
+      statementBlock('Implemented Business Processes', analysis.process_analysis?.implemented_business_processes),
+      ...(list(analysis.process_analysis?.process_flows).map((flow: any) => ({
+        type: 'flow',
+        title: flow.name || flow.title || 'Process Flow',
+        summary: flow.narrative || flow.summary || flow.description || '',
+        steps: flow.steps || [],
+        mermaid: flow.mermaid || '',
+        evidence: evidenceRefs(flow)
+      }))),
+      statementBlock('Workflow Inefficiencies', analysis.process_analysis?.workflow_inefficiencies),
+      statementBlock('Optimization Opportunities', analysis.process_analysis?.optimization_opportunities),
       statementBlock('Delivery Risks', analysis.process_analysis?.delivery_risks),
       statementBlock('Observability', analysis.process_analysis?.observability),
       statementBlock('Documentation Gaps', analysis.process_analysis?.documentation_gaps),
@@ -244,15 +283,17 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
 }
 
 export function analysisV2ToLegacyAnalysisDocument(analysis: AnalysisV2): any {
+  const extended = analysis as any;
   return {
-    schema_version: '1.0-adapted-from-analysis-v2',
+    schema_version: extended.document_schema_version || '1.0-adapted-from-analysis-v2',
     document_kind: 'analysis_document',
-    title: `Cognianalysis Decision Report · ${analysis.repo?.name || 'Repository'}`,
-    subtitle: `Mode: ${analysis.mode || 'blueprint'} · Confidence: ${analysis.confidence?.overall || 'low'}`,
-    audience: ['executive', 'engineering'],
-    synthesis_stage: analysis.mode === 'complete-audit' ? 'final_after_detail_reviews' : 'final_after_analysis_json',
+    title: extended.title || `Cognianalysis Decision Report · ${analysis.repo?.name || 'Repository'}`,
+    subtitle: extended.subtitle || `Mode: ${analysis.mode || 'blueprint'} · Confidence: ${analysis.confidence?.overall || 'low'}`,
+    audience: list(extended.audience).length ? list(extended.audience) : ['executive', 'engineering'],
+    authoring_mode: extended.authoring_mode || 'llm',
+    synthesis_stage: extended.synthesis_stage || (analysis.mode === 'complete-audit' ? 'final_after_detail_reviews' : 'final_after_analysis_json'),
     v2_source: '.analysis/analysis.json',
-    executive_decision_basis: {
+    executive_decision_basis: extended.executive_decision_basis || {
       summary: analysis.executive_decision?.summary || '',
       recommended_action: analysis.executive_decision?.recommended_action || '',
       decision_options: list(analysis.executive_decision?.decision_options),
@@ -262,11 +303,17 @@ export function analysisV2ToLegacyAnalysisDocument(analysis: AnalysisV2): any {
     },
     sections: analysisV2ToReportSections(analysis),
     open_questions: list(analysis.open_questions),
-    consistency_review: {
+    consistency_review: extended.consistency_review || {
       contradiction_count: 0,
       contradictions: [],
       summary: 'No contradiction review was provided in analysis.json v2; use evidence-audit shard or report_quality_review for authored findings.'
     },
+    semantic_lineage: list(extended.semantic_lineage),
+    skill_workbench_synthesis: extended.skill_workbench_synthesis || null,
+    detail_review_synthesis: extended.detail_review_synthesis || null,
+    core_capability_coverage: list(extended.core_capability_coverage || extended.capability_coverage || analysis.core_capability_coverage),
+    whole_file_thesis_trace: extended.whole_file_thesis_trace || analysis.whole_file_thesis_trace || extended.whole_repository_file_accounting || analysis.whole_repository_file_accounting || null,
+    whole_repository_file_accounting: extended.whole_repository_file_accounting || analysis.whole_repository_file_accounting || null,
     report_quality_review: analysis.report_quality_review || {
       verdict: 'partial',
       rationale: 'analysis.json v2 did not include report_quality_review.',
@@ -277,7 +324,7 @@ export function analysisV2ToLegacyAnalysisDocument(analysis: AnalysisV2): any {
       confidence: analysis.confidence?.overall || 'low',
       evidence: []
     },
-    requirements_trace: []
+    requirements_trace: list(extended.requirements_trace)
   };
 }
 
@@ -322,6 +369,9 @@ export function legacyAnalysisDocumentToV2(legacy: any, repo: string, analysisDi
 export function validateAnalysisV2(value: any): { valid: boolean; missing: string[]; warnings: string[] } {
   const missing: string[] = [];
   const warnings: string[] = [];
+  const expectArray = (path: string, candidate: any): void => {
+    if (!Array.isArray(candidate)) warnings.push(`${path}_missing_or_not_array`);
+  };
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { valid: false, missing: ['analysis_json_object'], warnings };
   }
@@ -336,10 +386,53 @@ export function validateAnalysisV2(value: any): { valid: boolean; missing: strin
   if (!nonEmptyString(value.executive_decision?.summary)) missing.push('executive_decision.summary');
   if (!nonEmptyString(value.executive_decision?.recommended_action)) missing.push('executive_decision.recommended_action');
   if (!value.functional_view || typeof value.functional_view !== 'object') missing.push('functional_view');
+  if (value.functional_view && typeof value.functional_view === 'object') {
+    if (!nonEmptyString(value.functional_view.system_purpose)) warnings.push('functional_view.system_purpose_missing_or_empty');
+    expectArray('functional_view.actors', value.functional_view.actors);
+    expectArray('functional_view.capabilities', value.functional_view.capabilities);
+    expectArray('functional_view.user_or_system_flows', value.functional_view.user_or_system_flows);
+    expectArray('functional_view.business_processes', value.functional_view.business_processes);
+    expectArray('functional_view.business_rules', value.functional_view.business_rules);
+    expectArray('functional_view.e2e_flows', value.functional_view.e2e_flows);
+  }
   if (!value.technical_view || typeof value.technical_view !== 'object') missing.push('technical_view');
+  if (value.technical_view && typeof value.technical_view === 'object') {
+    if (!nonEmptyString(value.technical_view.architecture_summary)) warnings.push('technical_view.architecture_summary_missing_or_empty');
+    expectArray('technical_view.entrypoints', value.technical_view.entrypoints);
+    expectArray('technical_view.apis_and_interfaces', value.technical_view.apis_and_interfaces);
+    expectArray('technical_view.data_and_state', value.technical_view.data_and_state);
+    expectArray('technical_view.data_flows', value.technical_view.data_flows);
+    expectArray('technical_view.integrations', value.technical_view.integrations);
+    expectArray('technical_view.dependencies', value.technical_view.dependencies);
+    expectArray('technical_view.technology_stack', value.technical_view.technology_stack);
+    expectArray('technical_view.deployment_runtime', value.technical_view.deployment_runtime);
+  }
   if (!value.code_quality_security || typeof value.code_quality_security !== 'object') missing.push('code_quality_security');
+  if (value.code_quality_security && typeof value.code_quality_security === 'object') {
+    expectArray('code_quality_security.bugs', value.code_quality_security.bugs);
+    expectArray('code_quality_security.vulnerabilities', value.code_quality_security.vulnerabilities);
+    expectArray('code_quality_security.code_quality_findings', value.code_quality_security.code_quality_findings);
+    expectArray('code_quality_security.scanner_findings_imported', value.code_quality_security.scanner_findings_imported);
+  }
   if (!value.process_analysis || typeof value.process_analysis !== 'object') missing.push('process_analysis');
+  if (value.process_analysis && typeof value.process_analysis === 'object') {
+    if (!nonEmptyString(value.process_analysis.test_readiness)) warnings.push('process_analysis.test_readiness_missing_or_empty');
+    expectArray('process_analysis.implemented_business_processes', value.process_analysis.implemented_business_processes);
+    expectArray('process_analysis.process_flows', value.process_analysis.process_flows);
+    expectArray('process_analysis.workflow_inefficiencies', value.process_analysis.workflow_inefficiencies);
+    expectArray('process_analysis.optimization_opportunities', value.process_analysis.optimization_opportunities);
+    expectArray('process_analysis.delivery_risks', value.process_analysis.delivery_risks);
+    expectArray('process_analysis.observability', value.process_analysis.observability);
+    expectArray('process_analysis.documentation_gaps', value.process_analysis.documentation_gaps);
+    expectArray('process_analysis.process_improvements', value.process_analysis.process_improvements);
+  }
   if (!value.refactoring || typeof value.refactoring !== 'object') missing.push('refactoring');
+  if (value.refactoring && typeof value.refactoring === 'object') {
+    expectArray('refactoring.target_architecture_options', value.refactoring.target_architecture_options);
+    expectArray('refactoring.migration_roadmap', value.refactoring.migration_roadmap);
+    expectArray('refactoring.tech_stack_options', value.refactoring.tech_stack_options);
+    expectArray('refactoring.quick_wins', value.refactoring.quick_wins);
+  }
   if (!Array.isArray(value.report_sections)) missing.push('report_sections');
   if (!Array.isArray(value.open_questions)) missing.push('open_questions');
   if (!Array.isArray(value.evidence_index)) missing.push('evidence_index');

@@ -1573,6 +1573,13 @@ function blockHasRenderableContent(block: any): boolean {
         || asList(block?.steps).some((step: any) => hasRenderableValue(step) || evidenceRefs(step).length > 0);
     case 'four_level_assessment':
       return asList(block?.levels).some((level: any) => hasRenderableValue(level) || evidenceRefs(level).length > 0);
+    case 'capability_coverage':
+      return asList(block?.capabilities || block?.items || block?.levels).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
+    case 'source_coverage_trace':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.thesis_impact_summary)
+        || asList(block?.metrics).some((metric: any) => hasRenderableValue(metric))
+        || asList(block?.source_family_impacts || block?.families || block?.impacts).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
     case 'decision_matrix':
       return asList(block?.rows).some((row: any) => hasRenderableValue(row) || evidenceRefs(row).length > 0);
     case 'roadmap':
@@ -1584,7 +1591,11 @@ function blockHasRenderableContent(block: any): boolean {
     case 'technical_drilldown':
       return asList(block?.references).some((reference: any) => hasRenderableValue(reference) || evidenceRefs(reference).length > 0);
     case 'open_questions':
-      return asList(block?.items).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || asList(block?.items).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
+    case 'evidence_index':
+      return asList(block?.items || block?.evidence || block?.evidence_refs).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
     case 'statement_list':
       return asList(block?.items).some(statementHasRenderableContent);
     case 'narrative':
@@ -1711,7 +1722,9 @@ const REPORT_QUALITY_REVIEW_CHECKS = [
   { id: 'four_level_model_covered', label: 'Four analysis levels are covered' },
   { id: 'improvements_and_refactoring_covered', label: 'Improvements, optimization and refactoring are covered' },
   { id: 'tool_positioning_covered', label: 'Tool/consulting alternative positioning is covered' },
-  { id: 'evidence_and_uncertainty_visible', label: 'Evidence, confidence and uncertainty are visible' }
+  { id: 'evidence_and_uncertainty_visible', label: 'Evidence, confidence and uncertainty are visible' },
+  { id: 'core_capability_coverage_model', label: 'Four core capabilities have LLM-authored coverage model' },
+  { id: 'whole_file_coverage_reflected', label: 'Whole-file Tier 1 coverage is reflected in thesis selection and confidence' }
 ];
 
 function hasReportSupport(item: any): boolean {
@@ -1764,6 +1777,8 @@ function majorReportClaimItems(doc: any): any[] {
       if (type === 'roadmap') pushItems(asList(block?.items), 'recommendation', ['title', 'name']);
       if (type === 'decision_matrix') pushItems(asList(block?.rows), 'decision', ['decision', 'recommendation']);
       if (type === 'source_family_map') pushItems(asList(block?.families), 'source_family', ['name', 'title']);
+      if (type === 'capability_coverage') pushItems(asList(block?.capabilities || block?.items || block?.levels), 'capability', ['label', 'title', 'capability_id']);
+      if (type === 'source_coverage_trace') pushItems(asList(block?.source_family_impacts || block?.families || block?.impacts), 'source_family', ['source_family', 'name', 'title']);
     }
   }
   return out.map(item => ({
@@ -2159,6 +2174,8 @@ function computeAnalysisDocumentReportLint(doc: any): any {
       if (type === 'statement_list') checkSupportedItems(asList(block?.items), 'item');
       if (type === 'source_family_map') checkSupportedItems(asList(block?.families), 'family');
       if (type === 'four_level_assessment') checkSupportedItems(asList(block?.levels), 'level');
+      if (type === 'capability_coverage') checkSupportedItems(asList(block?.capabilities || block?.items || block?.levels), 'capability');
+      if (type === 'source_coverage_trace') checkSupportedItems(asList(block?.source_family_impacts || block?.families || block?.impacts), 'source_family');
       if (type === 'flow') checkSupportedItems(asList(block?.steps), 'step');
       if (type === 'boundary_map') {
         for (const key of ['entries', 'exits', 'state']) {
@@ -3112,6 +3129,7 @@ function validateEvidence(repo: string, ev: any): any {
   const fullReal = fs.realpathSync(full);
   if (fullReal !== repoRootReal && !fullReal.startsWith(`${repoRootReal}${Path.sep}`)) return { ...ev, line, valid: false, reason: 'path escapes repository' };
   const lineCount = countLines(full);
+  if (lineCount === 0 && line === 1) return { ...ev, line, valid: true, path_only: true, line_count: 0, snippet: '' };
   if (line > lineCount) return { ...ev, line, valid: false, reason: 'line out of range', line_count: lineCount };
   const snippet = getLine(full, line);
   return { ...ev, line, valid: true, snippet };

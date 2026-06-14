@@ -12,7 +12,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenche
 import { computeProductReadinessV2, productReadinessV2Brief } from './productReadiness';
 import { migrateV07ToV08 } from './migration/v07ToV08';
 
-const VERSION = '0.8.0';
+const VERSION = '0.8.1';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep', 'complete-audit']);
 const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {
@@ -324,12 +324,14 @@ function printRepositoryStatus(repo: string, analysis: string, bundle: any | nul
   console.log('Next action:');
   console.log(action);
   console.log(`Estimated remaining effort: ${estimatedRemainingEffort(bundle, rows, statuses)}`);
-  if (bundle?.final_llm_readiness?.state) console.log(`Readiness: ${bundle.final_llm_readiness.state} · verdict=${bundle.final_llm_readiness.final_verdict || 'unknown'}`);
+  const readinessV2 = computeProductReadinessV2(repo, analysis, bundle);
+  console.log(`Product readiness: ${readinessV2.state} · ready=${readinessV2.ready === true ? 'yes' : 'no'}`);
+  if (bundle?.final_llm_readiness?.state) console.log(`LLM self-review: ${bundle.final_llm_readiness.state} · verdict=${bundle.final_llm_readiness.final_verdict || 'unknown'}`);
   if (bundle?.analysis_scope?.mode && bundle.analysis_scope.mode !== 'complete') {
     console.log(`Scope warning: ${bundle.analysis_scope.summary || bundle.analysis_scope.mode} Confidence impact: ${bundle.analysis_scope.confidence_impact || 'unknown'}.`);
   }
   if (bundle?.analysis_staleness?.stale === true) console.log(`Stale warning: ${bundle.analysis_staleness.summary}`);
-  return { rows, action };
+  return { rows, action, readinessV2 };
 }
 
 function printRepositoryStatusV2(repo: string, analysis: string, bundle: any | null): any {
@@ -396,6 +398,21 @@ function printProductNextStep(analysis: string, statuses: any[]): void {
     const reason = !row.exists ? 'missing' : !row.valid_json ? 'invalid_json' : 'empty';
     console.log(`MISSING ${row.path} (${row.label}, ${reason})`);
   }
+}
+
+function printPreparedSourceTierPlan(repo: string, analysis: string, args: string[]): boolean {
+  const limit = numericArg(args, '--limit', 1);
+  const maxChars = numericArg(args, '--max-chars', 6000);
+  const plan = writeNextSourceTierContexts(repo, analysis, limit, maxChars);
+  if (!plan.selected_count) return false;
+  console.log(`Prepared ${plan.selected_count} Tier 1 source context${plan.selected_count === 1 ? '' : 's'} for Codex execution.`);
+  console.log(`Plan: ${Path.join(analysis, 'source-tier-next.json')}`);
+  console.log(`Codex workpack: ${plan.codex_workpack}`);
+  for (const context of plan.contexts || []) {
+    console.log(`NEXT ${context.task_id} context=${context.output_path} output=${context.expected_output} files=${context.file_count}`);
+  }
+  console.log('Codex must now author the requested .analysis/source_tiers/*.json file cards, then rerun cognianalysis analyze .');
+  return true;
 }
 
 function repoArg(args: string[], fallback = '.'): string {
@@ -630,10 +647,19 @@ function cmdRun(args: string[]): number {
       for (const missing of bundle.analysis_contract?.missing || []) console.log(`  ANALYSIS-MISSING ${missing}`);
       return 1;
     }
-    const report = renderReport(analysis, argValue(args, '--out') ? Path.resolve(argValue(args, '--out')) : undefined, argValue(args, '--title'));
-    aggregate(repo, analysis);
-    console.log(`Product mode complete from analysis.json. Report: ${report}`);
-    return 0;
+    const refreshed = renderReportAndRefreshBundle(repo, analysis, argValue(args, '--out') ? Path.resolve(argValue(args, '--out')) : undefined, argValue(args, '--title'));
+    const readiness = computeProductReadinessV2(repo, analysis, refreshed.bundle);
+    if (readiness.ready === true) {
+      console.log(`Product mode complete from analysis.json. Report: ${refreshed.report}`);
+      return 0;
+    }
+    console.log(`Product mode not complete from analysis.json. Draft report: ${refreshed.report}`);
+    for (const line of productReadinessV2Brief(readiness)) console.log(line);
+    for (const item of (readiness.missing || []).slice(0, 12)) console.log(`  V2-MISSING ${item.id}: ${item.next_action}`);
+    if ((readiness.missing || []).some((item: any) => item.id === 'complete_audit_source_tier_coverage_complete')) {
+      printPreparedSourceTierPlan(repo, analysis, args);
+    }
+    return 1;
   }
   if (!completeAudit) {
     console.log(`Cognianalysis product mode: workspace prepared; waiting for LLM-authored analysis.json.`);
@@ -642,13 +668,52 @@ function cmdRun(args: string[]): number {
     return 0;
   }
   const statuses = workflowArtifactStatuses(analysis);
-  const missing = statuses.filter(row => !row.ready);
-  if (missing.length) {
+  const strategyStatus = statuses.find(row => row.path === 'llm/analysis-strategy.json');
+  if (strategyStatus?.ready !== true) {
     aggregate(repo, analysis);
-    console.log(`Cognianalysis product mode: waiting for Codex-authored workflow artifacts.`);
-    printProductNextStep(analysis, statuses);
+    console.log(`Cognianalysis complete-audit not ready: Codex-authored analysis strategy is required before Tier 1 work can start.`);
+    printProductNextStep(analysis, [strategyStatus]);
     console.log(stagedLlmWorkflowMessage(true));
-    return 0;
+    return 1;
+  }
+  let bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+  if (requiresCompleteTierForBundle(bundle) && bundle?.source_tier_coverage?.complete !== true) {
+    console.log(`Cognianalysis complete-audit not ready: Tier 1 whole-repo file-card coverage is incomplete.`);
+    printPreparedSourceTierPlan(repo, analysis, args);
+    return 1;
+  }
+  bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+  if (bundle?.skill_workbench_coverage?.complete !== true) {
+    console.log(`Cognianalysis complete-audit not ready: LLM-planned skill workbenches are incomplete.`);
+    console.log(`Skill workbench status: ${bundle?.skill_workbench_coverage?.status || 'unknown'} · executed=${bundle?.skill_workbench_coverage?.executed_count || 0}/${bundle?.skill_workbench_coverage?.planned_count || 0}`);
+    console.log(`Task directory: ${Path.join(analysis, 'skill_workbench_tasks')}`);
+    console.log('Codex must execute every materialized skill workbench into .analysis/skill_reviews/*.json, then rerun cognianalysis analyze .');
+    return 1;
+  }
+  const detailPlanStatus = workflowArtifactStatuses(analysis).find(row => row.path === 'llm/detail-agent-plan.json');
+  if (detailPlanStatus?.ready !== true) {
+    console.log(`Cognianalysis complete-audit not ready: Codex-authored detail-agent plan is required after Tier 1 and skill workbenches.`);
+    printProductNextStep(analysis, [detailPlanStatus]);
+    return 1;
+  }
+  bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+  const detailCoverage = bundle?.source_family_detail_review_coverage || {};
+  const detailExecutionComplete = Number(detailCoverage.executed_count || 0) === Number(detailCoverage.planned_count || 0)
+    && (detailCoverage.pending_execution || []).length === 0
+    && (detailCoverage.unexpected_reviews || []).length === 0
+    && detailCoverage.planning_decision_present === true;
+  if (!detailExecutionComplete) {
+    console.log(`Cognianalysis complete-audit not ready: planned source-family detail reviews are incomplete.`);
+    console.log(`Detail review status: ${detailCoverage.status || 'unknown'} · executed=${detailCoverage.executed_count || 0}/${detailCoverage.planned_count || 0}`);
+    console.log(`Task directory: ${Path.join(analysis, 'detail_tasks')}`);
+    console.log('Codex must execute every materialized detail task into .analysis/detail_reviews/*.json, then rerun cognianalysis analyze .');
+    return 1;
+  }
+  const analysisDocumentStatus = workflowArtifactStatuses(analysis).find(row => row.path === 'llm/analysis-document.json');
+  if (analysisDocumentStatus?.ready !== true) {
+    console.log(`Cognianalysis complete-audit not ready: final Codex-authored analysis document is required after all upstream work.`);
+    printProductNextStep(analysis, [analysisDocumentStatus]);
+    return 1;
   }
   const rc = cmdFinalize(args);
   if (rc === 0) console.log(`Product mode complete. Report: ${reportPathForAnalysis(analysis)}`);
@@ -693,6 +758,14 @@ function cmdOpen(args: string[]): number {
     console.log(`Run ${CLI_NAME} analyze ${repo}`);
     return 1;
   }
+  const bundle = aggregateWithMaterializedDetailTasks(repo, analysis);
+  const readiness = computeProductReadinessV2(repo, analysis, bundle);
+  if (readiness.ready !== true) {
+    console.log(`Draft report, not trusted final: ${report}`);
+    console.log(`Open in browser: file://${report}`);
+    for (const line of productReadinessV2Brief(readiness)) console.log(line);
+    return 1;
+  }
   console.log(`Report: ${report}`);
   console.log(`Open in browser: file://${report}`);
   return 0;
@@ -711,8 +784,8 @@ function cmdStatus(args: string[]): number {
     return readiness.ready === true ? 0 : 1;
   }
   const statuses = workflowArtifactStatuses(analysis);
-  printRepositoryStatus(repo, analysis, bundle, statuses);
-  return bundle.final_llm_readiness?.state === 'ready' ? 0 : 1;
+  const status = printRepositoryStatus(repo, analysis, bundle, statuses);
+  return status.readinessV2?.ready === true ? 0 : 1;
 }
 
 function cmdEval(args: string[]): number {
@@ -727,13 +800,14 @@ function cmdEval(args: string[]): number {
   for (const line of productReadinessV2Brief(readinessV2)) console.log(line);
   for (const item of (readinessV2.missing || []).slice(0, 12)) console.log(`  V2-MISSING ${item.id}: ${item.next_action}`);
   const includeLegacy = hasFlag(args, '--audit') || requiresCompleteTierForBundle(bundle);
-  if (!includeLegacy) return readinessV2.invalid === true ? 1 : 0;
+  const exitCode = readinessV2.ready === true ? 0 : 1;
+  if (!includeLegacy) return exitCode;
   if (bundle?.analysis_contract) {
     console.log(`Analysis contract: ${bundle.analysis_contract.source || 'missing'} · valid=${bundle.analysis_contract.valid === true}`);
     for (const missing of (bundle.analysis_contract.missing || []).slice(0, 12)) console.log(`  ANALYSIS-MISSING ${missing}`);
     for (const warning of (bundle.analysis_contract.warnings || []).slice(0, 8)) console.log(`  ANALYSIS-WARNING ${warning}`);
   }
-  return readinessV2.invalid === true ? 1 : 0;
+  return exitCode;
 }
 
 function cmdRepair(args: string[]): number {
@@ -895,7 +969,7 @@ function cmdCoverage(args: string[]): number {
   console.log(`Tier 1 file-card coverage: ${tier.tier1_file_cards || 0}/${tier.total_files || 0} files · ${tier.missing_tier1_files || 0} missing · ${tier.invalid_file_cards || 0} invalid · ${tier.coverage_percent || 0}%`);
   console.log(`Tier 1 task backlog: ${backlog.complete_tasks || 0}/${backlog.total_tasks || 0} tasks complete · ${backlog.incomplete_tasks || 0} incomplete · ${backlog.missing_tasks || 0} missing outputs`);
   console.log(`Source inventory accounting: ${sc.accounted_files ?? sc.covered_files ?? 0}/${sc.total_files || 0} files accounted · ${sc.unaccounted_files ?? sc.uncovered_files ?? 0} unaccounted · ${sc.invalid_coverage_items || 0} invalid coverage items · ${sc.inventory_accounting_percent ?? sc.coverage_percent ?? 0}%`);
-  for (const row of (backlog.next_tasks || []).slice(0, 5)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
+  for (const row of (backlog.next_tasks || []).slice(0, 5)) console.log(`NEXT-TIER ${row.id} status=${row.status} existing_cards=${row.card_count} required_cards=${row.file_count} output=${row.expected_output}`);
   for (const item of (sc.invalid_coverage_item_examples || []).slice(0, 10)) console.log(`INVALID-COVERAGE ${item.kind || 'coverage'} ${item.path || JSON.stringify(item.item) || ''} ${item.reason || ''}`);
   return 0;
 }
@@ -1061,7 +1135,7 @@ function cmdAuditReport(args: string[]): number {
   console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · Codex statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
   console.log(`Goal trace references: ${goalTraceAlignment.complete ? 'explicit' : 'partial'} · ${(goalTraceAlignment.referenced_goal_refs || []).length}/${(goalTraceAlignment.expected_goal_refs || []).length} goal refs linked by Codex-authored trace`);
   console.log(`Report quality review: ${qualityReview.complete ? 'structured' : 'partial'} · ${qualityReview.verdict || 'unknown'}`);
-  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
+  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} status=${row.status} existing_cards=${row.card_count} required_cards=${row.file_count} output=${row.expected_output}`);
   for (const failure of failures) console.log(`FAIL ${failure}`);
   return failures.length ? 1 : 0;
 }
@@ -1106,7 +1180,7 @@ function cmdFinalize(args: string[]): number {
 
   for (const e of invalid.slice(0, 30)) console.log(`INVALID ${e.path}:${e.line} ${e.reason || ''}`);
   for (const f of uncovered.slice(0, 30)) console.log(`UNCOVERED ${f.path}`);
-  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} ${row.status} cards=${row.card_count}/${row.file_count} output=${row.expected_output}`);
+  for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} status=${row.status} existing_cards=${row.card_count} required_cards=${row.file_count} output=${row.expected_output}`);
   for (const item of (sourceCoverage.invalid_coverage_item_examples || []).slice(0, 30)) console.log(`INVALID-COVERAGE ${item.kind || 'coverage'} ${item.path || JSON.stringify(item.item) || ''} ${item.reason || ''}`);
   for (const failure of readinessFailures.slice(0, 20)) console.log(`CODEX-READINESS ${failure}`);
   if (invalid.length && !hasFlag(args, '--allow-invalid')) return 1;

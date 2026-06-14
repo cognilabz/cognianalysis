@@ -291,6 +291,50 @@ function renderFourLevelAssessment(block: any): string {
   return `${levels ? `<div class="level-grid">${levels}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
+function renderCapabilityCoverage(block: any): string {
+  const capabilities = block.capabilities || block.items || block.levels || [];
+  const body = listItems(capabilities, (cap: any) => {
+    const title = firstText(cap.label, cap.title, cap.name, cap.capability_id, cap.level) || labelFor(block, 'capability', 'Capability');
+    const status = firstText(cap.status, cap.verdict, cap.coverage) || labelFor(block, 'status', 'coverage');
+    const sectionLinks = Array.isArray(cap.covered_by_sections)
+      ? `<div class="small muted">${escapeHtml(labelFor(block, 'covered_by_sections', 'Covered by sections'))}</div><div>${chips(cap.covered_by_sections)}</div>`
+      : '';
+    const nextSteps = Array.isArray(cap.next_steps) && cap.next_steps.length
+      ? `<h4>${escapeHtml(labelFor(block, 'next_steps', 'Next steps'))}</h4>${chips(cap.next_steps)}`
+      : '';
+    return `<article class="level-card search-card" data-search="${escapeHtml(`${title} ${status} ${cap.summary || ''} ${cap.thesis_impact || ''}`)}">
+      <div class="family-head"><h3>${escapeHtml(title.replace(/_/g, ' '))}</h3>${statusChip(status)}</div>
+      ${paragraphs([cap.summary, cap.thesis_impact, cap.description, cap.rationale].filter(Boolean))}
+      ${sectionLinks}
+      ${nextSteps}
+      ${evidenceHtml(evidenceOf(cap))}
+    </article>`;
+  });
+  return `${body ? `<div class="level-grid">${body}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
+}
+
+function renderSourceCoverageTrace(block: any): string {
+  const metrics = Array.isArray(block.metrics) && block.metrics.length ? block.metrics : [
+    { label: labelFor(block, 'included_files', 'Included files'), value: block.included_files ?? block.total_files ?? '' },
+    { label: labelFor(block, 'tier1_file_cards', 'Tier 1 file cards'), value: block.tier1_file_cards ?? block.file_cards ?? block.covered_files ?? '' },
+    { label: labelFor(block, 'missing_tier1_file_cards', 'Missing Tier 1 cards'), value: block.missing_tier1_file_cards ?? block.missing_files ?? '' },
+    { label: labelFor(block, 'source_tier_tasks', 'Source tier tasks'), value: block.source_tier_tasks ?? block.task_status ?? '' }
+  ].filter(metric => metric.value !== undefined && metric.value !== null && metric.value !== '');
+  const impacts = block.source_family_impacts || block.families || [];
+  const familyCards = listItems(impacts, (item: any) => {
+    const name = firstText(item.source_family, item.name, item.title, item.family) || labelFor(block, 'source_family', 'Source family');
+    return `<article class="family-card search-card" data-search="${escapeHtml(`${name} ${item.thesis_impact || ''} ${item.summary || ''}`)}">
+      <div class="family-head"><h3>${escapeHtml(name)}</h3>${item.file_count !== undefined ? chip(`${item.file_count} files`) : statusChip(item.confidence || item.status || 'impact')}</div>
+      ${paragraphs([item.thesis_impact, item.summary, item.business_use, item.technical_shape, item.confidence_rationale].filter(Boolean))}
+      ${evidenceHtml(evidenceOf(item))}
+    </article>`;
+  });
+  return `${paragraphs(firstText(block.summary, block.thesis_impact_summary, block.description))}
+    ${metrics.length ? renderDocMetricGrid({ ...block, metrics }) : ''}
+    ${familyCards ? `<div class="family-grid">${familyCards}</div>` : ''}
+    ${evidenceHtml(evidenceOf(block))}`;
+}
+
 function renderDecisionMatrix(block: any): string {
   const rows = (block.rows || []).map((r: any) => `<tr class="search-card" data-search="${escapeHtml(`${r.decision || ''} ${r.recommendation || ''} ${r.risk || ''}`)}">
     <td><strong>${escapeHtml(r.decision || labelFor(block, 'decision', 'Decision'))}</strong><div>${r.confidence ? confidenceChip(r.confidence) : ''}</div></td>
@@ -344,7 +388,8 @@ function renderTechnicalDrilldown(block: any): string {
 }
 
 function renderOpenQuestions(block: any): string {
-  return statementList((block.items || []).map((q: any) => ({
+  const intro = paragraphs(firstText(block.summary, block.description));
+  const questions = statementList((block.items || []).map((q: any) => ({
     title: q.question || q.title || labelFor(block, 'question', 'Open question'),
     description: q.reason || q.why_it_matters || q.description || q.evidence_gap,
     owner: q.owner || q.impact,
@@ -352,7 +397,8 @@ function renderOpenQuestions(block: any): string {
     confidence: q.status,
     evidence: q.evidence,
     evidence_gap: q.evidence_gap || q.missing_evidence || q.proof_gap
-  }))) + evidenceHtml(evidenceOf(block));
+  })));
+  return intro + questions + evidenceHtml(evidenceOf(block));
 }
 
 function renderEvidenceIndex(block: any): string {
@@ -410,6 +456,8 @@ function renderDocBlock(block: any): string {
     case 'boundary_map': body = renderBoundaryMap(block); break;
     case 'flow': body = renderDocFlow(block); break;
     case 'four_level_assessment': body = renderFourLevelAssessment(block); break;
+    case 'capability_coverage': body = renderCapabilityCoverage(block); break;
+    case 'source_coverage_trace': body = renderSourceCoverageTrace(block); break;
     case 'decision_matrix': body = renderDecisionMatrix(block); break;
     case 'roadmap': body = renderRoadmap(block); break;
     case 'agent_plan': body = renderAgentPlan(block); break;
@@ -518,6 +566,193 @@ function evidenceAuditSection(bundle: any): [string, string, string] | null {
   return ['evidence-audit', 'Evidence & Open Questions', body];
 }
 
+const CORE_CAPABILITY_IDS = [
+  'reverse_engineering_documentation',
+  'code_analysis',
+  'process_analysis',
+  'refactoring_target_architecture'
+];
+
+function normalizedCapabilityId(value: any): string {
+  const id = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  if (id === 'reverse_engineering' || id === 'documentation' || id === 'reverse_engineering_and_documentation') return 'reverse_engineering_documentation';
+  if (id === 'process' || id === 'business_process_analysis') return 'process_analysis';
+  if (id === 'refactoring' || id === 'modernization' || id === 'refactoring_modernization' || id === 'target_architecture') return 'refactoring_target_architecture';
+  return id;
+}
+
+function coverageRows(doc: any): any[] {
+  const rows = doc?.core_capability_coverage || doc?.capability_coverage || doc?.four_core_capabilities;
+  return Array.isArray(rows) ? rows : [];
+}
+
+function capabilityCoverageStatusCovered(value: any): boolean {
+  return ['covered', 'complete', 'decision_ready', 'ready'].includes(String(value || '').trim().toLowerCase());
+}
+
+function capabilityCoverageReady(doc: any): boolean {
+  const rows = coverageRows(doc);
+  if (!rows.length) return false;
+  const byId = new Map<string, any>();
+  rows.forEach((row: any) => byId.set(normalizedCapabilityId(row?.capability_id || row?.id || row?.level || row?.label), row));
+  return CORE_CAPABILITY_IDS.every(id => {
+    const row = byId.get(id);
+    return row
+      && capabilityCoverageStatusCovered(row.status || row.coverage || row.verdict)
+      && firstText(row.summary, row.description, row.thesis_impact).length >= 80
+      && Array.isArray(row.covered_by_sections)
+      && row.covered_by_sections.length > 0;
+  });
+}
+
+function numberField(value: any, keys: string[]): number | null {
+  for (const key of keys) {
+    const raw = value?.[key];
+    if (raw === undefined || raw === null || raw === '') continue;
+    const num = Number(raw);
+    if (Number.isFinite(num)) return num;
+  }
+  return null;
+}
+
+function wholeFileTrace(doc: any): any {
+  return doc?.whole_file_thesis_trace || doc?.whole_repository_file_accounting || doc?.source_coverage_trace || null;
+}
+
+function wholeFileTraceReady(doc: any, bundle: any): boolean {
+  const trace = wholeFileTrace(doc);
+  if (!trace || typeof trace !== 'object' || Array.isArray(trace)) return false;
+  const included = numberField(trace, ['included_files', 'total_files', 'file_count']);
+  const cards = numberField(trace, ['tier1_file_cards', 'file_cards', 'covered_files']);
+  const missing = numberField(trace, ['missing_tier1_file_cards', 'missing_files', 'missing']);
+  const familyImpacts = trace.source_family_impacts || trace.families || trace.impacts;
+  const sourceCoverage = bundle?.source_tier_coverage || {};
+  const expectedTotal = Number(sourceCoverage.total_files || 0);
+  const expectedCards = Number(sourceCoverage.tier1_file_cards || 0);
+  if (included === null || cards === null || missing === null || missing !== 0) return false;
+  const auditCountsOk = sourceCoverage.complete !== true
+    || ((expectedTotal === 0 || included >= expectedTotal) && (expectedCards === 0 || cards >= expectedCards));
+  return auditCountsOk
+    && firstText(trace.summary, trace.thesis_impact_summary, trace.description).length >= 120
+    && Array.isArray(familyImpacts)
+    && familyImpacts.length > 0;
+}
+
+function reportTrustStatus(bundle: any): any {
+  const requestMode = String(bundle.product_analysis_request?.mode || bundle.analysis?.mode || bundle.analysis_document?.mode || '').toLowerCase();
+  const completeAudit = requestMode === 'complete-audit' || requestMode === 'complete';
+  const authoredDoc = bundle.analysis_document || bundle.analysis || {};
+  const capabilityRows = coverageRows(authoredDoc);
+  const wholeTrace = wholeFileTrace(authoredDoc);
+  const checks = [
+    {
+      id: 'source_tier_coverage',
+      label: 'Whole-repo Tier 1 file-card coverage',
+      ready: !completeAudit || bundle.source_tier_coverage?.complete === true,
+      detail: `${Number(bundle.source_tier_coverage?.tier1_file_cards || 0)}/${Number(bundle.source_tier_coverage?.total_files || 0)} files`
+    },
+    {
+      id: 'skill_workbenches',
+      label: 'Planned skill workbenches',
+      ready: !completeAudit || bundle.skill_workbench_coverage?.complete === true,
+      detail: String(bundle.skill_workbench_coverage?.status || 'missing')
+    },
+    {
+      id: 'detail_reviews',
+      label: 'Planned source-family detail reviews',
+      ready: !completeAudit || bundle.source_family_detail_review_coverage?.complete === true,
+      detail: String(bundle.source_family_detail_review_coverage?.status || 'missing')
+    },
+    {
+      id: 'requirements_trace',
+      label: 'Requirements trace',
+      ready: !completeAudit || bundle.analysis_document_requirements_trace_contract?.complete === true,
+      detail: bundle.analysis_document_requirements_trace_contract?.complete === true ? 'complete' : 'missing or incomplete'
+    },
+    {
+      id: 'goal_trace',
+      label: 'Goal trace alignment',
+      ready: !completeAudit || bundle.analysis_goal_trace_alignment?.complete === true,
+      detail: bundle.analysis_goal_trace_alignment?.complete === true ? 'complete' : 'missing or incomplete'
+    },
+    {
+      id: 'quality_review',
+      label: 'LLM report quality review',
+      ready: !completeAudit || (
+        bundle.analysis_document_quality_review?.complete === true
+        && bundle.analysis_document_quality_review?.verdict_is_decision_ready === true
+      ),
+      detail: `complete=${bundle.analysis_document_quality_review?.complete === true}, decision_ready=${bundle.analysis_document_quality_review?.verdict_is_decision_ready === true}`
+    },
+    {
+      id: 'consistency_review',
+      label: 'Consistency review',
+      ready: !completeAudit || bundle.analysis_document_consistency_review?.complete === true,
+      detail: bundle.analysis_document_consistency_review?.complete === true ? 'complete' : 'missing or incomplete'
+    },
+    {
+      id: 'semantic_lineage',
+      label: 'Semantic lineage',
+      ready: !completeAudit || bundle.analysis_document_semantic_lineage?.complete === true,
+      detail: bundle.analysis_document_semantic_lineage?.complete === true ? 'complete' : 'missing or incomplete'
+    },
+    {
+      id: 'core_capability_coverage_model',
+      label: 'LLM-authored four-core-capability coverage model',
+      ready: capabilityCoverageReady(authoredDoc),
+      detail: `${capabilityRows.length}/${CORE_CAPABILITY_IDS.length} coverage rows`
+    },
+    {
+      id: 'whole_file_thesis_trace',
+      label: 'LLM-authored whole-file thesis trace',
+      ready: wholeFileTraceReady(authoredDoc, bundle),
+      detail: wholeTrace ? 'present' : 'missing'
+    },
+    {
+      id: 'final_synthesis',
+      label: 'Final synthesis readiness',
+      ready: !completeAudit || bundle.report_mode?.final_synthesis_ready === true,
+      detail: bundle.report_mode?.final_synthesis_ready === true ? 'ready' : String(bundle.report_mode?.synthesis_stage || 'not ready')
+    },
+    {
+      id: 'artifact_graph',
+      label: 'Artifact dependency graph',
+      ready: !completeAudit || bundle.artifact_dependency_graph?.complete === true,
+      detail: bundle.artifact_dependency_graph?.complete === true ? 'complete' : 'missing or incomplete'
+    }
+  ];
+  const missing = checks.filter(check => !check.ready);
+  return {
+    mode: requestMode || 'unknown',
+    completeAudit,
+    ready: missing.length === 0 && (completeAudit ? true : bundle.report_mode?.final_synthesis_ready === true),
+    missing,
+    checks
+  };
+}
+
+function trustBannerHtml(bundle: any): string {
+  const trust = reportTrustStatus(bundle);
+  const title = trust.ready ? 'Trusted final report' : 'Draft report - not trusted final';
+  const detail = trust.ready
+    ? 'All configured readiness gates are complete for this run.'
+    : 'This HTML is inspectable as a draft, but it is not a full trusted whole-repository report until every readiness gate below is complete.';
+  const missing = trust.missing.slice(0, 10).map((item: any) => `<li><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail || '')}</span></li>`).join('');
+  return `<aside class="trust-banner ${trust.ready ? 'ready' : 'draft'}">
+    <div>
+      <p class="eyebrow">${escapeHtml(trust.mode)} readiness</p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(detail)}</p>
+    </div>
+    <div class="trust-status">${trust.ready ? chip('ready', 'ok') : chip(`${trust.missing.length} blocking gates`, 'bad')}${chip(`mode: ${trust.mode}`)}</div>
+    ${missing ? `<ul>${missing}</ul>` : ''}
+  </aside>`;
+}
+
 export function buildHtml(bundle: any, title: string): string {
   evidenceRenderCounter = 0;
   const authoredSections = analysisDocumentSections(bundle);
@@ -555,8 +790,9 @@ export function buildHtml(bundle: any, title: string): string {
 <script id="analysis-data" type="application/json">${dataJson}</script>
 <div class="layout">
 <aside class="sidebar"><div class="brand"><div class="logo">${escapeHtml(initials(shellTitle))}</div><div><div class="brand-title">${escapeHtml(shellTitle)}</div><div class="brand-subtitle">${escapeHtml(shellSubtitle)}</div></div></div><nav>${nav}</nav><div class="side-note"><strong>${escapeHtml(bundle.profile?.repo_name || 'Repository')}</strong><br><span>${escapeHtml(bundle.profile?.repo_type || 'unknown')}</span></div></aside>
-<main><header class="hero"><div><p class="eyebrow">${escapeHtml(heroEyebrow)}</p><h1>${escapeHtml(title)}</h1>${rootLine}</div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${htmlSections}</main>
+<main><header class="hero"><div><p class="eyebrow">${escapeHtml(heroEyebrow)}</p><h1>${escapeHtml(title)}</h1>${rootLine}</div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${trustBannerHtml(bundle)}${htmlSections}</main>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>${JS}</script>
 </body>
 </html>`;
@@ -565,7 +801,7 @@ export function buildHtml(bundle: any, title: string): string {
 const CSS = `
 :root{--bg:#f4f7fb;--panel:#ffffff;--panel2:#f8fbff;--text:#142033;--muted:#64748b;--line:#dbe5f2;--accent:#3157ff;--accent2:#eaf0ff;--good:#087443;--bad:#b42318;--warn:#a15c07;--shadow:0 18px 42px rgba(35,54,86,.10)}
 .dark{--bg:#07111f;--panel:#0d1b2d;--panel2:#0a1626;--text:#eaf1ff;--muted:#9fb0c7;--line:#203249;--accent:#91a7ff;--accent2:#152544;--good:#55d296;--bad:#ff8b7f;--warn:#ffc46b;--shadow:none}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence-gap{border:1px dashed var(--warn);border-radius:14px;background:var(--panel2);padding:10px;margin:10px 0}.evidence-gap strong{color:var(--warn)}.evidence-gap p{margin:4px 0 0}.evidence-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}.evidence-quick>span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.evidence-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--accent2);color:var(--accent);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:800}.evidence-link:hover{filter:brightness(.96)}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2);scroll-margin-top:22px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.evidence-item.evidence-highlight{box-shadow:0 0 0 3px var(--accent2)}.evidence-item:target{box-shadow:0 0 0 3px var(--accent2)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,var(--panel),var(--panel2));border-right:1px solid var(--line);padding:22px;overflow:auto}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:44px;height:44px;border-radius:14px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:800}.brand-title{font-weight:800}.brand-subtitle{color:var(--muted);font-size:12px}nav{display:grid;gap:5px}.nav-link{padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--text);font-weight:650}.nav-link:hover,.nav-link.active{background:var(--accent2);color:var(--accent)}.side-note{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}main{padding:28px 34px 60px;min-width:0}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.trust-banner{border:1px solid var(--line);border-left-width:7px;border-radius:22px;background:var(--panel);padding:20px;margin:0 0 22px;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}.trust-banner.draft{border-left-color:var(--bad)}.trust-banner.ready{border-left-color:var(--good)}.trust-banner h2{margin:0 0 8px}.trust-banner p{margin:0;line-height:1.55}.trust-banner ul{grid-column:1/-1;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;list-style:none}.trust-banner li{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:10px}.trust-banner li strong,.trust-banner li span{display:block}.trust-banner li span{color:var(--muted);font-size:12px;margin-top:4px}.trust-status{white-space:nowrap}.eyebrow{letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;font-size:12px;margin:0 0 8px}h1{font-size:34px;line-height:1.08;margin:0 0 8px}h2{font-size:26px;margin:12px 0 16px}h3{margin:0 0 12px}h4{margin:16px 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.actions{display:flex;gap:10px;align-items:center}input,button{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:11px 14px;font:inherit}input{width:min(430px,42vw)}button{cursor:pointer;font-weight:750}.view{display:none}.view.active{display:block}.section-title{display:flex;align-items:center;justify-content:space-between}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:16px 0}.metrics.compact .card{box-shadow:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}.readout p,.prose-card p,.narrative-lead p,.statement p,.boundary-item p,.e2e-thread p,.family-card p,.analysis-doc-section p,.analysis-doc-lead p{font-size:15px;line-height:1.58}.accent{background:linear-gradient(135deg,var(--panel),var(--accent2))}.metric-value{font-size:26px;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:800}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 9px;margin:2px;background:var(--panel2);font-size:12px;font-weight:700}.chip.ok{border-color:rgba(8,116,67,.3);color:var(--good)}.chip.bad{border-color:rgba(180,35,24,.3);color:var(--bad)}.chip.warn{border-color:rgba(161,92,7,.35);color:var(--warn)}.chip.pending{color:var(--muted)}.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;border-top:1px solid var(--line);padding:10px 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto}.thread-kicker,.doc-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:900;margin-bottom:8px}.thread-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}.thread-grid>div{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:14px}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.family-card,.level-card,.roadmap-item,.requirement-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.family-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:9px;text-decoration:none;color:var(--text);margin-top:8px}.boundary-item{border-top:1px solid var(--line);padding:12px 0}.boundary-item:first-child{border-top:0}.mermaid-box{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:16px;background:var(--panel2);padding:12px;margin:12px 0}.mermaid-output{background:var(--panel);border-radius:12px;padding:12px;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.statement{border-top:1px solid var(--line);padding:12px 0}.statement:first-child{border-top:0}.evidence-gap{border:1px dashed var(--warn);border-radius:14px;background:var(--panel2);padding:10px;margin:10px 0}.evidence-gap strong{color:var(--warn)}.evidence-gap p{margin:4px 0 0}.evidence-quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}.evidence-quick>span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.evidence-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--accent2);color:var(--accent);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:800}.evidence-link:hover{filter:brightness(.96)}.evidence summary,.mermaid-box summary{cursor:pointer;color:var(--accent);font-weight:800;margin-top:10px}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0;background:var(--panel2);scroll-margin-top:22px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--good)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--bad)}.evidence-item.evidence-highlight{box-shadow:0 0 0 3px var(--accent2)}.evidence-item:target{box-shadow:0 0 0 3px var(--accent2)}.bad-text{color:var(--bad)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}.subitem{border-top:1px solid var(--line);padding:12px 0}.subitem:first-child{border-top:0}.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:grid;place-items:center;font-weight:900;color:var(--accent)}.empty{padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);background:var(--panel2)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);margin-bottom:18px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--panel2)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.analysis-doc-section{display:grid;gap:16px}.analysis-doc-lead h2{font-size:30px}.doc-block{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:4px 0}.section-intent{color:var(--muted);max-width:920px}.requirement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}.roadmap{display:grid;gap:12px}.hide{display:none!important}@media(max-width:1000px){.thread-grid{grid-template-columns:1fr}}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.hero{display:block}.trust-banner{grid-template-columns:1fr}.trust-status{white-space:normal}.actions{margin-top:14px}input{width:100%}.two,.three{grid-template-columns:1fr}}
 `;
 
 const JS = `

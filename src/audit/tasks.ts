@@ -219,6 +219,10 @@ The final \`.analysis/llm/analysis-document.json\` must include:
 - Confidence for major visible findings, recommendations, decisions and source-family claims. The CLI computes evidence strength from evidence-reference count and reports weak support.
 - If \`.analysis/external_findings/*.json\` exists, treat those scanner/tool outputs as external evidence inputs only. Preserve \`source_tool\`, \`authority\`, severity/type/message and file:line evidence; the source tool remains authority for scanner facts while Codex synthesizes decision impact.
 - Request/response, OpenAPI/Swagger, SOAP/WSDL/XSD, Mermaid and business examples wherever present or defensibly inferred; inferred examples must use \`example_origin: "inferred"\`.
+- Detailed LLM-authored prose explanations for the functional view, technical view, process analysis, code analysis and modernization/refactoring path; tables and class lists alone are not sufficient.
+- At least one representative whole E2E flow where evidence allows it, explained as trigger -> actors -> entrypoints -> business rules/decisions -> state/data changes -> integrations -> outputs -> failure/timeout paths -> operational side effects.
+- Business process/workflow descriptions, decision points, inefficiencies and optimization opportunities, with explicit evidence or evidence gaps.
+- Conservative Mermaid source that renders in the HTML report: quote labels with punctuation, avoid raw parentheses in node IDs, and prefer simple \`sequenceDiagram\` or \`flowchart TD\`.
 
 Do not modify production source files unless the user explicitly asks for repository code changes.
 `;
@@ -328,6 +332,12 @@ Expected JSON:
       ],
       "user_or_system_flows": [
         {"name":"...", "description":"...", "evidence":[]}
+      ],
+      "business_processes": [
+        {"name":"...", "description":"Trigger, actors, decision points, business outcome and source-backed process logic.", "evidence":[]}
+      ],
+      "business_rules": [
+        {"name":"...", "description":"Rule or decision logic implemented in this source family.", "applies_to":"Repository-specific process, flow or capability.", "evidence":[]}
       ]
     },
     "technical_view": {
@@ -346,6 +356,11 @@ Expected JSON:
       {
         "title":"...",
         "summary":"...",
+        "narrative":"Detailed trigger-to-outcome explanation for humans, including actor intent, system behavior, business decisions and uncertainty.",
+        "trigger":"What starts the flow.",
+        "outcome":"Business or technical result when the flow succeeds.",
+        "failure_paths":[{"condition":"...", "behavior":"...", "evidence":[]}],
+        "operational_side_effects":[{"description":"State change, external call, emitted event, log/metric or other side effect.", "evidence":[]}],
         "mermaid":{"diagram_type":"Mermaid diagram type chosen to fit the flow.", "source":"sequenceDiagram\\n  A->>B: ...", "evidence":[]},
         "steps":[{"order":1, "actor":"...", "description":"...", "evidence":[]}],
         "evidence":[]
@@ -358,6 +373,12 @@ Expected JSON:
       "test_readiness": "Repository-specific readiness statement.",
       "process_improvements": [
         {"title":"...", "description":"...", "evidence":[]}
+      ],
+      "workflow_inefficiencies": [
+        {"title":"...", "description":"Implemented workflow friction, duplication, manual handoff or avoidable uncertainty.", "evidence":[]}
+      ],
+      "optimization_opportunities": [
+        {"title":"...", "description":"Process or operational optimization supported by source evidence.", "expected_benefit":"...", "evidence":[]}
       ]
     },
     "refactoring_and_target_architecture": {
@@ -386,6 +407,9 @@ Expected JSON:
 Rules:
 
 - Every substantive claim needs file:line evidence.
+- Write detailed textual explanations, not terse labels. A reader should understand the process, decision point or flow without reading source first.
+- Flow reviews must explain trigger, actor, source entrypoint, business rule or decision, state/data change, integration call, output, known failure/timeout path and operational side effect when source proves them.
+- Mermaid source must be conservative and renderable: quote labels containing punctuation, avoid raw parentheses in node IDs, prefer simple \`sequenceDiagram\` or \`flowchart TD\`, and do not use unsupported Markdown inside labels.
 - If the source family is generated/config/test-only, say so explicitly and explain what can and cannot be inferred.
 - Preserve uncertainty. Do not claim business-owner meaning unless code/tests/docs/contracts prove it.
 - Include at least one open question when owner-grade semantics are not provable.
@@ -464,9 +488,13 @@ This repository must be analyzed semantically by Codex as the in-session LLM exe
 - Every relevant assertion must include \`evidence: [{"path":"...", "line": 123, "symbol":"optional"}]\`.
 - Extract requests, responses, contracts, examples, business logic, functions, flows, domain models, data effects, integrations, process readiness, architecture and refactoring options.
 - Produce a structured decision basis: functional view, technical view, decision points, risks, recommendations, target architecture/tech-stack options and tool-positioning notes.
+- Final outputs must include detailed textual explanations of the four layers: reverse engineering/documentation, code analysis, process analysis, and refactoring/modernization.
+- Explain implemented business processes and representative whole E2E flows from trigger to actor, entrypoint, business rule, state/data change, integration call, output, failure/timeout behavior and operational side effect when source evidence proves them.
+- Include process improvement opportunities and workflow inefficiencies as process-analysis findings, not only test/CI readiness.
 - If OpenAPI/Swagger, SOAP/WSDL/XSD, Postman, \`.http\`, docs or tests contain request/response examples, extract them.
 - If no explicit example exists, create an inferred example only when \`example_origin\` is \`inferred\`; evidence must point to the source fields and rules used.
 - Every meaningful flow must contain Mermaid source. Prefer \`sequenceDiagram\`; use \`flowchart TD\` or \`stateDiagram-v2\` when better.
+- Mermaid must be conservative and renderable: quote labels containing punctuation, avoid raw parentheses in node IDs, keep node IDs alphanumeric/underscore, and avoid unsupported Markdown inside labels.
 - Extract business logic and function/use-case examples explicitly; do not bury them only in prose.
 - Extract domain/data/integration and process-readiness views; the assessment must not stop at documentation.
 - If behavior cannot be proven from code/docs, put it into \`open_questions\`.
@@ -668,6 +696,11 @@ General rules:
 - Avoid single-module bias. If one family has the strongest evidence, explain why it is strongest and which other families remain surface-reviewed or require follow-up drilldown.
 - When using navigation partitions, Codex must decide whether to rename, merge, split, reject or defer them as semantic source families. Do not copy partition names into management prose unless source evidence proves they are meaningful to the repository.
 - Preserve the original target picture: automated source-code analysis that produces a structured decision basis with four levels: reverse engineering/documentation, code analysis, process analysis, and refactoring/target architecture.
+- Write detailed LLM-authored textual explanations. Do not satisfy functional, technical, process or refactoring requirements with terse labels, class inventories or table rows alone.
+- Functional output must explain what the system does, business capabilities, user/system journeys, workflows, business rules and process logic with file:line evidence or explicit evidence gaps.
+- Technical output must explain architecture/system landscape, APIs/interfaces/integrations, data flows, dependencies, technology stack and implementation details with file:line evidence or explicit evidence gaps.
+- Process analysis must describe implemented business workflows, trigger-to-outcome paths, decision points, inefficiencies, optimization opportunities and operational readiness. Do not limit process analysis to tests, CI or documentation readiness.
+- Representative E2E flow explanations must connect trigger, actor, entrypoint, business rule/decision, state/data change, integration call, output, failure/timeout path and operational side effect when source evidence proves them.
 - Preserve the product analysis request. The selected \`mode\`, \`goal\`, \`target\` and \`depth_policy\` from \`.analysis/data/product-analysis-request.json\` must shape the strategy, detail-agent plan and final report. If \`mode\` is \`brief\`, default to a concise decision report with a visible deep backlog. If \`mode\` is \`blueprint\`, include modernization/rebuild planning. If \`mode\` is \`deep\`, keep the review focused on the requested target or goal while still disclosing whole-repository context and boundaries. If a legacy request says \`deep-dive\`, treat it as \`deep\`.
 - The final report is allowed to have a different structure for every repository, but it must still cover functional view, technical view, source-derived decision basis, automation boundaries, and comparison/positioning against traditional code-analysis/documentation tools.
 - When writing tool positioning, use the provided reference categories: consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Be explicit about whether the analysis replaces discovery, complements graph/scanner/recipe tools, or should hand off to them.
@@ -685,6 +718,14 @@ Rules for examples:
 - Never label inferred examples as source-provided.
 - Include payload examples as JSON/XML/string objects or escaped strings. Keep them small but realistic.
 - Include Mermaid diagrams as source text in a \`mermaid\` object or \`mermaid_flows\` entries.
+
+Rules for Mermaid:
+
+- Use conservative syntax that Mermaid can render in a static HTML report.
+- Prefer \`sequenceDiagram\` for request/process flows and \`flowchart TD\` for architecture/data-flow diagrams.
+- Quote labels containing punctuation, slashes, commas, colons or parentheses.
+- Keep node IDs alphanumeric or underscore; do not put raw punctuation or parentheses in node IDs.
+- Avoid unsupported Markdown, HTML and multiline prose inside labels. Put detail in the surrounding narrative and step descriptions.
 
 ## Navigation hints
 
@@ -843,13 +884,20 @@ Required report intent:
 - Use the Codex-authored LLM analysis strategy as the starting plan, then update or contradict it explicitly if later Tier 1/detail evidence proves a better report structure.
 - Use \`.analysis/data/analysis-scope.json\` as the declared scope contract. If the mode is not \`complete\`, visibly disclose selected/deferred file counts and confidence impact before making decisions from the report.
 - Explain the tier model in the technical drilldown or evidence-governance area when it matters: Tier 1 file cards cover every included file, then Tier 2-4 deep dives cover important modules, flows, contracts, risks and refactoring decisions.
+- Author top-level \`analysis_document.whole_file_thesis_trace\` and make it visible through a \`source_coverage_trace\` block or equally explicit component block inside an LLM-chosen section. Reconcile \`.analysis/data/source-inventory.json\` included files against \`.analysis/source_tiers/*.json\` Tier 1 file cards, state included count, card count, missing count and task completion, then explain how source-family file cards shaped the report theses, confidence and evidence gaps.
+- Do not claim every file is direct evidence for every headline. The complete Tier 1 corpus should influence source-family weighting, confidence and thesis selection; each concrete behavior, risk, process or modernization claim still needs specific file:line evidence or an explicit open question.
 - Put the management/business narrative inside visible \`analysis_document.sections[].blocks[]\`, not only in top-level helper fields such as \`executive_decision_basis\`. Top-level fields can support automation, but the human report is the authored sections.
 - Then cover the four required levels:
   - reverse_engineering_documentation: functionality, user/system flows, business capabilities
   - code_analysis: bugs, vulnerabilities, code quality, maintainability, test signals
-  - process_analysis: process/readiness, delivery, observability, operational improvements
+  - process_analysis: implemented business processes, workflows, inefficiencies, delivery/readiness, observability, operational improvements
   - refactoring_target_architecture: modernization path, target architecture or new tech-stack options
+- Author top-level \`analysis_document.core_capability_coverage[]\` for all four required levels and make it visible through a \`capability_coverage\` block or equally explicit component blocks inside LLM-chosen sections. The LLM chooses report section IDs, order and emphasis; the CLI validates the authored coverage model and evidence shape, not a fixed menu.
 - Include functional view and technical view.
+- Include detailed prose explanations for the functional, technical, process, code-quality and modernization views. Tables and class/function lists can support the report, but they do not replace narrative explanation.
+- Include at least one representative whole E2E flow where source evidence allows it, explained from trigger to actor, entrypoint, business rule or decision, state/data effect, integration call, output, failure/timeout behavior and operational side effect.
+- Include implemented business process/workflow descriptions with decision points, process logic, inefficiencies and optimization opportunities.
+- Use conservative Mermaid syntax that renders: quote labels with punctuation, avoid raw parentheses in node IDs and keep detailed prose outside diagram labels.
 - Include comparison/tool positioning: how this automated analysis compares to or complements consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines. Name the repo-specific decision value, what can be replaced, what is only complemented and the handoff boundaries. Use \`.analysis/data/tool-positioning-references.json\` as official market context only; source-code evidence remains required for repository-specific claims.
 	- Include confidence, known gaps and open questions. Do not overclaim.
 	- Every substantive claim must include evidence, or must be clearly listed as an open question.
@@ -872,6 +920,7 @@ Required report intent:
 - For every original goal item you address, add \`goal_contract_refs\` to the relevant \`requirements_trace\` row. Use exact IDs from \`analysis_goal_contract\`: \`required_output_shape.<key>\`, \`required_levels.<id>\`, \`required_views.<id>\` and \`required_report_behaviors.<id>\`. This includes \`required_output_shape.management_drilldown\` for the visible business-need/business-use narrative with technical drilldown. The CLI checks only that these explicit references exist and are valid; it does not match trace labels by text and does not decide whether the goal is semantically satisfied.
 - If any \`requirements_trace\` row is \`partial\` or \`open\` and \`report_quality_review.verdict\` is \`decision_ready\`, include \`report_quality_review.partial_requirement_rationale[]\` for every such row. This is where you explicitly explain why the remaining limit is acceptable for decision readiness, what follow-up remains, and which evidence or open question supports that judgment.
 - The suggested \`checks\` are review prompts, not deterministic truth requirements. Set them honestly. If the report is useful but has known limits, use \`verdict: "partial"\` or keep \`verdict: "decision_ready"\` only when the decision basis is sufficient despite clearly stated follow-up.
+- Done means \`report_quality_review.verdict: "decision_ready"\` with no blocking gaps and no blocking open questions. A \`partial\` verdict remains useful analysis, but Cognianalysis must not present it as report-ready.
 
 Use only block types from \`report_component_library.components[].id\` in the context JSON so the renderer can keep the visual system consistent. The component library is a rendering contract, not a semantic-quality checklist.
 Every authored section must contain at least one block, and every block must contain renderable fields or evidence. Do not rely on deterministic placeholder text; write the content, limitation or open question yourself.
@@ -889,14 +938,35 @@ Any block may include a \`labels\` object when the default component wording is 
     "semantic_lineage": [
       {"claim_id":"stable-claim-id", "report_section_id":"section-id", "origin_artifact":"detail_reviews/example.json", "supporting_artifacts":["skill_reviews/example.json", "source_tiers/source-tier-0001.json"], "evidence":[]}
     ],
+    "core_capability_coverage": [
+      {"capability_id":"reverse_engineering_documentation", "label":"Reverse Engineering & Documentation", "status":"covered, partial or open", "summary":"Detailed LLM-authored explanation of source-derived functionality, business capabilities, workflows, rules and documentation value.", "covered_by_sections":["LLM-chosen section id"], "thesis_impact":"How this capability shaped the final report theses.", "evidence":[]},
+      {"capability_id":"code_analysis", "label":"Code Analysis", "status":"covered, partial or open", "summary":"Detailed LLM-authored explanation of bugs, vulnerabilities, maintainability, quality and testability findings.", "covered_by_sections":["LLM-chosen section id"], "thesis_impact":"How code analysis shaped risk and modernization conclusions.", "evidence":[]},
+      {"capability_id":"process_analysis", "label":"Process Analysis", "status":"covered, partial or open", "summary":"Detailed LLM-authored explanation of implemented business/operational workflows, inefficiencies and optimization opportunities.", "covered_by_sections":["LLM-chosen section id"], "thesis_impact":"How process analysis shaped improvement recommendations.", "evidence":[]},
+      {"capability_id":"refactoring_target_architecture", "label":"Refactoring & Modernization", "status":"covered, partial or open", "summary":"Detailed LLM-authored explanation of target architecture, technology stack, migration and modernization options.", "covered_by_sections":["LLM-chosen section id"], "thesis_impact":"How modernization analysis shaped the recommended path.", "evidence":[]}
+    ],
+    "whole_file_thesis_trace": {
+      "included_files": 0,
+      "tier1_file_cards": 0,
+      "missing_tier1_file_cards": 0,
+      "source_tier_tasks": "complete, partial or missing",
+      "thesis_impact_summary": "Detailed LLM-authored explanation of how the complete file-card corpus shaped source-family weighting, confidence, theses and evidence gaps.",
+      "source_family_impacts": [
+        {"source_family":"repository-specific family", "file_count":0, "thesis_impact":"How this family affected functional, technical, process, risk or modernization conclusions.", "evidence":[]}
+      ],
+      "covered_by_sections":["LLM-chosen source coverage section id"],
+      "evidence":[]
+    },
     "requirements_trace": [
       {"requirement":"Reverse Engineering & Documentation", "goal_contract_refs":["required_levels.reverse_engineering_documentation", "required_report_behaviors.whole_repo_first", "required_report_behaviors.tiered_whole_codebase_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Whole-file coverage and thesis impact", "goal_contract_refs":["required_output_shape.whole_file_thesis_trace", "required_report_behaviors.whole_file_thesis_trace", "required_report_behaviors.tiered_whole_codebase_analysis"], "covered_by_sections":["LLM-chosen source coverage section id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Code Analysis", "goal_contract_refs":["required_levels.code_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Process Analysis", "goal_contract_refs":["required_levels.process_analysis"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Refactoring / Target Architecture", "goal_contract_refs":["required_levels.refactoring_target_architecture"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Functional View", "goal_contract_refs":["required_views.functional_view", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Technical View", "goal_contract_refs":["required_views.technical_view"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
-      {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Detailed textual explanations", "goal_contract_refs":["required_output_shape.detailed_textual_explanations"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Business process and E2E explanations", "goal_contract_refs":["required_report_behaviors.business_process_descriptions", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown", "required_output_shape.detailed_textual_explanations"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]}
     ],
 	    "executive_decision_basis": {
@@ -955,9 +1025,16 @@ Any block may include a \`labels\` object when the default component wording is 
         "management_ready_decision_basis": true,
         "whole_repo_first_understanding": true,
         "e2e_relationships_explained": true,
+        "whole_e2e_flow_explained": true,
+        "business_processes_explained": true,
+        "detailed_textual_explanations": true,
         "functional_view_explained": true,
         "technical_view_explained": true,
+        "functional_and_technical_views_explained": true,
         "four_level_model_covered": true,
+        "four_layers_explained": true,
+        "core_capability_coverage_model": true,
+        "whole_file_coverage_reflected": true,
         "improvements_and_refactoring_covered": true,
         "tool_positioning_covered": true,
         "evidence_and_uncertainty_visible": true
@@ -1021,6 +1098,26 @@ Any block may include a \`labels\` object when the default component wording is 
             "levels": [
               {"level":"Repository-specific analysis level.", "status":"Repository-specific status.", "summary":"...", "evidence":[], "next_steps":[]}
             ]
+          },
+          {
+            "type": "capability_coverage",
+            "title": "Core capability coverage",
+            "capabilities": [
+              {"capability_id":"reverse_engineering_documentation", "label":"Reverse Engineering & Documentation", "status":"covered, partial or open", "summary":"Detailed source-backed coverage explanation.", "covered_by_sections":["stable-section-id"], "thesis_impact":"How this capability changed the report conclusions.", "evidence":[]}
+            ]
+          },
+          {
+            "type": "source_coverage_trace",
+            "title": "Whole-file thesis trace",
+            "included_files": 0,
+            "tier1_file_cards": 0,
+            "missing_tier1_file_cards": 0,
+            "source_tier_tasks": "complete, partial or missing",
+            "thesis_impact_summary": "Detailed explanation of how source-tier file cards shaped theses, confidence and evidence gaps.",
+            "source_family_impacts": [
+              {"source_family":"repository-specific family", "file_count":0, "thesis_impact":"How this family influenced conclusions.", "evidence":[]}
+            ],
+            "evidence":[]
           },
           {
             "type": "decision_matrix",
@@ -1102,6 +1199,9 @@ Any block may include a \`labels\` object when the default component wording is 
       "actors": ["actor or system role"],
       "capabilities": ["capability"],
       "user_or_system_flows": [{"name":"flow", "description":"...", "evidence": []}],
+      "business_processes": [{"name":"process/workflow", "description":"Trigger, decision points, rules and outcome.", "evidence": []}],
+      "business_rules": [{"name":"rule", "description":"Implemented process or domain rule.", "evidence": []}],
+      "e2e_flows": [{"name":"end-to-end flow", "description":"Trigger-to-outcome explanation.", "evidence": []}],
       "evidence": []
     },
     "technical_view": {
@@ -1109,6 +1209,9 @@ Any block may include a \`labels\` object when the default component wording is 
       "apis": ["API or interface"],
       "architecture": ["architecture component or style"],
       "data_and_integrations": ["data store, message, external system"],
+      "data_flows": [{"name":"data flow", "description":"Producer, transformation, storage and consumer.", "evidence": []}],
+      "dependencies": [{"name":"dependency", "description":"Runtime, library, external service or module dependency.", "evidence": []}],
+      "technology_stack": [{"name":"technology", "role":"Repository-specific role.", "evidence": []}],
       "evidence": []
     },
     "decision_basis": {
@@ -1200,6 +1303,18 @@ Any block may include a \`labels\` object when the default component wording is 
       "evidence": [],
       "confidence": "Repository-specific confidence statement.",
       "open_questions": []
+    }
+  ],
+  "business_processes": [
+    {
+      "id":"stable-process-id",
+      "name":"Implemented business process or workflow",
+      "description":"Trigger, actors, decision points, business rules, data/state effects, integrations and outcome.",
+      "capability_refs":["capability-id"],
+      "inefficiencies":[{"title":"...", "description":"...", "evidence":[]}],
+      "optimization_opportunities":[{"title":"...", "description":"...", "expected_benefit":"...", "evidence":[]}],
+      "evidence":[],
+      "open_questions":[]
     }
   ],
   "business_logic": [
@@ -1321,8 +1436,17 @@ Any block may include a \`labels\` object when the default component wording is 
       "capability_id": "capability-id-if-known",
       "interface_ids": ["interface-id"],
       "summary": "Short business/technical summary.",
+      "narrative": "Detailed trigger-to-outcome explanation for stakeholders and engineers.",
+      "trigger": "What starts the flow.",
+      "outcome": "Successful business or technical result.",
+      "failure_paths": [
+        {"condition":"Failure, validation, timeout or missing dependency condition.", "behavior":"What the source shows happens.", "evidence":[]}
+      ],
+      "operational_side_effects": [
+        {"description":"State change, external call, emitted event, log/metric or other operational side effect.", "evidence":[]}
+      ],
       "mermaid": {
-        "diagram_type": "Mermaid diagram type chosen to fit the flow.",
+        "diagram_type": "Mermaid diagram type chosen to fit the flow. Use conservative renderable syntax.",
         "source": "sequenceDiagram\n  participant Client\n  Client->>API: ...",
         "evidence": []
       },
@@ -1371,6 +1495,15 @@ Any block may include a \`labels\` object when the default component wording is 
 {
   "process": {
     "summary": "Assessment of development, delivery and operational readiness visible in the repository.",
+    "implemented_business_processes": [
+      {"name":"Process/workflow name", "description":"Trigger, actors, decision points, process logic and outcome.", "evidence":[]}
+    ],
+    "workflow_inefficiencies": [
+      {"title":"Workflow inefficiency", "description":"Friction, duplication, manual handoff, retry gap or avoidable ambiguity visible in source.", "impact":"Business or operational impact.", "evidence":[]}
+    ],
+    "optimization_opportunities": [
+      {"title":"Optimization opportunity", "description":"Source-backed process improvement opportunity.", "expected_benefit":"...", "evidence":[]}
+    ],
     "tests": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
     "ci_cd": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},
     "release": {"status":"Repository-specific readiness status.", "evidence": [], "observations": []},

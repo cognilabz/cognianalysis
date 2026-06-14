@@ -18,7 +18,8 @@
     "refactoring",
     "report_sections",
     "open_questions",
-    "evidence_index"
+    "evidence_index",
+    "report_quality_review"
   ],
   "properties": {
     "schema_version": { "const": "2.0" },
@@ -61,18 +62,21 @@
     "functional_view": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["system_purpose", "actors", "capabilities", "user_or_system_flows"],
+      "required": ["system_purpose", "actors", "capabilities", "user_or_system_flows", "business_processes", "business_rules", "e2e_flows"],
       "properties": {
         "system_purpose": { "type": "string" },
         "actors": { "type": "array" },
         "capabilities": { "type": "array" },
-        "user_or_system_flows": { "type": "array" }
+        "user_or_system_flows": { "type": "array" },
+        "business_processes": { "type": "array" },
+        "business_rules": { "type": "array" },
+        "e2e_flows": { "type": "array" }
       }
     },
     "technical_view": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["architecture_summary", "entrypoints", "apis_and_interfaces", "data_and_state", "integrations", "deployment_runtime", "evidence"],
+      "required": ["architecture_summary", "entrypoints", "apis_and_interfaces", "data_and_state", "data_flows", "integrations", "dependencies", "technology_stack", "deployment_runtime", "evidence"],
       "properties": {
         "architecture_summary": { "type": "string" },
         "entrypoints": { "type": "array" },
@@ -80,6 +84,9 @@
         "data_and_state": { "type": "array" },
         "integrations": { "type": "array" },
         "deployment_runtime": { "type": "array" },
+        "data_flows": { "type": "array" },
+        "dependencies": { "type": "array" },
+        "technology_stack": { "type": "array" },
         "evidence": { "$ref": "#/$defs/evidence_array" }
       }
     },
@@ -97,13 +104,17 @@
     "process_analysis": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["test_readiness", "delivery_risks", "observability", "documentation_gaps", "process_improvements"],
+      "required": ["test_readiness", "implemented_business_processes", "process_flows", "workflow_inefficiencies", "optimization_opportunities", "delivery_risks", "observability", "documentation_gaps", "process_improvements"],
       "properties": {
         "test_readiness": { "type": "string" },
         "delivery_risks": { "type": "array" },
         "observability": { "type": "array" },
         "documentation_gaps": { "type": "array" },
-        "process_improvements": { "type": "array" }
+        "process_improvements": { "type": "array" },
+        "implemented_business_processes": { "type": "array" },
+        "process_flows": { "type": "array" },
+        "workflow_inefficiencies": { "type": "array" },
+        "optimization_opportunities": { "type": "array" }
       }
     },
     "refactoring": {
@@ -117,6 +128,9 @@
         "quick_wins": { "type": "array" }
       }
     },
+    "core_capability_coverage": { "type": "array" },
+    "whole_file_thesis_trace": { "type": "object", "additionalProperties": true },
+    "whole_repository_file_accounting": { "type": "object", "additionalProperties": true },
     "report_sections": { "type": "array" },
     "open_questions": { "type": "array" },
     "evidence_index": { "$ref": "#/$defs/evidence_array" },
