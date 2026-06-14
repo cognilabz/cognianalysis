@@ -84,6 +84,7 @@ export const TECHNICAL_CONTRACT = {
   architecture_summary: { text: 'detailed architecture and system landscape explanation', confidence: 'high|medium|low', evidence: [] },
   entrypoints: [],
   apis_and_interfaces: [],
+  request_response_examples: [],
   data_and_state: [],
   data_flows: [],
   integrations: [],
@@ -169,7 +170,7 @@ export const FINAL_REPORT_CONTRACT = {
   confidence: { overall: 'high|medium|low', reason: 'string', limitations: [] },
   executive_decision: { summary: 'string', recommended_action: 'string', decision_options: [], top_risks: [], next_steps: [], evidence: [] },
   functional_view: { system_purpose: 'detailed source-derived explanation', actors: [], capabilities: [], business_processes: [], business_rules: [], user_or_system_flows: [], e2e_flows: [] },
-  technical_view: { architecture_summary: 'detailed architecture and system landscape explanation', entrypoints: [], apis_and_interfaces: [], data_and_state: [], data_flows: [], integrations: [], dependencies: [], technology_stack: [], deployment_runtime: [], evidence: [] },
+  technical_view: { architecture_summary: 'detailed architecture and system landscape explanation', entrypoints: [], apis_and_interfaces: [], request_response_examples: [], data_and_state: [], data_flows: [], integrations: [], dependencies: [], technology_stack: [], deployment_runtime: [], evidence: [] },
   code_quality_security: { bugs: [], vulnerabilities: [], code_quality_findings: [], scanner_findings_imported: [] },
   process_analysis: { test_readiness: 'string', implemented_business_processes: [], process_flows: [], workflow_inefficiencies: [], optimization_opportunities: [], delivery_risks: [], observability: [], documentation_gaps: [], process_improvements: [] },
   refactoring: { target_architecture_options: [], migration_roadmap: [], tech_stack_options: [], quick_wins: [] },
@@ -214,8 +215,11 @@ export const FINAL_REPORT_CONTRACT = {
       level: 'decision|functional|technical|process|risk|modernization|evidence_governance',
       intent: 'Why this section exists for this repository.',
       blocks: [
+        { type: 'layered_explanation', title: 'Plain-Language Explanation With Technical Drilldown', plain_language: 'what a human reader should understand first', technical_detail: 'source-backed implementation detail' },
         { type: 'capability_coverage', title: 'Core Capability Coverage', capabilities: [] },
-        { type: 'source_coverage_trace', title: 'Whole-File Thesis Trace', source_family_impacts: [] }
+        { type: 'source_coverage_trace', title: 'Whole-File Thesis Trace', source_family_impacts: [] },
+        { type: 'api_contracts', title: 'API And Interface Contracts', apis: [] },
+        { type: 'request_response_examples', title: 'Request/Response Examples', examples: [] }
       ]
     }
   ],
@@ -230,9 +234,13 @@ export const FINAL_REPORT_CONTRACT = {
     recommended_followups: [],
     confidence: 'high|medium|low',
     checks: {
+      human_readable_layered_report: 'covered|partial|open',
       detailed_textual_explanations: 'covered|partial|open',
       whole_e2e_flow_explained: 'covered|partial|open',
       business_processes_explained: 'covered|partial|open',
+      api_contracts_and_examples_visible: 'covered|partial|open',
+      technical_drilldown_visible: 'covered|partial|open',
+      graphs_and_flows_visible: 'covered|partial|open',
       four_layers_explained: 'covered|partial|open',
       functional_and_technical_views_explained: 'covered|partial|open',
       core_capability_coverage_model: 'covered|partial|open',
@@ -279,16 +287,19 @@ ${JSON.stringify(def.contract, null, 2)}
 ## Analysis Depth Bar
 
 - Write source-derived explanations for humans, not only labels or inventories. Prefer a few rich paragraphs with evidence over many shallow bullets.
+- A final report is not decision-ready if a human reader who does not already know the repository cannot understand the business purpose, the main end-to-end process, the risk meaning and the modernization path from visible prose. Use \`layered_explanation\` blocks: plain language first, technical drilldown second.
 - Explain the four core layers when they apply: reverse engineering/documentation, code analysis, process analysis, and refactoring/modernization.
 - The LLM owns the final report outline. Do not force fixed section IDs. Instead author \`core_capability_coverage[]\` for all four core capabilities and \`whole_file_thesis_trace\`, then make both visible through \`capability_coverage\`, \`source_coverage_trace\` or equally explicit component blocks inside LLM-chosen sections.
 - For complete-audit reports, reconcile \`.analysis/data/source-inventory.json\` included files against \`.analysis/source_tiers/*.json\` Tier 1 file cards. State included count, card count, missing count, task completion, and how source-family file cards influenced the visible theses.
 - Do not claim every file is direct evidence for every headline. Explain how the whole file-card corpus influenced source-family weighting, confidence and thesis selection, then cite specific file:line evidence for each concrete behavior, risk, process or modernization claim.
 - Functional output must cover what the system does, business capabilities, user journeys/workflows, business rules and process logic.
 - Technical output must cover architecture/system landscape, APIs/interfaces/integrations, data flows/dependencies, technology stack and implementation details.
+- Technical output must include visible API/interface contracts and request/response examples wherever the source exposes DTOs, controllers, schemas, tests, docs, OpenAPI/Swagger, SOAP/WSDL/XSD, event schemas or defensibly inferred payload shapes. Inferred examples must set \`example_origin: "inferred"\`.
+- The visible report should include graphs/diagrams for the E2E process and technical/system landscape when source evidence supports them. Use conservative Mermaid.
 - At least one representative E2E flow should connect trigger, actors, entrypoints, business rules, state changes, integrations, outputs, failure/timeout paths and operational side effects. If the source does not prove a full E2E flow, state the proof gap explicitly.
 - Process analysis must describe implemented workflows and improvement opportunities, not only CI/test readiness.
 - Final reports should read like structured decision-support documentation for stakeholders, with technical drilldown underneath the business explanation.
-- Set \`report_quality_review.verdict\` to \`decision_ready\` only when the depth checks for detailed textual explanations, whole E2E flow, business processes, four layers, functional/technical views, the explicit core-capability coverage model and whole-file coverage reflection are honestly \`covered\`. Use \`partial\` or \`not_ready\` when any of those remain incomplete.
+- Set \`report_quality_review.verdict\` to \`decision_ready\` only when the depth checks for human-readable layered report prose, detailed textual explanations, whole E2E flow, business processes, visible API contracts/request-response examples, technical drilldown, graphs/flows, four layers, functional/technical views, the explicit core-capability coverage model and whole-file coverage reflection are honestly \`covered\`. Use \`partial\` or \`not_ready\` when any of those remain incomplete.
 - Done means \`report_quality_review.verdict: "decision_ready"\` with no blocking gaps and no blocking open questions. A \`partial\` verdict may still be useful analysis, but Cognianalysis must not present it as report-ready.
 - Mermaid must use valid conservative syntax. Prefer short participant/node IDs without punctuation, put long labels in messages or quoted node labels, and keep the source small enough to render. If a diagram is inferred, mark the surrounding explanation with confidence and evidence.
 

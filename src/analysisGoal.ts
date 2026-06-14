@@ -16,7 +16,9 @@ export function analysisGoalContractArtifact(): any {
       source_basis: 'source code, tests, docs, contracts, examples and configuration',
       automation_goal: 'as automated as possible from source code',
       management_drilldown: 'textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence',
+      human_readable_layered_report: 'Visible plain-language explanations for readers who do not already know the repository, followed by technical drilldown and evidence.',
       detailed_textual_explanations: 'LLM-authored explanations of behavior, process, architecture, risk and modernization; not only tables, file lists or labels',
+      api_contracts_and_examples: 'Visible API/interface contracts, request/response examples, error/failure modes and source/inferred example origin markers when applicable.',
       whole_file_thesis_trace: 'Visible explanation of how the complete included-file corpus and Tier 1 file cards influenced the report theses, including source-family weighting and explicit gaps when any file-card coverage is missing'
     },
     required_levels: [
@@ -78,6 +80,16 @@ export function analysisGoalContractArtifact(): any {
         id: 'business_process_descriptions',
         label: 'Business process descriptions',
         intent: 'Describe implemented business processes/workflows, trigger-to-outcome logic, decision points, inefficiencies and optimization potential from source evidence.'
+      },
+      {
+        id: 'api_contracts_examples',
+        label: 'API contracts and examples',
+        intent: 'Show source-derived API/interface contracts, request fields, response fields, examples, errors and payload origin, while keeping the surrounding explanation readable.'
+      },
+      {
+        id: 'graphs_and_flows',
+        label: 'Graphs and flows',
+        intent: 'Render useful Mermaid diagrams for the main process and technical/system landscape when evidence supports them.'
       },
       {
         id: 'llm_authored_report',

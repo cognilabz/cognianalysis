@@ -99,6 +99,7 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   add('capability_statement', analysis.functional_view?.e2e_flows, 'e2e-flow', evidenceRefs(analysis.functional_view || {}), functionalGap);
   add('api_interface_statement', analysis.technical_view?.entrypoints, 'entrypoint', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('api_interface_statement', analysis.technical_view?.apis_and_interfaces, 'interface', evidenceRefs(analysis.technical_view || {}), technicalGap);
+  add('api_interface_statement', analysis.technical_view?.request_response_examples, 'request-response-example', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.data_and_state, 'data-state', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.integrations, 'integration', evidenceRefs(analysis.technical_view || {}), technicalGap);
   add('architecture_statement', analysis.technical_view?.deployment_runtime, 'deployment-runtime', evidenceRefs(analysis.technical_view || {}), technicalGap);

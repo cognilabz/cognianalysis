@@ -101,8 +101,8 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     label: 'Final Report Authoring',
     purpose: 'Compose the visible decision document from all building blocks and detail reviews through the component library.',
     stage_ids: ['llm_final_analysis_document'],
-    expected_outputs: ['analysis_document.sections[]', 'analysis_document.core_capability_coverage[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review', 'analysis_document.sections[].blocks[type=capability_coverage]', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
-    guidance: 'Choose section order, IDs and emphasis per repository. Always make the four core capabilities and whole-file thesis-impact proof visible through authored coverage models and renderer components. Do not rely on fixed appendices or raw catalogs as the human report.'
+    expected_outputs: ['analysis_document.sections[]', 'analysis_document.core_capability_coverage[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review', 'analysis_document.sections[].blocks[type=layered_explanation]', 'analysis_document.sections[].blocks[type=api_contracts]', 'analysis_document.sections[].blocks[type=request_response_examples]', 'analysis_document.sections[].blocks[type=capability_coverage]', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
+    guidance: 'Choose section order, IDs and emphasis per repository. Always make the four core capabilities and whole-file thesis-impact proof visible through authored coverage models and renderer components. The report must explain the system in human language first while preserving technical drilldown, API/interface contracts, examples and diagrams. Do not rely on fixed appendices or raw catalogs as the human report.'
   },
   {
     id: 'tool_positioning',

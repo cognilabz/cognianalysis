@@ -913,6 +913,8 @@ Required report intent:
 - If the detail-agent plan still has unexecuted tasks, do not claim final readiness. Either wait for the reviews or mark the report partial with the missing families and open questions.
 - If technical drilldown, evidence governance, quality-review, requirements-trace, coverage or raw-data explanation matters to the audience, create repository-specific sections for them inside \`analysis_document.sections\`. Do not rely on fixed appendix menu items.
 - Each visible section should earn its place by explaining a business decision, business use, system relationship, risk, improvement path or technical drilldown. Avoid sections that merely enumerate classes, functions or files.
+- A decision-ready report must be understandable to stakeholders who do not already know the repository. Use \`layered_explanation\` blocks or equivalent authored prose: plain-language story first, business/process meaning next, technical detail and evidence underneath.
+- Keep technical material visible under the human explanation. Include \`api_contracts\`, \`request_response_examples\`, errors/failure modes, and Mermaid graphs/flows wherever source code, schemas, DTOs, tests, docs or defensible inference support them. Inferred payload examples must set \`example_origin: "inferred"\`.
 - Use \`agent_plan\` blocks only to show the already planned/executed detail-review basis or remaining follow-up. The source of executable pre-report detail tasks is \`.analysis/llm/detail-agent-plan.json\`, not the final report.
 - Include \`report_quality_review\` as a Codex-authored LLM self-audit of the final document. This is not a CLI text search. You must explicitly judge whether the authored report is management-ready, repo-specific, whole-repo-first, evidence-aware and covers the four requested service levels plus functional/technical views, improvements/refactoring and tool positioning.
 - The CLI will trust this structured Codex-authored LLM judgment for semantic readiness. It only checks that the judgment exists, is explicit and can be rendered with evidence; it does not infer quality from keywords, class/function lists or fixed report menus.
@@ -965,6 +967,8 @@ Any block may include a \`labels\` object when the default component wording is 
       {"requirement":"Functional View", "goal_contract_refs":["required_views.functional_view", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Technical View", "goal_contract_refs":["required_views.technical_view"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Detailed textual explanations", "goal_contract_refs":["required_output_shape.detailed_textual_explanations"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"Human-readable layered report", "goal_contract_refs":["required_output_shape.human_readable_layered_report", "required_output_shape.management_drilldown"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
+      {"requirement":"API contracts, examples and diagrams", "goal_contract_refs":["required_output_shape.api_contracts_and_examples", "required_report_behaviors.api_contracts_examples", "required_report_behaviors.graphs_and_flows"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Business process and E2E explanations", "goal_contract_refs":["required_report_behaviors.business_process_descriptions", "required_report_behaviors.e2e_relationships"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Decision document output shape", "goal_contract_refs":["required_output_shape.deliverable", "required_output_shape.visible_report_authority", "required_output_shape.style_system", "required_output_shape.source_basis", "required_output_shape.automation_goal", "required_output_shape.management_drilldown", "required_output_shape.detailed_textual_explanations"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]},
       {"requirement":"Automation, evidence and tool positioning", "goal_contract_refs":["required_report_behaviors.llm_authored_report", "required_report_behaviors.detail_agents_after_overview", "required_report_behaviors.tool_positioning", "required_report_behaviors.evidence_and_uncertainty"], "covered_by_sections":["section-id"], "status":"covered, partial or open", "evidence":[]}
@@ -1024,9 +1028,13 @@ Any block may include a \`labels\` object when the default component wording is 
         "repo_specific_information_architecture": true,
         "management_ready_decision_basis": true,
         "whole_repo_first_understanding": true,
+        "human_readable_layered_report": true,
         "e2e_relationships_explained": true,
         "whole_e2e_flow_explained": true,
         "business_processes_explained": true,
+        "api_contracts_and_examples_visible": true,
+        "technical_drilldown_visible": true,
+        "graphs_and_flows_visible": true,
         "detailed_textual_explanations": true,
         "functional_view_explained": true,
         "technical_view_explained": true,

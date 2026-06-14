@@ -41,6 +41,7 @@ export interface AnalysisV2 {
     architecture_summary: string;
     entrypoints: any[];
     apis_and_interfaces: any[];
+    request_response_examples?: any[];
     data_and_state: any[];
     data_flows?: any[];
     integrations: any[];
@@ -228,6 +229,8 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
       narrativeBlock('Architecture Summary', analysis.technical_view?.architecture_summary, technicalEvidence),
       statementBlock('Entrypoints', analysis.technical_view?.entrypoints, technicalEvidence),
       statementBlock('APIs and Interfaces', analysis.technical_view?.apis_and_interfaces, technicalEvidence),
+      { type: 'api_contracts', title: 'API And Interface Contracts', apis: list((analysis.technical_view as any)?.apis_and_interfaces), evidence: technicalEvidence },
+      { type: 'request_response_examples', title: 'Request/Response Examples', examples: list((analysis.technical_view as any)?.request_response_examples), evidence: technicalEvidence },
       statementBlock('Data and State', analysis.technical_view?.data_and_state, technicalEvidence),
       statementBlock('Data Flows', analysis.technical_view?.data_flows, technicalEvidence),
       statementBlock('Integrations', analysis.technical_view?.integrations, technicalEvidence),

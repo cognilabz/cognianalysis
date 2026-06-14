@@ -72,13 +72,8 @@ function evidenceHtml(items: any): string {
     const id = `evidence-${++evidenceRenderCounter}`;
     return `<div class="evidence-item ${ok ? 'ok' : 'bad'}" id="${id}"><div class="path">${escapeHtml(label)}</div>${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}${ev?.snippet ? `<pre>${escapeHtml(ev.snippet)}</pre>` : ''}</div>`;
   }).join('');
-  const links = items.slice(0, 8).map((ev: any, index: number) => {
-    const target = `evidence-${evidenceRenderCounter - Math.min(items.length, 16) + index + 1}`;
-    return `<a class="evidence-link" href="#${target}" data-evidence-target="${target}">${escapeHtml(evidenceLabel(ev))}</a>`;
-  }).join('');
-  const quick = `<div class="evidence-quick"><span>Evidence</span>${links}${items.length > 8 ? `<span class="small muted">+${items.length - 8}</span>` : ''}</div>`;
   const more = items.length > 16 ? `<div class="small muted">+${items.length - 16} additional evidence references</div>` : '';
-  return `${quick}<details class="evidence"><summary>Details (${items.length})</summary><div class="evidence-list">${body}${more}</div></details>`;
+  return `<details class="evidence"><summary>Evidence details (${items.length})</summary><div class="evidence-list">${body}${more}</div></details>`;
 }
 
 function metric(label: string, value: any, detail = ''): string {
@@ -274,6 +269,70 @@ function renderBoundaryMap(block: any): string {
   return `${cards ? `<div class="grid three">${cards}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
 }
 
+function renderLayeredExplanation(block: any): string {
+  const rows = [
+    ['Plain language', firstText(block.plain_language, block.what_happens, block.summary, block.description)],
+    ['Why it matters', firstText(block.business_context, block.why_it_matters, block.business_need, block.business_use)],
+    ['Technical detail', firstText(block.technical_detail, block.technical_drilldown, block.implementation_detail)],
+    ['Operational impact', firstText(block.operational_impact, block.risk, block.process_impact)]
+  ].filter(([, value]) => value);
+  const body = rows.map(([label, value]) => `<div class="subitem"><h4>${escapeHtml(label)}</h4>${paragraphs(value)}</div>`).join('');
+  return `${body}${evidenceHtml(evidenceOf(block))}`;
+}
+
+function renderStructuredValue(value: any): string {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value === 'string') return `<pre>${escapeHtml(value)}</pre>`;
+  return `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
+}
+
+function renderFieldList(title: string, value: any): string {
+  const items = Array.isArray(value) ? value : [];
+  if (!items.length) return '';
+  const body = statementList(items.map((item: any) => typeof item === 'string' ? { title: item } : item));
+  return body ? `<h4>${escapeHtml(title)}</h4>${body}` : '';
+}
+
+function renderApiContracts(block: any): string {
+  const apis = block.apis || block.items || block.contracts || [];
+  const cards = listItems(apis, (api: any) => {
+    const title = firstText(api.name, api.title, api.endpoint, api.path, api.operation) || labelFor(block, 'api', 'API');
+    const meta = [
+      api.protocol,
+      api.method,
+      api.path || api.endpoint,
+      api.controller || api.handler,
+      api.auth || api.authentication
+    ].filter(Boolean);
+    return `<article class="card search-card" data-search="${escapeHtml(`${title} ${meta.join(' ')} ${api.purpose || ''} ${api.description || ''}`)}">
+      <div class="family-head"><h3>${escapeHtml(title)}</h3><div>${chips(meta)}</div></div>
+      ${paragraphs([api.purpose, api.description, api.business_use, api.technical_detail].filter(Boolean))}
+      ${renderFieldList(labelFor(block, 'request_fields', 'Request fields'), api.request_fields || api.request)}
+      ${renderFieldList(labelFor(block, 'response_fields', 'Response fields'), api.response_fields || api.response)}
+      ${renderFieldList(labelFor(block, 'errors', 'Errors / failure modes'), api.errors || api.failure_modes)}
+      ${evidenceHtml(evidenceOf(api))}
+    </article>`;
+  });
+  return `${paragraphs(firstText(block.summary, block.description))}${cards ? `<div class="grid two">${cards}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
+}
+
+function renderRequestResponseExamples(block: any): string {
+  const examples = block.examples || block.items || [];
+  const cards = listItems(examples, (example: any) => {
+    const title = firstText(example.title, example.name, example.scenario, example.endpoint) || labelFor(block, 'example', 'Example');
+    const origin = firstText(example.example_origin, example.origin) || 'unknown';
+    return `<article class="card search-card" data-search="${escapeHtml(`${title} ${origin} ${example.notes || ''} ${example.description || ''}`)}">
+      <div class="family-head"><h3>${escapeHtml(title)}</h3>${chip(origin)}</div>
+      ${paragraphs(firstText(example.notes, example.description, example.business_context))}
+      ${example.request !== undefined ? `<h4>${escapeHtml(labelFor(block, 'request', 'Request'))}</h4>${renderStructuredValue(example.request)}` : ''}
+      ${example.response !== undefined ? `<h4>${escapeHtml(labelFor(block, 'response', 'Response'))}</h4>${renderStructuredValue(example.response)}` : ''}
+      ${example.error !== undefined ? `<h4>${escapeHtml(labelFor(block, 'error', 'Error'))}</h4>${renderStructuredValue(example.error)}` : ''}
+      ${evidenceHtml(evidenceOf(example))}
+    </article>`;
+  });
+  return `${paragraphs(firstText(block.summary, block.description))}${cards ? `<div class="grid two">${cards}</div>` : ''}${evidenceHtml(evidenceOf(block))}`;
+}
+
 function renderDocFlow(block: any): string {
   const source = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, block.source);
   return `${paragraphs(firstText(block.summary, block.description))}${source ? mermaidBlock(source, evidenceOf(block.mermaid).length ? evidenceOf(block.mermaid) : evidenceOf(block)) : ''}
@@ -454,6 +513,9 @@ function renderDocBlock(block: any): string {
     case 'metric_grid': body = renderDocMetricGrid(block); break;
     case 'source_family_map': body = renderSourceFamilyMap(block); break;
     case 'boundary_map': body = renderBoundaryMap(block); break;
+    case 'layered_explanation': body = renderLayeredExplanation(block); break;
+    case 'api_contracts': body = renderApiContracts(block); break;
+    case 'request_response_examples': body = renderRequestResponseExamples(block); break;
     case 'flow': body = renderDocFlow(block); break;
     case 'four_level_assessment': body = renderFourLevelAssessment(block); break;
     case 'capability_coverage': body = renderCapabilityCoverage(block); break;
@@ -771,7 +833,7 @@ export function buildHtml(bundle: any, title: string): string {
     ...pendingAnalysisDocumentSections(bundle)
   ];
   const nav = sections.map(([id, label], index) => `<a class="nav-link ${index === 0 ? 'active' : ''}" href="#${id}" data-section="${id}">${escapeHtml(label)}</a>`).join('');
-  const htmlSections = sections.map(([id, label, body], index) => `<section class="view ${index === 0 ? 'active' : ''}" id="${id}"><div class="section-title"><h2>${escapeHtml(label)}</h2></div>${body}</section>`).join('\n');
+  const htmlSections = sections.map(([id, label, body]) => `<section class="view report-section" id="${id}"><div class="section-title"><h2>${escapeHtml(label)}</h2></div>${body}</section>`).join('\n');
   const dataJson = safeJsonForHtml(bundle);
   const rootLine = bundle.profile?.root
     ? `<p class="muted">${escapeHtml(bundle.profile.root)}</p>`
@@ -788,10 +850,31 @@ export function buildHtml(bundle: any, title: string): string {
 </head>
 <body>
 <script id="analysis-data" type="application/json">${dataJson}</script>
-<div class="layout">
-<aside class="sidebar"><div class="brand"><div class="logo">${escapeHtml(initials(shellTitle))}</div><div><div class="brand-title">${escapeHtml(shellTitle)}</div><div class="brand-subtitle">${escapeHtml(shellSubtitle)}</div></div></div><nav>${nav}</nav><div class="side-note"><strong>${escapeHtml(bundle.profile?.repo_name || 'Repository')}</strong><br><span>${escapeHtml(bundle.profile?.repo_type || 'unknown')}</span></div></aside>
-<main><header class="hero"><div><p class="eyebrow">${escapeHtml(heroEyebrow)}</p><h1>${escapeHtml(title)}</h1>${rootLine}</div><div class="actions"><input id="search" type="search" placeholder="Search report …"><button id="theme" type="button">Theme</button></div></header>${trustBannerHtml(bundle)}${htmlSections}</main>
-</div>
+<a class="skip-link" href="#report">Skip to report</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#report" aria-label="${escapeHtml(shellTitle)} home"><div class="logo">${escapeHtml(initials(shellTitle))}</div><div><div class="brand-title">${escapeHtml(shellTitle)}</div><div class="brand-subtitle">${escapeHtml(shellSubtitle)}</div></div></a>
+    <nav class="nav" aria-label="Report navigation">${nav}</nav>
+  </div>
+</header>
+<main id="report" class="page-shell">
+  <section class="intro-band">
+    <div>
+      <p class="eyebrow">${escapeHtml(heroEyebrow)}</p>
+      <h1>${escapeHtml(title)}</h1>
+      ${rootLine}
+    </div>
+    <aside class="scope-card">
+      <strong>${escapeHtml(bundle.profile?.repo_name || 'Repository')}</strong>
+      <span>${escapeHtml(bundle.profile?.repo_type || 'unknown')}</span>
+      <label class="search-label" for="search">Search report</label>
+      <input id="search" type="search" placeholder="Search findings, APIs, risks">
+      <button id="theme" type="button">Theme</button>
+    </aside>
+  </section>
+  ${trustBannerHtml(bundle)}
+  ${htmlSections}
+</main>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>${JS}</script>
 </body>

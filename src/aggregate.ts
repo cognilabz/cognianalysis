@@ -1565,6 +1565,17 @@ function blockHasRenderableContent(block: any): boolean {
       return asList(block?.families).some((family: any) => hasRenderableValue(family) || evidenceRefs(family).length > 0);
     case 'boundary_map':
       return ['entries', 'exits', 'state'].some(key => asList(block?.[key]).some(statementHasRenderableContent));
+    case 'layered_explanation':
+      return ['plain_language', 'what_happens', 'summary', 'description', 'business_context', 'why_it_matters', 'technical_detail', 'technical_drilldown', 'implementation_detail', 'operational_impact']
+        .some(key => hasRenderableValue(block?.[key]));
+    case 'api_contracts':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || asList(block?.apis || block?.items || block?.contracts).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
+    case 'request_response_examples':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || asList(block?.examples || block?.items).some((item: any) => hasRenderableValue(item) || evidenceRefs(item).length > 0);
     case 'flow':
       return hasRenderableValue(block?.summary)
         || hasRenderableValue(block?.description)
@@ -1716,9 +1727,13 @@ const REPORT_QUALITY_REVIEW_CHECKS = [
   { id: 'repo_specific_information_architecture', label: 'Repository-specific information architecture' },
   { id: 'management_ready_decision_basis', label: 'Management-ready decision basis' },
   { id: 'whole_repo_first_understanding', label: 'Whole-repository understanding before deep dives' },
+  { id: 'human_readable_layered_report', label: 'Human-readable layered explanation for non-specialists plus technical drilldown' },
   { id: 'e2e_relationships_explained', label: 'E2E relationships and collaboration explained' },
   { id: 'functional_view_explained', label: 'Functional view explains what the system does' },
   { id: 'technical_view_explained', label: 'Technical view explains APIs, interfaces and architecture' },
+  { id: 'api_contracts_and_examples_visible', label: 'API contracts and request/response examples are visible' },
+  { id: 'technical_drilldown_visible', label: 'Technical drilldown remains visible under the human narrative' },
+  { id: 'graphs_and_flows_visible', label: 'Graphs and flow diagrams are visible and renderable' },
   { id: 'four_level_model_covered', label: 'Four analysis levels are covered' },
   { id: 'improvements_and_refactoring_covered', label: 'Improvements, optimization and refactoring are covered' },
   { id: 'tool_positioning_covered', label: 'Tool/consulting alternative positioning is covered' },
@@ -1779,6 +1794,8 @@ function majorReportClaimItems(doc: any): any[] {
       if (type === 'source_family_map') pushItems(asList(block?.families), 'source_family', ['name', 'title']);
       if (type === 'capability_coverage') pushItems(asList(block?.capabilities || block?.items || block?.levels), 'capability', ['label', 'title', 'capability_id']);
       if (type === 'source_coverage_trace') pushItems(asList(block?.source_family_impacts || block?.families || block?.impacts), 'source_family', ['source_family', 'name', 'title']);
+      if (type === 'api_contracts') pushItems(asList(block?.apis || block?.items || block?.contracts), 'api_contract', ['name', 'title', 'path', 'endpoint']);
+      if (type === 'request_response_examples') pushItems(asList(block?.examples || block?.items), 'request_response_example', ['title', 'name', 'scenario', 'endpoint']);
     }
   }
   return out.map(item => ({
@@ -2176,6 +2193,8 @@ function computeAnalysisDocumentReportLint(doc: any): any {
       if (type === 'four_level_assessment') checkSupportedItems(asList(block?.levels), 'level');
       if (type === 'capability_coverage') checkSupportedItems(asList(block?.capabilities || block?.items || block?.levels), 'capability');
       if (type === 'source_coverage_trace') checkSupportedItems(asList(block?.source_family_impacts || block?.families || block?.impacts), 'source_family');
+      if (type === 'api_contracts') checkSupportedItems(asList(block?.apis || block?.items || block?.contracts), 'api_contract');
+      if (type === 'request_response_examples') checkSupportedItems(asList(block?.examples || block?.items), 'request_response_example');
       if (type === 'flow') checkSupportedItems(asList(block?.steps), 'step');
       if (type === 'boundary_map') {
         for (const key of ['entries', 'exits', 'state']) {

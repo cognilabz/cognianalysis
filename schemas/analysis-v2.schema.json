@@ -81,6 +81,7 @@
         "architecture_summary": { "type": "string" },
         "entrypoints": { "type": "array" },
         "apis_and_interfaces": { "type": "array" },
+        "request_response_examples": { "type": "array" },
         "data_and_state": { "type": "array" },
         "integrations": { "type": "array" },
         "deployment_runtime": { "type": "array" },

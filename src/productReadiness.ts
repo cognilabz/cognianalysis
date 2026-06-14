@@ -77,9 +77,13 @@ function qualityCheckCovered(value: any): boolean {
 }
 
 const REQUIRED_DEPTH_QUALITY_CHECKS = [
+  'human_readable_layered_report',
   'detailed_textual_explanations',
   'whole_e2e_flow_explained',
   'business_processes_explained',
+  'api_contracts_and_examples_visible',
+  'technical_drilldown_visible',
+  'graphs_and_flows_visible',
   'four_layers_explained',
   'functional_and_technical_views_explained',
   'core_capability_coverage_model',
@@ -133,6 +137,77 @@ function reportQualityDecisionReadyEvidence(analysis: any): string {
 function reportQualityDepthChecksCovered(analysis: any): boolean {
   const checks = analysis?.report_quality_review?.checks || {};
   return REQUIRED_DEPTH_QUALITY_CHECKS.every(id => qualityCheckCovered(checks?.[id]));
+}
+
+function reportBlocks(analysis: any): any[] {
+  const sections = utilAsList(analysis?.report_sections).length
+    ? utilAsList(analysis?.report_sections)
+    : utilAsList(analysis?.sections);
+  return sections.flatMap((section: any) => utilAsList(section?.blocks));
+}
+
+function blockText(block: any): string {
+  if (!block || typeof block !== 'object' || Array.isArray(block)) return '';
+  const parts = [
+    block.text,
+    block.paragraphs,
+    block.summary,
+    block.description,
+    block.plain_language,
+    block.what_happens,
+    block.business_context,
+    block.why_it_matters,
+    block.technical_detail,
+    block.technical_drilldown,
+    block.operational_impact,
+    block.thesis_impact_summary
+  ];
+  return parts.flatMap(part => Array.isArray(part) ? part : [part])
+    .filter(hasText)
+    .join(' ');
+}
+
+function wordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function humanReadableLayeredReportComplete(analysis: any): boolean {
+  const blocks = reportBlocks(analysis);
+  const layered = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'layered_explanation');
+  const authoredWords = blocks.reduce((sum: number, block: any) => sum + wordCount(blockText(block)), 0);
+  return layered.length >= 3 && authoredWords >= 900;
+}
+
+function apiContractsAndExamplesVisible(analysis: any): boolean {
+  const blocks = reportBlocks(analysis);
+  const apiBlocks = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'api_contracts');
+  const exampleBlocks = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'request_response_examples');
+  const apiRows = apiBlocks.flatMap((block: any) => utilAsList(block?.apis || block?.items || block?.contracts));
+  const exampleRows = exampleBlocks.flatMap((block: any) => utilAsList(block?.examples || block?.items));
+  const contractReady = apiRows.some((row: any) =>
+    hasText(row?.name || row?.title || row?.path || row?.endpoint)
+    && (hasText(row?.purpose || row?.description) || utilAsList(row?.request_fields).length || utilAsList(row?.response_fields).length)
+  );
+  const examplesReady = exampleRows.some((row: any) =>
+    hasText(row?.title || row?.name || row?.scenario || row?.endpoint)
+    && hasText(row?.example_origin || row?.origin)
+    && (row?.request !== undefined || row?.response !== undefined)
+  );
+  return contractReady && examplesReady;
+}
+
+function technicalDrilldownVisible(analysis: any): boolean {
+  const blocks = reportBlocks(analysis);
+  return blocks.some((block: any) => ['api_contracts', 'request_response_examples', 'technical_drilldown', 'boundary_map', 'source_family_map'].includes(String(block?.type || '').toLowerCase()));
+}
+
+function graphsAndFlowsVisible(analysis: any): boolean {
+  const blocks = reportBlocks(analysis);
+  const diagramBlocks = blocks.filter((block: any) => {
+    const type = String(block?.type || '').toLowerCase();
+    return type === 'flow' && hasText(mermaidSource(block?.mermaid || block?.source));
+  });
+  return diagramBlocks.length >= 2;
 }
 
 function normalizedCapabilityId(value: any): string {
@@ -277,6 +352,10 @@ export function computeProductReadinessV2(repo: string, analysis: string, bundle
     && hasDetailedText(technicalView.architecture_summary)
     && (hasDetailedText(processAnalysis.test_readiness) || hasDetailedItem(processAnalysis.implemented_business_processes) || hasDetailedItem(processAnalysis.process_flows))
     && (hasDetailedItem(refactoring.target_architecture_options) || hasDetailedItem(refactoring.migration_roadmap) || hasDetailedItem(refactoring.quick_wins));
+  const humanLayeredReportComplete = humanReadableLayeredReportComplete(analysisDoc);
+  const apiExamplesComplete = apiContractsAndExamplesVisible(analysisDoc);
+  const technicalDrilldownComplete = technicalDrilldownVisible(analysisDoc);
+  const graphsVisible = graphsAndFlowsVisible(analysisDoc);
   const fourCoreCapabilitiesComplete = functionalComplete && codeAnalysisComplete && processComplete && refactoringComplete;
   const coreCapabilityCoverageComplete = coreCapabilityCoverageModelComplete(analysisDoc);
   const wholeFileTraceComplete = wholeFileThesisTraceComplete(analysisDoc, bundle);
@@ -309,8 +388,12 @@ export function computeProductReadinessV2(repo: string, analysis: string, bundle
     v2Check('refactoring_or_next_steps_present', 'Refactoring or next steps present', refactoringOrNext, 'refactoring/next_steps', 'Add refactoring roadmap, target architecture options, quick wins or next steps.'),
     v2Check('refactoring_modernization_complete', 'Refactoring and modernization view complete', refactoringComplete, 'refactoring', 'Add target architecture options, migration roadmap, technology stack options or quick wins.'),
     v2Check('detailed_textual_explanations_present', 'Detailed textual explanations present', detailedTextComplete, 'narrative-depth-fields', 'Expand executive, functional, technical, process and refactoring explanations beyond labels or short bullets.'),
+    v2Check('human_readable_layered_report_present', 'Human-readable layered report narrative present', humanLayeredReportComplete, 'layered_explanation blocks and narrative word depth', 'Add layered_explanation blocks that explain the system in plain language first, with technical detail and evidence underneath.'),
     v2Check('whole_e2e_flow_present', 'Whole E2E flow explained with steps or Mermaid', e2eFlowComplete, 'functional_view.e2e_flows/process_analysis.process_flows', 'Add at least one source-backed E2E flow with narrative plus steps or Mermaid.'),
     v2Check('business_processes_present', 'Business process descriptions present', businessProcessComplete, 'business_processes/process_flows', 'Add implemented business process or workflow descriptions with trigger, decisions and outcome.'),
+    v2Check('api_contracts_and_examples_present', 'API contracts and request/response examples visible', apiExamplesComplete, 'api_contracts + request_response_examples blocks', 'Add visible API/interface contracts and request/response examples, marking inferred examples with example_origin="inferred".'),
+    v2Check('technical_drilldown_visible', 'Technical drilldown visible under human narrative', technicalDrilldownComplete, 'technical component blocks', 'Add API contracts, request/response examples, boundary map, source-family map or technical drilldown blocks.'),
+    v2Check('graphs_and_flows_visible', 'Graphs and flow diagrams visible', graphsVisible, 'flow Mermaid blocks >= 2', 'Add at least two visible Mermaid flow/architecture/process diagrams when source evidence supports them.'),
     v2Check('four_core_capabilities_complete', 'Four core capabilities structurally covered', fourCoreCapabilitiesComplete, 'functional+code+process+refactoring', 'Cover reverse engineering/documentation, code analysis, process analysis and refactoring/modernization in analysis.json.'),
     v2Check('core_capability_coverage_model_present', 'LLM-authored four-core-capability coverage model present', coreCapabilityCoverageComplete, `rows=${capabilityCoverageRows(analysisDoc).length}/${REQUIRED_CORE_CAPABILITY_IDS.length}`, 'Author core_capability_coverage[] with all four core capabilities, covered status, detailed summary and covered_by_sections links.'),
     v2Check('whole_file_thesis_trace_present', 'LLM-authored whole-file thesis trace present', wholeFileTraceComplete, wholeFileThesisTrace(analysisDoc) ? 'present' : 'missing', 'Author whole_file_thesis_trace with included files, Tier 1 file cards, zero missing cards, task completion and source-family thesis impact.'),

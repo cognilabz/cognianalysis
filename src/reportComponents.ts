@@ -15,6 +15,13 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     guidance: 'Use for authored prose that explains business need, business use, system meaning, process behavior, risk rationale or technical drilldown. Prefer real explanatory paragraphs over terse labels. Do not use it as a dumping ground for class/function lists.'
   },
   {
+    id: 'layered_explanation',
+    label: 'Layered Explanation',
+    purpose: 'Plain-language explanation for non-specialists with technical drilldown kept in the same visible block.',
+    expected_fields: ['type', 'title?', 'plain_language|summary|what_happens', 'business_context?|why_it_matters?', 'technical_detail|technical_drilldown', 'operational_impact?', 'evidence?|evidence_refs?'],
+    guidance: 'Use when a section must be understandable without prior repository knowledge while still preserving exact technical detail. Write the plain-language story first, then the technical explanation and evidence.'
+  },
+  {
     id: 'statement_list',
     label: 'Statement List',
     purpose: 'Evidence-backed claims, findings, risks, recommendations or decisions.',
@@ -41,6 +48,20 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     purpose: 'System entry, system exit/integration and state/data boundaries.',
     expected_fields: ['type', 'title?', 'labels.entries?', 'labels.exits?', 'labels.state?', 'entries[]', 'exits[]', 'state[]', 'evidence?'],
     guidance: 'Use when explaining how the system is entered, what it calls or emits, and where state changes. Set labels when repository terminology differs from the default entry/exit/state wording.'
+  },
+  {
+    id: 'api_contracts',
+    label: 'API Contracts',
+    purpose: 'Human-readable API/interface catalogue with methods, paths, request/response contracts, errors and evidence.',
+    expected_fields: ['type', 'title?', 'summary?', 'apis[]|items[]|contracts[]', 'apis[].name', 'apis[].protocol?', 'apis[].method?', 'apis[].path|endpoint?', 'apis[].purpose|description?', 'apis[].request_fields?', 'apis[].response_fields?', 'apis[].errors?', 'apis[].evidence?'],
+    guidance: 'Use for REST, WebSocket, Kafka, SOAP, GraphQL, service-client or internal interface surfaces. If examples are inferred rather than source-provided, mark example_origin on the example block.'
+  },
+  {
+    id: 'request_response_examples',
+    label: 'Request/Response Examples',
+    purpose: 'Concrete source-provided or defensibly inferred payload examples for APIs, events, service calls or functions.',
+    expected_fields: ['type', 'title?', 'summary?', 'examples[]|items[]', 'examples[].title|name', 'examples[].example_origin', 'examples[].request?', 'examples[].response?', 'examples[].notes?|description?', 'examples[].evidence?'],
+    guidance: 'Use when stakeholders need to see payload shape. Preserve source examples when present; inferred examples must set example_origin: "inferred" and include evidence for the DTO/controller/schema that justifies the shape.'
   },
   {
     id: 'flow',
