@@ -76,6 +76,7 @@ export interface AnalysisV2 {
   core_capability_coverage?: any[];
   whole_file_thesis_trace?: any;
   whole_repository_file_accounting?: any;
+  authored_report?: any;
   report_sections: AnalysisReportSection[];
   open_questions: any[];
   evidence_index: AnalysisEvidenceRef[];
@@ -195,14 +196,14 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
   const executiveEvidence = evidenceRefs(analysis.executive_decision);
   const technicalEvidence = evidenceRefs(analysis.technical_view);
   const sections = [
-    section('executive-decision', 'Executive Decision', 'decision', 'Decision basis and recommended action.', [
+    section('executive-overview', 'Executive Overview', 'decision', 'Decision basis, main conclusion and recommended action.', [
       narrativeBlock('Summary', analysis.executive_decision?.summary, executiveEvidence),
       statementBlock('Recommended Action', [{ title: 'Recommended action', summary: analysis.executive_decision?.recommended_action, evidence: executiveEvidence }]),
       statementBlock('Decision Options', analysis.executive_decision?.decision_options, executiveEvidence),
       statementBlock('Top Risks', analysis.executive_decision?.top_risks, executiveEvidence),
       statementBlock('Next Steps', analysis.executive_decision?.next_steps, executiveEvidence)
     ], executiveEvidence),
-    section('functional-view', 'Functional View', 'reverse_engineering', 'System purpose, actors, capabilities and user/system flows.', [
+    section('how-it-works', 'How It Works', 'reverse_engineering', 'Business-readable system behavior, actors, capabilities and user/system flows.', [
       narrativeBlock('System Purpose', analysis.functional_view?.system_purpose, []),
       statementBlock('Actors', analysis.functional_view?.actors),
       statementBlock('Capabilities', analysis.functional_view?.capabilities),
@@ -225,7 +226,7 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
         evidence: evidenceRefs(flow)
       })))
     ]),
-    section('technical-view', 'Technical View', 'technical', 'Architecture, entrypoints, interfaces, data/state, integrations and runtime.', [
+    section('technical-view', 'Technical View', 'technical', 'Architecture, entrypoints, interfaces, contracts, data/state, integrations and runtime.', [
       narrativeBlock('Architecture Summary', analysis.technical_view?.architecture_summary, technicalEvidence),
       statementBlock('Entrypoints', analysis.technical_view?.entrypoints, technicalEvidence),
       statementBlock('APIs and Interfaces', analysis.technical_view?.apis_and_interfaces, technicalEvidence),
@@ -238,13 +239,13 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
       statementBlock('Technology Stack', analysis.technical_view?.technology_stack, technicalEvidence),
       statementBlock('Deployment Runtime', analysis.technical_view?.deployment_runtime, technicalEvidence)
     ], technicalEvidence),
-    section('risks-quality-security', 'Risks & Quality', 'code_analysis', 'Bugs, vulnerabilities, quality findings and imported scanner findings.', [
+    section('risks', 'Risks', 'code_analysis', 'Security, reliability, maintainability and quality risks, with evidence-backed meaning for the business.', [
       statementBlock('Bugs', analysis.code_quality_security?.bugs),
       statementBlock('Vulnerabilities', analysis.code_quality_security?.vulnerabilities),
       statementBlock('Code Quality Findings', analysis.code_quality_security?.code_quality_findings),
       statementBlock('Imported Scanner Findings', analysis.code_quality_security?.scanner_findings_imported)
     ]),
-    section('process-improvements', 'Process Improvements', 'process', 'Test readiness, delivery risks, observability and documentation/process gaps.', [
+    section('process-improvements', 'Process Improvements', 'process', 'Implemented processes, delivery risks, observability and optimization opportunities.', [
       narrativeBlock('Test Readiness', analysis.process_analysis?.test_readiness),
       statementBlock('Implemented Business Processes', analysis.process_analysis?.implemented_business_processes),
       ...(list(analysis.process_analysis?.process_flows).map((flow: any) => ({
@@ -262,13 +263,13 @@ export function analysisV2ToReportSections(analysis: AnalysisV2): any[] {
       statementBlock('Documentation Gaps', analysis.process_analysis?.documentation_gaps),
       statementBlock('Process Improvements', analysis.process_analysis?.process_improvements)
     ]),
-    section('refactoring-roadmap', 'Refactoring Roadmap', 'refactoring', 'Target architecture options, migration roadmap, stack options and quick wins.', [
+    section('roadmap', 'Roadmap', 'refactoring', 'Target architecture options, migration path, stack choices and quick wins.', [
       statementBlock('Target Architecture Options', analysis.refactoring?.target_architecture_options),
       { type: 'roadmap', title: 'Migration Roadmap', items: list(analysis.refactoring?.migration_roadmap) },
       statementBlock('Tech Stack Options', analysis.refactoring?.tech_stack_options),
       { type: 'roadmap', title: 'Quick Wins', items: list(analysis.refactoring?.quick_wins) }
     ]),
-    section('evidence-open-questions', 'Evidence & Open Questions', 'evidence', 'Evidence index, limitations and unresolved questions.', [
+    section('scope-method-evidence', 'Scope, Method & Evidence', 'evidence', 'Scope, evidence, limitations and unresolved questions.', [
       {
         type: 'open_questions',
         title: 'Open Questions',
@@ -317,6 +318,7 @@ export function analysisV2ToLegacyAnalysisDocument(analysis: AnalysisV2): any {
     core_capability_coverage: list(extended.core_capability_coverage || extended.capability_coverage || analysis.core_capability_coverage),
     whole_file_thesis_trace: extended.whole_file_thesis_trace || analysis.whole_file_thesis_trace || extended.whole_repository_file_accounting || analysis.whole_repository_file_accounting || null,
     whole_repository_file_accounting: extended.whole_repository_file_accounting || analysis.whole_repository_file_accounting || null,
+    authored_report: extended.authored_report || extended.freeform_report || extended.narrative_report || null,
     report_quality_review: analysis.report_quality_review || {
       verdict: 'partial',
       rationale: 'analysis.json v2 did not include report_quality_review.',
@@ -362,6 +364,7 @@ export function legacyAnalysisDocumentToV2(legacy: any, repo: string, analysisDi
     code_quality_security: { bugs: [], vulnerabilities: [], code_quality_findings: [], scanner_findings_imported: [] },
     process_analysis: { test_readiness: '', delivery_risks: [], observability: [], documentation_gaps: [], process_improvements: [] },
     refactoring: { target_architecture_options: [], migration_roadmap: [], tech_stack_options: [], quick_wins: [] },
+    authored_report: legacy?.authored_report || legacy?.freeform_report || legacy?.narrative_report || null,
     report_sections: sections,
     open_questions: list(legacy?.open_questions),
     evidence_index: evidenceRefs(legacy),

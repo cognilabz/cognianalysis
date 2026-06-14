@@ -12,7 +12,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenche
 import { computeProductReadinessV2, productReadinessV2Brief } from './productReadiness';
 import { migrateV07ToV08 } from './migration/v07ToV08';
 
-const VERSION = '0.8.2';
+const VERSION = '0.8.7';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep', 'complete-audit']);
 const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {

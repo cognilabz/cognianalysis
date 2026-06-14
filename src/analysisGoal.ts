@@ -11,10 +11,17 @@ export function analysisGoalContractArtifact(): any {
     objective: 'Automated source-code analysis that produces a structured decision basis as an analysis document. The whole report should be authored by an LLM through a stable component/style library, start whole-repository first, then use focused detail agents where useful, and preserve the original requirements.',
     required_output_shape: {
       deliverable: 'structured_decision_basis_analysis_document',
-      visible_report_authority: 'analysis_document.sections authored by LLM',
-      style_system: 'stable report component library',
+      visible_report_authority: 'analysis_document.authored_report and analysis_document.sections authored by LLM',
+      freeform_llm_authored_report: 'The primary visible report is a free-flow LLM-authored assessment narrative; structured components support evidence, APIs, examples, diagrams and auditability but do not define the main reading path.',
+      style_system: 'stable publication shell for authored report prose, technical annexes, evidence folding and Mermaid rendering',
       source_basis: 'source code, tests, docs, contracts, examples and configuration',
       automation_goal: 'as automated as possible from source code',
+      stakeholder_report_style: 'The visible report reads like a professional assessment for stakeholders; source paths, class names and functions are supporting citations or technical details, not the main narrative structure.',
+      clear_reader_categories: 'The visible report uses clear reader-facing categories such as Executive Overview, How It Works, Technical View, Risks, Roadmap and Scope/Method instead of exposing internal analysis-stage names as the primary navigation.',
+      consulting_grade_narrative: 'The report explains what the system is, why it matters, how it works, what can go wrong and what decision follows in polished assessment prose.',
+      reader_comprehension_review: 'The LLM performs a section-by-section reader-comprehension self-review for readers unfamiliar with the repository.',
+      concrete_examples_and_implications: 'Major flows, risks and recommendations include concrete source-derived examples or scenarios plus business/operational implications.',
+      jargon_and_domain_terms_explained: 'Domain terms, acronyms, product names and internal system names are explained in context before they are relied on.',
       management_drilldown: 'textual business-need/business-use narrative for management with drilldown to technical and deep technical evidence',
       human_readable_layered_report: 'Visible plain-language explanations for readers who do not already know the repository, followed by technical drilldown and evidence.',
       detailed_textual_explanations: 'LLM-authored explanations of behavior, process, architecture, risk and modernization; not only tables, file lists or labels',
@@ -94,7 +101,7 @@ export function analysisGoalContractArtifact(): any {
       {
         id: 'llm_authored_report',
         label: 'LLM-authored report',
-        intent: 'Let the LLM decide the repository-specific report structure while the renderer supplies styling and components.'
+        intent: 'Let the LLM decide and author the repository-specific report structure and prose while the renderer supplies only publishing, styling, evidence folding and components.'
       },
       {
         id: 'detail_agents_after_overview',

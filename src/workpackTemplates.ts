@@ -208,10 +208,28 @@ export const FINAL_REPORT_CONTRACT = {
     ],
     evidence: []
   },
+  authored_report: {
+    style: 'freeform_assessment',
+    writing_model: 'LLM-authored prose is the primary report; structured components are technical annexes and evidence support only.',
+    sections: [
+      {
+        id: 'reader-facing-section-id',
+        title: 'Section title chosen for this repository',
+        kicker: 'Short audience or report-intent label',
+        intent: 'Why this section matters.',
+        lead: ['Strong opening paragraph in assessment prose.'],
+        body: ['Multi-paragraph free-flow explanation of what, why, how, risk, implication and decision.'],
+        callouts: [{ title: 'Decision / Risk / Scope / Evidence', tone: 'decision', body: ['Short authored callout.'] }],
+        subsections: [{ title: 'Subsection', body: ['Additional explanation.'], bullets: ['Use bullets only when they help.'] }],
+        technical_blocks: [{ type: 'api_contracts', title: 'Technical annex', apis: [] }],
+        evidence: []
+      }
+    ]
+  },
   report_sections: [
     {
       id: 'LLM-chosen stable section id',
-      title: 'Repository-specific section title',
+      title: 'Repository-specific stakeholder report section title',
       level: 'decision|functional|technical|process|risk|modernization|evidence_governance',
       intent: 'Why this section exists for this repository.',
       blocks: [
@@ -234,6 +252,12 @@ export const FINAL_REPORT_CONTRACT = {
     recommended_followups: [],
     confidence: 'high|medium|low',
     checks: {
+      stakeholder_report_style: 'covered|partial|open',
+      clear_reader_categories: 'covered|partial|open',
+      consulting_grade_narrative: 'covered|partial|open',
+      reader_comprehension_review: 'covered|partial|open',
+      concrete_examples_and_implications: 'covered|partial|open',
+      jargon_and_domain_terms_explained: 'covered|partial|open',
       human_readable_layered_report: 'covered|partial|open',
       detailed_textual_explanations: 'covered|partial|open',
       whole_e2e_flow_explained: 'covered|partial|open',
@@ -246,6 +270,15 @@ export const FINAL_REPORT_CONTRACT = {
       core_capability_coverage_model: 'covered|partial|open',
       whole_file_coverage_reflected: 'covered|partial|open'
     },
+    reader_comprehension_review: [
+      {
+        section_id: 'visible section id',
+        reader_question: 'What would a reader unfamiliar with the repository need to understand here?',
+        verdict: 'clear|partial|unclear',
+        reason: 'Why this section is or is not understandable.',
+        improvement_made: 'How the final wording was improved, or why no rewrite was needed.'
+      }
+    ],
     evidence: []
   }
 };
@@ -287,6 +320,14 @@ ${JSON.stringify(def.contract, null, 2)}
 ## Analysis Depth Bar
 
 - Write source-derived explanations for humans, not only labels or inventories. Prefer a few rich paragraphs with evidence over many shallow bullets.
+- The visible report should read like a professional assessment document, not a source-code index. Use business/process/system nouns in section titles and paragraph leads. Put file paths, class names, methods and framework internals in evidence, technical drilldown, API details or expandable proof unless the identifier itself is the business-facing interface.
+- Prefer clear reader-facing categories such as \`Executive Overview\`, \`How It Works\`, \`Technical View\`, \`Risks\`, \`Roadmap\` and \`Scope, Method & Evidence\`. Adapt the labels to the repository, but avoid exposing internal analysis-stage names like \`Functional E2E Process Walkthrough\` or \`Code Quality Security Process Risks\` as the primary report navigation.
+- Write each major section so a reader can answer, without already knowing the codebase: what is this, why does it exist, who or what depends on it, how does the flow work, what can go wrong, and what decision follows.
+- Use a \`claim -> explanation -> concrete source-derived example -> implication -> evidence\` pattern. Avoid flat statements such as "module X handles Y" unless the next sentence explains why Y matters and what changes because of it.
+- Explain acronyms, product names and internal nouns on first use. If a term such as MSO, SLAPI, ESB, Genesys, Watson or Kafka is repository-specific or domain-specific, describe its role in plain language before relying on it.
+- Use concrete examples before abstractions: a sample conversation turn, a representative request/response, a failure scenario, a deployment path or a realistic modernization step. Mark inferred examples with \`example_origin: "inferred"\`.
+- The final LLM self-review must include \`report_quality_review.reader_comprehension_review[]\` and honestly judge whether each main section is understandable to a reader unfamiliar with the repository.
+- The renderer is only a publication shell. Do not expect JavaScript, templates or fixed components to invent the report. The LLM-authored \`analysis_document.authored_report.sections[]\` is the primary visible report and must contain the actual free-flow explanation, conclusions, examples and interpretation. \`analysis_document.sections[].blocks[]\` should support that prose with technical annexes, evidence, APIs, examples, diagrams and coverage.
 - A final report is not decision-ready if a human reader who does not already know the repository cannot understand the business purpose, the main end-to-end process, the risk meaning and the modernization path from visible prose. Use \`layered_explanation\` blocks: plain language first, technical drilldown second.
 - Explain the four core layers when they apply: reverse engineering/documentation, code analysis, process analysis, and refactoring/modernization.
 - The LLM owns the final report outline. Do not force fixed section IDs. Instead author \`core_capability_coverage[]\` for all four core capabilities and \`whole_file_thesis_trace\`, then make both visible through \`capability_coverage\`, \`source_coverage_trace\` or equally explicit component blocks inside LLM-chosen sections.
@@ -300,6 +341,13 @@ ${JSON.stringify(def.contract, null, 2)}
 - Process analysis must describe implemented workflows and improvement opportunities, not only CI/test readiness.
 - Final reports should read like structured decision-support documentation for stakeholders, with technical drilldown underneath the business explanation.
 - Set \`report_quality_review.verdict\` to \`decision_ready\` only when the depth checks for human-readable layered report prose, detailed textual explanations, whole E2E flow, business processes, visible API contracts/request-response examples, technical drilldown, graphs/flows, four layers, functional/technical views, the explicit core-capability coverage model and whole-file coverage reflection are honestly \`covered\`. Use \`partial\` or \`not_ready\` when any of those remain incomplete.
+- Set \`report_quality_review.checks.stakeholder_report_style\` to \`covered\` only when the main reading path is understandable as a stakeholder report and code identifiers/file lists are supporting citations or technical details rather than the dominant visible content.
+- Set \`report_quality_review.checks.clear_reader_categories\` to \`covered\` only when the report navigation and section introductions are clear to a reader who does not know the codebase.
+- Set \`report_quality_review.checks.freeform_llm_authored_report\` to \`covered\` only when the main reading path is genuinely free-flow LLM assessment prose, not a component checklist or renderer-generated catalogue.
+- Set \`report_quality_review.checks.consulting_grade_narrative\` to \`covered\` only when the prose has a clear assessment voice: it explains meaning, consequences and decisions, not just implementation facts.
+- Set \`report_quality_review.checks.reader_comprehension_review\` to \`covered\` only when \`reader_comprehension_review[]\` exists and every main section is judged \`clear\` or has an explicit improvement/follow-up.
+- Set \`report_quality_review.checks.concrete_examples_and_implications\` to \`covered\` only when the report uses concrete scenarios/examples and states business or operational implications.
+- Set \`report_quality_review.checks.jargon_and_domain_terms_explained\` to \`covered\` only when domain terms and acronyms are defined in context instead of assumed.
 - Done means \`report_quality_review.verdict: "decision_ready"\` with no blocking gaps and no blocking open questions. A \`partial\` verdict may still be useful analysis, but Cognianalysis must not present it as report-ready.
 - Mermaid must use valid conservative syntax. Prefer short participant/node IDs without punctuation, put long labels in messages or quoted node labels, and keep the source small enough to render. If a diagram is inferred, mark the surrounding explanation with confidence and evidence.
 

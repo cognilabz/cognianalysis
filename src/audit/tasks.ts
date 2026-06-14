@@ -876,7 +876,7 @@ Required planning intent:
 
 	This is the final synthesis task. Author it only after \`.analysis/llm/analysis-strategy.json\`, Tier 1 file-card coverage, all LLM-planned \`.analysis/skill_reviews/*.json\`, the whole-repository extraction outputs, \`.analysis/llm/detail-agent-plan.json\`, and all planned \`.analysis/detail_reviews/*.json\` outputs are present. Read all previous \`.analysis/skill_reviews/*.json\`, all previous \`.analysis/llm/*.json\` outputs, executed detail reviews, the bundle inputs, source inventory and evidence. Do not merely summarize task files. Compose a human-readable, decision-grade analysis document whose structure fits this repository.
 
-The HTML renderer will provide the component library and styling. You decide the section order, emphasis and depth. When an \`analysis_document\` is present, \`analysis_document.sections[]\` is the complete visible report navigation and start order; generated code-map, coverage, quality-review, requirements-trace and raw-data views remain audit artifacts unless you intentionally author repository-specific sections/blocks for them.
+The HTML renderer provides only the publication shell, evidence folding, Mermaid rendering and optional technical components. You decide the section order, emphasis and depth. For the human report, author \`analysis_document.authored_report.sections[]\` first as free-flow assessment prose. \`analysis_document.sections[].blocks[]\` remains the structured technical/audit layer for APIs, examples, diagrams, coverage, evidence and machine-checkable details; it must support the report, not dictate the main reading path.
 
 Required report intent:
 
@@ -886,7 +886,7 @@ Required report intent:
 - Explain the tier model in the technical drilldown or evidence-governance area when it matters: Tier 1 file cards cover every included file, then Tier 2-4 deep dives cover important modules, flows, contracts, risks and refactoring decisions.
 - Author top-level \`analysis_document.whole_file_thesis_trace\` and make it visible through a \`source_coverage_trace\` block or equally explicit component block inside an LLM-chosen section. Reconcile \`.analysis/data/source-inventory.json\` included files against \`.analysis/source_tiers/*.json\` Tier 1 file cards, state included count, card count, missing count and task completion, then explain how source-family file cards shaped the report theses, confidence and evidence gaps.
 - Do not claim every file is direct evidence for every headline. The complete Tier 1 corpus should influence source-family weighting, confidence and thesis selection; each concrete behavior, risk, process or modernization claim still needs specific file:line evidence or an explicit open question.
-- Put the management/business narrative inside visible \`analysis_document.sections[].blocks[]\`, not only in top-level helper fields such as \`executive_decision_basis\`. Top-level fields can support automation, but the human report is the authored sections.
+- Put the management/business narrative inside visible \`analysis_document.authored_report.sections[]\`, not only in top-level helper fields such as \`executive_decision_basis\` or rigid block components. Top-level fields can support automation, and structured sections can support audit, but the human report is the authored free-flow assessment.
 - Then cover the four required levels:
   - reverse_engineering_documentation: functionality, user/system flows, business capabilities
   - code_analysis: bugs, vulnerabilities, code quality, maintainability, test signals
@@ -914,9 +914,22 @@ Required report intent:
 - If technical drilldown, evidence governance, quality-review, requirements-trace, coverage or raw-data explanation matters to the audience, create repository-specific sections for them inside \`analysis_document.sections\`. Do not rely on fixed appendix menu items.
 - Each visible section should earn its place by explaining a business decision, business use, system relationship, risk, improvement path or technical drilldown. Avoid sections that merely enumerate classes, functions or files.
 - A decision-ready report must be understandable to stakeholders who do not already know the repository. Use \`layered_explanation\` blocks or equivalent authored prose: plain-language story first, business/process meaning next, technical detail and evidence underneath.
+- The main reading path must look and feel like a professional assessment report, not a generated code catalogue. Use repository-specific business/process/system section titles. Avoid leading paragraphs with file names, Java classes, functions or package names unless the identifier is itself the external interface; put those identifiers in technical-detail paragraphs, API contract rows or evidence details.
+- Prefer clear reader-facing categories such as \`Executive Overview\`, \`How It Works\`, \`Technical View\`, \`Risks\`, \`Roadmap\` and \`Scope, Method & Evidence\`. Adapt labels to the repository, but avoid exposing internal analysis-stage names as the primary report navigation.
+- Each major section must answer what this is, why it exists, who or what depends on it, how the process works, what can go wrong, and what decision follows. Use a \`claim -> explanation -> concrete source-derived example -> implication -> evidence\` pattern.
+- Explain domain terms, acronyms, product names and internal system names before relying on them. If the source uses a term such as MSO, SLAPI, ESB, Genesys, Watson or Kafka, tell the reader its role in the system in ordinary language.
+- Use concrete examples before abstractions: a representative user/system journey, request/response, failure path, deployment step or modernization move. Mark inferred examples with \`example_origin: "inferred"\`.
+- The renderer supplies layout, components and evidence folding only. It must not be expected to generate meaning from raw data. The final semantic report content belongs first in LLM-authored \`analysis_document.authored_report.sections[]\`. Component blocks are supporting annexes, not the prose engine.
 - Keep technical material visible under the human explanation. Include \`api_contracts\`, \`request_response_examples\`, errors/failure modes, and Mermaid graphs/flows wherever source code, schemas, DTOs, tests, docs or defensible inference support them. Inferred payload examples must set \`example_origin: "inferred"\`.
 - Use \`agent_plan\` blocks only to show the already planned/executed detail-review basis or remaining follow-up. The source of executable pre-report detail tasks is \`.analysis/llm/detail-agent-plan.json\`, not the final report.
 - Include \`report_quality_review\` as a Codex-authored LLM self-audit of the final document. This is not a CLI text search. You must explicitly judge whether the authored report is management-ready, repo-specific, whole-repo-first, evidence-aware and covers the four requested service levels plus functional/technical views, improvements/refactoring and tool positioning.
+- Set \`report_quality_review.checks.stakeholder_report_style\` to true only when the report is understandable as a stakeholder assessment and code identifiers/file lists are supporting citations or technical detail rather than the dominant visible content.
+- Set \`report_quality_review.checks.clear_reader_categories\` to true only when the report navigation and section introductions are clear to a reader who does not know the codebase.
+- Set \`report_quality_review.checks.freeform_llm_authored_report\` to true only when the primary visible report is genuinely authored as free-flow assessment prose and not merely a rendered component checklist.
+- Set \`report_quality_review.checks.consulting_grade_narrative\` to true only when the prose explains meaning, consequences and decisions in a polished assessment voice, not just implementation facts.
+- Set \`report_quality_review.checks.reader_comprehension_review\` to true only when \`reader_comprehension_review[]\` exists and every main section is judged clear or has an explicit improvement/follow-up.
+- Set \`report_quality_review.checks.concrete_examples_and_implications\` to true only when the report uses concrete scenarios/examples and states business or operational implications.
+- Set \`report_quality_review.checks.jargon_and_domain_terms_explained\` to true only when domain terms and acronyms are defined in context instead of assumed.
 - The CLI will trust this structured Codex-authored LLM judgment for semantic readiness. It only checks that the judgment exists, is explicit and can be rendered with evidence; it does not infer quality from keywords, class/function lists or fixed report menus.
 - The CLI will also treat \`requirements_trace\` as a Codex-authored LLM trace artifact, not as a fixed deterministic checklist. Use the original target picture below, but word and extend trace rows in the way that best fits the repository. The Codex LLM verdict remains the semantic authority.
 - For every original goal item you address, add \`goal_contract_refs\` to the relevant \`requirements_trace\` row. Use exact IDs from \`analysis_goal_contract\`: \`required_output_shape.<key>\`, \`required_levels.<id>\`, \`required_views.<id>\` and \`required_report_behaviors.<id>\`. This includes \`required_output_shape.management_drilldown\` for the visible business-need/business-use narrative with technical drilldown. The CLI checks only that these explicit references exist and are valid; it does not match trace labels by text and does not decide whether the goal is semantically satisfied.
@@ -937,6 +950,28 @@ Any block may include a \`labels\` object when the default component wording is 
     "synthesis_stage": "final_after_detail_reviews",
     "source_basis": "Short statement of which source inventory and extracted artifacts were used.",
     "analysis_run_id": "Use .analysis/data/analysis-run.json analysis_run_id when available.",
+    "authored_report": {
+      "style": "freeform_assessment",
+      "writing_model": "LLM-authored prose is the primary report. Components are technical annexes only.",
+      "sections": [
+        {
+          "id": "stable-visible-section-id",
+          "title": "Reader-facing section title chosen for this repository",
+          "kicker": "Short audience or intent label",
+          "intent": "Why this section matters to the reader.",
+          "lead": ["Strong opening paragraph in report prose."],
+          "body": ["Multi-paragraph assessment text. Explain what, why, how, implication and decision in natural language."],
+          "callouts": [{"title":"Decision, Risk, Scope or Evidence callout", "tone":"decision|risk|scope|evidence", "body":["Short authored callout text."], "evidence":[]}],
+          "subsections": [
+            {"title":"Subsection heading", "body":["Additional free-flow explanation."], "bullets":["Only use bullets when they improve readability."], "evidence":[]}
+          ],
+          "technical_blocks": [
+            {"type":"api_contracts", "title":"Optional technical annex block", "apis":[]}
+          ],
+          "evidence": []
+        }
+      ]
+    },
     "semantic_lineage": [
       {"claim_id":"stable-claim-id", "report_section_id":"section-id", "origin_artifact":"detail_reviews/example.json", "supporting_artifacts":["skill_reviews/example.json", "source_tiers/source-tier-0001.json"], "evidence":[]}
     ],
@@ -1024,10 +1059,20 @@ Any block may include a \`labels\` object when the default component wording is 
       "partial_requirement_rationale": [
         {"requirement":"Requirement name copied from requirements_trace when its status is partial/open", "status":"partial or open", "accepted_limit":"What remains incomplete.", "decision_ready_rationale":"Why the report can still be decision-ready, or use verdict partial/not_ready instead.", "follow_up":["..."], "evidence":[], "open_questions":[]}
       ],
+      "reader_comprehension_review": [
+        {"section_id":"visible section id", "reader_question":"What would a reader unfamiliar with the repository need to understand here?", "verdict":"clear, partial or unclear", "reason":"Why this section is or is not understandable.", "improvement_made":"How the final wording was improved, or why no rewrite was needed."}
+      ],
       "checks": {
         "repo_specific_information_architecture": true,
         "management_ready_decision_basis": true,
         "whole_repo_first_understanding": true,
+        "stakeholder_report_style": true,
+        "clear_reader_categories": true,
+        "consulting_grade_narrative": true,
+        "reader_comprehension_review": true,
+        "concrete_examples_and_implications": true,
+        "jargon_and_domain_terms_explained": true,
+        "freeform_llm_authored_report": true,
         "human_readable_layered_report": true,
         "e2e_relationships_explained": true,
         "whole_e2e_flow_explained": true,

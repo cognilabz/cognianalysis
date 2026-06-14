@@ -77,6 +77,13 @@ function qualityCheckCovered(value: any): boolean {
 }
 
 const REQUIRED_DEPTH_QUALITY_CHECKS = [
+  'stakeholder_report_style',
+  'clear_reader_categories',
+  'freeform_llm_authored_report',
+  'consulting_grade_narrative',
+  'reader_comprehension_review',
+  'concrete_examples_and_implications',
+  'jargon_and_domain_terms_explained',
   'human_readable_layered_report',
   'detailed_textual_explanations',
   'whole_e2e_flow_explained',

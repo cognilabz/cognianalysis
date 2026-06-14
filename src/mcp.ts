@@ -10,7 +10,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenche
 function send(obj: any): void { process.stdout.write(JSON.stringify(obj) + '\n'); }
 
 const SERVER_NAME = 'cognianalysis';
-const VERSION = '0.8.2';
+const VERSION = '0.8.7';
 const CLI_NAME = 'cognianalysis';
 
 function stagedLlmWorkflowMessage(): string {

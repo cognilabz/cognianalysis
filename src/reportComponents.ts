@@ -12,14 +12,14 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     label: 'Narrative',
     purpose: 'Human-readable paragraphs for management/business meaning and technical explanation.',
     expected_fields: ['type', 'title?', 'labels?', 'text|paragraphs|summary|description', 'business_need?', 'business_use?', 'technical_drilldown?', 'evidence?|evidence_refs?'],
-    guidance: 'Use for authored prose that explains business need, business use, system meaning, process behavior, risk rationale or technical drilldown. Prefer real explanatory paragraphs over terse labels. Do not use it as a dumping ground for class/function lists.'
+    guidance: 'Use for authored prose that explains business need, business use, system meaning, process behavior, risk rationale or technical drilldown. Prefer real explanatory paragraphs over terse labels. Do not use it as a dumping ground for class/function/file lists; keep those as citations or technical drilldown.'
   },
   {
     id: 'layered_explanation',
     label: 'Layered Explanation',
     purpose: 'Plain-language explanation for non-specialists with technical drilldown kept in the same visible block.',
-    expected_fields: ['type', 'title?', 'plain_language|summary|what_happens', 'business_context?|why_it_matters?', 'technical_detail|technical_drilldown', 'operational_impact?', 'evidence?|evidence_refs?'],
-    guidance: 'Use when a section must be understandable without prior repository knowledge while still preserving exact technical detail. Write the plain-language story first, then the technical explanation and evidence.'
+    expected_fields: ['type', 'title?', 'plain_language|summary|what_happens', 'business_context?|why_it_matters?', 'technical_detail|technical_drilldown', 'operational_impact?', 'example?|scenario?', 'evidence?|evidence_refs?'],
+    guidance: 'Use when a section must be understandable without prior repository knowledge while still preserving exact technical detail. The prose should answer what this is, why it exists, how it works, what can go wrong or change, and what decision follows. Include a concrete source-derived scenario or example when useful. Code identifiers should support the explanation, not lead it.'
   },
   {
     id: 'statement_list',
@@ -68,7 +68,7 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     label: 'Flow',
     purpose: 'E2E, process, request/response or failure flow with optional Mermaid.',
     expected_fields: ['type', 'title?', 'labels?', 'summary|description?', 'mermaid?|source?', 'steps[]?', 'evidence?'],
-    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems. A strong flow explains trigger, actor, entrypoint, business rule/decision, state change, integration call, output, failure path and operational side effect when the source proves them.'
+    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems. A strong flow reads like a scenario: trigger, actor, user/business intent, entrypoint, decision rule, state change, integration call, output, failure path and operational side effect when the source proves them.'
   },
   {
     id: 'four_level_assessment',
@@ -110,7 +110,7 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
     label: 'Agent Plan',
     purpose: 'Planned/executed detail reviews and remaining follow-up.',
     expected_fields: ['type', 'title?', 'labels.source_family?', 'labels.priority?', 'labels.focus?', 'labels.expected_outputs?', 'labels.task_output?', 'labels.seed_files?', 'summary?', 'tasks[]|detail_agent_tasks[]', 'tasks[].source_family', 'tasks[].focus?', 'tasks[].expected_outputs?', 'tasks[].seed_files?'],
-    guidance: 'Use only to show detail-review basis or follow-up. Executable pre-report tasks come from llm/detail-agent-plan.json. Set labels when the report needs repository-specific follow-up wording.'
+    guidance: 'Use only to show detail-review basis or follow-up. Executable pre-report tasks come from llm/detail-agent-plan.json. Keep this out of the main executive reading path unless the audit method itself is a decision-relevant point.'
   },
   {
     id: 'technical_drilldown',
@@ -129,9 +129,9 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
   {
     id: 'evidence_index',
     label: 'Evidence Index',
-    purpose: 'Visible file:line evidence references that support the LLM-authored report.',
+    purpose: 'Visible but subordinate file:line evidence references that support the LLM-authored report.',
     expected_fields: ['type', 'title?', 'items[]|evidence[]|evidence_refs[]', 'items[].path', 'items[].line?', 'items[].snippet?', 'items[].claim_id?', 'items[].valid?'],
-    guidance: 'Use when the final report needs a compact trace of source-backed proof. Evidence indexes are navigation and support surfaces; they do not replace authored explanation.'
+    guidance: 'Use when the final report needs a compact trace of source-backed proof. Evidence indexes are navigation and support surfaces; they do not replace authored explanation and should usually appear after the decision, functional, technical, process and modernization narrative.'
   }
 ];
 
@@ -143,7 +143,7 @@ export function reportComponentLibraryArtifact(): any {
   return {
     library_kind: 'analysis_document_component_library',
     semantic_authority: false,
-    purpose: 'Stable renderer and styling contract for LLM-authored analysis_document.sections. It does not decide report quality or semantic completeness; empty sections or blocks are structural renderer gaps and must be rewritten by the LLM instead of filled by deterministic placeholder prose. Blocks may include labels to let the LLM control repository-specific wording inside stable visual components.',
+    purpose: 'Stable renderer and styling contract for LLM-authored analysis_document.sections. It does not decide report quality or semantic completeness; empty sections or blocks are structural renderer gaps and must be rewritten by the LLM instead of filled by deterministic placeholder prose. Blocks may include labels to let the LLM control repository-specific wording inside stable visual components. The main report should read as stakeholder documentation, with file paths/classes/functions treated as citations or technical details rather than as the report structure.',
     components: REPORT_COMPONENT_LIBRARY
   };
 }
