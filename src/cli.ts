@@ -12,7 +12,7 @@ import { writeSkillWorkbenchTasksFromLlmStrategy } from './audit/skillWorkbenche
 import { computeProductReadinessV2, productReadinessV2Brief } from './productReadiness';
 import { migrateV07ToV08 } from './migration/v07ToV08';
 
-const VERSION = '0.8.7';
+const VERSION = '0.8.16';
 const CLI_NAME = 'cognianalysis';
 const PRODUCT_ANALYSIS_MODES = new Set(['brief', 'blueprint', 'deep', 'complete-audit']);
 const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {
@@ -20,7 +20,21 @@ const PRODUCT_ANALYSIS_MODE_ALIASES: Record<string, string> = {
   complete: 'complete-audit'
 };
 const PRODUCT_REQUEST_LLM_OUTPUTS = ['llm/analysis-strategy.json', 'llm/detail-agent-plan.json', 'llm/analysis-document.json'];
-const PRODUCT_REQUEST_OPTION_FLAGS = ['--mode', '--goal', '--flow', '--module', '--api', '--risk', '--decision', '--scope', '--scope-files'];
+const PRODUCT_REQUEST_OPTION_FLAGS = [
+  '--mode',
+  '--goal',
+  '--flow',
+  '--module',
+  '--api',
+  '--risk',
+  '--decision',
+  '--scope',
+  '--scope-files',
+  '--scanner-min-severity',
+  '--scanner-include-category',
+  '--scanner-include-path',
+  '--scanner-exclude-path'
+];
 const OPTION_VALUE_FLAGS = new Set([
   '--analysis',
   '--capsules',
@@ -37,12 +51,29 @@ const OPTION_VALUE_FLAGS = new Set([
   '--out',
   '--repos',
   '--risk',
+  '--scanner-exclude-path',
+  '--scanner-include-category',
+  '--scanner-include-path',
+  '--scanner-min-severity',
   '--scope',
   '--scope-files',
   '--task',
   '--title',
   '--api'
 ]);
+
+function argValues(args: string[], flag: string): string[] {
+  const values: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] !== flag) continue;
+    const next = args[i + 1];
+    if (next && !next.startsWith('--')) {
+      values.push(next);
+      i += 1;
+    }
+  }
+  return values;
+}
 
 function analysisPath(repo: string, value?: string): string {
   if (value) return Path.resolve(value);
@@ -127,6 +158,7 @@ function usage(): void {
 
 Usage:
   ${CLI_NAME} analyze [repo] [--analysis .analysis] [--mode brief|blueprint|deep|complete-audit] [--goal text] [--flow name] [--module path] [--api name] [--risk topic] [--decision topic] [--scope complete|critical-path|representative] [--scope-files N]
+                    [--scanner-min-severity medium] [--scanner-include-category vulnerability] [--scanner-include-path src/**] [--scanner-exclude-path test/**]
   ${CLI_NAME} status [repo] [--analysis .analysis]
   ${CLI_NAME} open [repo] [--analysis .analysis]
   ${CLI_NAME} eval [repo] [--analysis .analysis] [--strict]
@@ -139,6 +171,7 @@ Modes:
 
 Legacy mode aliases still work with warnings: deep-dive -> deep, complete -> complete-audit.
 Developer/audit commands are available under ${CLI_NAME} dev --help.
+Scanner exports can be placed in .analysis/imports/ before analyze, for example semgrep.sarif or semgrep.json. Cognianalysis normalizes and product-filters them as external evidence; the LLM remains responsible for false-positive, exploitability and product-impact judgement.
 `);
 }
 
@@ -227,12 +260,21 @@ function traceStatus(bundle: any, requirement: string): string {
   const needle = requirement.toLowerCase();
   const row = (bundle.analysis_document_requirements_trace_contract?.requirements || [])
     .find((item: any) => String(item.label || '').toLowerCase().includes(needle));
-  return String(row?.status || '');
+  return normalizeTraceStatus(row?.status);
 }
 
-function hasReportBlock(bundle: any, type: string): boolean {
-  return (bundle.analysis_document?.sections || [])
-    .some((section: any) => (section.blocks || []).some((block: any) => String(block.type || '').toLowerCase() === type));
+function normalizeTraceStatus(value: any): string {
+  const raw = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['covered', 'complete', 'ready', 'decision_ready'].includes(raw)) return 'covered';
+  if (['not_applicable', 'not_relevant', 'not_needed', 'not_useful', 'out_of_scope', 'n_a', 'na'].includes(raw)) return 'not_applicable';
+  if (raw === 'partial') return 'partial';
+  if (['open', 'unknown', 'blocked'].includes(raw)) return 'open';
+  return raw;
+}
+
+function traceReady(bundle: any, requirement: string): boolean {
+  const status = traceStatus(bundle, requirement);
+  return status === 'covered' || status === 'not_applicable';
 }
 
 function productModeForBundle(bundle: any | null): string {
@@ -252,9 +294,9 @@ function productStatusRows(analysis: string, bundle: any | null, statuses: any[]
   const repositoryCoverageReady = requiresCompleteTierForBundle(bundle)
     ? bundle?.source_tier_coverage?.complete === true
     : scopeDeclared;
-  const functionalReady = traceStatus(bundle, 'functional') === 'covered' && hasReportBlock(bundle, 'flow');
-  const technicalReady = traceStatus(bundle, 'technical') === 'covered' && hasReportBlock(bundle, 'boundary_map');
-  const refactoringReady = traceStatus(bundle, 'refactoring') === 'covered' && hasReportBlock(bundle, 'roadmap');
+  const functionalReady = traceReady(bundle, 'functional');
+  const technicalReady = traceReady(bundle, 'technical');
+  const refactoringReady = traceReady(bundle, 'refactoring');
   const executiveReady = bundle?.analysis_document_executive_decision_layer?.complete === true;
   const consistencyReady = bundle?.analysis_document_consistency_review?.complete === true
     && Number(bundle?.analysis_document_consistency_review?.contradictions_found || 0) === 0;
@@ -274,7 +316,7 @@ function productStatusRows(analysis: string, bundle: any | null, statuses: any[]
     { id: 'coverage', label: requiresCompleteTierForBundle(bundle) ? 'Repository coverage complete' : 'Adaptive source scope declared', ready: repositoryCoverageReady },
     { id: 'functional', label: 'Functional model complete', ready: functionalReady },
     { id: 'technical', label: 'Technical model complete', ready: technicalReady },
-    { id: 'refactoring', label: 'Refactoring assessment complete', ready: refactoringReady },
+    { id: 'refactoring', label: 'Modernization/refactoring applicability assessed', ready: refactoringReady },
     { id: 'executive', label: 'Executive decision layer complete', ready: executiveReady },
     { id: 'consistency', label: 'Consistency review complete', ready: consistencyReady },
     { id: 'lineage', label: 'Semantic lineage complete', ready: lineageReady },
@@ -459,6 +501,8 @@ function cmdPrepare(args: string[]): number {
 function productAnalysisRequest(args: string[], previous?: any): any {
   const previousScopeRequest = previous?.analysis_scope_request || {};
   const previousTarget = previous?.target || {};
+  const previousScannerPolicy = previous?.scanner_policy || {};
+  const previousProductFiltering = previousScannerPolicy?.product_filtering || {};
   const hasScope = args.includes('--scope');
   const hasScopeFiles = args.includes('--scope-files');
   const explicitMode = args.includes('--mode');
@@ -496,6 +540,18 @@ function productAnalysisRequest(args: string[], previous?: any): any {
   if (mode === 'deep' && !hasTarget && !goal) {
     throw new Error('Deep mode requires --goal or at least one target flag: --flow, --module, --api, --risk or --decision.');
   }
+  const scannerIncludeCategory = args.includes('--scanner-include-category')
+    ? argValues(args, '--scanner-include-category')
+    : previousProductFiltering.include_categories || ['bug', 'vulnerability', 'code_smell', 'secret', 'dependency', 'license', 'other'];
+  const scannerIncludePath = args.includes('--scanner-include-path')
+    ? argValues(args, '--scanner-include-path')
+    : previousProductFiltering.include_paths || [];
+  const scannerExcludePath = args.includes('--scanner-exclude-path')
+    ? argValues(args, '--scanner-exclude-path')
+    : previousProductFiltering.exclude_paths || ['node_modules/**', '.git/**', 'dist/**', 'build/**', '.next/**', 'coverage/**', '.analysis/**'];
+  const scannerMinSeverity = String(args.includes('--scanner-min-severity')
+    ? argValue(args, '--scanner-min-severity', 'medium')
+    : previousProductFiltering.min_severity || 'medium').trim().toLowerCase();
   return {
     contract_kind: 'product_analysis_request',
     entrypoint: 'analyze',
@@ -510,6 +566,30 @@ function productAnalysisRequest(args: string[], previous?: any): any {
     generated_at: new Date().toISOString(),
     public_outputs: ['.analysis/report/index.html', '.analysis/report/analysis-data.json'],
     internal_work_area: '.analysis',
+    scanner_policy: {
+      external_scanners_are_evidence_inputs: true,
+      preferred_security_scanner: 'semgrep',
+      supported_imports: [
+        '.analysis/imports/semgrep.sarif',
+        '.analysis/imports/semgrep.json',
+        '.analysis/imports/codeql.sarif',
+        '.analysis/imports/sonar.json',
+        '.analysis/imports/snyk.json'
+      ],
+      semgrep: {
+        sarif_command: 'semgrep scan --sarif --output .analysis/imports/semgrep.sarif .',
+        json_command: 'semgrep scan --json --output .analysis/imports/semgrep.json .',
+        authority: 'external_scanner_evidence_only'
+      },
+      product_filtering: {
+        min_severity: scannerMinSeverity,
+        include_categories: scannerIncludeCategory,
+        include_paths: scannerIncludePath,
+        exclude_paths: scannerExcludePath,
+        report_strategy: 'Normalize all scanner findings, keep the full raw list, create a product triage subset from severity/category/path filters, then require Codex/LLM to judge false positives, exploitability, product impact and stakeholder-visible risk.'
+      },
+      llm_triage_required: true
+    },
     depth_policy: mode === 'complete-audit'
       ? 'audit-heavy whole-repository analysis with complete included source inventory coverage'
       : mode === 'deep'
@@ -904,6 +984,7 @@ function cmdDoctor(args: string[]): number {
   const evidenceStrength = bundle.analysis_document_evidence_strength || {};
   const semanticLineage = bundle.analysis_document_semantic_lineage || {};
   const openQuestions = bundle.analysis_document_open_questions || {};
+  const scannerFindings = bundle.scanner_findings_contract || {};
   const externalFindings = bundle.external_findings_contract || {};
   const runProvenance = bundle.analysis_run_provenance || {};
   const dependencyGraph = bundle.artifact_dependency_graph || {};
@@ -919,6 +1000,7 @@ function cmdDoctor(args: string[]): number {
   console.log(`Semantic lineage: ${semanticLineage.complete ? 'complete' : 'partial'} · claims=${semanticLineage.complete_claim_count || 0}/${semanticLineage.claim_count || 0}`);
   console.log(`Analysis run provenance: ${runProvenance.complete ? 'complete' : 'partial'} · run=${runProvenance.analysis_run_id || 'unknown'} · artifacts=${runProvenance.artifact_count || 0}`);
   console.log(`Artifact dependency graph: ${dependencyGraph.complete ? 'complete' : 'partial'} · nodes=${dependencyGraph.node_count || 0} · stale=${(dependencyGraph.stale_nodes || []).length || 0}`);
+  console.log(`Scanner imports: ${scannerFindings.complete ? 'ready' : 'partial'} · findings=${scannerFindings.finding_count || 0} · triage=${scannerFindings.triage_finding_count || 0} · filtered=${scannerFindings.filtered_out_finding_count || 0}`);
   console.log(`External findings: ${externalFindings.complete ? 'ready' : 'partial'} · findings=${externalFindings.finding_count || 0} · invalid=${externalFindings.invalid_count || 0}`);
   console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
   console.log(`Evidence invalid: ${invalid.length}`);
@@ -1040,10 +1122,78 @@ function renderReportAndRefreshBundle(repo: string, analysis: string, outputDir?
   return { bundle, report };
 }
 
+function auditReportAssetRendering(indexPath: string): { image_count: number; svg_count: number; issues: string[] } {
+  const issues: string[] = [];
+  if (!FS.existsSync(indexPath)) return { image_count: 0, svg_count: 0, issues: [`missing report index: ${indexPath}`] };
+  const reportDir = Path.dirname(indexPath);
+  const html = FS.readFileSync(indexPath, 'utf8');
+  const localImages = new Set<string>();
+  const imagePattern = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imagePattern.exec(html))) {
+    const src = String(match[1] || '').trim();
+    if (!src || /^(?:https?:|data:|blob:|#)/i.test(src)) continue;
+    const cleanSrc = src.split(/[?#]/)[0];
+    const assetPath = Path.resolve(reportDir, cleanSrc);
+    localImages.add(assetPath);
+    const relative = Path.relative(reportDir, assetPath).replace(/\\/g, '/');
+    if (relative.startsWith('../') || Path.isAbsolute(relative)) {
+      issues.push(`image escapes report directory: ${src}`);
+    } else if (!FS.existsSync(assetPath)) {
+      issues.push(`missing image asset: ${src}`);
+    }
+  }
+
+  const svgFiles: string[] = [];
+  const visit = (dir: string): void => {
+    if (!FS.existsSync(dir)) return;
+    for (const entry of FS.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = Path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(fullPath);
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.svg')) {
+        svgFiles.push(fullPath);
+      }
+    }
+  };
+  visit(reportDir);
+
+  for (const svgPath of svgFiles) {
+    const source = FS.readFileSync(svgPath, 'utf8');
+    if (!/<svg\b[^>]*\sxmlns=/.test(source)) {
+      issues.push(`standalone svg missing xmlns: ${Path.relative(reportDir, svgPath).replace(/\\/g, '/')}`);
+    }
+  }
+
+  const findingPattern = /<article\b[^>]*class=["'][^"']*\bfinding\b[^"']*["'][^>]*>([\s\S]*?)<\/article>/gi;
+  let findingIndex = 0;
+  while ((match = findingPattern.exec(html))) {
+    findingIndex += 1;
+    const article = match[1] || '';
+    const title = String((/<h3[^>]*>([\s\S]*?)<\/h3>/i.exec(article) || [])[1] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const body = String((/<p[^>]*>([\s\S]*?)<\/p>/i.exec(article) || [])[1] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (/^finding\s+\d+$/i.test(title)) issues.push(`generic risk finding title: ${title}`);
+    if (body.length < 40) issues.push(`risk finding ${findingIndex} has weak or empty explanation`);
+  }
+
+  return {
+    image_count: localImages.size,
+    svg_count: svgFiles.length,
+    issues
+  };
+}
+
 function cmdAuditReport(args: string[]): number {
   const repo = repoArg(args);
   const analysis = analysisPath(repo, argValue(args, '--analysis'));
   const { bundle, report } = renderReportAndRefreshBundle(repo, analysis, argValue(args, '--out') ? Path.resolve(argValue(args, '--out')) : undefined, argValue(args, '--title'));
+  const reportAssetAudit = auditReportAssetRendering(report);
   const rows = bundle.target_artifact_contract_coverage || bundle.target_coverage || [];
   const invalid = (bundle.evidence_index || []).filter((e: any) => e.valid === false);
   const sourceCoverage = bundle.source_inventory_accounting || bundle.source_coverage || {};
@@ -1061,6 +1211,7 @@ function cmdAuditReport(args: string[]): number {
   const evidenceStrength = bundle.analysis_document_evidence_strength || {};
   const semanticLineage = bundle.analysis_document_semantic_lineage || {};
   const openQuestions = bundle.analysis_document_open_questions || {};
+  const scannerFindings = bundle.scanner_findings_contract || {};
   const externalFindings = bundle.external_findings_contract || {};
   const runProvenance = bundle.analysis_run_provenance || {};
   const dependencyGraph = bundle.artifact_dependency_graph || {};
@@ -1072,6 +1223,7 @@ function cmdAuditReport(args: string[]): number {
   const skillCatalogContract = bundle.analysis_skill_catalog_contract || {};
   const productRequestFreshness = bundle.product_analysis_request_freshness || {};
   const failures: string[] = [];
+  if (reportAssetAudit.issues.length) failures.push(`report asset rendering issues: ${reportAssetAudit.issues.slice(0, 6).join('; ')}`);
   if (bundle.llm_analysis_strategy?.uses_pre_analysis_strategy_artifact !== true || bundle.llm_analysis_strategy?.strategy_present !== true) failures.push('missing required Codex-authored analysis strategy artifact: llm/analysis-strategy.json');
   if (bundle.report_mode?.llm_authored !== true) failures.push('visible report is not Codex-authored');
   if (prerequisiteCoverage.complete !== true) failures.push(`final synthesis prerequisites incomplete: ${(prerequisiteCoverage.missing_outputs || []).join(', ') || 'unknown'}`);
@@ -1108,6 +1260,7 @@ function cmdAuditReport(args: string[]): number {
 
   console.log(`Report audit: ${failures.length ? 'failed' : 'passed'}`);
   console.log(`Report: ${report}`);
+  console.log(`Report assets: ${reportAssetAudit.issues.length ? 'issues' : 'ok'} · images=${reportAssetAudit.image_count} · svgs=${reportAssetAudit.svg_count}`);
   console.log(`Mode: ${bundle.report_mode?.state || 'unknown'} · Target capabilities: ${rows.length} Codex-authored trace context rows · Source inventory: ${sourceCoverage.accounted_files ?? sourceCoverage.covered_files ?? 0}/${sourceCoverage.total_files || 0} · Evidence invalid: ${invalid.length}`);
   console.log(`Analysis strategy: ${bundle.llm_analysis_strategy?.strategy_present ? 'structured' : 'missing'} · ${bundle.llm_analysis_strategy?.planning_source || 'missing_llm_analysis_strategy'}`);
   console.log(`Analysis scope: ${bundle.analysis_scope?.mode || 'unknown'} · selected=${bundle.analysis_scope?.selected_files ?? 'unknown'} · deferred=${bundle.analysis_scope?.deferred_files ?? 'unknown'} · confidence impact=${bundle.analysis_scope?.confidence_impact || 'unknown'}`);
@@ -1130,9 +1283,10 @@ function cmdAuditReport(args: string[]): number {
   console.log(`Analysis run provenance: ${runProvenance.complete ? 'complete' : 'partial'} · run=${runProvenance.analysis_run_id || 'unknown'} · artifacts=${runProvenance.artifact_count || 0}`);
   console.log(`Artifact dependency graph: ${dependencyGraph.complete ? 'complete' : 'partial'} · nodes=${dependencyGraph.node_count || 0} · stale=${(dependencyGraph.stale_nodes || []).length || 0}`);
   console.log(`Product request freshness: ${productRequestFreshness.complete === false ? 'stale' : 'current'} · stale=${(productRequestFreshness.stale_outputs || []).length || 0}`);
+  console.log(`Scanner imports: ${scannerFindings.complete ? 'ready' : 'partial'} · findings=${scannerFindings.finding_count || 0} · triage=${scannerFindings.triage_finding_count || 0} · filtered=${scannerFindings.filtered_out_finding_count || 0}`);
   console.log(`External findings: ${externalFindings.complete ? 'ready' : 'partial'} · findings=${externalFindings.finding_count || 0} · invalid=${externalFindings.invalid_count || 0}`);
   console.log(`Open questions: ${openQuestions.complete ? 'structured' : 'partial'} · total=${openQuestions.question_count ?? 'unknown'} · blocking=${openQuestions.blocking_count ?? 'unknown'}`);
-  console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · Codex statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
+  console.log(`Requirements trace contract: ${requirementsTraceContract.complete ? 'structured' : 'partial'} · Codex statuses: ${requirementsTraceContract.fully_covered_count || 0} covered · ${requirementsTraceContract.not_applicable_count || 0} not_applicable · ${requirementsTraceContract.partial_count || 0} partial · ${requirementsTraceContract.open_count || 0} open · ${(requirementsTraceContract.missing?.length || 0) + (requirementsTraceContract.weak?.length || 0)} structural gaps`);
   console.log(`Goal trace references: ${goalTraceAlignment.complete ? 'explicit' : 'partial'} · ${(goalTraceAlignment.referenced_goal_refs || []).length}/${(goalTraceAlignment.expected_goal_refs || []).length} goal refs linked by Codex-authored trace`);
   console.log(`Report quality review: ${qualityReview.complete ? 'structured' : 'partial'} · ${qualityReview.verdict || 'unknown'}`);
   for (const row of (sourceTierBacklog.next_tasks || []).slice(0, 8)) console.log(`NEXT-TIER ${row.id} status=${row.status} existing_cards=${row.card_count} required_cards=${row.file_count} output=${row.expected_output}`);

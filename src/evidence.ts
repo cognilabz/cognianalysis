@@ -33,6 +33,19 @@ function evidenceRefs(value: any): EvidenceReference[] {
   ].filter((item: any) => item && typeof item === 'object') as EvidenceReference[];
 }
 
+function fieldEvidenceRefs(value: any, field: string): EvidenceReference[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return [
+    ...asList(value?.[`${field}_evidence`]),
+    ...asList(value?.[`${field}_evidence_refs`])
+  ].filter((item: any) => item && typeof item === 'object') as EvidenceReference[];
+}
+
+function preferredEvidenceRefs(value: any, field: string): EvidenceReference[] {
+  const fieldEvidence = fieldEvidenceRefs(value, field);
+  return fieldEvidence.length ? fieldEvidence : evidenceRefs(value);
+}
+
 function text(value: any, fields: string[]): string {
   for (const field of fields) {
     const candidate = value?.[field];
@@ -88,7 +101,7 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   add('process_risk', analysis.executive_decision?.top_risks, 'executive-risk', executiveEvidence, executiveGap);
   add('process_risk', analysis.executive_decision?.next_steps, 'executive-next-step', executiveEvidence, executiveGap);
   const functionalGap = text(analysis.functional_view, ['evidence_gap', 'missing_evidence', 'proof_gap']);
-  add('capability_statement', [{ title: 'System purpose', summary: analysis.functional_view?.system_purpose, evidence: evidenceRefs(analysis.functional_view || {}), evidence_gap: functionalGap }], 'system-purpose');
+  add('capability_statement', [{ title: 'System purpose', summary: analysis.functional_view?.system_purpose, evidence: preferredEvidenceRefs(analysis.functional_view || {}, 'system_purpose'), evidence_gap: functionalGap }], 'system-purpose');
   const technicalGap = text(analysis.technical_view, ['evidence_gap', 'missing_evidence', 'proof_gap']);
   add('architecture_statement', [{ title: 'Architecture summary', summary: analysis.technical_view?.architecture_summary, evidence: evidenceRefs(analysis.technical_view || {}), evidence_gap: technicalGap }], 'architecture-summary');
   add('capability_statement', analysis.functional_view?.actors, 'actor', evidenceRefs(analysis.functional_view || {}), functionalGap);
@@ -111,7 +124,7 @@ export function collectMajorClaims(analysis: any): MajorClaim[] {
   add('vulnerability_statement', analysis.code_quality_security?.vulnerabilities, 'vulnerability', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
   add('quality_statement', analysis.code_quality_security?.code_quality_findings, 'quality', evidenceRefs(analysis.code_quality_security || {}), qualityGap);
   const processGap = text(analysis.process_analysis, ['evidence_gap', 'missing_evidence', 'proof_gap']);
-  add('process_risk', [{ title: 'Test readiness', summary: analysis.process_analysis?.test_readiness, evidence: evidenceRefs(analysis.process_analysis || {}), evidence_gap: processGap }], 'test-readiness');
+  add('process_risk', [{ title: 'Test readiness', summary: analysis.process_analysis?.test_readiness, evidence: preferredEvidenceRefs(analysis.process_analysis || {}, 'test_readiness'), evidence_gap: processGap }], 'test-readiness');
   add('process_risk', analysis.process_analysis?.delivery_risks, 'delivery-risk', evidenceRefs(analysis.process_analysis || {}), processGap);
   add('process_risk', analysis.process_analysis?.observability, 'observability', evidenceRefs(analysis.process_analysis || {}), processGap);
   add('process_risk', analysis.process_analysis?.documentation_gaps, 'documentation-gap', evidenceRefs(analysis.process_analysis || {}), processGap);

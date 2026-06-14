@@ -1,15 +1,21 @@
-import { Path, ensureDir, escapeHtml, loadJson, utcNow, writeJson, writeText } from './utils';
+import { FS, Path, copyRecursive, ensureDir, escapeHtml, loadJson, utcNow, writeJson, writeText } from './utils';
 import { loadBundle } from './aggregate';
 
 export function renderReport(analysisDir: string, outputDir?: string, title?: string): string {
   const bundle = publicReportBundle(loadBundle(analysisDir));
   const out = outputDir || Path.join(analysisDir, 'report');
   ensureDir(out);
+  const authoredStatic = findAuthoredStaticReportDir(analysisDir);
   const reportTitle = title
     || bundle.analysis_document?.title
     || `Cognianalysis Decision Report · ${bundle.analysis?.repo?.name || bundle.profile?.repo_name || 'Repository'}`;
   const index = Path.join(out, 'index.html');
-  writeText(index, buildHtml(bundle, reportTitle));
+  if (authoredStatic) {
+    copyRecursive(authoredStatic, out, true);
+  } else {
+    writeText(index, buildHtml(bundle, reportTitle));
+  }
+  normalizeStandaloneSvgAssets(out);
   const dataPath = Path.join(out, 'analysis-data.json');
   writeJson(dataPath, bundle);
   writeJson(Path.join(analysisDir, 'data', 'report-artifacts.json'), {
@@ -18,14 +24,64 @@ export function renderReport(analysisDir: string, outputDir?: string, title?: st
     analysis_data_json_path: dataPath,
     index_html: true,
     analysis_data_json: true,
+    report_mode: authoredStatic ? 'llm_authored_static_html' : 'cognianalysis_renderer',
+    authored_static_report_dir: authoredStatic || '',
     generated_at: utcNow()
   });
   return index;
 }
 
+function normalizeStandaloneSvgAssets(root: string): void {
+  const visit = (dir: string): void => {
+    if (!FS.existsSync(dir)) return;
+    for (const entry of FS.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = Path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.svg')) continue;
+      const source = FS.readFileSync(fullPath, 'utf8');
+      if (/<svg\b[^>]*\sxmlns=/.test(source)) continue;
+      const normalized = source.replace(/<svg(\s|>)/, '<svg xmlns="http://www.w3.org/2000/svg"$1');
+      if (normalized !== source) writeText(fullPath, normalized);
+    }
+  };
+  visit(root);
+}
+
+function findAuthoredStaticReportDir(analysisDir: string): string {
+  const candidates = [
+    Path.join(analysisDir, 'llm', 'static-report'),
+    Path.join(analysisDir, 'static-report'),
+    Path.join(analysisDir, 'authored-report')
+  ];
+  for (const candidate of candidates) {
+    if (FS.existsSync(Path.join(candidate, 'index.html'))) return candidate;
+  }
+  return '';
+}
+
 function publicReportBundle(bundle: any): any {
   const copy = JSON.parse(JSON.stringify(bundle || {}));
   const localRoot = String(copy.profile?.root || '');
+  const isSensitivePath = (value: any): boolean => {
+    const text = String(value || '').toLowerCase();
+    return /(^|\/)\.env(\.|$)/.test(text)
+      || /\.(pem|key|p12|pfx|jks|keystore)(\.|$)/.test(text);
+  };
+  const isSensitiveKey = (value: any): boolean => {
+    const text = String(value || '').toLowerCase();
+    return ['secret', 'token', 'password', 'credential', 'api_key', 'apikey', 'private_key'].some(part => text.includes(part));
+  };
+  const redactSensitiveText = (value: string, sensitiveContext = false): string => {
+    if (!value) return value;
+    if (sensitiveContext) return '<redacted sensitive source excerpt>';
+    return value
+      .replace(/([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[A-Z0-9_]*\s*[:=]\s*)(["']?)[^\s"',}]+/gi, '$1$2<redacted>')
+      .replace(/(Authorization\s*[:=]\s*(?:Bearer|Basic)?\s*)(["']?)[A-Za-z0-9._~+/=-]{12,}/gi, '$1$2<redacted>')
+      .replace(/((?:api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password)\s*[:=]\s*)(["']?)[^\s"',}]+/gi, '$1$2<redacted>');
+  };
   const redactLocalPath = (value: any): any => {
     if (typeof value === 'string' && localRoot && Path.isAbsolute(localRoot) && value.startsWith(localRoot)) {
       const relative = Path.relative(localRoot, value).replace(/\\/g, '/');
@@ -37,7 +93,21 @@ function publicReportBundle(bundle: any): any {
     }
     return value;
   };
+  const redactSensitiveValues = (value: any, parentSensitive = false, keyHint = ''): any => {
+    const sensitiveContext = parentSensitive || isSensitiveKey(keyHint);
+    if (typeof value === 'string') return redactSensitiveText(value, sensitiveContext);
+    if (Array.isArray(value)) return value.map(item => redactSensitiveValues(item, sensitiveContext, keyHint));
+    if (value && typeof value === 'object') {
+      const objectSensitive = sensitiveContext || isSensitivePath(value.path);
+      for (const key of Object.keys(value)) {
+        const childSensitive = objectSensitive && ['snippet', 'content_excerpt', 'excerpt', 'actual_snippet', 'value'].includes(key);
+        value[key] = redactSensitiveValues(value[key], childSensitive, key);
+      }
+    }
+    return value;
+  };
   redactLocalPath(copy);
+  redactSensitiveValues(copy);
   if (copy.profile && typeof copy.profile === 'object') {
     const root = localRoot;
     if (Path.isAbsolute(root)) {
@@ -69,8 +139,13 @@ function evidenceHtml(items: any): string {
   const body = items.slice(0, 16).map((ev: any) => {
     const ok = ev && ev.valid !== false;
     const label = evidenceLabel(ev);
+    const snippet = typeof ev?.snippet === 'string'
+      ? ev.snippet
+        .replace(/([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[A-Z0-9_]*\s*[:=]\s*)(["']?)[^\s"',}]+/gi, '$1$2<redacted>')
+        .replace(/(Authorization\s*[:=]\s*(?:Bearer|Basic)?\s*)(["']?)[A-Za-z0-9._~+/=-]{12,}/gi, '$1$2<redacted>')
+      : '';
     const id = `evidence-${++evidenceRenderCounter}`;
-    return `<div class="evidence-item ${ok ? 'ok' : 'bad'}" id="${id}"><div class="path">${escapeHtml(label)}</div>${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}${ev?.snippet ? `<pre>${escapeHtml(ev.snippet)}</pre>` : ''}</div>`;
+    return `<div class="evidence-item ${ok ? 'ok' : 'bad'}" id="${id}"><div class="path">${escapeHtml(label)}</div>${ev?.symbol ? `<div class="small muted">${escapeHtml(ev.symbol)}</div>` : ''}${ev?.reason ? `<div class="small bad-text">${escapeHtml(ev.reason)}</div>` : ''}${snippet ? `<pre>${escapeHtml(snippet)}</pre>` : ''}</div>`;
   }).join('');
   const more = items.length > 16 ? `<div class="small muted">+${items.length - 16} additional evidence references</div>` : '';
   return `<details class="evidence"><summary>Evidence details (${items.length})</summary><div class="evidence-list">${body}${more}</div></details>`;
@@ -87,6 +162,12 @@ function card(title: string, body: string, cls = ''): string {
 function listItems(items: any[], render: (x: any, i: number) => string): string {
   if (!Array.isArray(items) || !items.length) return '';
   return items.map(render).join('');
+}
+
+function toList(value: any): any[] {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null || value === '') return [];
+  return [value];
 }
 
 function firstText(...values: any[]): string {
@@ -334,10 +415,135 @@ function renderRequestResponseExamples(block: any): string {
 }
 
 function renderDocFlow(block: any): string {
-  const source = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, block.source);
+  const visual = block.visual_explanation || {};
+  const source = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, visual.source, block.source);
   return `${paragraphs(firstText(block.summary, block.description))}${source ? mermaidBlock(source, evidenceOf(block.mermaid).length ? evidenceOf(block.mermaid) : evidenceOf(block)) : ''}
   ${block.steps?.length ? `<div class="doc-steps">${listItems(block.steps, (s: any) => `<div class="step"><span>${escapeHtml(s.order || '')}</span><div><strong>${escapeHtml(s.actor || s.kind || 'step')}</strong><p>${escapeHtml(s.description || '')}</p>${evidenceHtml(evidenceOf(s))}</div></div>`)}</div>` : ''}
   ${evidenceHtml(evidenceOf(block))}`;
+}
+
+function looksLikeMermaid(source: string): boolean {
+  return /^(sequenceDiagram|flowchart|graph|stateDiagram|classDiagram|erDiagram|journey|gantt|timeline)\b/.test(source.trim());
+}
+
+function renderVisualExplanation(block: any): string {
+  const visual = block.visual_explanation || block;
+  const artifactType = firstText(visual.artifact_type, visual.diagram_type, block.artifact_type, block.diagram_type, 'explanation');
+  const source = firstText(visual.source, visual.mermaid, block.source, block.mermaid?.source);
+  const rationale = firstText(visual.rationale, block.rationale);
+  const intro = paragraphs([block.summary, block.description, visual.summary, visual.description, rationale].filter(Boolean));
+  const artifact = source
+    ? looksLikeMermaid(source)
+      ? mermaidBlock(source, evidenceOf(visual).length ? evidenceOf(visual) : evidenceOf(block))
+      : `<pre>${escapeHtml(source)}</pre>`
+    : '';
+  const steps = block.steps?.length
+    ? `<div class="doc-steps">${listItems(block.steps, (s: any) => `<div class="step"><span>${escapeHtml(s.order || '')}</span><div><strong>${escapeHtml(s.actor || s.kind || 'step')}</strong><p>${escapeHtml(s.description || '')}</p>${evidenceHtml(evidenceOf(s))}</div></div>`)}</div>`
+    : '';
+  return `<div>${chip(artifactType)}${intro}${artifact}${steps}${evidenceHtml(evidenceOf(visual).length ? evidenceOf(visual) : evidenceOf(block))}</div>`;
+}
+
+function sanitizeInlineSvg(source: any): string {
+  const raw = typeof source === 'string' ? source.trim() : '';
+  if (!raw || !/^<svg[\s>]/i.test(raw)) return '';
+  return raw
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript:/gi, '');
+}
+
+function renderVisualMedia(block: any, cls = 'report-visual-media'): string {
+  const svg = sanitizeInlineSvg(firstText(block.svg, block.image?.svg));
+  const src = firstText(block.src, block.image?.src, block.image);
+  const alt = firstText(block.alt, block.title, block.caption, 'Report visual');
+  const caption = firstText(block.caption, block.summary, block.description);
+  const visual = svg
+    ? `<div class="${escapeHtml(cls)} inline-svg">${svg}</div>`
+    : src
+      ? `<figure class="${escapeHtml(cls)}"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''}</figure>`
+      : '';
+  return visual;
+}
+
+function renderArchitectureVisual(block: any): string {
+  const media = renderVisualMedia(block, 'report-visual-media architecture-media');
+  if (media) return `${paragraphs(firstText(block.summary, block.description))}${media}${evidenceHtml(evidenceOf(block))}`;
+  const mermaid = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, block.source);
+  if (mermaid) return `${paragraphs(firstText(block.summary, block.description))}${mermaidBlock(mermaid, evidenceOf(block))}${evidenceHtml(evidenceOf(block))}`;
+  const directNodes = toList(block.nodes);
+  const layers = toList(block.layers);
+  const edges = toList(block.edges);
+  const layerHtml = layers.map((layer: any, index: number) => {
+    const layerNodes = toList(layer?.nodes || layer?.items);
+    const nodeBody = layerNodes.length
+      ? layerNodes.map((node: any) => architectureNodeHtml(node)).join('')
+      : architectureNodeHtml(layer);
+    return `<section class="arch-layer search-card" data-search="${escapeHtml(`${layer?.name || layer?.label || layer?.title || ''} ${layer?.description || layer?.summary || ''}`)}">
+      <h4>${escapeHtml(firstText(layer?.name, layer?.label, layer?.title, `Layer ${index + 1}`))}</h4>
+      ${paragraphs(firstText(layer?.summary, layer?.description, layer?.role))}
+      <div class="arch-node-grid">${nodeBody}</div>
+      ${evidenceHtml(evidenceOf(layer))}
+    </section>`;
+  }).join('');
+  const nodeHtml = directNodes.length
+    ? `<section class="arch-layer"><h4>${escapeHtml(labelFor(block, 'nodes', 'Architecture nodes'))}</h4><div class="arch-node-grid">${directNodes.map((node: any) => architectureNodeHtml(node)).join('')}</div></section>`
+    : '';
+  const edgeHtml = edges.length
+    ? `<div class="arch-edge-list">${edges.map((edge: any) => {
+      const from = firstText(edge.from, edge.source);
+      const to = firstText(edge.to, edge.target);
+      const label = firstText(edge.label, edge.description, edge.summary, edge.protocol, edge.kind);
+      return `<div class="arch-edge search-card" data-search="${escapeHtml(`${from} ${to} ${label}`)}"><strong>${escapeHtml(from || 'source')}</strong><span>&rarr;</span><strong>${escapeHtml(to || 'target')}</strong>${label ? `<p>${escapeHtml(label)}</p>` : ''}${evidenceHtml(evidenceOf(edge))}</div>`;
+    }).join('')}</div>`
+    : '';
+  const visual = layerHtml || nodeHtml || edgeHtml
+    ? `<div class="arch-visual">${layerHtml}${nodeHtml}${edgeHtml}</div>`
+    : '';
+  return `${paragraphs(firstText(block.summary, block.description))}${visual}${evidenceHtml(evidenceOf(block))}`;
+}
+
+function architectureNodeHtml(node: any): string {
+  const title = firstText(node?.label, node?.name, node?.title, node?.id) || 'Architecture element';
+  const role = firstText(node?.role, node?.description, node?.summary, node?.responsibility);
+  const meta = [node?.kind, node?.technology, node?.type, node?.runtime].filter(Boolean);
+  return `<article class="arch-node search-card" data-search="${escapeHtml(`${title} ${role || ''} ${meta.join(' ')}`)}">
+    <strong>${escapeHtml(title)}</strong>
+    ${meta.length ? `<div>${chips(meta)}</div>` : ''}
+    ${role ? `<p>${escapeHtml(role)}</p>` : ''}
+    ${evidenceHtml(evidenceOf(node))}
+  </article>`;
+}
+
+function renderProcessFlowVisual(block: any): string {
+  const media = renderVisualMedia(block, 'report-visual-media process-media');
+  const mermaid = typeof block.mermaid === 'string' ? block.mermaid : firstText(block.mermaid?.source, block.source);
+  const intro = `${paragraphs(firstText(block.summary, block.description))}${block.trigger || block.outcome ? `<div class="process-io">${block.trigger ? `<div><strong>${escapeHtml(labelFor(block, 'trigger', 'Trigger'))}</strong><p>${escapeHtml(block.trigger)}</p></div>` : ''}${block.outcome ? `<div><strong>${escapeHtml(labelFor(block, 'outcome', 'Outcome'))}</strong><p>${escapeHtml(block.outcome)}</p></div>` : ''}</div>` : ''}`;
+  if (media) return `${intro}${media}${evidenceHtml(evidenceOf(block))}`;
+  if (mermaid) return `${intro}${mermaidBlock(mermaid, evidenceOf(block))}${evidenceHtml(evidenceOf(block))}`;
+  const steps = toList(block.steps).length ? toList(block.steps) : toList(block.phases);
+  const lanes = toList(block.lanes);
+  const laneChips = lanes.length ? `<div class="process-lanes">${lanes.map((lane: any) => chip(firstText(lane?.label, lane?.name, lane?.actor, lane) || 'lane')).join('')}</div>` : '';
+  const stepHtml = steps.length
+    ? `<div class="process-flow">${steps.map((step: any, index: number) => {
+      const order = firstText(step.order, step.index, String(index + 1));
+      const actor = firstText(step.actor, step.lane, step.owner, step.kind);
+      const title = firstText(step.title, step.name, step.description, `Step ${index + 1}`);
+      const desc = firstText(step.description, step.summary, step.business_rule, step.state_change, step.integration);
+      const detail = [step.decision, step.state_change, step.integration, step.failure_path].filter(Boolean);
+      return `<article class="process-step search-card" data-search="${escapeHtml(`${actor || ''} ${title} ${desc || ''} ${detail.join(' ')}`)}">
+        <div class="process-step-marker">${escapeHtml(order)}</div>
+        <div><div class="family-head"><h4>${escapeHtml(title)}</h4>${actor ? chip(actor) : ''}</div>${desc ? `<p>${escapeHtml(desc)}</p>` : ''}${detail.length ? `<div class="process-step-detail">${detail.map((value: any) => `<span>${escapeHtml(value)}</span>`).join('')}</div>` : ''}${evidenceHtml(evidenceOf(step))}</div>
+      </article>`;
+    }).join('')}</div>`
+    : '';
+  return `${intro}${laneChips}${stepHtml}${evidenceHtml(evidenceOf(block))}`;
+}
+
+function renderReportImage(block: any): string {
+  const media = renderVisualMedia(block, 'report-visual-media report-image-block');
+  const fallback = media || renderStructuredValue(firstText(block.svg, block.image, block.src));
+  return `${paragraphs(firstText(block.summary, block.description, block.caption))}${fallback}${evidenceHtml(evidenceOf(block))}`;
 }
 
 function renderFourLevelAssessment(block: any): string {
@@ -603,6 +809,11 @@ function renderDocBlock(block: any): string {
     case 'api_contracts': body = renderApiContracts(block); break;
     case 'request_response_examples': body = renderRequestResponseExamples(block); break;
     case 'flow': body = renderDocFlow(block); break;
+    case 'architecture_visual': body = renderArchitectureVisual(block); break;
+    case 'process_flow_visual': body = renderProcessFlowVisual(block); break;
+    case 'report_image': body = renderReportImage(block); break;
+    case 'visual_explanation': body = renderVisualExplanation(block); break;
+    case 'diagram': body = renderVisualExplanation(block); break;
     case 'four_level_assessment': body = renderFourLevelAssessment(block); break;
     case 'capability_coverage': body = renderCapabilityCoverage(block); break;
     case 'source_coverage_trace': body = renderSourceCoverageTrace(block); break;
@@ -769,7 +980,28 @@ function coverageRows(doc: any): any[] {
 }
 
 function capabilityCoverageStatusCovered(value: any): boolean {
-  return ['covered', 'complete', 'decision_ready', 'ready'].includes(String(value || '').trim().toLowerCase());
+  return normalizeCoverageStatus(value) === 'covered';
+}
+
+function normalizeCoverageStatus(value: any): string {
+  const raw = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['covered', 'complete', 'decision_ready', 'ready'].includes(raw)) return 'covered';
+  if (['not_applicable', 'not_relevant', 'not_needed', 'not_useful', 'out_of_scope', 'n_a', 'na'].includes(raw)) return 'not_applicable';
+  if (raw === 'partial') return 'partial';
+  if (['open', 'unknown', 'blocked'].includes(raw)) return 'open';
+  return raw;
+}
+
+function capabilityCoverageStatusReady(value: any): boolean {
+  const status = normalizeCoverageStatus(value);
+  return status === 'covered' || status === 'not_applicable';
+}
+
+function capabilityCoverageSupportPresent(row: any): boolean {
+  return evidenceOf(row).length > 0
+    || Array.isArray(row?.covered_by_sections) && row.covered_by_sections.length > 0
+    || Array.isArray(row?.open_questions) && row.open_questions.length > 0
+    || firstText(row?.evidence_gap, row?.missing_evidence, row?.proof_gap).length > 0;
 }
 
 function capabilityCoverageReady(doc: any): boolean {
@@ -780,10 +1012,9 @@ function capabilityCoverageReady(doc: any): boolean {
   return CORE_CAPABILITY_IDS.every(id => {
     const row = byId.get(id);
     return row
-      && capabilityCoverageStatusCovered(row.status || row.coverage || row.verdict)
+      && capabilityCoverageStatusReady(row.status || row.coverage || row.verdict)
       && firstText(row.summary, row.description, row.thesis_impact).length >= 80
-      && Array.isArray(row.covered_by_sections)
-      && row.covered_by_sections.length > 0;
+      && capabilityCoverageSupportPresent(row);
   });
 }
 
@@ -999,6 +1230,7 @@ const CSS = `
 :root{--paper:#fbfbf8;--panel:#ffffff;--panel2:#f6f7f3;--ink:#1f2933;--muted:#617082;--line:#d9ded8;--red:#b83b42;--red-soft:#f7e5e6;--gold:#a36a00;--gold-soft:#f8edd2;--teal:#197b76;--teal-soft:#dff2ef;--blue:#315f95;--blue-soft:#e6eef8;--green:#55723b;--green-soft:#e9f1df;--shadow:0 18px 45px rgba(31,41,51,.08);color-scheme:light}
 .dark{--paper:#0b1016;--panel:#121a24;--panel2:#0f1721;--ink:#edf2f7;--muted:#a6b3c2;--line:#2b3847;--red:#ff9aa2;--red-soft:#32191d;--gold:#ffc76f;--gold-soft:#332818;--teal:#73d6ce;--teal-soft:#12302f;--blue:#98bce8;--blue-soft:#142338;--green:#a8d081;--green-soft:#1d2a19;--shadow:none;color-scheme:dark}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55}a{color:var(--blue);text-underline-offset:3px}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:.05rem .28rem}.skip-link{position:absolute;left:1rem;top:-4rem;z-index:20;background:var(--ink);color:var(--panel);padding:.75rem 1rem;border-radius:6px}.skip-link:focus{top:1rem}.topbar{position:sticky;top:0;z-index:10;background:rgba(251,251,248,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.dark .topbar{background:rgba(11,16,22,.94)}.topbar-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;padding:.85rem 1.25rem}.brand{display:flex;align-items:center;gap:.75rem;color:var(--ink);text-decoration:none;min-width:230px}.logo{width:38px;height:38px;border-radius:6px;background:var(--red);color:#fff;display:grid;place-items:center;font-weight:900}.brand-title{font-weight:850}.brand-subtitle{display:block;color:var(--muted);font-size:.78rem;margin-top:.05rem}.nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.35rem}.nav-link{color:var(--ink);text-decoration:none;padding:.5rem .7rem;border-radius:6px;font-size:.92rem;font-weight:650}.nav-link:hover,.nav-link.active{background:var(--ink);color:var(--panel)}.page-shell{max-width:1240px;margin:0 auto;padding:1.5rem 1.25rem 4rem}.intro-band{display:grid;grid-template-columns:minmax(0,1fr) 280px;align-items:stretch;gap:1rem;margin:1rem 0 1.25rem;padding:1.25rem;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}.intro-band h1{margin:0;font-size:clamp(2rem,4vw,3.8rem);line-height:1.03;letter-spacing:0}.intro-band p{max-width:78ch;color:var(--muted);margin:.85rem 0 0}.eyebrow,.doc-section-kicker,.thread-kicker{margin:0 0 .35rem!important;text-transform:uppercase;letter-spacing:.06em;color:var(--red)!important;font-size:.76rem!important;font-weight:850}.scope-card{display:grid;align-content:center;gap:.5rem;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:1rem}.scope-card strong{font-size:1.05rem}.scope-card span,.muted{color:var(--muted)}.search-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:850;margin-top:.4rem}input,button{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:.65rem .75rem;font:inherit}button{cursor:pointer;font-weight:800}h2,h3,h4{letter-spacing:0}h2{margin:0 0 .8rem;font-size:1.45rem}h3{margin:0 0 .55rem;font-size:1.08rem}h4{margin:.9rem 0 .4rem;font-size:.88rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}p{margin:.45rem 0}.small{font-size:.82rem}.report-section{display:block;scroll-margin-top:88px;margin:1rem 0}.section-title{margin:1.25rem 0 .75rem;padding-top:.35rem;border-top:3px solid var(--ink)}.analysis-doc-section{display:grid;gap:1rem}.section-intent{color:var(--muted);max-width:90ch}.doc-block,.card,.family-card,.level-card,.roadmap-item,.requirement-card,.stat-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1.05rem;margin:0 0 1rem;box-shadow:var(--shadow)}.doc-block.narrative{background:transparent;border:0;box-shadow:none;padding:.2rem 0}.doc-block.layered_explanation{border-left:5px solid var(--teal)}.doc-block.api_contracts,.doc-block.request_response_examples{border-left:5px solid var(--blue)}.doc-block.flow{border-left:5px solid var(--green)}.doc-block.statement_list{border-left:5px solid var(--gold)}.grid,.content-grid{display:grid;gap:1rem}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:1rem;margin:.75rem 0}.metric-value{font-size:2rem;line-height:1;font-weight:900}.metric-label{text-transform:uppercase;letter-spacing:.06em;font-size:.72rem;color:var(--muted);font-weight:850;margin-top:.35rem}.family-grid,.level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:1rem}.family-head{display:flex;gap:.7rem;justify-content:space-between;align-items:flex-start}.family-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:.75rem 0}.family-stats span,.jump-card{display:block;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.6rem;text-decoration:none;color:var(--ink);margin-top:.5rem}.chip{display:inline-flex;align-items:center;min-height:1.65rem;padding:.2rem .5rem;border:1px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--ink);font-size:.78rem;font-weight:750;margin:.12rem}.chip.ok{border-color:#a8ceb9;color:var(--good);background:var(--green-soft)}.chip.bad{border-color:#e6b7b9;color:var(--red);background:var(--red-soft)}.chip.warn{border-color:#e2c983;color:var(--gold);background:var(--gold-soft)}.statement,.subitem,.boundary-item{border-top:1px solid var(--line);padding:.8rem 0}.statement:first-child,.subitem:first-child,.boundary-item:first-child{border-top:0}.statement p,.subitem p,.family-card p,.level-card p,.roadmap-item p,.analysis-doc-section p,.analysis-doc-lead p{font-size:.97rem;line-height:1.65}.subitem h4:first-child{margin-top:0}.trust-banner{border:1px solid var(--line);border-left-width:6px;border-radius:8px;background:var(--panel);padding:1rem;margin:0 0 1.25rem;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:start}.trust-banner.ready{border-left-color:var(--green)}.trust-banner.draft{border-left-color:var(--red)}.trust-banner h2{margin:0 0 .35rem}.trust-banner p{margin:0}.trust-banner ul{grid-column:1/-1;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.5rem;list-style:none}.trust-banner li{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.7rem}.trust-banner li strong,.trust-banner li span{display:block}.trust-banner li span{color:var(--muted);font-size:.8rem;margin-top:.2rem}.trust-status{white-space:nowrap}.mermaid-box{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.8rem;margin:.8rem 0}.mermaid-output{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow:auto}.mermaid-output svg{max-width:100%;height:auto}.mermaid-source{max-height:360px}.mermaid-box summary,.evidence summary{cursor:pointer;color:var(--blue);font-weight:850;margin-top:.6rem}.evidence{margin:.75rem 0 0}.evidence summary{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--panel2);padding:.28rem .6rem;font-size:.8rem}.evidence-list{margin-top:.55rem}.evidence-item,.evidence-row{border:1px solid var(--line);border-radius:8px;padding:.65rem;margin:.5rem 0;background:var(--panel2);scroll-margin-top:100px}.evidence-item.ok,.evidence-row.ok{border-left:5px solid var(--green)}.evidence-item.bad,.evidence-row.bad{border-left:5px solid var(--red)}.evidence-item.evidence-highlight,.evidence-item:target{box-shadow:0 0 0 3px var(--blue-soft)}.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:850}.bad-text{color:var(--red)}.evidence-gap{border:1px dashed var(--gold);border-radius:8px;background:var(--gold-soft);padding:.7rem;margin:.7rem 0}.evidence-gap strong{color:var(--gold)}pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.75rem;overflow:auto}.step{display:grid;grid-template-columns:32px 1fr;gap:.65rem;border-top:1px solid var(--line);padding:.75rem 0}.step>span{width:28px;height:28px;border-radius:50%;background:var(--blue-soft);display:grid;place-items:center;font-weight:900;color:var(--blue)}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);margin-bottom:1rem}table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--line);padding:.75rem;text-align:left;vertical-align:top}th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--panel2)}.kv{display:grid;grid-template-columns:150px 1fr;gap:.6rem;border-top:1px solid var(--line);padding:.6rem 0}.kv:first-child{border-top:0}.kv span{color:var(--muted)}.roadmap{display:grid;gap:.8rem}.empty{padding:1rem;border:1px dashed var(--line);border-radius:8px;color:var(--muted);background:var(--panel2)}.hide{display:none!important}@media(max-width:1000px){.topbar-inner{align-items:flex-start;display:grid}.nav{justify-content:flex-start}.intro-band{grid-template-columns:1fr}.two,.three{grid-template-columns:1fr}.trust-banner{grid-template-columns:1fr}.trust-status{white-space:normal}}@media(max-width:640px){.page-shell{padding:1rem .85rem 3rem}.topbar-inner{padding:.75rem .85rem}.brand{min-width:0}.nav-link{font-size:.84rem;padding:.42rem .55rem}.intro-band h1{font-size:2rem}.family-grid,.level-grid{grid-template-columns:1fr}table{min-width:720px}}
+.doc-block.process_flow_visual{border-left:5px solid var(--green)}.doc-block.architecture_visual,.doc-block.report_image{border-left:5px solid var(--teal)}.report-visual-media{margin:.9rem 0;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.75rem;overflow:auto}.report-visual-media img{display:block;max-width:100%;height:auto;border-radius:6px;background:var(--panel)}.report-visual-media figcaption{color:var(--muted);font-size:.86rem;margin-top:.45rem}.report-visual-media.inline-svg svg{display:block;max-width:100%;height:auto}.arch-visual{display:grid;gap:1rem;margin:.8rem 0}.arch-layer{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.85rem}.arch-layer h4{margin:0 0 .45rem}.arch-node-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.65rem}.arch-node{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:.75rem}.arch-node strong{display:block;margin-bottom:.25rem}.arch-edge-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.65rem}.arch-edge{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:.75rem}.arch-edge>span{display:inline-grid;place-items:center;width:2rem;color:var(--blue);font-weight:900}.process-io{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin:.75rem 0}.process-io>div{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.75rem}.process-lanes{margin:.5rem 0}.process-flow{display:grid;gap:.7rem;margin:.75rem 0}.process-step{display:grid;grid-template-columns:42px 1fr;gap:.8rem;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.8rem}.process-step-marker{width:34px;height:34px;border-radius:999px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:900}.process-step h4{margin:0;text-transform:none;font-size:1rem;color:var(--ink)}.process-step-detail{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem}.process-step-detail span{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:.28rem .45rem;font-size:.82rem;color:var(--muted)}
 .authored-report-section{background:transparent;border:0;box-shadow:none;padding:0}.report-prose{max-width:92ch}.report-prose>p:first-child{font-size:1.12rem;line-height:1.7;color:var(--ink);font-weight:520}.report-prose p{font-size:1rem;line-height:1.72;margin:.7rem 0}.report-subsection{margin:1.2rem 0 0;padding-top:.15rem}.report-subsection h3{font-size:1.22rem;margin:0 0 .45rem;color:var(--ink)}.report-bullets{margin:.75rem 0 1rem;padding-left:1.25rem;max-width:88ch}.report-bullets li{margin:.45rem 0;line-height:1.6}.callout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1rem 0}.report-callout{border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:8px;background:var(--panel);padding:1rem;box-shadow:var(--shadow)}.report-callout strong{display:block;margin-bottom:.25rem}.report-callout.risk,.report-callout.critical,.report-callout.high{border-left-color:var(--red);background:var(--red-soft)}.report-callout.decision,.report-callout.recommendation{border-left-color:var(--teal);background:var(--teal-soft)}.report-callout.evidence,.report-callout.scope{border-left-color:var(--gold);background:var(--gold-soft)}.technical-annex{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--line)}
 `;
 

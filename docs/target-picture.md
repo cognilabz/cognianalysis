@@ -19,14 +19,14 @@ The pack is designed around one main objective:
 11. OpenAPI / Swagger extraction
 11. SOAP / WSDL / XSD extraction
 12. Technical view of APIs, interfaces and architecture
-13. Mermaid flow extraction
+13. Purpose-fit visual explanations
 14. Domain/data/integration view
 15. Architecture assessment
 16. Process/readiness assessment
 17. Bugs, vulnerabilities and quality findings
 18. Structured decision basis
-19. Refactoring and modernization roadmap
-20. Target architecture / new tech stack options
+19. Modernization/refactoring applicability and decision path
+20. Target architecture / new tech stack options only where justified
 21. Tool alternative positioning
 22. Evidence-first validation
 23. Interactive static HTML report

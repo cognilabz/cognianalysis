@@ -46,6 +46,16 @@ Modes:
 
 Legacy aliases remain during migration: `deep-dive` maps to `deep`, and `complete` maps to `complete-audit`.
 
+Optional scanner imports can be prepared before `analyze`. Cognianalysis normalizes them as external evidence feeds and product-filters a triage queue, while the LLM remains responsible for false-positive, exploitability and product-impact judgment:
+
+```bash
+mkdir -p .analysis/imports
+semgrep scan --sarif --output .analysis/imports/semgrep.sarif .
+cognianalysis analyze . --scanner-min-severity medium
+```
+
+The intended report quality bar follows the repo-report-builder style: business-readable executive overview, how it works, technical view, severity-rated risks/remediation, decision path and source-family/repository dossiers where useful. Cognianalysis adds product request, scope, evidence validation, scanner-feed filtering and LLM readiness contracts around that communication model.
+
 ## Default Workflow
 
 1. Run `cognianalysis analyze .`.
@@ -70,7 +80,7 @@ When `analysis.json` is missing, `analyze` prepares the workspace and exits succ
     20-technical.md
     30-quality-security.md
     40-process.md
-    50-refactoring.md
+    50-modernization-applicability.md
     80-evidence-audit.md
     90-final-report.md
   shards/
@@ -78,7 +88,7 @@ When `analysis.json` is missing, `analyze` prepares the workspace and exits succ
     technical.json
     quality-security.json
     process.json
-    refactoring.json
+    modernization-applicability.json
     evidence-audit.json
   analysis.json
   report/

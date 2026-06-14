@@ -1,6 +1,6 @@
 ---
 name: cognianalysis
-description: Main LLM-first repository assessment workflow for extracting business capabilities, business logic, contracts, request/response examples, Mermaid flows, domain/data/integration views, architecture, process readiness, refactoring options and evidence-based interactive HTML reports.
+description: Main LLM-first repository assessment workflow for extracting business capabilities, business logic, contracts, request/response examples, purpose-fit visual explanations, domain/data/integration views, architecture, process readiness, modernization/refactoring applicability and evidence-based interactive HTML reports.
 ---
 
 # Cognianalysis Skill
@@ -32,7 +32,7 @@ and the agent should still execute the full workflow below without asking the us
 5. Execute every `.analysis/source_tier_tasks/*.md` task and write the requested `.analysis/source_tiers/*.json` outputs before repository synthesis.
    - This is the Tier 1 whole-codebase base layer: every included file must get a short LLM-authored file card with purpose, technical role, business relevance or none/unknown, relationships, confidence and evidence.
    - Do not use `.analysis_coverage.deferred_files` as a substitute for Tier 1 file analysis. Deferred files are not done.
-   - Tier 0 is deterministic inventory only and has no semantic authority; Tier 1 is mandatory shallow file understanding; Tier 2 is module/source-family synthesis; Tier 3 is behavior/contract/flow deep dive; Tier 4 is decision, risk, process and refactoring analysis.
+   - Tier 0 is deterministic inventory only and has no semantic authority; Tier 1 is mandatory shallow file understanding; Tier 2 is module/source-family synthesis; Tier 3 is behavior/contract/flow deep dive; Tier 4 is decision, risk, process and modernization/refactoring applicability analysis.
    - For large repos, use `cognianalysis dev tier-status .` to see missing/partial/invalid Tier 1 batches and `cognianalysis dev tier-next . --limit N --max-chars 6000` to create `.analysis/source_tier_contexts/*.json` source-excerpt packs for the next LLM work items.
    - Codex itself executes the generated `.analysis/source-tier-next.md` workpack. Do not call a direct LLM API, do not require API credentials and do not replace Codex analysis with deterministic filename/path summaries.
    - Do not treat the Codex LLM step as an external service state. It is executed by Codex in the current session, not by a direct API call; when evidence is thin, Codex must still write the required file card with explicit uncertainty or open questions. The LLM execution itself is not modeled as an availability state; only the resulting artifact/readiness can be incomplete, partial or not decision-ready.
@@ -53,23 +53,29 @@ and the agent should still execute the full workflow below without asking the us
    - Do not add `.analysis/detail_reviews/*.json` outputs that were not planned by `llm/detail-agent-plan.json`; unexpected reviews are treated as a pipeline-contract gap.
 16. Only after `.analysis/llm/analysis-strategy.json`, all Tier 1 `.analysis/source_tiers/*.json`, all LLM-planned `.analysis/skill_reviews/*.json` and the planned detail reviews exist, author the final report as an LLM-written `analysis_document` via `12-analysis-document.md`: choose the repository-specific section order and emphasis, incorporate executed skill workbench reviews, any deliberately produced optional capability-template outputs and detail reviews, list incorporated skill workbench IDs in `analysis_document.skill_workbench_synthesis.integrated_skill_workbenches`, list incorporated source families in `analysis_document.detail_review_synthesis.integrated_detail_reviews`, and use the supported component/block types so the renderer keeps styling and evidence behavior consistent.
    - Treat `analysis_document.sections` as the complete visible report navigation and start order. The CLI may still embed coverage/raw analysis data for validation, but the human-facing menu and narrative should be LLM-authored through the component library.
-   - The LLM owns the report section order, IDs and emphasis. Do not force fixed section IDs.
-   - The visible report must be understandable to a human reader who does not already know the repository. Use layered explanation blocks or equivalent prose: plain-language purpose/process first, technical drilldown second, evidence underneath.
+   - The LLM owns the report section order, IDs, categories and emphasis. Do not force fixed section IDs, fixed view names or a fixed chapter menu.
+   - Author `analysis_document.report_design`, `analysis_document.analysis_dimensions[]`, `analysis_document.core_capability_coverage[]` and `analysis_document.whole_file_thesis_trace`. These are the explicit applicability/coverage model; legacy structured views are optional technical annexes.
+   - The visible report must be understandable to a human reader who does not already know the repository. Use free-flow prose, concrete examples, layered explanation blocks, tables or other clear artifacts as the repository demands; plain-language meaning must come before technical drilldown.
    - The visible report must read like a professional stakeholder assessment, not a generated code catalogue. Use business/process/system language for the main narrative; keep file paths, classes and functions as citations, API/technical details or expandable proof unless the identifier is itself the external interface.
+   - Use the repo-report-builder style as the communication benchmark: business-readable overview, how the system works, technical view, severity-rated risks/remediation, decision path and repository/source-family dossiers when useful. These are report-writing patterns, not mandatory section names. Cognianalysis adds product request, scope, evidence, scanner-feed filtering and readiness contracts around that style.
    - The primary visible report must be authored as free-flow LLM assessment prose in `analysis_document.authored_report.sections[]`. Use `analysis_document.sections[].blocks[]` for technical annexes, evidence, APIs, examples, diagrams and coverage support, not as the main writing frame.
-   - Prefer clear reader-facing categories such as `Executive Overview`, `How It Works`, `Technical View`, `Risks`, `Roadmap` and `Scope, Method & Evidence`; adapt labels to the repository, but do not expose internal analysis-stage names as the primary navigation.
+   - When report quality matters, create a fully custom static report in `.analysis/llm/static-report/` with `index.html` plus local CSS/JS/assets. `cognianalysis analyze` publishes that directory directly. Do not force the report through the generic renderer when a custom report would communicate better.
+   - Choose reader-facing categories from the repository story and user goal. Standard labels such as `Executive Overview`, `How It Works`, `Technical View`, `Risks`, `Decision Path` and `Scope, Method & Evidence` are examples, not a template; rename, merge, split or omit them when another structure is clearer and explain that choice in `report_design`.
    - Each major section must answer what this is, why it exists, who or what depends on it, how the process works, what can go wrong, and what decision follows.
    - Use a `claim -> explanation -> concrete source-derived example -> implication -> evidence` pattern for important flows, risks and recommendations.
    - Explain domain terms, acronyms, product names and internal system names before relying on them. Do not assume the reader already knows the repository language.
    - The renderer is only the publishing shell. The LLM-authored `analysis_document.sections[].blocks[]` must contain the actual explanation, conclusions, examples, risk meaning and modernization interpretation.
-   - Keep the technical material visible. Include API/interface contracts, request/response examples, errors/failure modes and Mermaid graphs/flows wherever source code, schemas, docs, tests or DTOs support them. Inferred examples must use `example_origin: "inferred"`.
-   - Author top-level `analysis_document.core_capability_coverage[]` for all four core capabilities and make it visible through a `capability_coverage` block or equally explicit component blocks inside LLM-chosen sections.
-   - Author top-level `analysis_document.whole_file_thesis_trace` and make it visible through a `source_coverage_trace` block or equally explicit component block. Reconcile included files to Tier 1 file cards and explain how the complete file-card corpus influenced thesis selection, source-family weighting, confidence and evidence gaps. Then cite specific file:line evidence for concrete behavior, risk, process and modernization claims.
+   - Keep the technical material visible. Include API/interface contracts, request/response examples, errors/failure modes and purpose-fit visual explanation artifacts wherever source code, schemas, docs, tests or DTOs support them. Use Mermaid only when it clarifies the source-backed explanation; prose, tables, examples, local SVG/images, architecture maps, process timelines or no diagram are valid choices when better. Inferred examples must use `example_origin: "inferred"`.
+   - When architecture matters, include a visible `architecture_visual`, `report_image`, SVG/image, node/edge map, bounded-context map or equivalent system-landscape artifact. The LLM chooses the form; do not depend on the renderer to invent an architecture picture.
+   - When process or E2E behavior matters, include a visible `process_flow_visual`, timeline, swimlane, state transition, sequence, SVG/image or equivalent process picture with trigger, actors, decisions, state/data changes, integrations, outputs and failure paths where source evidence proves them.
+   - If `.analysis/scanner-findings.json` exists, use it as an external scanner evidence feed. Prioritize `triage_findings[]`, explain `filtered_out_findings[]` when relevant, and let the LLM decide false positives, exploitability, product impact and recommended action with source evidence. Semgrep is the preferred imported security scanner when available, but Cognianalysis must not become the scanner authority.
+   - Author top-level `analysis_document.analysis_dimensions[]` for repository-specific decision dimensions and `analysis_document.core_capability_coverage[]` for the four core capabilities. Make the important parts visible through authored prose, `capability_coverage`, `source_coverage_trace` or equally explicit component blocks inside LLM-chosen sections. Capability/dimension status may be `covered`, `not_applicable`, `partial` or `open`; use `not_applicable` when forcing the category would mislead the reader.
+   - Author top-level `analysis_document.whole_file_thesis_trace` and make it visible through a `source_coverage_trace` block or equally explicit component block. Reconcile included files to Tier 1 file cards and explain how the complete file-card corpus influenced thesis selection, source-family weighting, confidence and evidence gaps. Then cite specific file:line evidence for concrete behavior, risk, process and modernization/applicability claims.
    - If the report needs technical drilldown, evidence governance or raw-data interpretation, author those as repository-specific sections instead of relying on fixed appendices.
 - Do not leave empty final-report sections or component blocks for deterministic renderer prose to explain. If a point is unknown or incomplete, author an `open_questions` block, limitation or partial verdict in the LLM report.
 - Use component `labels` when default table headers or group labels do not match the repository language. The renderer provides visual structure; the LLM should own the wording and emphasis.
-- Include `analysis_document.report_quality_review` as an LLM-authored self-audit with `verdict: "decision_ready"` when the report is management-ready, repo-specific, whole-repo-first and covers the four analysis levels plus functional/technical views, improvement/refactoring, tool positioning, evidence and uncertainty.
-- Include `analysis_document.report_quality_review.reader_comprehension_review[]` and set the narrative-quality checks only when the final report is actually clear to a reader unfamiliar with the codebase: `freeform_llm_authored_report`, `consulting_grade_narrative`, `reader_comprehension_review`, `concrete_examples_and_implications`, and `jargon_and_domain_terms_explained`.
+- Include `analysis_document.report_quality_review` as an LLM-authored self-audit with `verdict: "decision_ready"` only when the report is management-ready, repo-specific, whole-repo-first and covers or explicitly marks not applicable every repository-specific analysis dimension plus the four core capabilities, evidence and uncertainty.
+- Include `analysis_document.report_quality_review.reader_comprehension_review[]` and `analysis_document.report_quality_review.dimension_checks[]`. The dimension checks are the LLM-authored quality/applicability model for this repository; legacy fixed `checks` may be included for compatibility but must not drive the report outline.
 - Include `analysis_document.executive_decision_basis` plus a visible executive/decision section before technical drilldown. It must answer whether to keep, modernize or replace the system, what cost/effort is implied, the biggest risks and the next actions.
 - Include `analysis_document.consistency_review` with reviewer `codex_llm`, a contradiction count and explicit contradiction details when contradictions remain.
 - Include top-level `analysis_document.open_questions[]` as the structured uncertainty model. Use an empty array only after checking unresolved proof gaps. Each item must include `id`, `question`, `reason`, `impact`, `blocking`, and evidence or an explicit evidence gap. If any items exist, mirror them in a visible `open_questions` block.
@@ -95,13 +101,13 @@ The focused companion skills are optional workbench prompts for deeper extractio
 |---|---|
 | `business-extraction` | `business_extraction`, `domain_data_integration_analysis` |
 | `interface-contract-analysis` | `interface_contract_analysis`, `request_response_examples` |
-| `flow-mermaid-analysis` | `flow_mermaid_analysis` |
+| `visual-explanation-analysis` | `visual_explanation_analysis` |
 
 The generated `.analysis/data/analysis-skill-catalog.json` is a reusable LLM capability map, not deterministic routing. The LLM references catalog ids or custom skills in `analysis_strategy.skill_application_plan[]`; the CLI materializes those rows into `.analysis/skill_workbench_tasks/*.md` without choosing semantic scope. This main skill remains responsible for prepare, Tier 1 coverage, skill workbench execution, building blocks, detail planning, final report authoring, finalization and audit.
 
 ## Required target capability trace context
 
-The assessment must address all target capabilities, not only documentation generation:
+The assessment must consider all target capabilities as trace context, but it must not force them into the visible report when they are not meaningful. Use `covered`, `not_applicable`, `partial` or `open` in the LLM-authored trace/applicability model:
 
 - Existing-harness execution, not a custom coding agent
 - LLM-first semantic extraction
@@ -122,24 +128,24 @@ The assessment must address all target capabilities, not only documentation gene
 - LLM-authored analysis document rendered through a stable component/style library
 - Management/business-need and business-use narrative with drilldown to technical and deep technical evidence
 - LLM-authored management-ready report quality review
-- Four-level analysis model: reverse engineering/documentation, code analysis, process analysis, refactoring/target architecture
+- Four-level analysis model: reverse engineering/documentation, code analysis, process analysis, modernization/refactoring applicability
 - Original requirements trace contract: the authored report must include a structured LLM-authored requirements trace with requirement names, explicit `goal_contract_refs` for output shape, levels, views and report behaviors, LLM statuses, section links and evidence or open questions; the CLI must not use a fixed checklist to decide semantic completeness
 - Business capability extraction
-- Functional view of what the system does
+- Functional understanding of what the system does, or the closest repository-specific analogue when it is not an end-user/business workflow system
 - Business logic extraction
 - Interface and contract extraction
 - Request/response examples
 - OpenAPI/Swagger extraction
 - SOAP/WSDL/XSD extraction
-- Technical view of APIs, interfaces and architecture
-- Mermaid flow extraction
+- Technical understanding of APIs, interfaces, architecture, runtime/build model or explicit no-interface rationale
+- Purpose-fit visual explanations
 - Domain/data/integration view
 - Architecture assessment
 - Process/readiness assessment
 - Bugs, visible vulnerabilities and quality findings
 - Structured decision basis
-- Refactoring and modernization roadmap
-- Target architecture / new tech-stack options
+- Modernization/refactoring decision path, including explicit no-refactor/stabilize/preserve decisions when those fit the code evidence
+- Target architecture / new tech-stack options only where justified by source evidence and decision value
 - Tool alternative positioning against consulting/gen-AI delivery suites, structural architecture mapping, static quality/security gates and automated transformation engines, including handoff boundaries
 - Evidence-first validation
 - Interactive HTML reporting
@@ -170,7 +176,7 @@ Extract all of the following where present or defensibly inferable from evidence
 ### Flows and side effects
 
 - Happy paths and failure paths
-- Mermaid source for every meaningful flow
+- A clear explanation artifact for every meaningful flow or relationship: narrative, steps, table, example, Mermaid/SVG when useful, or explicit no-diagram rationale
 - Persistence, state changes, events, external calls, queues/topics and other side effects
 - Data flow and process flow summaries
 
@@ -181,7 +187,7 @@ Extract all of the following where present or defensibly inferable from evidence
 - Test coverage signals, testability concerns and missing tests
 - CI/CD, release, configuration, observability and operational readiness
 - Maintainability, quality, visible security and documentation risks where visible from the repository
-- Refactoring and modernization options with benefit, risk, effort, candidate files and evidence
+- Modernization/refactoring, stabilization, preservation or no-structural-change options with benefit, risk, effort, candidate files and evidence when applicable
 
 ## Evidence rules
 

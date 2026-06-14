@@ -66,23 +66,51 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
   {
     id: 'flow',
     label: 'Flow',
-    purpose: 'E2E, process, request/response or failure flow with optional Mermaid.',
-    expected_fields: ['type', 'title?', 'labels?', 'summary|description?', 'mermaid?|source?', 'steps[]?', 'evidence?'],
-    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems. A strong flow reads like a scenario: trigger, actor, user/business intent, entrypoint, decision rule, state change, integration call, output, failure path and operational side effect when the source proves them.'
+    purpose: 'E2E, process, request/response or failure relationship with optional visual explanation artifacts such as prose, steps, tables, Mermaid or SVG.',
+    expected_fields: ['type', 'title?', 'labels?', 'summary|description?', 'visual_explanation?', 'mermaid?|source?', 'steps[]?', 'evidence?'],
+    guidance: 'Use for human understanding of collaboration across functions, modules, interfaces and systems. A strong flow reads like a scenario: trigger, actor, user/business intent, entrypoint, decision rule, state change, integration call, output, failure path and operational side effect when the source proves them. Use Mermaid only when it clarifies; prose, steps, examples or a no-diagram rationale are valid.'
+  },
+  {
+    id: 'visual_explanation',
+    label: 'Visual Explanation',
+    purpose: 'Repository-fit explanatory artifact for a relationship, lifecycle, data movement, architecture slice or decision logic.',
+    expected_fields: ['type', 'title?', 'summary|description?', 'visual_explanation.artifact_type', 'visual_explanation.rationale', 'visual_explanation.source?', 'steps[]?', 'evidence?'],
+    guidance: 'Use when the LLM decides a subject is best explained as narrative, steps, table, timeline, dependency map, state diagram, sequence diagram, architecture sketch, SVG or no diagram. The artifact type must fit the source-backed claim, not a fixed template.'
+  },
+  {
+    id: 'architecture_visual',
+    label: 'Architecture Visual',
+    purpose: 'A visible architecture picture or system landscape, rendered from LLM-authored nodes, layers, edges, SVG, Mermaid or an image asset.',
+    expected_fields: ['type', 'title?', 'summary|description?', 'nodes[]|layers[]', 'nodes[].id|name|label', 'nodes[].role|description?', 'edges[]?', 'edges[].from', 'edges[].to', 'edges[].label|description?', 'svg?|image?|src?|mermaid?', 'evidence?'],
+    guidance: 'Use for the report-level architecture picture: systems, apps, services, stores, actors, queues, files, integrations or bounded contexts. It should be understandable as a visual map before the reader opens evidence details. Prefer LLM-authored nodes/layers/edges or inline SVG when Mermaid would be brittle. Every important node or edge should have evidence or an explicit evidence gap.'
+  },
+  {
+    id: 'process_flow_visual',
+    label: 'Process Flow Visual',
+    purpose: 'A visible process-flow picture for business workflows, operational workflows, request lifecycles, state transitions or release/validation processes.',
+    expected_fields: ['type', 'title?', 'summary|description?', 'trigger?', 'outcome?', 'lanes[]?', 'steps[]|phases[]', 'steps[].actor?', 'steps[].description', 'steps[].decision?|state_change?|integration?|failure_path?', 'svg?|image?|src?|mermaid?', 'evidence?'],
+    guidance: 'Use for process and E2E explanations that need more than prose. The flow should connect trigger, actors, entrypoints, decisions, state/data changes, integrations, outputs, failure paths and side effects where source evidence proves them. Prefer a readable timeline/swimlane/SVG over one dense Mermaid diagram.'
+  },
+  {
+    id: 'report_image',
+    label: 'Report Image',
+    purpose: 'A report-local image, SVG illustration, screenshot, generated conceptual visual or architecture/process asset with caption, alt text and evidence context.',
+    expected_fields: ['type', 'title?', 'src|image|svg', 'alt', 'caption|summary|description?', 'kind?', 'evidence?'],
+    guidance: 'Use when a visual asset helps the reader inspect the system, architecture, process, UI state or decision. Keep assets local to the report when possible. Do not use decorative images as a substitute for source-backed explanation.'
   },
   {
     id: 'four_level_assessment',
     label: 'Four-Level Assessment',
     purpose: 'The four requested analysis levels in one structured view.',
     expected_fields: ['type', 'title?', 'labels.next_steps?', 'levels[]', 'levels[].level', 'levels[].status', 'levels[].summary', 'levels[].next_steps?', 'levels[].evidence?'],
-    guidance: 'Use for reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture. Each level should contain a narrative assessment and source-backed next steps, not just a status word.'
+    guidance: 'Use for reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture applicability. Each level should contain a narrative assessment and source-backed next steps or a clear not_applicable rationale, not just a status word.'
   },
   {
     id: 'capability_coverage',
     label: 'Capability Coverage',
-    purpose: 'LLM-authored coverage of the four core Cognianalysis capabilities, independent of the report section outline.',
+    purpose: 'LLM-authored coverage and applicability of the four core Cognianalysis capabilities, independent of the report section outline.',
     expected_fields: ['type', 'title?', 'labels?', 'capabilities[]|items[]|levels[]', 'capabilities[].capability_id', 'capabilities[].label?', 'capabilities[].status', 'capabilities[].summary', 'capabilities[].covered_by_sections?', 'capabilities[].thesis_impact?', 'capabilities[].next_steps?', 'capabilities[].evidence?'],
-    guidance: 'Use when the report must prove that reverse engineering/documentation, code analysis, process analysis and refactoring/modernization are all covered. The LLM chooses the section structure; this component renders the explicit coverage model.'
+    guidance: 'Use when the report must show that reverse engineering/documentation, code analysis, process analysis and refactoring/modernization were each assessed. The LLM chooses the section structure; this component renders the explicit coverage/applicability model, including not_applicable when forcing a capability would mislead.'
   },
   {
     id: 'source_coverage_trace',
@@ -101,9 +129,9 @@ export const REPORT_COMPONENT_LIBRARY: ReportComponentDefinition[] = [
   {
     id: 'roadmap',
     label: 'Roadmap',
-    purpose: 'Modernization, refactoring, process or quality improvement path.',
+    purpose: 'Optional modernization, refactoring, process, migration, stabilization or quality improvement path.',
     expected_fields: ['type', 'title?', 'labels?', 'items[]', 'items[].title', 'items[].phase?', 'items[].benefit?', 'items[].description?', 'items[].effort?', 'items[].risk?', 'items[].confidence?', 'items[].evidence?'],
-    guidance: 'Use for target architecture or migration/optimization recommendations.'
+    guidance: 'Use for target architecture, migration, stabilization or optimization recommendations when they are evidence-backed. Do not use this component just to satisfy a fixed roadmap requirement.'
   },
   {
     id: 'agent_plan',

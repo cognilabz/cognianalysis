@@ -6,7 +6,7 @@ Fast orientation. Produces a small set of workpacks and a concise decision docum
 
 ## blueprint
 
-Default product mode. Produces planner, functional, technical, quality/security, process, refactoring, evidence-audit and final-report workpacks. It should not require source-tier file cards, skill workbenches, detail reviews or provenance proofs.
+Default product mode. Produces planner, repository-fit extraction/applicability workpacks, evidence-audit and final-report workpacks. Functional, technical, quality/security, process and modernization/refactoring material are selected or marked not applicable by the LLM rather than forced as fixed report chapters. It should not require source-tier file cards, skill workbenches, detail reviews or provenance proofs.
 
 ## deep
 

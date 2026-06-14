@@ -35,7 +35,7 @@ The CLI must not become semantic authority. Do not add deterministic import grap
 - Use complete-audit/developer commands only when the requested work explicitly needs whole-repo audit depth or migration/debugging of legacy v0.7 artifacts.
 - Codex or the active harness executes LLM work in-session. Do not call a direct LLM API, require provider credentials or treat missing provider state as an analysis result.
 - Every relevant business or technical claim must include file:line evidence or an explicit evidence gap/open question.
-- Request/response examples, OpenAPI/Swagger examples, SOAP/WSDL/XSD examples, Mermaid flows, business logic examples and function/use-case examples must be extracted wherever present or defensibly inferable.
+- Request/response examples, OpenAPI/Swagger examples, SOAP/WSDL/XSD examples, purpose-fit visual explanation artifacts, business logic examples and function/use-case examples must be extracted wherever present or defensibly inferable. Mermaid is optional and should be used only when it clarifies the source-backed explanation.
 - Inferred examples must use `example_origin: "inferred"`.
 - If behavior cannot be proven, add it to `open_questions` instead of inventing certainty.
 

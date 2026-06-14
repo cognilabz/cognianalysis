@@ -7,7 +7,7 @@ import {
   PLANNER_CONTRACT,
   PROCESS_CONTRACT,
   QUALITY_SECURITY_CONTRACT,
-  REFACTORING_CONTRACT,
+  MODERNIZATION_APPLICABILITY_CONTRACT,
   TECHNICAL_CONTRACT,
   workpackMarkdown
 } from './workpackTemplates';
@@ -59,9 +59,9 @@ function allBlueprintWorkpacks(): WorkpackDefinition[] {
     def('20-technical', 'Technical Architecture and Interfaces', '.analysis/shards/technical.json', 'Extract architecture, entrypoints, APIs/interfaces, data/state, integrations and runtime evidence.', TECHNICAL_CONTRACT),
     def('30-quality-security', 'Quality and Security Review', '.analysis/shards/quality-security.json', 'Identify bugs, vulnerabilities, quality findings, test readiness and imported scanner findings without rebuilding scanners.', QUALITY_SECURITY_CONTRACT),
     def('40-process', 'Process Analysis', '.analysis/shards/process.json', 'Assess delivery, testing, observability, documentation and process improvement opportunities.', PROCESS_CONTRACT),
-    def('50-refactoring', 'Refactoring and Target Architecture', '.analysis/shards/refactoring.json', 'Propose refactoring options, target architecture, migration roadmap, stack options and quick wins.', REFACTORING_CONTRACT),
-    def('80-evidence-audit', 'Evidence Audit', '.analysis/shards/evidence-audit.json', 'Review shard claims, mark unsupported or weakly supported claims, contradictions and blocking open questions without replacing semantic judgement.', EVIDENCE_AUDIT_CONTRACT, ['10-functional', '20-technical', '30-quality-security', '40-process', '50-refactoring'], true),
-    def('90-final-report', 'Final Analysis Report', '.analysis/analysis.json', 'Synthesize shards into the single LLM-authored analysis.json decision document covering reverse engineering, code analysis, process analysis and refactoring/target architecture.', FINAL_REPORT_CONTRACT, ['80-evidence-audit'], true)
+    def('50-modernization-applicability', 'Modernization and Refactoring Applicability', '.analysis/shards/modernization-applicability.json', 'Decide whether refactor, migration, replacement, stabilization, preservation, contract hardening or no structural change is justified by source evidence.', MODERNIZATION_APPLICABILITY_CONTRACT),
+    def('80-evidence-audit', 'Evidence Audit', '.analysis/shards/evidence-audit.json', 'Review shard claims, mark unsupported or weakly supported claims, contradictions and blocking open questions without replacing semantic judgement.', EVIDENCE_AUDIT_CONTRACT, ['10-functional', '20-technical', '30-quality-security', '40-process', '50-modernization-applicability'], true),
+    def('90-final-report', 'Final Analysis Report', '.analysis/analysis.json', 'Synthesize shards into the single LLM-authored analysis.json decision document covering reverse engineering, code analysis, process analysis and modernization/refactoring applicability.', FINAL_REPORT_CONTRACT, ['80-evidence-audit'], true)
   ];
   return workpacks.map(item => item.id === '30-quality-security'
     ? { ...item, read_only_inputs: [...item.read_only_inputs, '.analysis/scanner-findings.json'] }
@@ -152,7 +152,7 @@ export function writeWorkpacks(analysisDir: string): WorkpackDefinition[] {
     mode,
     semantic_authority: 'active_agent_harness_llm',
     deterministic_authority: 'task_generation_only',
-    merge_order: ['planner', 'functional', 'technical', 'quality-security', 'process', 'refactoring', 'evidence-audit', 'final-report'],
+    merge_order: ['planner', 'functional', 'technical', 'quality-security', 'process', 'modernization-applicability', 'evidence-audit', 'final-report'],
     workpacks
   };
   writeJson(Path.join(analysisDir, 'workpack-manifest.json'), manifest);

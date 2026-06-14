@@ -84,6 +84,9 @@ export function buildSynthesisInput(repo: string, analysisDir: string, inventory
     contradiction_candidates: contradictionCandidates,
     open_questions: shardOpenQuestions,
     scanner_findings: scannerFindings?.findings || [],
+    scanner_product_filter: scannerFindings?.product_filter || null,
+    scanner_triage_findings: scannerFindings?.triage_findings || [],
+    scanner_filtered_out_findings: scannerFindings?.filtered_out_findings || [],
     inventory_summary: inventorySummary
   };
   writeJson(Path.join(analysisDir, 'synthesis-input.json'), synthesis);

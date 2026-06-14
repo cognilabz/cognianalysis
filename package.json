@@ -1,6 +1,6 @@
 {
   "name": "cognianalysis",
-  "version": "0.8.7",
+  "version": "0.8.16",
   "description": "LLM-first source-code analysis skill/report protocol for existing agent harness workflows.",
   "license": "MIT",
   "type": "commonjs",

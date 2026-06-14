@@ -57,12 +57,12 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     guidance: 'Mark inferred examples with example_origin="inferred" and cite the fields/rules used.'
   },
   {
-    id: 'flow_mermaid_analysis',
-    label: 'Flow and Mermaid Analysis',
-    purpose: 'Explain E2E, process, failure, data and integration flows using narrative and Mermaid where useful.',
+    id: 'visual_explanation_analysis',
+    label: 'Visual Explanation Analysis',
+    purpose: 'Explain E2E relationships, processes, failure modes, data movement and integrations using the clearest repository-specific artifact: prose, steps, tables, examples, Mermaid, SVG or no diagram when a diagram would mislead.',
     stage_ids: ['llm_whole_repository_building_blocks', 'llm_detail_reviews', 'llm_final_analysis_document'],
-    expected_outputs: ['flows[]', 'mermaid_flows[]', 'analysis_document.sections[].blocks[type=flow]'],
-    guidance: 'Prefer flows that teach how functions, modules and systems cooperate. Mermaid is supporting evidence, not the report itself.'
+    expected_outputs: ['flows[]', 'visual_explanations[]', 'analysis_document.sections[].blocks[type=flow|visual_explanation|layered_explanation]'],
+    guidance: 'Prefer explanation artifacts that teach how functions, modules, people and systems cooperate. Mermaid is optional supporting evidence, not the report itself, and should be omitted when prose, examples or a table communicates better.'
   },
   {
     id: 'domain_data_integration_analysis',
@@ -82,11 +82,11 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
   },
   {
     id: 'architecture_refactoring_roadmap',
-    label: 'Architecture and Refactoring Roadmap',
-    purpose: 'Describe architecture responsibilities and modernization/refactoring/target-tech-stack options.',
+    label: 'Architecture Decision and Modernization Applicability',
+    purpose: 'Describe architecture responsibilities and decide whether modernization, refactoring, stabilization, preservation or no structural change is justified.',
     stage_ids: ['llm_whole_repository_building_blocks', 'llm_final_analysis_document'],
-    expected_outputs: ['architecture', 'refactoring[]', 'modernization[]', 'analysis_document.sections[].blocks[type=roadmap]'],
-    guidance: 'Turn code evidence into decision options with benefit, risk, effort and handoff boundaries.'
+    expected_outputs: ['architecture', 'refactoring[] when applicable', 'modernization[] when applicable', 'analysis_document decision/applicability sections'],
+    guidance: 'Turn code evidence into decision options with benefit, risk, effort and handoff boundaries. Do not force a refactoring roadmap; explicitly mark refactoring or modernization not applicable when the evidence supports stabilization, preservation or contract hardening instead.'
   },
   {
     id: 'detail_agent_planning',
@@ -101,8 +101,8 @@ export const ANALYSIS_SKILL_CATALOG: AnalysisSkillDefinition[] = [
     label: 'Final Report Authoring',
     purpose: 'Compose the visible decision document from all building blocks and detail reviews through the component library.',
     stage_ids: ['llm_final_analysis_document'],
-    expected_outputs: ['analysis_document.sections[]', 'analysis_document.core_capability_coverage[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review', 'analysis_document.sections[].blocks[type=layered_explanation]', 'analysis_document.sections[].blocks[type=api_contracts]', 'analysis_document.sections[].blocks[type=request_response_examples]', 'analysis_document.sections[].blocks[type=capability_coverage]', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
-    guidance: 'Choose section order, IDs and emphasis per repository. Author analysis_document.authored_report.sections[] first as the free-flow stakeholder assessment; use component blocks only as technical annexes for evidence, APIs, examples, diagrams and coverage. Prefer clear reader-facing categories such as Executive Overview, How It Works, Technical View, Risks, Roadmap and Scope/Method over internal analysis-stage labels. Always make the four core capabilities and whole-file thesis-impact proof visible through authored coverage models and supporting components. The report must explain the system in human language first while preserving technical drilldown, API/interface contracts, examples and diagrams. It should read like a stakeholder assessment, with code identifiers and file paths used as citations or technical detail rather than the main narrative. Every major section should answer what the thing is, why it exists, who or what depends on it, how the process works, what can go wrong and what decision follows. Use concrete source-derived examples, implications and evidence for important claims, and explain domain terms before relying on them. Include a reader_comprehension_review in report_quality_review for readers unfamiliar with the repository. Do not rely on fixed appendices, component checklists or raw catalogs as the human report.'
+    expected_outputs: ['analysis_document.report_design', 'analysis_document.analysis_dimensions[]', 'analysis_document.authored_report.sections[]', 'analysis_document.core_capability_coverage[]', 'analysis_document.whole_file_thesis_trace', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review.dimension_checks[]', 'analysis_document.sections[].blocks[type=api_contracts]', 'analysis_document.sections[].blocks[type=request_response_examples]', 'analysis_document.sections[].blocks[type=capability_coverage]', 'analysis_document.sections[].blocks[type=source_coverage_trace]'],
+    guidance: 'Choose section order, IDs, categories and emphasis per repository. Author analysis_document.report_design first to explain why this outline fits the user goal, then author analysis_document.authored_report.sections[] as the free-flow stakeholder assessment. Use component blocks only as technical annexes for evidence, APIs, examples, diagrams and coverage. Standard categories such as Executive Overview, How It Works, Technical View, Risks, Decision Path and Scope/Method are examples, not a menu. Always make repository-specific analysis_dimensions, the four core capabilities and whole-file thesis-impact proof visible through authored prose or supporting components. The report must explain the system in human language first while preserving technical drilldown, API/interface contracts, examples and purpose-fit visual explanations. It should read like a stakeholder assessment, with code identifiers and file paths used as citations or technical detail rather than the main narrative. Every major section should answer what the thing is, why it exists, who or what depends on it, how the relevant relationship works, what can go wrong and what decision follows. Use concrete source-derived examples, implications and evidence for important claims, and explain domain terms before relying on them. Include reader_comprehension_review and dimension_checks in report_quality_review. Do not rely on fixed appendices, component checklists or raw catalogs as the human report.'
   },
   {
     id: 'tool_positioning',

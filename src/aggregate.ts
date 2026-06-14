@@ -96,7 +96,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   const auditMode = ['complete', 'complete-audit'].includes(String(productAnalysisRequest?.mode || '').toLowerCase()) || legacyAuditWorkspace;
   const analysisRun = analysisRunSeed(repo, analysisDir, profile);
   const inventoryV2 = loadJson<any>(Path.join(analysisDir, 'inventory.json'), loadJson<any>(Path.join(dataDir, 'inventory.json'), {}));
-  const scannerFindings = normalizeScannerImports(analysisDir, { writeDataAlias: auditMode });
+  const scannerFindings = normalizeScannerImports(analysisDir, { writeDataAlias: auditMode, productRequest: productAnalysisRequest });
   const synthesisInput = buildSynthesisInput(repo, analysisDir, inventoryV2.summary || {}, { writeDataAlias: auditMode });
 
   const assessment = llm.assessment || null;
@@ -251,6 +251,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   bundle.analysis_document_evidence_strength = computeAnalysisDocumentEvidenceStrength(bundle.analysis_document);
   bundle.analysis_document_semantic_lineage = computeAnalysisDocumentSemanticLineage(bundle.analysis_document, bundle);
   bundle.analysis_document_open_questions = computeAnalysisDocumentOpenQuestions(bundle.analysis_document);
+  bundle.scanner_findings_contract = computeScannerFindingsContract(bundle.scanner_findings);
   bundle.external_findings_contract = computeExternalFindingsContract(bundle.external_findings);
   bundle.analysis_staleness = computeAnalysisStaleness(repo, bundle.profile);
   bundle.llm_artifacts = computeLlmArtifactStatus(analysisDir, bundle.tasks);
@@ -279,6 +280,7 @@ export function aggregate(repo: string, analysisDir: string): any {
   writeJson(Path.join(dataDir, 'analysis-contract.json'), bundle.analysis_contract);
   writeJson(Path.join(dataDir, 'analysis-evidence-validation.json'), bundle.analysis_evidence_validation);
   writeJson(Path.join(dataDir, 'analysis-staleness.json'), bundle.analysis_staleness);
+  writeJson(Path.join(dataDir, 'scanner-findings-contract.json'), bundle.scanner_findings_contract);
   writeJson(Path.join(dataDir, 'bundle.json'), bundle);
   writeJson(Path.join(dataDir, 'evidence.json'), bundle.evidence_index);
   if (auditMode) {
@@ -1321,18 +1323,39 @@ function normalizeRequirement(value: any): string {
     .replace(/^_+|_+$/g, '');
 }
 
+function normalizeTraceStatus(value: any): string {
+  const raw = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['covered', 'complete', 'ready', 'decision_ready'].includes(raw)) return 'covered';
+  if (['not_applicable', 'not_relevant', 'not_needed', 'not_useful', 'out_of_scope', 'n_a', 'na'].includes(raw)) return 'not_applicable';
+  if (raw === 'partial') return 'partial';
+  if (['open', 'unknown', 'blocked'].includes(raw)) return 'open';
+  return raw;
+}
+
 function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
   const trace = Array.isArray(doc?.requirements_trace) ? doc.requirements_trace : [];
   const rows = trace.map((item: any, index: number) => {
     const requirement = String(item?.requirement || '').trim();
     const id = normalizeRequirement(requirement) || `trace_${index + 1}`;
-    const status = String(item?.status || '').toLowerCase();
-    const statusKnown = ['covered', 'partial', 'open'].includes(status);
+    const status = normalizeTraceStatus(item?.status);
+    const statusKnown = ['covered', 'partial', 'open', 'not_applicable'].includes(status);
     const sectionRefs = asList(item?.covered_by_sections).filter(Boolean);
     const evidence = evidenceRefs(item);
     const openQuestions = asList(item?.open_questions);
-    const hasSupport = evidence.length > 0 || openQuestions.length > 0 || status === 'open';
-    const structured = requirement.length > 0 && statusKnown && sectionRefs.length > 0 && hasSupport;
+    const rationale = [
+      item?.rationale,
+      item?.reason,
+      item?.summary,
+      item?.description,
+      item?.decision_ready_rationale,
+      item?.accepted_limit,
+      item?.evidence_gap,
+      item?.missing_evidence,
+      item?.proof_gap
+    ].find(value => typeof value === 'string' && value.trim());
+    const hasSupport = evidence.length > 0 || openQuestions.length > 0 || status === 'open' || !!rationale;
+    const hasVisibility = sectionRefs.length > 0 || status === 'not_applicable';
+    const structured = requirement.length > 0 && statusKnown && hasVisibility && hasSupport;
     return {
       id,
       label: requirement || `Trace item ${index + 1}`,
@@ -1341,6 +1364,7 @@ function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
       status_known: statusKnown,
       supported: structured,
       covered_by_sections: sectionRefs,
+      rationale: rationale || '',
       goal_contract_refs: asList(item?.goal_contract_refs || item?.goal_refs).map(normalizeGoalTraceRef).filter(Boolean),
       evidence,
       open_questions: openQuestions
@@ -1351,7 +1375,7 @@ function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
     return acc;
   }, {});
   const structuralMissing = rows
-    .filter(r => !r.present || !r.status_known || !r.covered_by_sections.length || (!r.evidence.length && !r.open_questions.length && r.status !== 'open'))
+    .filter(r => !r.present || !r.status_known || (!r.covered_by_sections.length && r.status !== 'not_applicable') || (!r.evidence.length && !r.open_questions.length && r.status !== 'open' && !r.rationale))
     .map(r => r.id);
   return {
     contract_kind: 'llm_authored_requirements_trace',
@@ -1364,6 +1388,7 @@ function computeAnalysisDocumentRequirementsTraceContract(doc: any): any {
     fully_covered_count: rows.filter(r => r.status === 'covered').length,
     partial_count: rows.filter(r => r.status === 'partial').length,
     open_count: rows.filter(r => r.status === 'open').length,
+    not_applicable_count: rows.filter(r => r.status === 'not_applicable').length,
     total_count: rows.length,
     missing: trace.length ? [] : ['requirements_trace'],
     weak: structuralMissing,
@@ -1521,7 +1546,18 @@ function hasRenderableValue(value: any): boolean {
     value.actor,
     value.kind,
     value.source,
+    value.svg,
+    value.image,
+    value.src,
+    value.alt,
+    value.caption,
     value.mermaid,
+    value.visual_explanation,
+    value.nodes,
+    value.edges,
+    value.layers,
+    value.lanes,
+    value.phases,
     value.options,
     value.focus,
     value.expected_outputs,
@@ -1581,6 +1617,41 @@ function blockHasRenderableContent(block: any): boolean {
         || hasRenderableValue(block?.description)
         || hasRenderableValue(block?.source)
         || hasRenderableValue(block?.mermaid)
+        || hasRenderableValue(block?.visual_explanation)
+        || asList(block?.steps).some((step: any) => hasRenderableValue(step) || evidenceRefs(step).length > 0);
+    case 'architecture_visual':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || hasRenderableValue(block?.svg)
+        || hasRenderableValue(block?.image)
+        || hasRenderableValue(block?.src)
+        || hasRenderableValue(block?.mermaid)
+        || ['nodes', 'layers', 'edges'].some(key => asList(block?.[key]).some(statementHasRenderableContent));
+    case 'process_flow_visual':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || hasRenderableValue(block?.trigger)
+        || hasRenderableValue(block?.outcome)
+        || hasRenderableValue(block?.svg)
+        || hasRenderableValue(block?.image)
+        || hasRenderableValue(block?.src)
+        || hasRenderableValue(block?.mermaid)
+        || ['steps', 'phases'].some(key => asList(block?.[key]).some(statementHasRenderableContent))
+        || asList(block?.lanes).some((lane: any) => hasRenderableValue(lane));
+    case 'report_image':
+      return hasRenderableValue(block?.svg)
+        || hasRenderableValue(block?.image)
+        || hasRenderableValue(block?.src)
+        || hasRenderableValue(block?.alt)
+        || hasRenderableValue(block?.caption)
+        || hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description);
+    case 'visual_explanation':
+    case 'diagram':
+      return hasRenderableValue(block?.summary)
+        || hasRenderableValue(block?.description)
+        || hasRenderableValue(block?.source)
+        || hasRenderableValue(block?.visual_explanation)
         || asList(block?.steps).some((step: any) => hasRenderableValue(step) || evidenceRefs(step).length > 0);
     case 'four_level_assessment':
       return asList(block?.levels).some((level: any) => hasRenderableValue(level) || evidenceRefs(level).length > 0);
@@ -1740,9 +1811,9 @@ const REPORT_QUALITY_REVIEW_CHECKS = [
   { id: 'technical_view_explained', label: 'Technical view explains APIs, interfaces and architecture' },
   { id: 'api_contracts_and_examples_visible', label: 'API contracts and request/response examples are visible' },
   { id: 'technical_drilldown_visible', label: 'Technical drilldown remains visible under the human narrative' },
-  { id: 'graphs_and_flows_visible', label: 'Graphs and flow diagrams are visible and renderable' },
-  { id: 'four_level_model_covered', label: 'Four analysis levels are covered' },
-  { id: 'improvements_and_refactoring_covered', label: 'Improvements, optimization and refactoring are covered' },
+  { id: 'visual_explanations_fit_purpose', label: 'Visual explanations are used only where they clarify the repository-specific story, and omitted where prose, tables or examples are clearer' },
+  { id: 'four_level_model_covered', label: 'Four analysis levels are covered or explicitly marked not applicable' },
+  { id: 'improvements_and_refactoring_covered', label: 'Improvements, optimization and refactoring decisions are covered when applicable' },
   { id: 'tool_positioning_covered', label: 'Tool/consulting alternative positioning is covered' },
   { id: 'evidence_and_uncertainty_visible', label: 'Evidence, confidence and uncertainty are visible' },
   { id: 'core_capability_coverage_model', label: 'Four core capabilities have LLM-authored coverage model' },
@@ -1803,6 +1874,28 @@ function majorReportClaimItems(doc: any): any[] {
       if (type === 'source_coverage_trace') pushItems(asList(block?.source_family_impacts || block?.families || block?.impacts), 'source_family', ['source_family', 'name', 'title']);
       if (type === 'api_contracts') pushItems(asList(block?.apis || block?.items || block?.contracts), 'api_contract', ['name', 'title', 'path', 'endpoint']);
       if (type === 'request_response_examples') pushItems(asList(block?.examples || block?.items), 'request_response_example', ['title', 'name', 'scenario', 'endpoint']);
+      if (type === 'architecture_visual') {
+        pushItems(asList(block?.nodes || block?.layers), 'architecture_node', ['label', 'name', 'title', 'id']);
+        pushItems(asList(block?.edges), 'architecture_edge', ['label', 'description', 'title', 'id']);
+      }
+      if (type === 'process_flow_visual') pushItems(asList(block?.steps || block?.phases), 'process_step', ['title', 'name', 'description', 'actor']);
+      if (type === 'report_image') {
+        const ref = lintRef(section, block, 0, 'visual_asset');
+        out.push({
+          ref,
+          claim_id: cleanId(block?.claim_id || block?.id || block?.title || ref),
+          kind: 'visual_asset',
+          label: String(block?.title || block?.caption || block?.alt || 'visual asset'),
+          report_section_id: section?.id || section?.title || '',
+          block_type: type,
+          semantic_lineage: block?.semantic_lineage || block?.lineage || block?.provenance || null,
+          confidence: String(block?.confidence || '').trim(),
+          evidence_count: evidenceCount(block),
+          evidence: evidenceRefs(block),
+          has_support: hasReportSupport(block),
+          has_uncertainty: asList(block?.open_questions).length > 0 || asList(block?.uncertainty || block?.uncertainties).length > 0
+        });
+      }
     }
   }
   return out.map(item => ({
@@ -2203,6 +2296,12 @@ function computeAnalysisDocumentReportLint(doc: any): any {
       if (type === 'api_contracts') checkSupportedItems(asList(block?.apis || block?.items || block?.contracts), 'api_contract');
       if (type === 'request_response_examples') checkSupportedItems(asList(block?.examples || block?.items), 'request_response_example');
       if (type === 'flow') checkSupportedItems(asList(block?.steps), 'step');
+      if (type === 'architecture_visual') {
+        checkSupportedItems(asList(block?.nodes || block?.layers), 'architecture_node');
+        checkSupportedItems(asList(block?.edges), 'architecture_edge');
+      }
+      if (type === 'process_flow_visual') checkSupportedItems(asList(block?.steps || block?.phases), 'process_step');
+      if (type === 'report_image' && !hasReportSupport(block)) claimSupportGaps.push(blockRef(section, 0, type));
       if (type === 'boundary_map') {
         for (const key of ['entries', 'exits', 'state']) {
           asList(block?.[key]).forEach((item: any, index: number) => {
@@ -2303,7 +2402,7 @@ function computeAnalysisDocumentQualityReview(doc: any): any {
     return {
       id: normalizeRequirement(requirement) || `trace_${index + 1}`,
       requirement: requirement || `Trace item ${index + 1}`,
-      status: String(item?.status || '').toLowerCase()
+      status: normalizeTraceStatus(item?.status)
     };
   });
   const partialTraceRows = traceRows.filter(row => ['partial', 'open'].includes(row.status));
@@ -2419,6 +2518,7 @@ function computeSemanticAuthority(bundle: any): any {
     open_questions_complete: bundle.analysis_document_open_questions?.complete === true,
     analysis_run_provenance_complete: bundle.analysis_run_provenance?.complete === true,
     artifact_dependency_graph_complete: bundle.artifact_dependency_graph?.complete === true,
+    scanner_findings_triage_input_complete: bundle.scanner_findings_contract?.complete === true,
     external_findings_ingestion_complete: bundle.external_findings_contract?.complete === true,
     blocking_open_questions: bundle.analysis_document_open_questions?.blocking_count || 0,
     cli_semantic_quality_judge: false,
@@ -2451,7 +2551,7 @@ function computeSemanticAuthority(bundle: any): any {
       'analysis_run_provenance_hash_and_parent_contract',
       'artifact_dependency_freshness_contract',
       'external_findings_shape_and_evidence_contract',
-      'mermaid_render_contract',
+      'visual_artifact_render_contract',
       'static_html_artifact_materialization'
     ],
     analysis_skill_catalog_contract_complete: skillCatalogContract.complete === true,
@@ -3061,6 +3161,30 @@ function loadCacheStoreEntries(analysisDir: string): any[] {
       ...loadJson<any>(Path.join(cacheDir, name), {}),
       cache_store_path: Path.join('cache', 'source-tier', name).replace(/\\/g, '/')
     }));
+}
+
+function computeScannerFindingsContract(scanner: any): any {
+  const findings = asList(scanner?.findings);
+  const triage = asList(scanner?.triage_findings);
+  const filtered = asList(scanner?.filtered_out_findings);
+  const sources = asList(scanner?.sources);
+  const productFilter = scanner?.product_filter || null;
+  return {
+    contract_kind: 'scanner_findings_product_triage_input',
+    semantic_verdict_authority: 'codex_llm',
+    deterministic_authority: 'scanner_import_shape_and_product_prefilter_only',
+    deterministic_contract_scope: 'Scanner exports are normalized and product-prefiltered by severity/category/path. The CLI does not decide whether a finding is true, exploitable, product-relevant or worth fixing.',
+    complete: true,
+    scanner_source_count: sources.length,
+    finding_count: findings.length,
+    triage_finding_count: triage.length,
+    filtered_out_finding_count: filtered.length,
+    product_filter: productFilter,
+    sources,
+    summary: findings.length
+      ? `${findings.length} scanner finding${findings.length === 1 ? '' : 's'} normalized; ${triage.length} triage candidate${triage.length === 1 ? '' : 's'} after product prefilter; ${filtered.length} retained outside triage.`
+      : 'No scanner imports were provided. Semgrep, CodeQL, Sonar or Snyk exports may be added under .analysis/imports before analyze.'
+  };
 }
 
 function computeExternalFindingsContract(findings: any[]): any {

@@ -1,11 +1,11 @@
 ---
-name: flow-mermaid-analysis
-description: Compatibility alias for visual-explanation-analysis. Extract relationships and flows as purpose-fit explanation artifacts; Mermaid is optional.
+name: visual-explanation-analysis
+description: Extract happy paths, failure paths, process/data relationships and side effects as purpose-fit explanation artifacts with file:line evidence. Mermaid is optional.
 ---
 
-# Flow and Mermaid Analysis Skill Compatibility Alias
+# Visual Explanation Analysis Skill
 
-Prefer the `visual-explanation-analysis` skill for new work. Use this compatibility alias when older task plans still reference `flow-mermaid-analysis`.
+Use this skill when the repository assessment needs detailed source-backed relationships, flows, lifecycles, state transitions, process paths or data movement.
 
 ## Output focus
 

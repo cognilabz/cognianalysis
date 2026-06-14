@@ -11,12 +11,9 @@
     "repo",
     "confidence",
     "executive_decision",
-    "functional_view",
-    "technical_view",
-    "code_quality_security",
-    "process_analysis",
-    "refactoring",
-    "report_sections",
+    "authored_report",
+    "analysis_dimensions",
+    "report_design",
     "open_questions",
     "evidence_index",
     "report_quality_review"
@@ -59,12 +56,52 @@
         "evidence": { "$ref": "#/$defs/evidence_array" }
       }
     },
+    "report_design": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["audience", "outline_rationale", "section_strategy"],
+      "properties": {
+        "audience": { "type": "array" },
+        "outline_rationale": { "type": "string", "minLength": 1 },
+        "section_strategy": { "type": "string", "minLength": 1 },
+        "omitted_or_merged_standard_sections": { "type": "array" },
+        "repository_specific_categories": { "type": "array" },
+        "key_reader_questions": { "type": "array" }
+      }
+    },
+    "analysis_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["dimension_id", "label", "status", "summary"],
+        "properties": {
+          "dimension_id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["covered", "not_applicable", "partial", "open"] },
+          "summary": { "type": "string", "minLength": 1 },
+          "decision_value": { "type": "string" },
+          "covered_by_sections": { "type": "array" },
+          "evidence": { "$ref": "#/$defs/evidence_array" }
+        }
+      }
+    },
+    "authored_report": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["style", "sections"],
+      "properties": {
+        "style": { "type": "string", "minLength": 1 },
+        "writing_model": { "type": "string" },
+        "sections": { "type": "array", "minItems": 1 }
+      }
+    },
     "functional_view": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["system_purpose", "actors", "capabilities", "user_or_system_flows", "business_processes", "business_rules", "e2e_flows"],
       "properties": {
         "system_purpose": { "type": "string" },
+        "system_purpose_evidence": { "$ref": "#/$defs/evidence_array" },
         "actors": { "type": "array" },
         "capabilities": { "type": "array" },
         "user_or_system_flows": { "type": "array" },
@@ -76,7 +113,6 @@
     "technical_view": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["architecture_summary", "entrypoints", "apis_and_interfaces", "data_and_state", "data_flows", "integrations", "dependencies", "technology_stack", "deployment_runtime", "evidence"],
       "properties": {
         "architecture_summary": { "type": "string" },
         "entrypoints": { "type": "array" },
@@ -94,20 +130,20 @@
     "code_quality_security": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["bugs", "vulnerabilities", "code_quality_findings", "scanner_findings_imported"],
       "properties": {
         "bugs": { "type": "array" },
         "vulnerabilities": { "type": "array" },
         "code_quality_findings": { "type": "array" },
-        "scanner_findings_imported": { "type": "array" }
+        "scanner_findings_imported": { "type": "array" },
+        "scanner_triage": { "type": "array" }
       }
     },
     "process_analysis": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["test_readiness", "implemented_business_processes", "process_flows", "workflow_inefficiencies", "optimization_opportunities", "delivery_risks", "observability", "documentation_gaps", "process_improvements"],
       "properties": {
         "test_readiness": { "type": "string" },
+        "test_readiness_evidence": { "$ref": "#/$defs/evidence_array" },
         "delivery_risks": { "type": "array" },
         "observability": { "type": "array" },
         "documentation_gaps": { "type": "array" },
@@ -121,7 +157,6 @@
     "refactoring": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["target_architecture_options", "migration_roadmap", "tech_stack_options", "quick_wins"],
       "properties": {
         "target_architecture_options": { "type": "array" },
         "migration_roadmap": { "type": "array" },

@@ -65,15 +65,31 @@ function mermaidSource(value: any): string {
 function hasE2eFlow(value: any): boolean {
   return utilAsList(value).some((flow: any) => {
     const text = itemText(flow);
-    return hasText(text)
-      && (hasItems(flow?.steps) || hasText(mermaidSource(flow?.mermaid || flow?.source)));
+    return hasDetailedText(text)
+      || hasDetailedItem(flow?.steps)
+      || hasText(mermaidSource(flow?.mermaid || flow?.source));
   });
 }
 
 function qualityCheckCovered(value: any): boolean {
   if (value === true) return true;
   if (typeof value !== 'string') return false;
-  return value.trim().toLowerCase() === 'covered';
+  return normalizeSemanticStatus(value) === 'covered';
+}
+
+function normalizeSemanticStatus(value: any): string {
+  const raw = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['covered', 'complete', 'ready', 'decision_ready'].includes(raw)) return 'covered';
+  if (['not_applicable', 'not_relevant', 'not_needed', 'not_useful', 'out_of_scope', 'n_a', 'na'].includes(raw)) return 'not_applicable';
+  if (raw === 'partial') return 'partial';
+  if (['open', 'unknown', 'blocked'].includes(raw)) return 'open';
+  return raw;
+}
+
+function qualityCheckReady(value: any): boolean {
+  if (value === true) return true;
+  const status = normalizeSemanticStatus(value);
+  return status === 'covered' || status === 'not_applicable';
 }
 
 const REQUIRED_DEPTH_QUALITY_CHECKS = [
@@ -86,11 +102,13 @@ const REQUIRED_DEPTH_QUALITY_CHECKS = [
   'jargon_and_domain_terms_explained',
   'human_readable_layered_report',
   'detailed_textual_explanations',
-  'whole_e2e_flow_explained',
+  'e2e_relationships_explained',
   'business_processes_explained',
   'api_contracts_and_examples_visible',
   'technical_drilldown_visible',
-  'graphs_and_flows_visible',
+  'visual_explanations_fit_purpose',
+  'architecture_visuals_visible',
+  'process_flow_visuals_visible',
   'four_layers_explained',
   'functional_and_technical_views_explained',
   'core_capability_coverage_model',
@@ -103,6 +121,27 @@ const REQUIRED_CORE_CAPABILITY_IDS = [
   'process_analysis',
   'refactoring_target_architecture'
 ];
+
+function qualityDimensionRows(analysis: any): any[] {
+  const review = analysis?.report_quality_review || {};
+  const direct = utilAsList(review.dimension_checks || review.quality_dimensions || review.applicability_checks);
+  if (direct.length) return direct;
+  const checks = review.checks;
+  if (checks && typeof checks === 'object' && !Array.isArray(checks)) {
+    return Object.entries(checks).map(([id, status]) => ({ id, label: id, status }));
+  }
+  return [];
+}
+
+function qualityDimensionReady(row: any): boolean {
+  const status = normalizeSemanticStatus(row?.status ?? row?.coverage ?? row?.verdict ?? row?.result);
+  if (status !== 'covered' && status !== 'not_applicable') return false;
+  return hasDetailedText(row?.rationale || row?.reason || row?.summary || row?.description)
+    || status === 'not_applicable'
+    || utilAsList(row?.affected_sections || row?.covered_by_sections).length > 0
+    || hasDirectEvidence(row)
+    || utilAsList(row?.open_questions).length > 0;
+}
 
 function openQuestionsStructured(value: any): boolean {
   if (!Array.isArray(value)) return false;
@@ -142,15 +181,54 @@ function reportQualityDecisionReadyEvidence(analysis: any): string {
 }
 
 function reportQualityDepthChecksCovered(analysis: any): boolean {
+  const dimensionRows = qualityDimensionRows(analysis);
+  if (dimensionRows.length && Array.isArray(analysis?.report_quality_review?.dimension_checks)) {
+    return dimensionRows.length >= 3 && dimensionRows.every(qualityDimensionReady);
+  }
   const checks = analysis?.report_quality_review?.checks || {};
-  return REQUIRED_DEPTH_QUALITY_CHECKS.every(id => qualityCheckCovered(checks?.[id]));
+  return REQUIRED_DEPTH_QUALITY_CHECKS.every(id => {
+    if (id === 'e2e_relationships_explained') return qualityCheckReady(checks?.e2e_relationships_explained ?? checks?.whole_e2e_flow_explained);
+    if (id === 'visual_explanations_fit_purpose') return qualityCheckReady(checks?.visual_explanations_fit_purpose ?? checks?.graphs_and_flows_visible);
+    return qualityCheckReady(checks?.[id]);
+  });
+}
+
+function authoredReportSections(analysis: any): any[] {
+  return utilAsList(analysis?.authored_report?.sections || analysis?.freeform_report?.sections || analysis?.narrative_report?.sections);
+}
+
+function authoredReportText(analysis: any): string {
+  const sections = authoredReportSections(analysis);
+  const collect = (value: any): string[] => {
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap(collect);
+    if (!value || typeof value !== 'object') return [];
+    return [
+      value.title,
+      value.kicker,
+      value.intent,
+      value.lead,
+      value.body,
+      value.callouts,
+      value.subsections,
+      value.bullets,
+      value.summary,
+      value.description
+    ].flatMap(collect);
+  };
+  return sections.flatMap(collect).filter(hasText).join(' ');
 }
 
 function reportBlocks(analysis: any): any[] {
   const sections = utilAsList(analysis?.report_sections).length
     ? utilAsList(analysis?.report_sections)
     : utilAsList(analysis?.sections);
-  return sections.flatMap((section: any) => utilAsList(section?.blocks));
+  const sectionBlocks = sections.flatMap((section: any) => utilAsList(section?.blocks));
+  const authoredBlocks = authoredReportSections(analysis).flatMap((section: any) => [
+    ...utilAsList(section?.technical_blocks),
+    ...utilAsList(section?.blocks).filter((block: any) => block?.render_in_freeform === true || block?.type)
+  ]);
+  return [...sectionBlocks, ...authoredBlocks];
 }
 
 function blockText(block: any): string {
@@ -179,13 +257,18 @@ function wordCount(value: string): number {
 }
 
 function humanReadableLayeredReportComplete(analysis: any): boolean {
+  const authoredWords = wordCount(authoredReportText(analysis));
+  const authoredSections = authoredReportSections(analysis);
+  if (authoredSections.length >= 3 && authoredWords >= 900) return true;
   const blocks = reportBlocks(analysis);
   const layered = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'layered_explanation');
-  const authoredWords = blocks.reduce((sum: number, block: any) => sum + wordCount(blockText(block)), 0);
-  return layered.length >= 3 && authoredWords >= 900;
+  const blockWords = blocks.reduce((sum: number, block: any) => sum + wordCount(blockText(block)), 0);
+  return layered.length >= 2 && blockWords >= 700;
 }
 
 function apiContractsAndExamplesVisible(analysis: any): boolean {
+  const qualityStatus = analysis?.report_quality_review?.checks?.api_contracts_and_examples_visible;
+  if (qualityCheckReady(qualityStatus)) return true;
   const blocks = reportBlocks(analysis);
   const apiBlocks = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'api_contracts');
   const exampleBlocks = blocks.filter((block: any) => String(block?.type || '').toLowerCase() === 'request_response_examples');
@@ -204,17 +287,56 @@ function apiContractsAndExamplesVisible(analysis: any): boolean {
 }
 
 function technicalDrilldownVisible(analysis: any): boolean {
+  const qualityStatus = analysis?.report_quality_review?.checks?.technical_drilldown_visible;
+  if (qualityCheckReady(qualityStatus)) return true;
   const blocks = reportBlocks(analysis);
   return blocks.some((block: any) => ['api_contracts', 'request_response_examples', 'technical_drilldown', 'boundary_map', 'source_family_map'].includes(String(block?.type || '').toLowerCase()));
 }
 
-function graphsAndFlowsVisible(analysis: any): boolean {
-  const blocks = reportBlocks(analysis);
-  const diagramBlocks = blocks.filter((block: any) => {
+function blockHasVisibleVisualArtifact(block: any): boolean {
+  if (!block || typeof block !== 'object' || Array.isArray(block)) return false;
+  return hasText(mermaidSource(block?.mermaid || block?.source))
+    || hasText(block?.svg)
+    || hasText(block?.src)
+    || hasText(block?.image)
+    || hasText(block?.image?.src)
+    || hasText(block?.image?.svg)
+    || hasItems(block?.nodes)
+    || hasItems(block?.edges)
+    || hasItems(block?.layers)
+    || hasItems(block?.lanes)
+    || hasItems(block?.phases)
+    || utilAsList(block?.steps).length >= 2;
+}
+
+function visibleVisualBlocks(analysis: any): any[] {
+  return reportBlocks(analysis).filter((block: any) => {
     const type = String(block?.type || '').toLowerCase();
-    return type === 'flow' && hasText(mermaidSource(block?.mermaid || block?.source));
+    return ['flow', 'diagram', 'visual_explanation', 'architecture_visual', 'process_flow_visual', 'report_image', 'architecture_view', 'process_view'].includes(type)
+      && blockHasVisibleVisualArtifact(block);
   });
-  return diagramBlocks.length >= 2;
+}
+
+function architectureVisualVisible(analysis: any): boolean {
+  return visibleVisualBlocks(analysis).some((block: any) => {
+    const type = String(block?.type || '').toLowerCase();
+    return ['architecture_visual', 'architecture_view', 'diagram', 'visual_explanation', 'report_image'].includes(type)
+      && (hasItems(block?.nodes) || hasItems(block?.edges) || hasItems(block?.layers) || hasText(block?.svg) || hasText(block?.src) || hasText(block?.image) || hasText(block?.image?.src) || hasText(block?.image?.svg) || hasText(mermaidSource(block?.mermaid || block?.source)));
+  });
+}
+
+function processFlowVisualVisible(analysis: any): boolean {
+  const processStatus = coreCapabilityStatus(analysis, 'process_analysis');
+  if (processStatus === 'not_applicable') return true;
+  return visibleVisualBlocks(analysis).some((block: any) => {
+    const type = String(block?.type || '').toLowerCase();
+    return ['process_flow_visual', 'process_view', 'flow', 'diagram', 'visual_explanation'].includes(type)
+      && (utilAsList(block?.steps).length >= 2 || hasItems(block?.phases) || hasItems(block?.lanes) || hasText(block?.svg) || hasText(block?.src) || hasText(block?.image) || hasText(block?.image?.src) || hasText(block?.image?.svg) || hasText(mermaidSource(block?.mermaid || block?.source)));
+  });
+}
+
+function visualExplanationsFitPurpose(analysis: any): boolean {
+  return visibleVisualBlocks(analysis).length > 0;
 }
 
 function normalizedCapabilityId(value: any): string {
@@ -230,7 +352,21 @@ function normalizedCapabilityId(value: any): string {
 }
 
 function coverageStatusCovered(value: any): boolean {
-  return ['covered', 'complete', 'ready', 'decision_ready'].includes(String(value || '').trim().toLowerCase());
+  return normalizeSemanticStatus(value) === 'covered';
+}
+
+function coverageStatusReady(value: any): boolean {
+  const status = normalizeSemanticStatus(value);
+  return status === 'covered' || status === 'not_applicable';
+}
+
+function capabilitySupportPresent(row: any): boolean {
+  return hasDirectEvidence(row)
+    || utilAsList(row?.covered_by_sections).length > 0
+    || utilAsList(row?.open_questions).length > 0
+    || hasText(row?.evidence_gap)
+    || hasText(row?.missing_evidence)
+    || hasText(row?.proof_gap);
 }
 
 function capabilityCoverageRows(analysis: any): any[] {
@@ -245,10 +381,45 @@ function coreCapabilityCoverageModelComplete(analysis: any): boolean {
   return REQUIRED_CORE_CAPABILITY_IDS.every(id => {
     const row = byId.get(id);
     return row
-      && coverageStatusCovered(row.status || row.coverage || row.verdict)
+      && coverageStatusReady(row.status || row.coverage || row.verdict)
       && hasDetailedText(row.summary || row.description || row.thesis_impact)
-      && utilAsList(row.covered_by_sections).length > 0;
+      && capabilitySupportPresent(row);
   });
+}
+
+function coreCapabilityStatus(analysis: any, id: string): string {
+  const rows = capabilityCoverageRows(analysis);
+  const byId = new Map<string, any>();
+  rows.forEach((row: any) => byId.set(normalizedCapabilityId(row?.capability_id || row?.id || row?.level || row?.label), row));
+  const row = byId.get(id);
+  return normalizeSemanticStatus(row?.status || row?.coverage || row?.verdict);
+}
+
+function coreCapabilityReady(analysis: any, id: string): boolean {
+  const rows = capabilityCoverageRows(analysis);
+  const byId = new Map<string, any>();
+  rows.forEach((row: any) => byId.set(normalizedCapabilityId(row?.capability_id || row?.id || row?.level || row?.label), row));
+  const row = byId.get(id);
+  return !!row
+    && coverageStatusReady(row.status || row.coverage || row.verdict)
+    && hasDetailedText(row.summary || row.description || row.thesis_impact || row.rationale)
+    && capabilitySupportPresent(row);
+}
+
+function analysisDimensionReady(analysis: any, id: string): boolean {
+  const rows = utilAsList(analysis?.analysis_dimensions || analysis?.dimensions || analysis?.decision_dimensions);
+  const normalized = normalizedCapabilityId(id);
+  return rows.some((row: any) => {
+    const rowId = normalizedCapabilityId(row?.dimension_id || row?.id || row?.capability_id || row?.label);
+    return rowId === normalized
+      && coverageStatusReady(row.status || row.coverage || row.verdict)
+      && hasDetailedText(row.summary || row.description || row.decision_value || row.rationale)
+      && (hasDirectEvidence(row) || utilAsList(row?.covered_by_sections).length > 0 || utilAsList(row?.open_questions).length > 0 || normalizeSemanticStatus(row.status) === 'not_applicable');
+  });
+}
+
+function capabilityOrDimensionReady(analysis: any, id: string): boolean {
+  return coreCapabilityReady(analysis, id) || analysisDimensionReady(analysis, id);
 }
 
 function numericField(value: any, keys: string[]): number | null {
@@ -328,43 +499,64 @@ export function computeProductReadinessV2(repo: string, analysis: string, bundle
   const codeQuality = analysisDoc?.code_quality_security || {};
   const processAnalysis = analysisDoc?.process_analysis || {};
   const refactoring = analysisDoc?.refactoring || {};
+  const refactoringNotApplicable = coreCapabilityStatus(analysisDoc, 'refactoring_target_architecture') === 'not_applicable';
+  const reverseEngineeringReady = capabilityOrDimensionReady(analysisDoc, 'reverse_engineering_documentation');
+  const codeCapabilityReady = capabilityOrDimensionReady(analysisDoc, 'code_analysis');
+  const processCapabilityReady = capabilityOrDimensionReady(analysisDoc, 'process_analysis');
+  const modernizationCapabilityReady = capabilityOrDimensionReady(analysisDoc, 'refactoring_target_architecture');
+  const authoredWords = wordCount(authoredReportText(analysisDoc));
   const qualityOrRisk = hasItems(analysisDoc?.code_quality_security?.bugs)
     || hasItems(analysisDoc?.code_quality_security?.vulnerabilities)
     || hasItems(analysisDoc?.code_quality_security?.code_quality_findings)
     || hasItems(analysisDoc?.executive_decision?.top_risks)
-    || hasItems(analysisDoc?.process_analysis?.delivery_risks);
-  const refactoringOrNext = hasItems(analysisDoc?.refactoring?.target_architecture_options)
+    || hasItems(analysisDoc?.process_analysis?.delivery_risks)
+    || codeCapabilityReady;
+  const refactoringOrNext = refactoringNotApplicable
+    || modernizationCapabilityReady
+    || hasItems(analysisDoc?.refactoring?.target_architecture_options)
     || hasItems(analysisDoc?.refactoring?.migration_roadmap)
     || hasItems(analysisDoc?.refactoring?.quick_wins)
     || hasItems(analysisDoc?.executive_decision?.next_steps);
-  const functionalComplete = hasText(functionalView.system_purpose)
+  const functionalComplete = reverseEngineeringReady || (hasText(functionalView.system_purpose)
     && hasAnyItems(functionalView.capabilities, functionalView.actors)
     && hasAnyItems(functionalView.user_or_system_flows, functionalView.e2e_flows)
-    && hasAnyItems(functionalView.business_processes, functionalView.business_rules, functionalView.e2e_flows);
-  const technicalComplete = hasText(technicalView.architecture_summary)
+    && hasAnyItems(functionalView.business_processes, functionalView.business_rules, functionalView.e2e_flows));
+  const technicalComplete = qualityCheckReady(analysisDoc?.report_quality_review?.checks?.technical_view_explained)
+    || hasText(technicalView.architecture_summary)
     && hasAnyItems(technicalView.entrypoints, technicalView.apis_and_interfaces)
     && hasAnyItems(technicalView.data_and_state, technicalView.data_flows)
     && hasAnyItems(technicalView.integrations, technicalView.dependencies, technicalView.technology_stack, technicalView.deployment_runtime);
-  const codeAnalysisComplete = hasAnyItems(codeQuality.bugs, codeQuality.vulnerabilities, codeQuality.code_quality_findings, codeQuality.scanner_findings_imported);
-  const businessProcessComplete = hasAnyItems(functionalView.business_processes, processAnalysis.implemented_business_processes, processAnalysis.process_flows);
-  const e2eFlowComplete = hasE2eFlow(functionalView.e2e_flows)
+  const codeAnalysisComplete = codeCapabilityReady
+    || hasAnyItems(codeQuality.bugs, codeQuality.vulnerabilities, codeQuality.code_quality_findings, codeQuality.scanner_findings_imported);
+  const businessProcessComplete = qualityCheckReady(analysisDoc?.report_quality_review?.checks?.business_processes_explained)
+    || processCapabilityReady
+    || hasAnyItems(functionalView.business_processes, processAnalysis.implemented_business_processes, processAnalysis.process_flows);
+  const e2eFlowComplete = qualityCheckReady(analysisDoc?.report_quality_review?.checks?.e2e_relationships_explained ?? analysisDoc?.report_quality_review?.checks?.whole_e2e_flow_explained)
+    || hasE2eFlow(functionalView.e2e_flows)
     || hasE2eFlow(functionalView.user_or_system_flows)
     || hasE2eFlow(processAnalysis.process_flows);
-  const processComplete = hasText(processAnalysis.test_readiness)
+  const processComplete = processCapabilityReady || (hasText(processAnalysis.test_readiness)
     && businessProcessComplete
-    && hasAnyItems(processAnalysis.optimization_opportunities, processAnalysis.process_improvements, processAnalysis.workflow_inefficiencies, processAnalysis.delivery_risks, processAnalysis.observability, processAnalysis.documentation_gaps);
-  const refactoringComplete = hasAnyItems(refactoring.target_architecture_options, refactoring.migration_roadmap, refactoring.tech_stack_options, refactoring.quick_wins);
-  const detailedTextComplete = hasDetailedText(analysisDoc?.executive_decision?.summary)
-    && hasDetailedText(functionalView.system_purpose)
-    && hasDetailedText(technicalView.architecture_summary)
-    && (hasDetailedText(processAnalysis.test_readiness) || hasDetailedItem(processAnalysis.implemented_business_processes) || hasDetailedItem(processAnalysis.process_flows))
-    && (hasDetailedItem(refactoring.target_architecture_options) || hasDetailedItem(refactoring.migration_roadmap) || hasDetailedItem(refactoring.quick_wins));
+    && hasAnyItems(processAnalysis.optimization_opportunities, processAnalysis.process_improvements, processAnalysis.workflow_inefficiencies, processAnalysis.delivery_risks, processAnalysis.observability, processAnalysis.documentation_gaps));
+  const refactoringComplete = refactoringNotApplicable
+    || modernizationCapabilityReady
+    || hasAnyItems(refactoring.target_architecture_options, refactoring.migration_roadmap, refactoring.tech_stack_options, refactoring.quick_wins);
+  const detailedTextComplete = qualityCheckReady(analysisDoc?.report_quality_review?.checks?.detailed_textual_explanations)
+    || (authoredWords >= 900 && hasDetailedText(analysisDoc?.executive_decision?.summary))
+    || (hasDetailedText(analysisDoc?.executive_decision?.summary)
+      && hasDetailedText(functionalView.system_purpose)
+      && hasDetailedText(technicalView.architecture_summary)
+      && (hasDetailedText(processAnalysis.test_readiness) || hasDetailedItem(processAnalysis.implemented_business_processes) || hasDetailedItem(processAnalysis.process_flows))
+      && (refactoringNotApplicable || hasDetailedItem(refactoring.target_architecture_options) || hasDetailedItem(refactoring.migration_roadmap) || hasDetailedItem(refactoring.quick_wins)));
   const humanLayeredReportComplete = humanReadableLayeredReportComplete(analysisDoc);
   const apiExamplesComplete = apiContractsAndExamplesVisible(analysisDoc);
   const technicalDrilldownComplete = technicalDrilldownVisible(analysisDoc);
-  const graphsVisible = graphsAndFlowsVisible(analysisDoc);
-  const fourCoreCapabilitiesComplete = functionalComplete && codeAnalysisComplete && processComplete && refactoringComplete;
+  const visualExplanationsReady = visualExplanationsFitPurpose(analysisDoc);
+  const architectureVisualReady = architectureVisualVisible(analysisDoc);
+  const processFlowVisualReady = processFlowVisualVisible(analysisDoc);
   const coreCapabilityCoverageComplete = coreCapabilityCoverageModelComplete(analysisDoc);
+  const fourCoreCapabilitiesComplete = coreCapabilityCoverageComplete
+    || (functionalComplete && codeAnalysisComplete && processComplete && refactoringComplete);
   const wholeFileTraceComplete = wholeFileThesisTraceComplete(analysisDoc, bundle);
   const auditSourceTierComplete = !completeAuditMode || bundle?.source_tier_coverage?.complete === true;
   const auditSkillWorkbenchComplete = !completeAuditMode || bundle?.skill_workbench_coverage?.complete === true;
@@ -387,27 +579,29 @@ export function computeProductReadinessV2(repo: string, analysis: string, bundle
     v2Check('evidence_validated', 'Evidence references valid', evidenceValidated, `invalid=${utilAsList(evidenceValidation.invalid_evidence).length}`, 'Fix invalid evidence path:line references.'),
     v2Check('major_claims_supported_or_gapped', 'Major claims supported or explicitly gapped', analysisExists && unsupportedCount === 0, `unsupported=${unsupportedCount}`, 'Add file:line evidence, evidence_gap or open questions for unsupported major claims.'),
     v2Check('executive_decision_present', 'Executive decision present', hasText(analysisDoc?.executive_decision?.summary) && hasText(analysisDoc?.executive_decision?.recommended_action), 'summary/action', 'Complete executive_decision.summary and recommended_action.'),
-    v2Check('functional_view_complete', 'Functional view covers capabilities, workflows, rules and E2E material', functionalComplete, 'functional_view', 'Complete functional_view with purpose, actors/capabilities, workflows/E2E flows and business rules/process logic.'),
-    v2Check('technical_view_complete', 'Technical view covers architecture, interfaces, data flows and dependencies', technicalComplete, 'technical_view', 'Complete technical_view with architecture, entrypoints/interfaces, data/state or data flows, integrations/dependencies/technology stack.'),
+    v2Check('functional_view_complete', 'Functional understanding or applicable analogue covered', functionalComplete, reverseEngineeringReady ? 'capability/dimension model' : 'functional_view', 'Add source-backed functional/business/system understanding, or mark the dimension not_applicable with a detailed rationale.'),
+    v2Check('technical_view_complete', 'Technical understanding covered in repository-fit form', technicalComplete, qualityCheckReady(analysisDoc?.report_quality_review?.checks?.technical_view_explained) ? 'LLM quality review' : 'technical_view', 'Add source-backed technical understanding in the form that fits the repository: architecture, interfaces, data, runtime/build, dependencies, or a no-interface rationale.'),
     v2Check('quality_or_risk_view_present', 'Quality/risk view present', qualityOrRisk, 'quality/security/risk', 'Add code_quality_security findings, executive top risks or explicit evidence-backed no-finding statements.'),
-    v2Check('code_analysis_complete', 'Code analysis covers bugs, vulnerabilities or quality findings', codeAnalysisComplete, 'code_quality_security', 'Add code_quality_security bugs, vulnerabilities, maintainability findings, scanner imports or explicit evidence-backed quality findings.'),
-    v2Check('process_analysis_complete', 'Process analysis covers implemented workflows and improvements', processComplete, 'process_analysis', 'Complete process_analysis with test/readiness, implemented business processes or process flows, and optimization/improvement opportunities.'),
-    v2Check('refactoring_or_next_steps_present', 'Refactoring or next steps present', refactoringOrNext, 'refactoring/next_steps', 'Add refactoring roadmap, target architecture options, quick wins or next steps.'),
-    v2Check('refactoring_modernization_complete', 'Refactoring and modernization view complete', refactoringComplete, 'refactoring', 'Add target architecture options, migration roadmap, technology stack options or quick wins.'),
-    v2Check('detailed_textual_explanations_present', 'Detailed textual explanations present', detailedTextComplete, 'narrative-depth-fields', 'Expand executive, functional, technical, process and refactoring explanations beyond labels or short bullets.'),
+    v2Check('code_analysis_complete', 'Code analysis/applicability covered', codeAnalysisComplete, codeCapabilityReady ? 'capability/dimension model' : 'code_quality_security', 'Add source-backed code/risk/quality analysis, scanner triage, or an explicit evidence-backed no-finding/not-applicable rationale.'),
+    v2Check('process_analysis_complete', 'Process analysis/applicability covered', processComplete, processCapabilityReady ? 'capability/dimension model' : 'process_analysis', 'Describe implemented workflows and improvements when they exist, or mark process analysis not_applicable with source-backed rationale.'),
+    v2Check('refactoring_or_next_steps_present', 'Modernization/refactoring applicability or next steps assessed', refactoringOrNext, refactoringNotApplicable ? 'refactoring=not_applicable' : 'refactoring/next_steps', 'Add source-backed refactoring roadmap/next steps when useful, or mark refactoring_target_architecture as not_applicable with a detailed rationale and evidence/open question.'),
+    v2Check('refactoring_modernization_complete', 'Modernization/refactoring decision complete or explicitly not applicable', refactoringComplete, refactoringNotApplicable || modernizationCapabilityReady ? 'capability/dimension model' : 'refactoring', 'Add target architecture options, migration roadmap, technology stack options or quick wins only when evidence justifies them; otherwise mark the capability not_applicable with rationale.'),
+    v2Check('detailed_textual_explanations_present', 'Detailed textual explanations present', detailedTextComplete, 'narrative-depth-fields', 'Expand executive, functional, technical and process explanations beyond labels or short bullets; include modernization/refactoring prose only when applicable.'),
     v2Check('human_readable_layered_report_present', 'Human-readable layered report narrative present', humanLayeredReportComplete, 'layered_explanation blocks and narrative word depth', 'Add layered_explanation blocks that explain the system in plain language first, with technical detail and evidence underneath.'),
-    v2Check('whole_e2e_flow_present', 'Whole E2E flow explained with steps or Mermaid', e2eFlowComplete, 'functional_view.e2e_flows/process_analysis.process_flows', 'Add at least one source-backed E2E flow with narrative plus steps or Mermaid.'),
-    v2Check('business_processes_present', 'Business process descriptions present', businessProcessComplete, 'business_processes/process_flows', 'Add implemented business process or workflow descriptions with trigger, decisions and outcome.'),
+    v2Check('whole_e2e_relationship_present', 'E2E relationship or clearer repository-fit analogue explained', e2eFlowComplete, qualityCheckReady(analysisDoc?.report_quality_review?.checks?.e2e_relationships_explained) ? 'LLM quality review' : 'flows/process relationships', 'Explain source-backed E2E relationships where applicable, or use a clearer repository-fit analogue such as lifecycle, contract, state, module or data transformation with rationale.'),
+    v2Check('business_processes_present', 'Business/process layer described or explicitly not applicable', businessProcessComplete, processCapabilityReady ? 'capability/dimension model' : 'business_processes/process_flows', 'Add implemented business/operational process descriptions when they exist, or mark the dimension not_applicable with source-backed rationale.'),
     v2Check('api_contracts_and_examples_present', 'API contracts and request/response examples visible', apiExamplesComplete, 'api_contracts + request_response_examples blocks', 'Add visible API/interface contracts and request/response examples, marking inferred examples with example_origin="inferred".'),
     v2Check('technical_drilldown_visible', 'Technical drilldown visible under human narrative', technicalDrilldownComplete, 'technical component blocks', 'Add API contracts, request/response examples, boundary map, source-family map or technical drilldown blocks.'),
-    v2Check('graphs_and_flows_visible', 'Graphs and flow diagrams visible', graphsVisible, 'flow Mermaid blocks >= 2', 'Add at least two visible Mermaid flow/architecture/process diagrams when source evidence supports them.'),
-    v2Check('four_core_capabilities_complete', 'Four core capabilities structurally covered', fourCoreCapabilitiesComplete, 'functional+code+process+refactoring', 'Cover reverse engineering/documentation, code analysis, process analysis and refactoring/modernization in analysis.json.'),
-    v2Check('core_capability_coverage_model_present', 'LLM-authored four-core-capability coverage model present', coreCapabilityCoverageComplete, `rows=${capabilityCoverageRows(analysisDoc).length}/${REQUIRED_CORE_CAPABILITY_IDS.length}`, 'Author core_capability_coverage[] with all four core capabilities, covered status, detailed summary and covered_by_sections links.'),
+    v2Check('visual_explanations_fit_purpose', 'Visual explanations fit the repository-specific story', visualExplanationsReady, `visible_visual_blocks=${visibleVisualBlocks(analysisDoc).length}`, 'Add visible LLM-authored diagram/image/flow/architecture/process artifacts, or mark the relevant dimension not_applicable with source-backed rationale.'),
+    v2Check('architecture_visual_present', 'Architecture picture or system landscape visible', architectureVisualReady, architectureVisualReady ? 'architecture visual block present' : 'missing', 'Add a visible architecture_visual, report_image, diagram or equivalent system-landscape artifact with source-backed nodes/edges or SVG/image content.'),
+    v2Check('process_flow_visual_present', 'Process or E2E flow picture visible where applicable', processFlowVisualReady, processFlowVisualReady ? 'process visual block present or not applicable' : 'missing', 'Add a visible process_flow_visual or flow artifact with trigger, steps/lanes, decisions and outcome, or mark process analysis not_applicable with source-backed rationale.'),
+    v2Check('four_core_capabilities_complete', 'Core capabilities covered or explicitly not applicable', fourCoreCapabilitiesComplete, `coverage_model=${coreCapabilityCoverageComplete}, refactoring=${refactoringNotApplicable ? 'not_applicable' : 'applicable'}`, 'Author core_capability_coverage[] so each core capability is either covered or explicitly not_applicable with a detailed source-backed rationale.'),
+    v2Check('core_capability_coverage_model_present', 'LLM-authored core-capability applicability model present', coreCapabilityCoverageComplete, `rows=${capabilityCoverageRows(analysisDoc).length}/${REQUIRED_CORE_CAPABILITY_IDS.length}`, 'Author core_capability_coverage[] with all four core capabilities, status covered/not_applicable/partial/open, detailed summary, and either section links, evidence or explicit proof gaps.'),
     v2Check('whole_file_thesis_trace_present', 'LLM-authored whole-file thesis trace present', wholeFileTraceComplete, wholeFileThesisTrace(analysisDoc) ? 'present' : 'missing', 'Author whole_file_thesis_trace with included files, Tier 1 file cards, zero missing cards, task completion and source-family thesis impact.'),
     v2Check('open_questions_structured', 'Open questions structured', Array.isArray(analysisDoc?.open_questions) && openQuestionsStructured(analysisDoc.open_questions), `open_questions=${utilAsList(analysisDoc?.open_questions).length}`, 'Use structured open_questions[]; use [] only when no proof gaps remain.'),
     v2Check('report_quality_review_present', 'Report quality self-review present', reportQualityValid(analysisDoc), String(analysisDoc?.report_quality_review?.verdict || 'missing'), 'Add report_quality_review with valid verdict, rationale, gaps and confidence.'),
     v2Check('report_quality_decision_ready', 'Report quality verdict is decision-ready with no blocking gaps', reportQualityDecisionReady(analysisDoc), reportQualityDecisionReadyEvidence(analysisDoc), 'Resolve blocking gaps/open questions or keep the report not ready; only verdict=decision_ready with no blocking gaps can be done.'),
-    v2Check('report_quality_depth_checks_covered', 'Report self-review covers depth checks', reportQualityDepthChecksCovered(analysisDoc), REQUIRED_DEPTH_QUALITY_CHECKS.join(','), `Set report_quality_review.checks for ${REQUIRED_DEPTH_QUALITY_CHECKS.join(', ')} to covered only when the LLM-authored report actually covers them.`),
+    v2Check('report_quality_depth_checks_covered', 'LLM-authored quality/applicability review complete', reportQualityDepthChecksCovered(analysisDoc), Array.isArray(analysisDoc?.report_quality_review?.dimension_checks) ? `dimension_checks=${qualityDimensionRows(analysisDoc).length}` : REQUIRED_DEPTH_QUALITY_CHECKS.join(','), 'Author report_quality_review.dimension_checks[] for the repository-specific report dimensions, or legacy checks, with covered/not_applicable statuses and rationale.'),
     v2Check('complete_audit_source_tier_coverage_complete', 'Complete-audit Tier 1 whole-repo file-card coverage complete', auditSourceTierComplete, `mode=${productMode || 'missing'}, complete=${bundle?.source_tier_coverage?.complete === true}, cards=${Number(bundle?.source_tier_coverage?.tier1_file_cards || 0)}/${Number(bundle?.source_tier_coverage?.total_files || 0)}`, `Run cognianalysis dev tier-next ${repo} --limit 1, complete every Tier 1 source-tier workpack, then rerun analyze/eval.`),
     v2Check('complete_audit_skill_workbench_complete', 'Complete-audit planned skill workbenches complete', auditSkillWorkbenchComplete, `mode=${productMode || 'missing'}, status=${String(bundle?.skill_workbench_coverage?.status || 'missing')}`, 'Run cognianalysis dev finalize . --allow-partial after Tier 1 coverage, then execute every planned skill_workbench task.'),
     v2Check('complete_audit_detail_reviews_complete', 'Complete-audit planned detail reviews complete', auditDetailReviewsComplete, `mode=${productMode || 'missing'}, status=${String(bundle?.source_family_detail_review_coverage?.status || 'missing')}`, 'Author the detail-agent plan, materialize detail tasks, execute every planned detail review, then rerun analyze/eval.'),

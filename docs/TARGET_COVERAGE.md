@@ -28,14 +28,14 @@ A repository must not show target rows as `covered`, `present`, `partial`, `miss
 - OpenAPI/Swagger extraction
 - SOAP/WSDL/XSD extraction
 - Technical view
-- Mermaid flow extraction
+- Purpose-fit visual explanations
 - Domain/data/integration view
 - Architecture assessment
 - Process/readiness assessment
 - Bugs, vulnerabilities and quality findings
 - Structured decision basis
-- Refactoring and modernization roadmap
-- Target architecture / new tech stack
+- Modernization/refactoring applicability and decision path
+- Target architecture / new tech stack only where justified
 - Tool alternative positioning
 - Evidence-first validation
 - Interactive HTML reporting

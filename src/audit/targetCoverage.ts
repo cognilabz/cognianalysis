@@ -44,7 +44,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'tiered-whole-codebase-analysis',
     title: 'Tiered whole-codebase analysis',
-    description: 'Every included file receives at least a Tier 1 Codex-authored LLM file card before repository synthesis; selected areas receive deeper Tier 2-4 technical, behavioral, quality and refactoring analysis.',
+    description: 'Every included file receives at least a Tier 1 Codex-authored LLM file card before repository synthesis; selected areas receive deeper Tier 2-4 technical, behavioral, quality, process and modernization-applicability analysis.',
     addressed_by: ['source-tier-task-manifest.json', 'source_tier_tasks/*.md', 'source_tiers/*.json', 'source_tier_coverage', 'analysis_document technical drilldown sections'],
     expected_outputs: ['source_tier_coverage.complete=true', 'source_file_tier_reviews[]'],
     output_keys: ['source_tier_coverage.complete', 'source_file_tier_reviews']
@@ -76,7 +76,7 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   {
     id: 'four-level-analysis-model',
     title: 'Four-level analysis model',
-    description: 'The Codex-authored LLM report quality review and requirements trace judge whether reverse engineering/documentation, code analysis, process analysis and refactoring/target architecture are covered as a decision basis.',
+    description: 'The Codex-authored LLM report quality review and requirements trace judge whether reverse engineering/documentation, code analysis, process analysis and modernization/refactoring applicability are covered, open or not applicable as a decision basis.',
     addressed_by: ['12-analysis-document.md', 'analysis_document.requirements_trace[]', 'analysis_document.report_quality_review'],
     expected_outputs: ['analysis_document_requirements_trace_contract.complete=true', 'analysis_document_quality_review.complete=true', 'report_mode.report_quality_review_decision_ready=true'],
     output_keys: ['analysis_document_requirements_trace_contract.complete', 'analysis_document_quality_review.complete']
@@ -194,12 +194,12 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
     output_keys: ['assessment.technical_view']
   },
   {
-    id: 'mermaid-flows',
-    title: 'Flows with Mermaid',
-    description: 'Happy paths, failure paths, state changes, side effects and external calls represented with Mermaid source.',
-    addressed_by: ['Codex-selected flow workbench or optional capability_templates/06-flows-mermaid.md', 'Codex-authored LLM flow component blocks'],
-    expected_outputs: ['flows[].mermaid', 'documentation.mermaid_flows[]'],
-    output_keys: ['flows', 'documentation.mermaid_flows']
+    id: 'visual-explanations',
+    title: 'Repository-fit visual explanations',
+    description: 'Happy paths, failure paths, state changes, side effects, external calls, architecture, timelines or decision logic explained using the format the LLM judges clearest for the repository. Mermaid is allowed, but not required.',
+    addressed_by: ['Codex-selected visual explanation workbench or optional capability templates', 'Codex-authored LLM narrative/flow/diagram component blocks'],
+    expected_outputs: ['flows[] when useful', 'visual_explanations[] when useful', 'analysis_document.sections[].blocks[]'],
+    output_keys: ['flows', 'documentation.visual_explanations', 'analysis_document.sections']
   },
   {
     id: 'domain-data-integrations',
@@ -243,18 +243,18 @@ export const TARGET_CAPABILITIES: TargetCapability[] = [
   },
   {
     id: 'refactoring-modernization',
-    title: 'Refactoring and modernization roadmap',
-    description: 'Practical roadmap with benefit, risk, effort, candidate files and evidence.',
-    addressed_by: ['Codex-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'Codex-authored LLM roadmap sections'],
-    expected_outputs: ['refactoring[]', 'modernization[]'],
-    output_keys: ['refactoring', 'modernization']
+    title: 'Modernization/refactoring applicability',
+    description: 'Source-backed decision path for refactor, migration, replacement, stabilization, preservation, contract hardening or no structural change; roadmap details only where justified.',
+    addressed_by: ['Codex-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'Codex-authored LLM decision-path sections'],
+    expected_outputs: ['modernization_refactoring_applicability', 'refactoring[] when applicable', 'modernization[] when applicable'],
+    output_keys: ['modernization_refactoring_applicability', 'refactoring', 'modernization']
   },
   {
     id: 'target-architecture-tech-stack',
     title: 'Target architecture / new tech stack',
-    description: 'Refactoring and modernization route toward a target architecture or new technology stack where justified by evidence.',
-    addressed_by: ['Codex-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'Codex-authored LLM target-architecture sections'],
-    expected_outputs: ['architecture.target_architecture', 'modernization[].target_state'],
+    description: 'Target architecture or new technology stack options only where evidence and decision value justify structural change.',
+    addressed_by: ['Codex-selected architecture/refactoring workbench or optional capability_templates/09-architecture-refactoring-roadmap.md', 'Codex-authored LLM architecture/applicability sections'],
+    expected_outputs: ['architecture.target_architecture when applicable', 'modernization[].target_state when applicable'],
     output_keys: ['architecture.target_architecture', 'modernization']
   },
   {
